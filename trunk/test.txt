@@ -5,3 +5,5 @@ vaisseau de combat
 	atak (5)
 	
 over
+
+nombre pop=10
