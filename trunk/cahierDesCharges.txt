@@ -1,0 +1,178 @@
+
+CAHIER DE REALISATION GALAKTIK KONKETTE
+
+Description générale:
+Jeu multijoueur en réseau
+Stratégie tour par tour basé sur Konquest ajoutant de nouvelles fonctionnalités.
+
+L'univers:
+L'univers est un damier 3D, dont l'unité de déplacement est un cube appelé « Zone ». Le damier aura une taille paramétrable dans les trois dimensions longueur, largeur, profondeur.
+
+Les propriétés de l’espace de jeu sont les suivantes :
+La taille de l'univers sera paramétrable lors de la création de la partie
+
+Pouvoir paramétrer le maximum de valeurs via un bouton avancé, sinon utiliser les valeurs par défaut.
+Données pouvant être spécifiées lors de la création de partie:
+La taille de l'univers (les 3 coordonnées)
+Le nombre de corps celestes
+Le nombre de joueurs
+La quantité de ressources de la planète de départ.
+Le niveau de ressource des corps celeste générés.
+La fourchette du nombre de slots sur les corps celestes.
+Avoir une flotte de départ.
+Conditions de victoire: perte du gouvernement, conquete totale, limite ressources, temps
+
+
+L’unité de valeur de l’espace de jeu est la « Zone ». Les différentes objets pouvant être présent dans une zones.
+zone vide : Aucun élément n’est présent.
+Corps celeste: Un seul coprs celeste au maximum occupe une zone.
+Flotte: [TO DO] une meme zones peut contenir plusieurs flottes adverses. Voir modalités de fusion des flottes d'un meme joueur.
+	
+Les Corps Celestes
+liste des différents corps disponibles:
+Planete
+Nébuleuse : Avec l’ensemble de ces propriétés lui étant propre (Situation deux (S2))
+Champ d’astéroïde : Avec l’ensemble de ces propriétés lui étant propre (Situation trois (S3)).
+
+Les quantités de ressources associées au corps celestes sont déterminées aléatoirement en début de partie.
+
+La Planete
+Seul corps celeste offrant les deux types de ressources existantes: population et carbonne.
+
+La Nébuleuse
+Corps celeste n'offrant que la ressource de carbonne et ne permettant pas de construire des batiments (sauf exploitation).
+
+L'asteroide 
+
+Tout corps celeste est coloré suivant son appartenance: Neutre ou couleur du joueur propriétaire.
+
+LE DEPLACEMENT DANS L'univers :
+
+Les flottes du joueur ce déplace au travers des zones en suivant le chemin le plus court.
+La trajectoire est une longueur qui est parcourue en un nombre déterminé de tours dépendant de la vitesse de la flotte.
+Lors d'un déplacement la flotte s'arrete sur différentes zones dépendant de sa trajectoire, de sa vitesse. Toutes les zones ne sont pas traversées.
+
+Les types de déplacement selon la catégorie de la F.
+
+Les déplacements de Z à Z. possible pour les flottes de sonde et de combat mais pas aux transporteurs.
+Les déplacements de Z en S1, 2 ou 3 à Z en S1, 2 ou 3 possible pour les transporteurs.
+
+Les F en déplacement sont interceptable si la flotte ce retrouve dans une Z de pause en même temps qui flotte ennemis.
+
+
+
+LES PLANETES (P), NEBULEUSE (N) et CHAMP d ASTEROIDES (A):
+
+Une planète (P) ce détermine selon les propriétés suivantes :
+	Coordonnées de Z quelle occupe.
+	Nombre de Slot constructible (U) toujours entre 3 et 9.
+	Quantité de ressources (Cr) toujours entre 100 000 Cr et 900 000 Cr.
+
+Le joueur peut construire/détruire sur un U 5 constructions :
+
+	C0 : U est vide (par défaut)
+	C1 : Construction d’une unité de collecte de ressources (CR).
+	C2 : Construction d’une unité de production de flotte (CF).
+	C3 : Construction d’une unité de défense planétaire (CD). 
+	C4 : Emplacement du gouvernement (G). (Unique par joueur et déplaçable).
+
+Pour être déplacé le gouvernement doit être mis dans une flotte transport, la flotte doit être en orbite autour de la planète qui abrité le gouvernement.
+
+Les ressources d’une planète sont chiffrée dès le départ et s’épuise au fur et a mesure qu’un joueur les exploites. Le montant des ressources de départ d’une planète (y) et attribué aléatoirement selon une fourchette, au moment de la création de D.
+
+
+
+Les vaisseaux
+caractéristiques des vaisseaux:
+la vitesse: détermine la capacité de déplacement du vaisseau (nombre de zones par tour)
+les points de défense: déterminent le coefficient de résistance a une attaque
+les points d'attaques: détermine les point de dégâts infligeables sur les points de vie
+les points de vie: le vaisseau est détruit lorsque ils arrivent a 0.
+
+
+LES FLOTTES (F) :
+
+Les flottes ont 5 paramètres :
+
+	Type, (« combat » ou « transport »)
+La composition, liste et nombre des vaisseaux qui la composent.
+La vitesse Z/Tour = a la vitesse du vaisseau le plus lent dans la flotte.
+Point d’attaque (Pa) = a la somme des tous les points d’attaques des vaisseau qui la compose.
+Point de défense (Pd)= a la somme des tous les points de défense des vaisseaux qui la compose.
+
+
+Le type de flotte est « combat » par défaut, mais dès l’instant ou la flotte ce compose d’un vaisseau de transport elle devient transport.
+
+Ordre donner à la flotte :
+
+	Etre en orbite stationnaire (H).
+	Voyager attaquer (A), ou Voyager transporter (B) (selon les règles de déplacement.
+	Assaut planétaire (I). (Pour une flotte en orbite autour d’un système ennemie.
+
+Si le joueur ordonne un voyager attaquer sur une Z vide, la flotte ce mettra en position d’embuscade pour une éventuelle interception. (Les flottes en embuscade ont l’avantage sur les combats).
+
+
+COMPOSITION :
+
+Une flotte ce compose de vaisseaux, il y en a de 4 types :
+
+	Sonde (elle permette de collecter des information sur la Z dans laquelle elle ce trouve sans ce faire repérer par l’ennemie (pendant un certains nombre de tour).
+	Transport, un vaisseaux de transite de ressources. A fort point de défense mais dépourvue de point d’attaque.
+	Combat 3 catégories de vaisseaux de combat pourvu de point d’attaque (Pa) et de point de défense (Pd).
+	Héros, chaque joueur peut produire un héros, qui donne un bonus d’attaque à toutes les flottes en présences dans un rayon de 27 Z.
+
+
+
+
+Caractéristique des différents vaisseaux.
+
+
+Sonde :
+	V = 15 Z/Tour
+	Pa = 0
+	Pd = 1 + 1 si héros
+
+Transport :
+	V = 10 Z/Tour
+	Pa = 0
+	Pd = 5 + 1 si héros + 3 si héros et si il s’agit du transport du gouvernement.
+
+Combat léger :
+	V = 8 ZTour
+	Pa = 2 + 1 si héros
+Pd = 1
+
+Combat lourd :
+	V = 6 Z/Tour
+	Pa = 3 + 2 si héros
+	Pd = 3
+
+Combat d’assaut
+	V = 4 Z/Tour
+	Pa = 5 + 2 si héros
+	Pd = 4
+
+
+
+
+
+
+INTERFACE :
+
+L’interface ce compose de 4 éléments :
+
+	D qui une représentation 3D de la surface de jeu. D peut tournée sur lui-même pour faciliter la vue du joueur. Le joueur peut zoomer sur une Z dans D.
+
+	La carte petit carré 2D représentant la face dessus de D avec les différent élément connu du jour codé par un code de couleurs (planète en sa possession emplacement ennemie etc.…)
+	Le cadre des information petit listing de renseignement sur la Z sélectionné par le joueur. Planète, slot, ressource, flotte etc. Vous ne pouvez obtenir ces informations que si vous avez un système présent dans Z ou si vous l’avez sondé. Si la sonde est découverte et détruite vous n’avez plus accès aux informations, il apparaîtra donc les dernières informations connues avant destruction de la sonde.
+
+	Le cadre coordonnée qui affiche les coordonnée de Z sélectionné ou qui permet d’entrée les coordonnées d’une Z sur la quel on veut zoomer.
+
+	Enfin le cadre Action qui rassemble tous les boutons d’action selon la sélection :
+Construire détruire etc. si la sélection et une planète, voyager ou attaquer etc. si c’est une flotte.
+
+
+La Z sélectionnée apparaît en surbrillance.
+Lorsqu’on sélectionne une Z peut calculé la trajectoire avec une autre Z. (V) apparaît par un trait en surbrillance reliant le centre de chaque Z.
+
+Si vous sélectionné une flotte vous pouvez voir en plus de la V les temps de pause que la flotte effectuera par rapport a ça vitesse.
