@@ -29,22 +29,28 @@ Corps celeste: Un seul coprs celeste au maximum occupe une zone.
 Flotte: [TO DO] une meme zones peut contenir plusieurs flottes adverses. Voir modalités de fusion des flottes d'un meme joueur.
 	
 Les Corps Celestes
-liste des différents corps disponibles:
-Planete
-Nébuleuse : Avec l’ensemble de ces propriétés lui étant propre (Situation deux (S2))
-Champ d’astéroïde : Avec l’ensemble de ces propriétés lui étant propre (Situation trois (S3)).
-
-Les quantités de ressources associées au corps celestes sont déterminées aléatoirement en début de partie.
-
-La Planete
-Seul corps celeste offrant les deux types de ressources existantes: population et carbonne.
-
-La Nébuleuse
-Corps celeste n'offrant que la ressource de carbonne et ne permettant pas de construire des batiments (sauf exploitation).
-
-L'asteroide 
-
+Les corps celestes sont des points stratégiques visibles par tous les joueurs. Ils fournissent les ressources nécessaires à la construction
+des flottes et des batiments. Les quantités de ressources associées aux corps celestes sont déterminées aléatoirement en début de partie.
 Tout corps celeste est coloré suivant son appartenance: Neutre ou couleur du joueur propriétaire.
+
+Ressources:
+Toute nouvelle construction faite par un joueur coûtera une quantité déterminée de ressources. Dans l'univers
+deux types de ressources sont disponibles: le carbonne et la population.
+
+Liste des différents corps disponibles:
+Planete:Seul corps celeste offrant les deux types de ressources existantes: population et carbonne. Elle est un point stratégique important.
+Nébuleuse : La nébuleuse est un corps celeste formé de gazs et de poussières. Sa structure mouvante ne permet pas l'accueuil de construction de batiments (sauf exploitation)
+            Elle ne fournis pas non plus de population supplémentaire au joueur l'ayant conquise.
+Champ d’astéroïde : Avec l’ensemble de ces propriétés lui étant propre (Situation trois (S3)).
+[A soumettre]
+Vortex: LEs vortex ont une origine encore méconnue. Leur formation est passionnément étudiée par l'ensemble de la communauté des chercheurs. La brillante théorie
+ proposée par Ivanov Pertenchevko décrivant le vortex comme une hypercourbure de l'espace-temps permettant les déplacements au-dela du point critique vitesse lumière
+ a recemment été approuvée par l'expérience après l'envoi de la sonde "Connaissance" qui a été localisée quelques secondes a peine a un point tres éloigné de l'univers connu.
+
+
+
+
+
 
 LE DEPLACEMENT DANS L'univers :
 
