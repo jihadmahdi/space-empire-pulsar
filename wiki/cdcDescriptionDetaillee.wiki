@@ -7,5 +7,7 @@ Description détaillée des divers éléments et concepts du jeu :
 
 	# [cdcDescriptionUnivers Univers]
 	# [cdcDescriptionCorpsCelestes Corps célestes]
+	# [cdcDescriptionRessources Ressources]
+	# [cdcDescriptionConstructions Constructions]
 	# [cdcDescriptionFlottes Flottes]
-	# [cdcDescriptionConcepts Concepts]
+	# [cdcDescriptionConcepts Divers]

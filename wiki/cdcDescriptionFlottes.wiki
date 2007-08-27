@@ -63,6 +63,3 @@ Le vaisseau de combat d'assaut est le noyau dur de toute flotte d'invansion.
 	Defense: 78
 	Vitesse: 0.46 Z/T
 }}}
-
-
-===
