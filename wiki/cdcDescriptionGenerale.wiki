@@ -1,0 +1,7 @@
+#summary Cahier des charges: Description générale
+===[Index Index]>[cdcIndex Cahier des Charges]===
+
+=Description générale=
+Space Empire Pulsar est un jeu de stratégie tour par tour, multijoueur, dont les règles inspirées de [http://en.wikipedia.org/wiki/Konquest Konquest] sont largement étendues.
+L'univers n'est donc plus une carte en 2D mais un damier en 3D dont la taille est paramètrable en début de partie.
+Space Empire Pulsar ajoute plusieurs types de [cdcDescriptionCorpsCelestes corps célestes] (planètes, astéroïdes, nébuleuses, vortex), 2 types de [cdcReglesRessourcesConstructions ressources] (population et ressource), plusieurs types de [cdcDescriptionFlottes vaisseaux] (attaque, transport), ainsi qu'une notion de [cdcReglesGouvHeros "gouvernement" et de "héros"] permettant de nouveaux type de parties.
