@@ -12,7 +12,7 @@ Il devrait être implémenté en JAVA, ce qui le rend multiplateforme.
 	# [specIndex Spécification]
 	# [devIndex Developpement]
 	# [testIndex Tests]
-	
+
 ---
 
 [auteurs Auteurs]

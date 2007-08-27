@@ -1,0 +1,16 @@
+#summary Cahier des charges: Fonctionnalités
+===[Index Index]>[cdcIndex Cahier des Charges]===
+
+=Fonctionnalités=
+
+Cette page se propose de faire la liste des fonctionnalités de Space Empire Pulsar, triées suivant les règles de MoSCoW:
+
+==Must (Fonctionnalités obligatoire)==
+	* Implémentation des règles étendues telles que décrite dans le CdC.
+	* Architecture Client/Serveur (SGS).
+==Should (Fonctionnalités qui devrait être implémentées)==
+	* Interface comprenant une partie vue 3D (jME).
+==Can (Fonctionnalités qui pourrait être implémentées)==
+	* Possibilité de promener librement la caméra dans l'univers en 3D.
+	* Implémentation d'une AI "correcte" pour ajouter des joueurs artificiels.
+==Wont (Fonctionnalité qui ne seront pas implémentées)==
