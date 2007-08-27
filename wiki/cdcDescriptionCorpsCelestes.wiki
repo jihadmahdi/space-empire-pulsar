@@ -30,5 +30,6 @@ Il existe différents types de corps célestes dont voici la liste:
 	===DETAILS A DEFINIR===
 	Note: L'idée que "Avec les vortex, rien n'est sûr, c'est s'en remettre au hasard" me plait bien, mais il faut que leur effet reste suffisament attractif d'un point de vue stratégique pour qu'en définitivent ils aient un réel interêt dans le jeu.
 	
-	====Proposition1====: Les vortex seraient des corps célestes qui apparaissent de nulle part, reste un nombre de tour aléatoire à la même zone puis disparaissent à nouveaux pour réaparaitre ailleurs.
-	Lorsqu'au moins 2 vortex sont présent dans l'univers, ils permettent de téléporter tout objet se présentant dans la zone vers un autre vortex déterminé au hasard.
+	====Proposition1====
+		Les vortex seraient des corps célestes qui apparaissent de nulle part, reste un nombre de tour aléatoire à la même zone puis disparaissent à nouveaux pour réaparaitre ailleurs.
+		Lorsqu'au moins 2 vortex sont présent dans l'univers, ils permettent de téléporter tout objet se présentant dans la zone vers un autre vortex déterminé au hasard.
