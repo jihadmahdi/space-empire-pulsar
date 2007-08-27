@@ -8,7 +8,7 @@ Il existe deux types de ressources:
 ==La population, notée 人==
 Elle représente le nombre de personnes disponibles sur chaque planète.
 Elle n'est donc disponible que sur les planètes.
-La quantité de 人 générée par tour par par une planète dépend de la taille de cette planète et peut donc varier d'une planète a une autre.
+La quantité de 人 générée par tour par une planète dépend de la taille de cette planète et peut donc varier d'une planète a une autre.
 Cependant, les planètes de départ de chaque joueur sont considérées de même taille et génèrent donc la même quantité de 人 par tour.
 
 Une planète possède une production de 人 par tour, définie aléatoirement à la création de l'univers.

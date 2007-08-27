@@ -12,7 +12,6 @@
 		# [cdcDescriptionRessources Ressources]
 		# [cdcDescriptionConstructions Constructions]
 		# [cdcDescriptionFlottes Flottes]
-		# [cdcDescriptionConcepts Divers]
 	# [cdcReglesDeJeu Règles du jeu]
 		# [cdcReglesDebutPartie Début de partie]
 		# [cdcReglesDeplacement Déplacement]
