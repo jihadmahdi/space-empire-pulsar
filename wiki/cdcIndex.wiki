@@ -18,3 +18,5 @@
 		# [cdcReglesCombat Combat]
 		# [cdcReglesGouvHeros Gouvernement & Héros]
 	# [cdcInterface Interface de jeu]
+	
+	[cdcBlog Blog]

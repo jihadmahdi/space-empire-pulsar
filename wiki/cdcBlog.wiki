@@ -1,0 +1,7 @@
+#summary Cahier des charges: BLOG
+===[Index Index]>[cdcIndex Cahier des Charges]===
+
+=BLOG=
+
+Cette page est faite pour servir de BLOG sur le CDC.
+La discution se fait au fil des commentaires laissés sur la page.
