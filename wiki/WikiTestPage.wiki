@@ -1,0 +1,8 @@
+#summary Page de test des markups Wiki
+
+= Tests =
+== Retour à la ligne !? ==
+
+Premiere ligne, finie par une \r\n.
+Deuxième ligne, finie par une balise HTML "br".<br>
+Troisième ligne.
