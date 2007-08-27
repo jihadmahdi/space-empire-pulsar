@@ -1,0 +1,16 @@
+=Space-Empire-Pulsar=
+=Cahier des charges=
+
+==Sommaire==
+[cdcDescriptionGenerale Description générale]
+[cdcFonctionnalites Fonctionnalités souhaitées]
+[cdcDescriptionDetaillee Description détaillée]
+	[cdcDescriptionUnivers de l'Univers]
+	[cdcDescriptionCorpsCelestes des Corps célestes]
+	[cdcDescriptionFlottes des Flottes]
+[cdcReglesDeJeu Règles du jeu]
+	[cdcReglesDebutPartie Début de partie]
+	[cdcReglesDeplacement Déplacement]
+	[cdcReglesRessourcesConstructions Ressources & Constructions]
+	[cdcReglesFlottes Flottes]
+[cdcInterface Interface de jeu]
