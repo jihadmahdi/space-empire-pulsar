@@ -1,0 +1,22 @@
+#summary Cahier des charges: Description détaillée: Univers
+===[Index Index]>[cdcIndex Cahier des Charges]>[cdcDescriptionDetaillee Descriptions]===
+
+=Flottes & vaisseaux=
+
+Une flotte est un ensemble de vaisseaux, les caractéristiques d'une flotte dépendent donc des vaisseaux qui la compose.
+
+Voici la liste des différents vaisseaux :
+
+===Sonde (200人/200資)===
+La sonde est un petit vaisseau d'exploration.
+Exempt de tout dispositif d'attaque, il permet en revanche de scanner les zones voisines.
+Il peut être envoyé sur toute zone vide ou planète alliée et y demeurer.
+	Attaque: 0
+	Défense: 10
+
+===Transport===
+*A DEFINIR*
+
+===Combat léger===
+Le vaisseau de combat léger permet de constituer à moindre coût des flottes rapides avec un attaque correcte.
+Ils sont en revanche peu résistants.
