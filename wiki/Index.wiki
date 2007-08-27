@@ -6,3 +6,13 @@ Il devrait être implémenté en JAVA, ce qui le rend multiplateforme.
 
 ==Status==
 ||Rédaction du cahier des charges||EN COURS||
+
+==Sommaire==
+	# [cdcIndex Cahier des charges]
+	# [specIndex Spécification]
+	# [devIndex Developpement]
+	# [testIndex Tests]
+	
+---
+
+[auteurs Auteurs]

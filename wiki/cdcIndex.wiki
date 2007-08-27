@@ -1,5 +1,6 @@
-=Space-Empire-Pulsar=
-=Cahier des charges=
+#summary Sommaire du cahier des charges
+
+=Cahier des charges : Space Empire Pulsar=
 
 ==Sommaire==
 	# [cdcDescriptionGenerale Description générale]
