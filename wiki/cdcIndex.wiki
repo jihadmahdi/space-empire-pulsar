@@ -1,4 +1,5 @@
 #summary Sommaire du cahier des charges
+===[Index Retour sommaire]===
 
 =Cahier des charges : Space Empire Pulsar=
 
@@ -14,4 +15,5 @@
 		# [cdcReglesDeplacement Déplacement]
 		# [cdcReglesRessourcesConstructions Ressources & Constructions]
 		# [cdcReglesFlottes Flottes]
+		# [cdcReglesGouvHeros Gouvernement & Héros]
 	# [cdcInterface Interface de jeu]
