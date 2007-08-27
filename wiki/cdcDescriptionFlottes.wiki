@@ -10,7 +10,7 @@ En stationnment sur une planète, une flotte peut être dissociée et les vaisse
 ==Calcul des caractéristiques d'une flotte==
 {{{
 	Attaque = Somme Attaque de tous les vaisseaux
-	Défense = Somme Défense de tous les vaisseaux
+	Défense = Somme Defense de tous les vaisseaux
 	Vitesse = Vitesse la plus faible de tous les vaisseaux
 }}}
 
@@ -21,7 +21,7 @@ Soit 資 le coût en ressource (carbonne).
 Soit k une constante permettant de changer l'échèlle de mesure, car on souhaite parler de ressource en milliers, mais se limiter à des nombres a deux chiffres pour les caractéristiques.
 k=60
 
-2*人 + 資 = k * (Attaque + Défense + 5*Vitesse)
+2x人 + 資 = k x (Attaque + Défense + 5*Vitesse)
 
 
 Voici la liste des différents vaisseaux :
@@ -32,7 +32,7 @@ Exempt de tout dispositif d'attaque, il permet en revanche de scanner les zones 
 Il peut être envoyé sur toute zone vide ou planète alliée et y demeurer.
 {{{
 	Attaque: 0
-	Défense: 10
+	Defense: 10
 	Vitesse: 1.5 Z/T
 }}}
 
@@ -44,7 +44,7 @@ Le vaisseau de combat léger permet de constituer à moindre coût des flottes r
 Ils sont en revanche peu résistants.
 {{{
 	Attaque: 20
-	Défense: 12
+	Defense: 12
 	Vitesse: 2.0 Z/T
 }}}
 
@@ -52,7 +52,7 @@ Ils sont en revanche peu résistants.
 Le vaisseau de combat lourd constitue la base de toute flotte d'invasion.
 {{{
 	Attaque: 34
-	Défense: 44
+	Defense: 44
 	Vitesse: 1.0 Z/T
 }}}
 
@@ -60,7 +60,7 @@ Le vaisseau de combat lourd constitue la base de toute flotte d'invasion.
 Le vaisseau de combat d'assaut est le noyau dur de toute flotte d'invansion.
 {{{
 	Attaque: 78
-	Défense: 78
+	Defense: 78
 	Vitesse: 0.46 Z/T
 }}}
 
