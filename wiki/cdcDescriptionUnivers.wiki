@@ -1,10 +1,10 @@
 #summary Cahier des charges: Description détaillée: Univers
 ===[Index Index]>[cdcIndex Cahier des Charges]>[cdcDescriptionDetaillee Descriptions]===
 
-=Univers=	_"Deux choses sont infinies : l'univers et la bêtise humaine, pour l'univers, je n'en ai pas acquis la certitude absolue." A. Enstein_
+=Univers=
+_"Deux choses sont infinies : l'univers et la bêtise humaine, pour l'univers, je n'en ai pas acquis la certitude absolue." A. Enstein_
 
-L'univers est un damier en 3 dimensions dont la taille est paramètrable en début de partie.Ce damier est découpé en zones, repérées par leurs coordonnées (x, y, z).Chaque zone peut être vide, occupée par un corps céleste, une flotte, ou les deux.
-
-On peut déterminer la distance entre deux zones en mesurant la ligne imaginaire qui les lie par un lien direct, et cette distance permet au joueur de calculer le temps que mettra ses flottes pour faire le voyage.Une zone représente le volume minimal capable de contenir tout corps céleste (planète), c'est également la visibilité maximale de vos unités (hors unités spéciales).
-
+L'univers est un damier en 3 dimensions dont la taille est paramètrable en début de partie. Ce damier est découpé en zones, repérées par leurs coordonnées (x, y, z). Chaque zone peut être vide, occupée par un corps céleste, une flotte, ou les deux.
+On peut déterminer la distance entre deux zones en mesurant la ligne imaginaire qui les lie par un lien direct, et cette distance permet au joueur de calculer le temps que mettra ses flottes pour faire le voyage.
+Une zone représente le volume minimal capable de contenir tout corps céleste (planète), c'est également la visibilité maximale de vos unités (hors unités spéciales).
 Ainsi, deux flottes en déplacement ne s'apercevront que si elle croisent la même zone au même moment.
