@@ -9,8 +9,8 @@ En stationnment sur une planète, une flotte peut être dissociée et les vaisse
 
 ==Calcul des caractéristiques d'une flotte==
 {{{
-	Attaque = Somme de l'attaque de tous les vaisseaux
-	Défense = Somme des défenses de tous les vaisseaux
+	Attaque = Somme Attaque de tous les vaisseaux
+	Défense = Somme Défense de tous les vaisseaux
 	Vitesse = Vitesse la plus faible de tous les vaisseaux
 }}}
 
