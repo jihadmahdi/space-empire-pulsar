@@ -4,19 +4,65 @@
 =Flottes & vaisseaux=
 
 Une flotte est un ensemble de vaisseaux, les caractéristiques d'une flotte dépendent donc des vaisseaux qui la compose.
+Une flotte se créé sur une planète avec les vaisseaux disponibles sur celle-ci.
+En stationnment sur une planète, une flotte peut être dissociée et les vaisseaux ré-affectés à de nouvelles flottes.
+
+==Calcul des caractéristiques d'une flotte==
+{{{
+	Attaque = Somme de l'attaque de tous les vaisseaux
+	Défense = Somme des défenses de tous les vaisseaux
+	Vitesse = Vitesse la plus faible de tous les vaisseaux
+}}}
+
+==Calcul de la valeur d'un vaisseau==
+Afin de garantir un équilibre de prix et de puissance entre les vaisseaux, la formule suivante est proposée :
+Soit 人 le coût en population.
+Soit 資 le coût en ressource (carbonne).
+Soit k une constante permettant de changer l'échèlle de mesure, car on souhaite parler de ressource en milliers, mais se limiter à des nombres a deux chiffres pour les caractéristiques.
+k=60
+
+2*人 + 資 = k * (Attaque + Défense + 5*Vitesse)
+
 
 Voici la liste des différents vaisseaux :
 
-===Sonde (200人/200資)===
+===Sonde (900人/300資)===
 La sonde est un petit vaisseau d'exploration.
 Exempt de tout dispositif d'attaque, il permet en revanche de scanner les zones voisines.
 Il peut être envoyé sur toute zone vide ou planète alliée et y demeurer.
+{{{
 	Attaque: 0
 	Défense: 10
+	Vitesse: 1.5 Z/T
+}}}
 
 ===Transport===
 *A DEFINIR*
 
-===Combat léger===
+===Combat léger (500人/1000資)===
 Le vaisseau de combat léger permet de constituer à moindre coût des flottes rapides avec un attaque correcte.
 Ils sont en revanche peu résistants.
+{{{
+	Attaque: 20
+	Défense: 12
+	Vitesse: 2.0 Z/T
+}}}
+
+===Combat lourd (1000人/2000資)===
+Le vaisseau de combat lourd constitue la base de toute flotte d'invasion.
+{{{
+	Attaque: 34
+	Défense: 44
+	Vitesse: 1.0 Z/T
+}}}
+
+===Combat d'assaut (2000人/3500資)===
+Le vaisseau de combat d'assaut est le noyau dur de toute flotte d'invansion.
+{{{
+	Attaque: 78
+	Défense: 78
+	Vitesse: 0.46 Z/T
+}}}
+
+
+===
