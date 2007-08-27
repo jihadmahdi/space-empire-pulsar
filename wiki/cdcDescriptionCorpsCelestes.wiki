@@ -1,0 +1,34 @@
+#summary Cahier des charges: Description détaillée: Univers
+===[Index Index]>[cdcIndex Cahier des Charges]>[cdcDescriptionDetaillee Descriptions]===
+
+=Corps célestes=
+
+Les corps célestes sont des points stratégiques visibles par tous les joueurs.
+Ils fournissent les ressources nécessaires à la construction des flottes et des batiments.
+Les quantités de ressources associées aux corps celestes sont déterminées aléatoirement en début de partie, et s'épuisent à mesure que le joueur les exploite.
+Tout corps celeste est coloré suivant son appartenance: Neutre ou couleur du joueur propriétaire.
+
+Il existe différents types de corps célestes dont voici la liste:
+
+==Planète==
+	Les planètes sont les seuls corps célestes offrant les deux types de ressources existantes: population et carbonne.
+	De ce fait, certaines constructions ne sont possibles que sur des planètes.
+	Elles sont un point stratégique important.
+
+==Nébuleuse==
+	La nébuleuse est un corps celeste formé de gaz et de poussières.
+	Sa structure mouvante ne permet pas l'accueuil de construction de batiments autre que l'exploitation de carbonne.
+
+==Champ d'astéroïde==
+	Les champs d'astéroïdes sont des lieux impropre à la vie, mais propice à la construction de batiments millitaires, et riche en carbonne.
+	Ainsi il est possible de construire la pluspart des batiments, sauf ceux dont la production nécéssite de la population.
+
+==Vortex==
+	Les vortex ont une origine encore méconnue. Leur formation est passionnément étudiée par l'ensemble de la communauté des chercheurs.
+	La brillante théorie proposée par Ivanov Pertenchevko décrivant le vortex comme une hypercourbure de l'espace-temps permettant les déplacements au-dela du point critique vitesse lumière a recemment été approuvée par l'expérience après l'envoi de la sonde "Connaissance" qui a été localisée quelques secondes a peine a un point tres éloigné de l'univers connu.
+	
+	*DETAILS A DEFINIR*
+	*Note*: L'idée que "Avec les vortex, rien n'est sûr, c'est s'en remettre au hasard" me plait bien, mais il faut que leur effet reste suffisament attractif d'un point de vue stratégique pour qu'en définitivent ils aient un réel interêt dans le jeu.
+	
+	*Proposition1*: Les vortex seraient des corps célestes qui apparaissent de nulle part, reste un nombre de tour aléatoire à la même zone puis disparaissent à nouveaux pour réaparaitre ailleurs.
+	Lorsqu'au moins 2 vortex sont présent dans l'univers, ils permettent de téléporter tout objet se présentant dans la zone vers un autre vortex déterminé au hasard.
