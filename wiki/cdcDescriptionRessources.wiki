@@ -14,8 +14,8 @@ Cependant, les planètes de départ de chaque joueur sont considérées de même
 Une planète possède une production de 人 par tour, définie aléatoirement à la création de l'univers.
 Une planète possède également un plafond maximum de 人 au delà duquel elle ne produit plus (tant que l'on ne dépense pas de 人), fixé lui aussi à la création de l'univers, et qui représente de façon abstraite sa taille (espace habitable).
 
-===La ressource carbonne, notée 資==
-Elle représente la réserve en carbonne de chaque planète.
+===La ressource carbone, notée 資==
+Elle représente la réserve en carbone de chaque planète.
 Elle est disponible sur tout [cdcDescriptionCorpsCelestes corps céleste] disposant d'un [cdcDescriptionConstructions module d'extraction de ressource]
 
 Un corps céleste possède une production de 資 par tour, dépendant du nombre de [cdcDescriptionConstructions module d'extraction] construits.

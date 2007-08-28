@@ -8,21 +8,57 @@ Ils fournissent les ressources nécessaires à la construction des flottes et de
 Les quantités de ressources associées aux corps celestes sont déterminées aléatoirement en début de partie, et s'épuisent à mesure que le joueur les exploite.
 Tout corps celeste est coloré suivant son appartenance: Neutre ou couleur du joueur propriétaire.
 
+==Caractéristiques==
+Les corps célestes sont définis par plusieurs caractéristiques, pouvant fluctuer durant le jeu :
+{{{
+	人 par tour: Production de population à chaque tour de jeu.
+	人 max: Valeur maximale de population autorisée sur la planète, au delà la production s'arrète, jusqu'a ce que la population soit redevenue inférieure au maximum autorisé.
+	資 max: Réserve en ressource carbone disponible sur le corps céleste, cette valeur diminue à chaque tour passé a extraire le carbone, jusqu'a ce que le corps céleste soit stérile.
+	Nb. slots: Nombre d'emplacement disponibles sur le corps céleste pour la construction de modules.
+}}}
+
 Il existe différents types de corps célestes dont voici la liste:
 
-<a name="planete"/>
 ==Planète==
 	Les planètes sont les seuls corps célestes offrant les deux types de ressources existantes: population et carbonne.
 	De ce fait, certaines constructions ne sont possibles que sur des planètes.
 	Elles sont un point stratégique important.
+	{{{
+		人 par tour: [2500-7500]
+		人 max: [50K-150K]
+		資 max: [50K-100K]
+		Nb. slots: [6-15]
+		
+		Constructions autorisées:
+		Exploitation de ressources, Usine de vaisseaux, Module de défense, Module gouvernemental, Comptoir.
+	}}}
 
 ==Nébuleuse==
 	La nébuleuse est un corps celeste formé de gaz et de poussières.
-	Sa structure mouvante ne permet pas l'accueuil de construction de batiments autre que l'exploitation de carbonne.
+	Sa structure mouvante ne permet pas l'accueuil de construction de batiments autre que l'exploitation et l'acheminement de carbonne.
+	{{{
+		人 par tour: 0
+		人 max: 0
+		資 max: [100K-500K]
+		Nb. slots: [3-6]
+		
+		Constructions autorisées:
+		Exploitation de ressources,~~Usine de vaisseau~~, ~~Module de défense~~, ~~Module gouvernemental~~, Comptoir.
+	}}}
+		
 
 ==Champ d'astéroïde==
 	Les champs d'astéroïdes sont des lieux impropre à la vie, mais propice à la construction de batiments millitaires, et riche en carbonne.
 	Ainsi il est possible de construire la pluspart des batiments, sauf ceux dont la production nécéssite de la population.
+	{{{
+		人 par tour: 0
+		人 max: 0
+		資 max: [80K-300K]
+		Nb. slots: [4-8]
+		
+		Constructions autorisées:
+		Exploitation de ressources, ~~Usine de vaisseaux~~, Module de défense, ~~Module gouvernemental~~, Comptoir.
+	}}}
 
 ==Vortex==
 	Les vortex ont une origine encore méconnue. Leur formation est passionnément étudiée par l'ensemble de la communauté des chercheurs.
