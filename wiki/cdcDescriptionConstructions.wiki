@@ -1,0 +1,38 @@
+#summary Cahier des charges: Description détaillée: Univers
+===[Index Index]>[cdcIndex Cahier des Charges]>[cdcDescriptionDetaillee Descriptions]===
+
+=Constructions=
+
+Les constructions se font moyennant 人 et 資 sur des corps célestes disposants de slots libres.
+Chaque construction apporte un effet particulier au corps céleste sur lequel elle est batie.
+
+Voici la liste des constructions possibles :
+
+==Module d'extraction  資 (0人/0資)===
+Même si la technologie diffère suivant que l'on se trouve sur une planète, une nébuleuse ou un champs d'astéroïde, les modules d'extractions 資 présentent tous les même caractéristiques:
+Un module d'extraction 資 occupe un slot et permet de générer 2500 資 par tour.
+Ils sont cumulables tant que le corps céleste dispose de slots libres.
+
+==Usine de production de vaisseaux (0人/0資)==
+Les usines de production de vaisseaux ne sont disponibles que sur les planètes, car elles nécéssitent beaucoup de main d'oeuvres.
+Elles ont deux fonctionnalités distinctes:
+	* La fabrication de nouveaux vaisseaux (moyennant le prix du vaisseau choisi), qui sont alors disponibles dans l'entrepot de l'usine, prêt à être affectés à une flotte.
+	* Le remaniement des flottes existantes, qui se posent sur la piste de l'usine et y reste jusqu'a être de nouveaux affecté à une flotte.
+
+==Module de défense (0人/4000資)==
+Les modules de défense sont la première protection des corps célestes, ils octroient des bonus de +35 en attaque et en défense au corps céleste si celui-ci est attaqué, ainsi qu'aux flottes alliées en orbite.
+Ces modules sont cumulables tant que le corps céleste dispose de slots libres.
+
+==Module gouvernemental (0人/0資)==
+Ce module, pré-existant sur la première planète de chaque joueur, représente la capitale de son empire, le centre de commande et d'organisation de toute ces armées.
+C'est donc également un point vital qui doit être préservé à tout prix.
+Si l'invasion est imminante, le joueur peu toujours créer un vaisseau gouvernemental pour changer de capitale.
+Le module gouvernemental est alors détruit et sera recréer sur la planète destination du vaisseau gouvernemental, si toutefois elle est toujours libre.
+A noter que si la planète destination ne possède pas de slots libre, le joueur devra obligatoirement en libérer un.
+
+==Comptoir intergalactique (0人/1000資)==
+Les comptoirs intergaliactique permettent d'acheminer les ressources entre les planètes.
+Ainsi, les nébuleuse et champs d'astéroïdes qui ne peuvent produire de vaisseaux ont tout intéret à disposer d'au moins un comptoir pour pouvoir acheminer leurs ressources vers une planète.
+Chaque route commerciale part d'un comptoir vers un autre, la distance définie le nombre de tour nécéssaire à l'acheminement.
+Chaque comptoir ne sert qu'une seule route.
+Ainsi les comptoirs sont cumulables sur un même corps céleste et permettent d'acheminer vers autant de destinations différentes.
