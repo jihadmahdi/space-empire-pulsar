@@ -1,5 +1,5 @@
 #summary Cahier des charges: Description détaillée: Univers
-===[Index Index]>[cdcIndex Cahier des Charges]>[cdcDescriptionDetaillee Descriptions]===
+===[Index Index]>[cdcIndex Cahier des Charges]>Descriptions===
 
 =Flottes & vaisseaux=
 
@@ -28,8 +28,11 @@ Voici la liste des différents vaisseaux :
 
 ===Sonde (900人/300資)===
 La sonde est un petit vaisseau d'exploration.
-Exempt de tout dispositif d'attaque, il permet en revanche de scanner les zones voisines.
+Exempt de tout dispositif d'attaque, il permet en revanche de scanner les zones voisines dans la limite de sa porté (3Z).
 Il peut être envoyé sur toute zone vide ou planète alliée et y demeurer.
+A son lancement, une zone (vide ou planète) est choisie comme destination, dès qu'elle l'atteind, elle s'y installe et ne pourra plus en bouger.
+La sonde permet de voir les déplacements des flottes se trouvant a proximité (le bout de trajet, sous forme de segment, avec des informations sur la flotte aperçue).
+Cependant si une flotte ennemie vient à occuper la zone où se trouve la sonde, celle-ci est automatiquement détruite, celà peut arriver par hasard si la sonde se trouve sur le chemin d'une flotte, où si la sonde a été repérée par une sonde ennemie.
 {{{
 	Attaque: 0
 	Defense: 10

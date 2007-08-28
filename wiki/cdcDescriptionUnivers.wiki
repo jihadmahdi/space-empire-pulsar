@@ -1,5 +1,5 @@
 #summary Cahier des charges: Description détaillée: Univers
-===[Index Index]>[cdcIndex Cahier des Charges]>[cdcDescriptionDetaillee Descriptions]===
+===[Index Index]>[cdcIndex Cahier des Charges]>Descriptions===
 
 =Univers=
 _"Deux choses sont infinies : l'univers et la bêtise humaine, pour l'univers, je n'en ai pas acquis la certitude absolue." A. Enstein_

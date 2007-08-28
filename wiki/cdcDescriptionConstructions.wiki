@@ -1,5 +1,5 @@
 #summary Cahier des charges: Description détaillée: Univers
-===[Index Index]>[cdcIndex Cahier des Charges]>[cdcDescriptionDetaillee Descriptions]===
+===[Index Index]>[cdcIndex Cahier des Charges]>Descriptions===
 
 =Constructions=
 
