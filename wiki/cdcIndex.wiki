@@ -9,28 +9,28 @@
 	# Description détaillée
 		# [cdcDescriptionUnivers Univers]
 		# [cdcDescriptionCorpsCelestes Corps célestes]
-			Caractéristiques des corps célestes
-			Planètes
-			Nébuleuses
-			Champs d'astéroïdes
-			Vortex
+			* Caractéristiques des corps célestes
+			* Planètes
+			* Nébuleuses
+			* Champs d'astéroïdes
+			* Vortex
 		# [cdcDescriptionRessources Ressources]	
-			Population (人)
-			Ressource carbone (資)
+			* Population (人)
+			* Ressource carbone (資)
 		# [cdcDescriptionConstructions Constructions]
-			Module d'exploitation de ressources
-			Usine de production de vaisseaux
-			Module de défense
-			Module d'administration gouvernementale
-			Comptoir intergalactique
+			* Module d'exploitation de ressources
+			* Usine de production de vaisseaux
+			* Module de défense
+			* Module d'administration gouvernementale
+			* Comptoir intergalactique
 		# [cdcDescriptionFlottes Flottes]
-			Calcul des caractéristiques d'une flotte
-			Type de vaisseaux
-				Sonde
-				Vaisseau gouvernemental
-				Combat léger
-				Combat lourd
-				Combat d'assaut
+			* Calcul des caractéristiques d'une flotte
+			* Type de vaisseaux
+				* Sonde
+				* Vaisseau gouvernemental
+				* Combat léger
+				* Combat lourd
+				* Combat d'assaut
 	# [cdcReglesDeJeu Règles du jeu]
 		# [cdcReglesDebutPartie Début de partie]
 		# [cdcReglesDeplacement Déplacement]
