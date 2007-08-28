@@ -36,8 +36,14 @@ Il peut être envoyé sur toute zone vide ou planète alliée et y demeurer.
 	Vitesse: 1.5 Z/T
 }}}
 
-===Transport===
-*A DEFINIR*
+===Vaisseau gouvernemental (200人/200資)===
+Le vaisseau gouvernemental ne peut être produit qu'une fois et sert à transporter le gouvernement (en fuite, par exemple).
+C'est un vaisseau particulièrement rapide, équipé d'armes légères en cas de besoin.
+{{{
+	Attaque: 10
+	Defense: 20
+	Vitesse: 2.5 Z/T
+}}}
 
 ===Combat léger (500人/1000資)===
 Le vaisseau de combat léger permet de constituer à moindre coût des flottes rapides avec un attaque correcte.

@@ -9,6 +9,7 @@
 	# [cdcDescriptionDetaillee Description détaillée]
 		# [cdcDescriptionUnivers Univers]
 		# [cdcDescriptionCorpsCelestes Corps célestes]
+			# [cdcDescriptionCorpsCelestes#planete Planètes]
 		# [cdcDescriptionRessources Ressources]
 		# [cdcDescriptionConstructions Constructions]
 		# [cdcDescriptionFlottes Flottes]

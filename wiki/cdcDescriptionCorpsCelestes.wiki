@@ -10,6 +10,7 @@ Tout corps celeste est coloré suivant son appartenance: Neutre ou couleur du jo
 
 Il existe différents types de corps célestes dont voici la liste:
 
+<a name="planete"/>
 ==Planète==
 	Les planètes sont les seuls corps célestes offrant les deux types de ressources existantes: population et carbonne.
 	De ce fait, certaines constructions ne sont possibles que sur des planètes.
