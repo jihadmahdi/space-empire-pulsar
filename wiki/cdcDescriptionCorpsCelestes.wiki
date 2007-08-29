@@ -53,7 +53,7 @@ Il existe différents types de corps célestes dont voici la liste:
 	{{{
 		人 par tour: 0
 		人 max: 0
-		資 max: [80K-300K]
+		資 max: [60K-300K]
 		Nb. slots: [4-8]
 		
 		Constructions autorisées:

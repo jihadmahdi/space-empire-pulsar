@@ -35,7 +35,7 @@ La sonde permet de voir les déplacements des flottes se trouvant a proximité (
 Cependant si une flotte ennemie vient à occuper la zone où se trouve la sonde, celle-ci est automatiquement détruite, celà peut arriver par hasard si la sonde se trouve sur le chemin d'une flotte, où si la sonde a été repérée par une sonde ennemie.
 {{{
 	Attaque: 0
-	Defense: 10
+	Defense: 1
 	Vitesse: 1.5 Z/T
 }}}
 

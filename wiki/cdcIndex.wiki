@@ -31,12 +31,18 @@
 				* Combat léger
 				* Combat lourd
 				* Combat d'assaut
-	# [cdcReglesDeJeu Règles du jeu]
+	# Règles du jeu
 		# [cdcReglesDebutPartie Début de partie]
+			* Options de début de partie
+			* Conditions de victoire et de défaite
+			* Rège de calcul du score global d'un joueur
 		# [cdcReglesDeplacement Déplacement]
-		# [cdcReglesRessourcesConstructions Ressources & Constructions]
-		# [cdcReglesCombat Combat]
-		# [cdcReglesGouvHeros Gouvernement & Héros]
+			* Départ & Arrivé
+			* Trajet
+			* Cas particulier des sondes
+		# [cdcReglesCombats Combats]
+		# [cdcReglesGouvHeros Héros]
+	# [cdcReseau Partie en réseau]
 	# [cdcInterface Interface de jeu]
 	
 	[cdcBlog Blog]
