@@ -1,0 +1,61 @@
+#summary Cahier des charges: Description détaillée: Univers
+===[Index Index]>[cdcIndex Cahier des Charges]>Règles du jeu===
+
+=Combats=
+
+Les combats opposent la pluspart du temps une flotte aux forces en présence sur un corps céleste.
+Dans ce cas, il est nécéssaire de représenter la "flotte" équivalente aux forces disponibles sur le corps céleste attaqué.
+
+==Flotte équivalente==
+La flotte équivalente est le regroupement de toutes les forces disponible sur la planète en une même flotte, celà comprend :
+
+Les flottes en stationnement, les vaisseaux en attente dans les usines,  les module de défense et enfin les héros éventuellement présents.
+Chacun de ces éléments dispose des caractéristiques (Attaque, Défense)
+La flotte équivalente a pour caractéristiques la somme des caractéristiques de tout ses éléments.
+
+==Déroulement d'un combat==
+
+E/S: 	FlotteA, FlotteB: flottes en combats
+ALGORITHME Combat(FlotteA, FlotteB)
+	
+	// On calcule le nombre (décimal) minimum de passes qu'il faut pour qu'un des deux assaillant meure.
+	NbPassesGagnant_A <- (FlotteB.Def / FlotteA.Att)
+	NbPassesGagnant_B <- (FlotteA.Def / FlotteB.Att)
+	
+	// Si le nombre de passe est strictement identique des deux cotés, c'est un match nul parfait.
+	SI (NbPassesGagnant_A = NbPassesGagnant_B) ALORS
+		// TODO: Que faire en cas de match nul ?
+	FSI
+	
+	// On obtient le nombre de passes que va durer le combat, et on en déduit le vainqueur, ainsi que le total d'attaques (dégats) que pourront infliger chaque participant.
+	NbPasses <- Min(NbPassesGagnant_A, NbPassesGagnant_B)
+	
+	SI (NbPasses = NbPassesGagnant_A) ALORS
+		Gagnant = FlotteA
+	SINON
+		Gagnant = FlotteB
+	FSI
+	
+	AttaqueTotale_A = NbPasses * FlotteA.Att
+	AttaqueTotale_B = NbPasses * FlotteB.Att
+	
+	FlotteA.EncaisserDegats(AttaqueTotale_B)
+	FlotteB.EncaisserDegats(AttaqueTotale_A)
+		
+	FIN POUR
+	
+FIN ALGORITHME
+
+E:	iDegats: Points de dégats à encaisser.
+ALGORITHME FLOTTE.EncaisserDegats(iDegats)
+
+	// On détermine les points de défense globaux restant
+	DefRestante = Flotte.Def - iDegats
+	
+	ListeElements[] listes_possibles <- GenererListesPossibles(DefRestante)
+	
+	Flotte.liste_elements <- liste_possibles[random]
+	
+	Flotte.MiseAJourCaracs()
+	
+FIN ALGORITHME
