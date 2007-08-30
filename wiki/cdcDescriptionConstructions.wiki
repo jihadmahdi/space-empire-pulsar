@@ -13,7 +13,7 @@ Même si la technologie diffère suivant que l'on se trouve sur une planète, un
 Un module d'extraction 資 occupe un slot et permet de générer 2500 資 par tour.
 Ils sont cumulables tant que le corps céleste dispose de slots libres.
 
-==Usine de production de vaisseaux (0人/0資)==
+==Usine de production de vaisseaux (500人/2000資)==
 Les usines de production de vaisseaux ne sont disponibles que sur les planètes, car elles nécéssitent beaucoup de main d'oeuvres.
 Elles ont deux fonctionnalités distinctes:
 	* La fabrication de nouveaux vaisseaux (moyennant le prix du vaisseau choisi), qui sont alors disponibles dans l'entrepot de l'usine, prêt à être affectés à une flotte.
