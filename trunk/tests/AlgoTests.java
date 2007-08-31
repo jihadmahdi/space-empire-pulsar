@@ -1,9 +1,5 @@
 package tests;
 
-import java.util.AbstractList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Stack;
 import java.util.Vector;
 
 /**
@@ -14,7 +10,7 @@ import java.util.Vector;
 public class AlgoTests {
 
 	/**
-	 * Classe représentant un élément d'une flotte (juste le nom, et le score de def), utilisé pour les tests GenererListesPossibles.
+	 * Classe reprï¿½sentant un ï¿½lï¿½ment d'une flotte (juste le nom, et le score de def), utilisï¿½ pour les tests GenererListesPossibles.
 	 * @author Axan
 	 *
 	 */
@@ -32,11 +28,11 @@ public class AlgoTests {
 		}
 	};
 	
-	/** Liste des éléments de la flotte (test) */
+	/** Liste des ï¿½lï¿½ments de la flotte (test) */
 	private Vector<Element> liste_elements = new Vector<Element>();
 	
 	/**
-	 * Comme GenererListesPossibilites, mais filtre en ne gardant que les possibilitées ayant le moins de "perte" (le reste le plus petit).
+	 * Comme GenererListesPossibilites, mais filtre en ne gardant que les possibilitï¿½es ayant le moins de "perte" (le reste le plus petit).
 	 * @param iDefRestante
 	 * @param iDernierElement
 	 * @param listes_possibles
@@ -48,16 +44,16 @@ public class AlgoTests {
 		// POUR CHAQUE element DE LA liste_elements A PARTIR DE iDernierElement FAIRE
 		for(int i=iDernierElement; i < liste_elements.size(); ++i)
 		{
-			// On récupère l'élément à partir de son index
+			// On rï¿½cupï¿½re l'ï¿½lï¿½ment ï¿½ partir de son index
 			Element e = liste_elements.get(i);
 			
-			// SI l'élément peut être "rachetté", c'est à dire qu'il reste suffisament de Défense à la flotte pour qu'elle considère que l'élément a été sauvé. ALORS
+			// SI l'ï¿½lï¿½ment peut ï¿½tre "rachettï¿½", c'est ï¿½ dire qu'il reste suffisament de Dï¿½fense ï¿½ la flotte pour qu'elle considï¿½re que l'ï¿½lï¿½ment a ï¿½tï¿½ sauvï¿½. ALORS
 			if (e.Def <= iDefRestante)
 			{
-				// On calcule la Défense qu'il resterais à dépenser si l'on "sauve" cet élément
+				// On calcule la Dï¿½fense qu'il resterais ï¿½ dï¿½penser si l'on "sauve" cet ï¿½lï¿½ment
 				int NouvelleDefRestante = (iDefRestante - e.Def);
 				
-				// Si la nouvelle Def est plus petite que le plus petit reste observé, on ajoute l'élément courant et on note.
+				// Si la nouvelle Def est plus petite que le plus petit reste observï¿½, on ajoute l'ï¿½lï¿½ment courant et on note.
 				if (NouvelleDefRestante <= PlusPetitReste)
 				{
 					Vector<Integer> nouvelle_liste = new Vector<Integer>();
@@ -69,19 +65,19 @@ public class AlgoTests {
 					PlusPetitReste = NouvelleDefRestante;
 				}
 				
-				// On prépare une nouvelle liste de listes_possibles, que l'on rempli en apellant la méthode récursivement à partir de l'élément actuel+1
+				// On prï¿½pare une nouvelle liste de listes_possibles, que l'on rempli en apellant la mï¿½thode rï¿½cursivement ï¿½ partir de l'ï¿½lï¿½ment actuel+1
 				Vector<Vector<Integer>> sous_listes_possibles = new Vector<Vector<Integer>>();
-				// On note la PlusPetitePerte (reste) rencontré dans la sous-liste.
+				// On note la PlusPetitePerte (reste) rencontrï¿½ dans la sous-liste.
 				int ppp = GenererListesPossiblesSelect(NouvelleDefRestante, (i+1), sous_listes_possibles, PlusPetitReste);
 
-				// Sinon, c'est qu'on a bien de nouvelles listes PLUS intéressantes, on vire les anciennes et on notes les nouvelles
+				// Sinon, c'est qu'on a bien de nouvelles listes PLUS intï¿½ressantes, on vire les anciennes et on notes les nouvelles
 				if (ppp < PlusPetitReste)
 				{
 					listes_possibles.removeAllElements();
 					PlusPetitReste = ppp;
 				}
 				
-				// On parcours la liste des sous_listes_possibles, que l'on ajoute au listes_possibles, après l'élément courant
+				// On parcours la liste des sous_listes_possibles, que l'on ajoute au listes_possibles, aprï¿½s l'ï¿½lï¿½ment courant
 				for(int j=0; j < sous_listes_possibles.size(); ++j)
 				{
 					Vector<Integer> nouvelle_liste = new Vector<Integer>();
@@ -98,9 +94,9 @@ public class AlgoTests {
 	}
 	
 	/**
-	 * Méthode récursive permettant de dénombrer toutes les combinaisons possible de rachat d'unitée parmis les éléments de la flotte, avec le "porte-monnaie" Défense disponible.
-	 * @param iDefRestante : Déf disponible pour le rachat des élements "rescapés".
-	 * @param iDernierElement : Dernier élément visité dans l'arbre des possibilités
+	 * Mï¿½thode rï¿½cursive permettant de dï¿½nombrer toutes les combinaisons possible de rachat d'unitï¿½e parmis les ï¿½lï¿½ments de la flotte, avec le "porte-monnaie" Dï¿½fense disponible.
+	 * @param iDefRestante : Dï¿½f disponible pour le rachat des ï¿½lements "rescapï¿½s".
+	 * @param iDernierElement : Dernier ï¿½lï¿½ment visitï¿½ dans l'arbre des possibilitï¿½s
 	 * @param listes_possibles : Listes en cours
 	 */
 	private void GenererListesPossibles(int iDefRestante, int iDernierElement, Vector<Vector<Integer>> listes_possibles)
@@ -135,25 +131,25 @@ public class AlgoTests {
 	/*
 	ALGORITHME FLOTTE.GenererListesPossibles(DefRestante, dernier_element, listes_possibles)
 	
-		// On parcours la liste des éléments à partir du dernier déjà vu.
+		// On parcours la liste des ï¿½lï¿½ments ï¿½ partir du dernier dï¿½jï¿½ vu.
 		POUR i ALLANT DE dernier_element A Flotte.liste_elements.taille() FAIRE
 				
-			// On note l'élément courant
+			// On note l'ï¿½lï¿½ment courant
 			Element e <- Flotte.liste_element[i]
 			
-			// Si sa défense peut être "rachettée"
+			// Si sa dï¿½fense peut ï¿½tre "rachettï¿½e"
 			SI (e.Def <= DefRestante) ALORS
 				
-				// On calcule combien il reste de Defense à rachetter
+				// On calcule combien il reste de Defense ï¿½ rachetter
 				NouvelleDefRestante <- (DefRestante - e.Def)
 				
-				// On ajoute à la liste le résultat de la "sous-liste" des possibles
+				// On ajoute ï¿½ la liste le rï¿½sultat de la "sous-liste" des possibles
 				ListeElements[] sous_liste_possibles <- VIDE
 				GenererListesPossibles(NouvelleDefRestante, (i+1), sous_liste_possibles)
 				
 				POUR j ALLANT DE 0 A sous_liste_possibles.taille() FAIRE
 				
-					// On initialise une nouvelle liste d'éléments.
+					// On initialise une nouvelle liste d'ï¿½lï¿½ments.
 					ListeElement nouvelle_liste <- VIDE
 					nouvelle_liste.Ajouter(e)
 					nouvelle_liste.AjouterListe(sous_listes_possibles[j])
@@ -165,7 +161,7 @@ public class AlgoTests {
 				ListeElement nouvelle_liste <- VIDE
 				nouvelle_liste.Ajouter(e)
 				
-				// En dernier élément de la liste, on met le reste.
+				// En dernier ï¿½lï¿½ment de la liste, on met le reste.
 				nouvelle_liste.Ajouter(DefRestante)
 			
 				listes_possibles.Ajouter(nouvelle_liste)
