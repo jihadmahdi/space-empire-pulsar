@@ -20,6 +20,7 @@ Une flotte envoyée vers une destination ne peut être déroutée en chemin, car
 Les voyages se font en ligne droite du point de départ vers la destination.
 Le temps de voyage est estimé en mesurant la distance du trajet et en la comparant a la vitesse de la flotte.
 A chaque tour, la flotte parcours le pourcentage du trajet que sa vitesse lui permet; Toutes les zones traversées a ce moment là sont considérée comme *visitées*.
+Si durant son trajet une flotte en croise une autre, c'est à dire que les deux empruntent la même case en même temps, chacun des joueurs reçoit un rapport sur la flotte ennemir aperçue, mais aucun combat n'est engagé.
 
 ==Cas particulier des Sondes==
 La sonde est la seule unité à pouvoir stationner sur une zone vide.

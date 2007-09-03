@@ -3,9 +3,9 @@
 
 =Corps célestes=
 
-Les corps célestes sont des points stratégiques visibles par tous les joueurs.
+Les corps célestes sont des points stratégiques dont toutes las caractéristiques de début de partie (人/tour, 人 max, 資　max de départ, nombre de slots) sont visibles par tous les joueurs.
 Ils fournissent les ressources nécessaires à la construction des flottes et des batiments.
-Les quantités de ressources associées aux corps celestes sont déterminées aléatoirement en début de partie, et s'épuisent à mesure que le joueur les exploite.
+Les quantités de carbone associées aux corps celestes sont déterminées aléatoirement en début de partie, et s'épuisent à mesure que le joueur les exploite.
 Tout corps celeste est coloré suivant son appartenance: Neutre ou couleur du joueur propriétaire.
 
 ==Caractéristiques==
@@ -22,7 +22,8 @@ Il existe différents types de corps célestes dont voici la liste:
 ==Planète==
 	Les planètes sont les seuls corps célestes offrant les deux types de ressources existantes: population et carbonne.
 	De ce fait, certaines constructions ne sont possibles que sur des planètes.
-	Elles sont un point stratégique important.
+	Elles sont un point stratégique important, même si leur ressources carbone sont très inférieures aux autres corps célestes desquels elles doivent s'approvisionner.
+	Les planètes neutres disposent d'une armée de défense fixé à la génération de l'univers suivant sa taille.
 	{{{
 		人 par tour: [2500-7500]
 		人 max: [50K-150K]
@@ -64,9 +65,7 @@ Il existe différents types de corps célestes dont voici la liste:
 	Les vortex ont une origine encore méconnue. Leur formation est passionnément étudiée par l'ensemble de la communauté des chercheurs.
 	La brillante théorie proposée par Ivanov Pertenchevko décrivant le vortex comme une hypercourbure de l'espace-temps permettant les déplacements au-dela du point critique vitesse lumière a recemment été approuvée par l'expérience après l'envoi de la sonde "Connaissance" qui a été localisée quelques secondes a peine a un point tres éloigné de l'univers connu.
 	
-	===DETAILS A DEFINIR===
-	Note: L'idée que "Avec les vortex, rien n'est sûr, c'est s'en remettre au hasard" me plait bien, mais il faut que leur effet reste suffisament attractif d'un point de vue stratégique pour qu'en définitivent ils aient un réel interêt dans le jeu.
-	
-	====Proposition1====
-		Les vortex seraient des corps célestes qui apparaissent de nulle part, reste un nombre de tour aléatoire à la même zone puis disparaissent à nouveaux pour réaparaitre ailleurs.
-		Lorsqu'au moins 2 vortex sont présent dans l'univers, ils permettent de téléporter tout objet se présentant dans la zone vers un autre vortex déterminé au hasard.
+	Les vortex sont génrés aléatoirement pendant la partie, et restent pour un nombre de tour également tiré au hasard.
+	Un vortex permet à qui l'emprunte de se téléporter automatiquement sur un corps céleste (qu'il soit allié, ennemi ou neutre) tiré au hasard (mais fixe pour chaque vortex).
+	Si un vortex apparait sur le chemin d'une flotte, celle-ci l'emprunte automatiquement lorsqu'elle le croise.
+	Si un vortex choisi pour destination disparait avant que la flotte ne l'atteigne, celle-ci achève son trajet jusqu'à la zone vide, puis repart automatiquement vers sa planète d'origine.

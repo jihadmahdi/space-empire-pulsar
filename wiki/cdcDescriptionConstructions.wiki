@@ -5,6 +5,8 @@
 
 Les constructions se font moyennant 人 et 資 sur des corps célestes disposants de slots libres.
 Chaque construction apporte un effet particulier au corps céleste sur lequel elle est batie.
+Il est permi à tout moment au joueur de détruire des batiments pour libérer des slots.
+En revanche, chaque corps céleste ne peut construire qu'un seul batiment par tour de jeu.
 
 Voici la liste des constructions possibles :
 
@@ -33,7 +35,16 @@ La planète où est établi le module gouvernemental reçoi un bonus de producti
 
 ==Comptoir intergalactique (0人/1000資)==
 Les comptoirs intergaliactique permettent d'acheminer les ressources entre les planètes.
-Ainsi, les nébuleuse et champs d'astéroïdes qui ne peuvent produire de vaisseaux ont tout intéret à disposer d'au moins un comptoir pour pouvoir acheminer leurs ressources vers une planète.
-Chaque route commerciale part d'un comptoir vers un autre, la distance définie le nombre de tour nécéssaire à l'acheminement.
-Chaque comptoir ne sert qu'une seule route.
-Ainsi les comptoirs sont cumulables sur un même corps céleste et permettent d'acheminer vers autant de destinations différentes.
+Ainsi, les nébuleuse et champs d'astéroïdes qui ne peuvent produire de vaisseaux ont tout intéret à disposer d'au moins un comptoir pour pouvoir acheminer leurs ressources vers les planètes qui elles sont plus pauves en carbone.
+Les comptoirs ont deux fonctions pricipales :
+* Ils permettent de construire une route de l'espace, moyennant une prix qui dépend de la distance à couvrir (500資/Z).
+Cette route se fait d'un comptoir à un autre (ceux-ci ne pouvant plus servir à d'autre routes).
+===Routes de l'espace===
+Les routes de l'espace permettent à tout voyageur qui l'emprunte de substituer la vitesse de la route à sa propre vitesse. Celle-ci est très avantageuse pour la pluspart des vaisseaux.
+
+* Les comptoirs permettent également de procéder à des transferts réguliers de ressource carbone entre comptoirs.
+Le voyage est assuré par un transporteur qui a sa propre vitesse achemine la quantité de carbone définie par le joueur (dans les limites disponibles au moment du départ).
+L'envoi prend le temps d'un allé simple, la planète destination encaisse le carbone reçu et le transporteur repart sur sa planète d'origine.
+Il met autant de temps pour y rentrer, puis repart automatiquement s'il a une commande en attente.
+Le joueur peut modifier la "commande" à tout moment, mais celle-ci n'est prise en compte que lorsque le transporteur est disponible.
+Les routes de l'espace et les échanges de ressource sont dissociés et peuvent concernet des destination différentes.

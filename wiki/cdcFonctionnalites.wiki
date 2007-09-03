@@ -8,6 +8,7 @@ Cette page se propose de faire la liste des fonctionnalités de Space Empire Pul
 ==Must (Fonctionnalités obligatoire)==
 	* Implémentation des règles étendues telles que décrite dans le CdC.
 	* Architecture Client/Serveur (SGS).
+	* Support Multilangue simple (fichier *.lng).
 ==Should (Fonctionnalités qui devrait être implémentées)==
 	* Interface comprenant une partie vue 3D (jME).
 ==Can (Fonctionnalités qui pourrait être implémentées)==

@@ -17,6 +17,141 @@ La flotte équivalente a pour caractéristiques la somme des caractéristiques d
 
 E/S: 	FlotteA, FlotteB: flottes en combats
 ALGORITHME Combat(FlotteA, FlotteB)
+
+	// On récupère les flottes équivalentes de chaque classe.
+	POUR CHAQUE Flottes FAIRE
+		POUR CHAQUE Classes FAIRE
+			Donnees[Flotte][Classe] <- RecupererCaracsFlotteEquivalante(Flotte,Classe)
+		FPOUR
+	FPOUR
+	
+	FAIRE
+	
+		<On remet à zéro les données du tour courant>
+			POUR CHAQUE Flottes FAIRE
+				POUR CHAQUE Classes FAIRE
+					FlotteEquivalenteCourante <- Donnees[Flotte][Classe]
+					FlotteEquivalenteCourante.TempsAVivre <- +INFINI
+					FlotteEquivalenteCourante.MeilleureCible <- NULL
+					FlotteEquivalenteCourante.DegatsAEncaisser <- 0
+				FPOUR
+			FPOUR
+		</On a remit à zéro les données du tour courant>
+		
+		<On détermine qui meurs en premier et en combien de temps>
+			POUR CHAQUE Flottes FAIRE
+				POUR CHAQUE Classes FAIRE
+					FlotteEquivalenteCourante <- Donnees[Flotte][Classe]
+					SI (FlotteEquivalenteCourante.EstMorte()) ALORS SUIVANT
+		
+					<On détermine la meilleure cible, c'est celle la plus rapide à tuer (et suivant les rapports de forces, pas forcément la TdT)>
+						POUR CHAQUE Classes FAIRE
+							CiblePotentielle <- Donnees[Flotte.Adversaire][Classe]
+							SI (CiblePotentielle.EstMorte()) ALORS SUIVANT
+							
+							<On calcule le temps pour tuer la cible considérée>
+								
+								<On détermine le statut de la flotte courante par rapport à la cible considérée>
+									// TODO, on se débrouillera à l'implémentation
+									RETOURNE Statut
+								</On détermine le statut de la flotte courante par rapport à la cible considérée>
+								
+								SELON (Statut) FAIRE
+									CAS "BN":
+										TempsTuerCible <- CiblePotentielle.Defense / (FlotteEquivalenteCourante.Attaque + FlotteEquivalenteCourante.Arme)
+									CAS "EGO":
+										TempsTuerCible <- CiblePotentielle.Defense / FlotteEquivalenteCourante.Attaque
+									CAS "TDT":
+										TempsTuerCible <- CiblePotentielle.Defense / Max(0,(FlotteEquivalenteCourante.Attaque - CiblePotentielle.Armure))
+								FSELON
+								
+								RETOURNE TempsTuerCible
+							</On calcule le temps pour tuer la cible considérée>
+							
+							SI (TempsTuerCible < TempsMeilleureCible) ALORS
+								MeilleureCible <- CiblePotentielle
+								TempsMeilleureCible <- TempsTuerCible
+							FSI
+						FPOUR
+						
+						MEMORISE FlotteEquivalenteCourante.MeilleureCible <- MeilleureCible
+						// On note le temps pour cumuler dans le cas ou la première victime soit choisie par plusieurs assaillant, celà réduira encore son temps.
+						MEMORISE MeilleureCible.TempsAVivre <- Min(TempsMeilleureCible, (MeilleureCible.TempsAVivre - TempsMeilleureCible))
+					</On détermine la meilleure cible, c'est celle la plus rapide à tuer (et suivant les rapports de forces, pas forcément la TdT)>
+		
+				FPOUR
+			FPOUR
+			
+			TempsPremiereVictime <- +INFINI
+			POUR CHAQUE Flottes FAIRE
+				POUR CHAQUE Classes FAIRE
+					FlotteEquivalenteCourante <- Donnees[Flotte][Classe]
+					SI (FlotteEquivalenteCourante.TempsAVivre < TempsPremiereVictime) ALORS
+						PremiereVictime <- FlotteEquivalenteCourante
+						TempsPremiereVictime <- FlotteEquivalenteCourante.TempsAVivre
+					FSI
+				FPOUR
+			FPOUR
+					
+			RETOURNE PremiereVictime, TempsPremiereVictime
+		</On a fini de déterminer qui meurs en premier et en combien de temps>
+			
+		<On joue les dégats reçu par chacun durant ce laps de temps (y compris ceux donné par la victime), c'est à dire qu'on note pour chacun la def restante>
+			POUR CHAQUE Flottes FAIRE
+				POUR CHAQUE Classes FAIRE
+					FlotteEquivalenteCourante <- Donnees[Flotte][Classe]
+					Cible <- FlotteEquivalenteCourante.MeilleureCible
+					
+					<On calcule l'attaque qu'il est permis de jouer sur la cible>
+						<On détermine le statut de la flotte courante par rapport à la cible considérée>
+							// TODO, on se débrouillera à l'implémentation
+							RETOURNE Statut
+						</On détermine le statut de la flotte courante par rapport à la cible considérée>
+								
+						SELON (Statut) FAIRE
+							CAS "BN":
+								Attaque <- FlotteEquivalenteCourante.Attaque + FlotteEquivalenteCourante.Arme
+							CAS "EGO":
+								Attaque <- FlotteEquivalenteCourante.Attaque
+							CAS "TDT":
+								Attaque <- Max(0,(FlotteEquivalenteCourante.Attaque - CiblePotentielle.Armure))
+						FSELON
+						
+						RETOURNE Attaque
+					</On calcule l'attaque qu'il est permis de jouer pour le temps donné>
+					
+					// On calcul l'attaque en fonction du temps joué
+					Attaque <- Attaque * TempsPremiereVictime
+					
+					// On la soustrait à la défense de la cible
+					Cible.DegatsAEncaisser <- Cible.DegatsAEncaisser + Attaque
+					
+				FPOUR
+			FPOUR
+			
+			POUR CHAQUE Flottes FAIRE
+				POUR CHAQUE Classes FAIRE
+					FlotteEquivalenteCourante <- Donnees[Flotte][Classe]
+					FlotteEquivalenteCourante.EncaisserDegats(FlotteEquivalenteCourante.DegatsAEncaisser)
+				FPOUR
+			FPOUR
+		</On a fini de jouer les dégats reçu par chacun durant ce laps de temps (y compris ceux donné par la victime), c'est à dire qu'on note pour chacun la def restante>
+		
+		<On vérifie si les deux flottes sont survivantes>
+			bCombatFini <- FlotteA.EstMorte() OU FlotteB.EstMorte()
+			RETOURNE bCombatFini
+		</On a fini de vérifier si les deux flottes sont survivantes>
+	
+	TANTQUE(!bCombatFini)
+	
+	// On actualise les vaisseaux de la flotte survivante, en lançant le rachat pour chaque classe.
+	
+FIN ALGORITHME
+		
+
+
+E/S: 	FlotteA, FlotteB: flottes en combats
+ALGORITHME Combat(FlotteA, FlotteB)
 	
 	// On calcule le nombre (décimal) minimum de passes qu'il faut pour qu'un des deux assaillant meure.
 	NbPassesGagnant_A <- (FlotteB.Def / FlotteA.Att)

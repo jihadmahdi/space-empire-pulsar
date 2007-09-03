@@ -7,11 +7,33 @@ Une flotte est un ensemble de vaisseaux, les caractéristiques d'une flotte dép
 Une flotte se créé sur une planète avec les vaisseaux disponibles sur celle-ci.
 En stationnment sur une planète, une flotte peut être dissociée et les vaisseaux ré-affectés à de nouvelles flottes.
 
+==Classesd de vaisseaux==
+Les vaisseaux sont rangés en 3 classes: Chasseurs, Destroyers, Artillerie.
+===Chasseurs===
+Les chasseurs sont des vaisseaux rapides mais peu résistants, spécialisé dans la destruction des vaisseaux d'artillerie.
+En combat ils ont pour mission d'atteindre au plus vite l'artillerie ennemi et de la décimer, celle-ci étant particulièrement vulnérable en combat rapproché.
+Pour ce faire ils doivent cependant traverser la ligne des destroyers ennemi dont les tirs sont puissants.
+
+===Destroyers===
+Les destroyers sont des vaisseaux blindés et possédant une énorme puissance de feu à courte distance.
+En combat ils ont donc pour mission de former une ligne de défense devant l'artillerie, et d'éliminer le plus de chasseurs ennemi possible.
+Cependant ils sont les cibles de choix de l'artillerie ennemi, seule capable de percer efficacement leur blindage.
+
+===Artillerie===
+Les vaisseaux d'artillerie sont de lourds vaisseaux disposant de systèmes de visés longue porté et de lances missiles puissants.
+En combat ils ont pour mission d'éliminer le plus de Destroyer ennemi possible.
+Cependant ils sont eux même tributaire du nombre de destroyer allié qui les protège des chasseurs ennemis contre lesquels ils ne peuvent rien.
+
 ==Calcul des caractéristiques d'une flotte==
+Une flotte qui contient des vaisseaux représentant des 3 classes est modélisé par trois flottes équivalente de chaque classe.
+Pour les déplacement, la Vitesse de la flotte est la vitesse du vaisseau le plus lent.
+
+Flotte Equivalente de Classe
 {{{
-	Attaque = Somme Attaque de tous les vaisseaux
-	Défense = Somme Defense de tous les vaisseaux
-	Vitesse = Vitesse la plus faible de tous les vaisseaux
+	Attaque = Somme Attaque de tous les vaisseaux de la classe + Bonus héro éventuel
+	Défense = Somme Defense de tous les vaisseaux de la classe + Bonus héro éventuel
+	Arme = Somme des bonus d'arme de tous les vaisseaux de la classe
+	Armure = Somme des bonus d'armure de tous les vaisseaux de la classe
 }}}
 
 ==Calcul de la valeur d'un vaisseau==
@@ -21,7 +43,7 @@ Soit 資 le coût en ressource (carbonne).
 Soit k une constante permettant de changer l'échèlle de mesure, car on souhaite parler de ressource en milliers, mais se limiter à des nombres a deux chiffres pour les caractéristiques.
 k=60
 
-2x人 + 資 = k x (Attaque + Défense + 5*Vitesse)
+2x人 + 資 = k x (Attaque + Arme + Défense + Armure + 5*Vitesse)
 
 
 Voici la liste des différents vaisseaux :
@@ -47,8 +69,19 @@ C'est un vaisseau particulièrement rapide, équipé d'armes légères en cas de
 	Defense: 20
 	Vitesse: 2.5 Z/T
 }}}
+_Le vaisseau gouvernemental devrait avoir suffisament d'attaque pour abatre deux vaisseaux léger_
 
-===Combat léger (500人/1000資)===
+===Vaisseaux léger (500人/1000資)===
+
+Chasseurs légers
+{{{
+	Attaque: 20
+
+===Vaisseaux moyen===
+
+
+===Vaisseaux lourds===
+
 Le vaisseau de combat léger permet de constituer à moindre coût des flottes rapides avec un attaque correcte.
 Ils sont en revanche peu résistants.
 {{{
