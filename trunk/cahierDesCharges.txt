@@ -185,41 +185,40 @@ Si vous sélectionné une flotte vous pouvez voir en plus de la V les temps de p
 
 =============================
 
-* Tous les corps c�lestes et leur caract�ristiques de base (pop/tour, pop max, carbonne max de d�part, nb de slots) sont visibles par tout les joueurs.
-* L'appartenance du corps c�leste � un joueur est visibles par tous, par une couleur distincte.
-* Plan�tes neutres avec une arm�e de base fix� � la g�n�ration de l'univers (suivant la taille de la plan�te).
-* Lors d'un combat les h�ros sont sauv�s en priorit�, ce qui implique que m�me les h�ros de niveau 1 doivent �tre interessant.
-* Le h�ro a un bonus d'attaque et de d�fense (d�pendant de son niveau), mais il n'a pas de vitesse propre, il peut d�fendre une plan�te, ou joindre une flotte.
-* En cas de croisement de flottes, information donn� aux joueurs mais aucun combat engag�.
+x Tous les corps c�lestes et leur caract�ristiques de base (pop/tour, pop max, carbonne max de d�part, nb de slots) sont visibles par tout les joueurs.
+x L'appartenance du corps c�leste � un joueur est visibles par tous, par une couleur distincte.
+x Plan�tes neutres avec une arm�e de base fix� � la g�n�ration de l'univers (suivant la taille de la plan�te).
+x En cas de croisement de flottes, information donn� aux joueurs mais aucun combat engag�.
 
 * Outils d'interface : R�gles de mesure de distance
 * Multijoueur: chat � la cr�ation du jeu, chat durant le jeu
-* Le joueur peux d�truire manuellement ses batiments.
+x Le joueur peux d�truire manuellement ses batiments.
 
-* Vortex g�n�r� a une fr�quence al�atoire, � une zone al�atoire (libre), pour un nombre de tour al�atoire.
+x Vortex g�n�r� a une fr�quence al�atoire, � une zone al�atoire (libre), pour un nombre de tour al�atoire.
 Un vortex permet a qui l'emprunte de se t�l�porter automatiquement sur un corps c�leste (alli�, ennemi ou neutre) tir� au hasard (toujours le m�me).
 Si un vortex apparait sur le chemin d'une flotte, celle-ci l'emprunte automatiquement lorsqu'elle le croise.
 Si un vortex choisi pour destination disparait avant que la flotte y arrive, celle-ci ach�ve son trajet jusqu'a la zone vide, puis repart automatiquement vers sa plan�te d'origine.
 
-* La ressource carbone sur les plan�tes devraient tr�s inf�rieure a celle disponibles sur les autres corps c�lestes.
+x La ressource carbone sur les plan�tes devraient tr�s inf�rieure a celle disponibles sur les autres corps c�lestes.
 
-* Chaque corps c�leste n'a droit qu'a 1 construction (batiment) par tour.
+x Chaque corps c�leste n'a droit qu'a 1 construction (batiment) par tour.
 
-* Les comptoirs ont deux fonctionnalit�s :
-- Ils permettent de construire une route (moyennant finance, 500 Z/T) entre deux comptoirs (le comptoir qui fabrique paie, le joueur a donc le choix).
+x Les comptoirs ont deux fonctionnalit�s :
+- Ils permettent de construire une route (moyennant finance, 500 carbone/Z) entre deux comptoirs (le comptoir qui fabrique paie, le joueur a donc le choix).
 Une route permet a tout voyageur l'empruntant de b�n�ficier d'une vitesse fixe (supp�rieure � la normale).
 - Ils permettent ensuite d'�tablir des �changes de carbone entre deux comptoirs, assur� par des transporteurs ayant une vitesse propre.
 Les transporteurs acheminent la quantit� de carbone d�finie par le joueur (dans les limites du disponible au moment du d�part).
 Le voyage prend le temps d'un all� simple (� la vitesse du transporteur), et un nouveau transporteur est alors automatiquement lanc� de la plan�te source.
-
 Ces deux fonctionnalit�s sont ind�pendant (destination diff�rentes possibles).
 
-* Le vaisseau gouvernemental devrait avoir suffisament d'attaque pour abattre 2 vaisseaux l�ger.
-
-* Pour que les gros vaisseaux aient un interet, il faut qu'ils aient un meilleur rapport qualit�/prix.
+* Héros: offrent un bonus PV et Attaque, et montent de niveaux, 1 héro par joueur. le bonus PV n'est pas pris en compte pour le rachat, le héro est gratuit au rachat.
 
 ==================
 COMBATS
+
+* Lors d'un combat les h�ros sont sauv�s en priorit�, ce qui implique que m�me les h�ros de niveau 1 doivent �tre interessant.
+* Le h�ro a un bonus d'attaque et de d�fense (d�pendant de son niveau), mais il n'a pas de vitesse propre, il peut d�fendre une plan�te, ou joindre une flotte.
+
 Résolution des combats inspiré sur Civ.
 Unités classés en "classes" TANK, DD, DISTANCE
 
