@@ -1,215 +1,131 @@
 package tests;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringBufferInputStream;
+import java.io.StringReader;
+import java.util.StringTokenizer;
 import java.util.Vector;
+
+import tests.Vaisseau.eClasse;
 
 /**
  * Classe servant a des tests d'algos divers, rapides.
+ * 
  * @author Pierre ESCALLIER
- *
+ * 
  */
-public class AlgoTests {
+public class AlgoTests
+{
+	public static final String LINE_SEPARATOR = "\r\n";
+	private static Vector<Vaisseau> magasin_vaisseaux = new Vector<Vaisseau>();
+	private static BufferedReader clavier = new BufferedReader(new InputStreamReader(System.in));
 
-	/**
-	 * Classe repr�sentant un �l�ment d'une flotte (juste le nom, et le score de def), utilis� pour les tests GenererListesPossibles.
-	 * @author Axan
-	 *
-	 */
-	static public class Element
+	private static Vaisseau SaisirVaisseau()
 	{
-		public int Def=0;
-		public String Nom=null;
-		
-		public Element() {}
-		
-		public Element(String sNom, int iDef)
+		for(int i=0; i<magasin_vaisseaux.size(); ++i)
 		{
-			Nom=sNom;
-			Def = iDef;
+			System.out.println((i+1)+") "+magasin_vaisseaux.get(i));
 		}
-	};
-	
-	/** Liste des �l�ments de la flotte (test) */
-	private Vector<Element> liste_elements = new Vector<Element>();
-	
-	/**
-	 * Comme GenererListesPossibilites, mais filtre en ne gardant que les possibilit�es ayant le moins de "perte" (le reste le plus petit).
-	 * @param iDefRestante
-	 * @param iDernierElement
-	 * @param listes_possibles
-	 * @param iPlusPetitReste
-	 * @return Plus petit reste
-	 */
-	private int GenererListesPossiblesSelect(int iDefRestante, int iDernierElement, Vector<Vector<Integer>> listes_possibles, int PlusPetitReste)
-	{
-		// POUR CHAQUE element DE LA liste_elements A PARTIR DE iDernierElement FAIRE
-		for(int i=iDernierElement; i < liste_elements.size(); ++i)
+		System.out.println("0) Finir");
+		
+		int choix = 0;
+		do
 		{
-			// On r�cup�re l'�l�ment � partir de son index
-			Element e = liste_elements.get(i);
-			
-			// SI l'�l�ment peut �tre "rachett�", c'est � dire qu'il reste suffisament de D�fense � la flotte pour qu'elle consid�re que l'�l�ment a �t� sauv�. ALORS
-			if (e.Def <= iDefRestante)
+			try
 			{
-				// On calcule la D�fense qu'il resterais � d�penser si l'on "sauve" cet �l�ment
-				int NouvelleDefRestante = (iDefRestante - e.Def);
-				
-				// Si la nouvelle Def est plus petite que le plus petit reste observ�, on ajoute l'�l�ment courant et on note.
-				if (NouvelleDefRestante <= PlusPetitReste)
-				{
-					Vector<Integer> nouvelle_liste = new Vector<Integer>();
-					nouvelle_liste.add(i);
-					nouvelle_liste.add(NouvelleDefRestante);
-					
-					listes_possibles.add(nouvelle_liste);
-					
-					PlusPetitReste = NouvelleDefRestante;
-				}
-				
-				// On pr�pare une nouvelle liste de listes_possibles, que l'on rempli en apellant la m�thode r�cursivement � partir de l'�l�ment actuel+1
-				Vector<Vector<Integer>> sous_listes_possibles = new Vector<Vector<Integer>>();
-				// On note la PlusPetitePerte (reste) rencontr� dans la sous-liste.
-				int ppp = GenererListesPossiblesSelect(NouvelleDefRestante, (i+1), sous_listes_possibles, PlusPetitReste);
-
-				// Sinon, c'est qu'on a bien de nouvelles listes PLUS int�ressantes, on vire les anciennes et on notes les nouvelles
-				if (ppp < PlusPetitReste)
-				{
-					listes_possibles.removeAllElements();
-					PlusPetitReste = ppp;
-				}
-				
-				// On parcours la liste des sous_listes_possibles, que l'on ajoute au listes_possibles, apr�s l'�l�ment courant
-				for(int j=0; j < sous_listes_possibles.size(); ++j)
-				{
-					Vector<Integer> nouvelle_liste = new Vector<Integer>();
-					nouvelle_liste.add(i);
-					nouvelle_liste.addAll(sous_listes_possibles.get(j));
-					
-					listes_possibles.add(nouvelle_liste);
-				}
+				choix = Integer.valueOf(clavier.readLine());
 			}
-		// FIN POUR
-		}
+			catch(Exception e)
+			{
+				System.out.println("Erreur de saisie");
+				choix = -1;
+			}
+		}while(choix < 0);
 		
-		return PlusPetitReste;
+		if (choix == 0) return null;
+		return magasin_vaisseaux.get(choix-1);
 	}
 	
-	/**
-	 * M�thode r�cursive permettant de d�nombrer toutes les combinaisons possible de rachat d'unit�e parmis les �l�ments de la flotte, avec le "porte-monnaie" D�fense disponible.
-	 * @param iDefRestante : D�f disponible pour le rachat des �lements "rescap�s".
-	 * @param iDernierElement : Dernier �l�ment visit� dans l'arbre des possibilit�s
-	 * @param listes_possibles : Listes en cours
-	 */
-	private void GenererListesPossibles(int iDefRestante, int iDernierElement, Vector<Vector<Integer>> listes_possibles)
+	private static Flotte SaisirFlotte(String sNomFlotte)
 	{
-		for(int i=iDernierElement; i < liste_elements.size(); ++i)
+		Flotte flotte = new Flotte(sNomFlotte);
+		Vaisseau vaisseau = null;
+		int quantite = 0;
+		do
 		{
-			Element e = liste_elements.get(i);
+			System.out.println("Ajouter vaisseaux :");
+			vaisseau = SaisirVaisseau();
+			if (vaisseau == null) continue;
 			
-			if (e.Def <= iDefRestante)
+			do
 			{
-				int NouvelleDefRestante = (iDefRestante - e.Def);
-				
-				Vector<Vector<Integer>> sous_liste_possibles = new Vector<Vector<Integer>>();
-				GenererListesPossibles(NouvelleDefRestante, (i+1), sous_liste_possibles);
-				
-				for(int j=0; j < sous_liste_possibles.size(); ++j)
+				System.out.print("Quantité (0 pour annuler): ");
+				try
 				{
-					Vector<Integer> nouvelle_liste = new Vector<Integer>();
-					nouvelle_liste.add(i);
-					nouvelle_liste.addAll(sous_liste_possibles.get(j));
-					
-					listes_possibles.add(nouvelle_liste);
+					quantite = Integer.valueOf(clavier.readLine());
 				}
-				
-				Vector<Integer> nouvelle_liste = new Vector<Integer>();
-				nouvelle_liste.add(i);
-				nouvelle_liste.add(NouvelleDefRestante);
-				
-				listes_possibles.add(nouvelle_liste);
-			}
-		}
-	/*
-	ALGORITHME FLOTTE.GenererListesPossibles(DefRestante, dernier_element, listes_possibles)
-	
-		// On parcours la liste des �l�ments � partir du dernier d�j� vu.
-		POUR i ALLANT DE dernier_element A Flotte.liste_elements.taille() FAIRE
-				
-			// On note l'�l�ment courant
-			Element e <- Flotte.liste_element[i]
+				catch(Exception e)
+				{
+					quantite = -1;
+				}
+			}while(quantite < 0);
 			
-			// Si sa d�fense peut �tre "rachett�e"
-			SI (e.Def <= DefRestante) ALORS
-				
-				// On calcule combien il reste de Defense � rachetter
-				NouvelleDefRestante <- (DefRestante - e.Def)
-				
-				// On ajoute � la liste le r�sultat de la "sous-liste" des possibles
-				ListeElements[] sous_liste_possibles <- VIDE
-				GenererListesPossibles(NouvelleDefRestante, (i+1), sous_liste_possibles)
-				
-				POUR j ALLANT DE 0 A sous_liste_possibles.taille() FAIRE
-				
-					// On initialise une nouvelle liste d'�l�ments.
-					ListeElement nouvelle_liste <- VIDE
-					nouvelle_liste.Ajouter(e)
-					nouvelle_liste.AjouterListe(sous_listes_possibles[j])
-					
-					listes_possibles.Ajouter(nouvelle_liste)
-				
-				FIN POUR
-				
-				ListeElement nouvelle_liste <- VIDE
-				nouvelle_liste.Ajouter(e)
-				
-				// En dernier �l�ment de la liste, on met le reste.
-				nouvelle_liste.Ajouter(DefRestante)
+			flotte.ajouterVaisseau(vaisseau, quantite);
+			System.out.println(flotte);
 			
-				listes_possibles.Ajouter(nouvelle_liste)
-			FSI
+		}while((vaisseau != null) && (quantite >= 0));
 		
-		FIN POUR
-
-	FIN ALGORITHME
-*/
-	}
-	
-	private static void AffListesPossible(Vector<Vector<Integer>> listes_possibles, AlgoTests flotte)
-	{
-		for(int i=0; i<listes_possibles.size(); ++i)
-		{
-			System.out.print("[");
-			for(int j=0; j<(listes_possibles.get(i).size()-1); ++j)
-			{
-				if (j>0) System.out.print(", ");
-				System.out.print(flotte.liste_elements.get(listes_possibles.get(i).get(j)).Nom);
-			}
-			System.out.print("]");
-			System.out.println(" "+listes_possibles.get(i).get(listes_possibles.get(i).size()-1));
-		}
+		return flotte;
 	}
 	
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-		AlgoTests flotte = new AlgoTests();
-		flotte.liste_elements.add(new Element("A",4));
-		flotte.liste_elements.add(new Element("B",3));
-		flotte.liste_elements.add(new Element("C",9));
-		flotte.liste_elements.add(new Element("D",5));
-		flotte.liste_elements.add(new Element("E",7));
-		flotte.liste_elements.add(new Element("F",4));
-		flotte.liste_elements.add(new Element("G",2));
+	public static void main(String[] args)
+	{
+		System.out.println("Test Algo de Combat");
 		
-		Vector<Vector<Integer>> listes_possibles = new Vector<Vector<Integer>>();
-		flotte.GenererListesPossibles(10, 0, listes_possibles);
-		AffListesPossible(listes_possibles, flotte);
+		int Def = 100, Att = 20, Wp = 40, Ar = 20;
 		
-		System.out.println("SELECTION");
-		listes_possibles.removeAllElements();
-		flotte.GenererListesPossiblesSelect(10, 0, listes_possibles, 10);
-		AffListesPossible(listes_possibles, flotte);
+		magasin_vaisseaux.add(new Vaisseau("DD Leger", Def, Att, eClasse.DD, Wp, Ar));
+		magasin_vaisseaux.add(new Vaisseau("TANK Leger", Def, Att, eClasse.TANK, Wp, Ar));
+		magasin_vaisseaux.add(new Vaisseau("DIST Leger", Def, Att, eClasse.DIST, Wp, Ar));
+		magasin_vaisseaux.add(new Vaisseau("TANK Leger Double", 40, 40, eClasse.TANK, 20, 20));
+		
+		// A(2DD, 1T) B(1DD, 2T)
+		//clavier = new BufferedReader(new StringReader("1\n2\n2\n1\n0\n1\n1\n2\n2\n0\n"));
+		
+		/*
+		String ligne=null;
+		do
+		{
+			try
+			{
+				ligne = clavier.readLine();
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace();
+			}
+			System.out.println("nouvelle ligne: \""+ligne+"\"");
+		}while(ligne != null);
+		
+		if (ligne == null) return;
+		*/
+		
+		System.out.println("Composez la flotte A");
+		Flotte flotteA = SaisirFlotte("A");
+		
+		System.out.println("Composez la flotte B");
+		Flotte flotteB = SaisirFlotte("B");
+		
+		System.out.println("Lancement du combat..");
+		Flotte vainqueur = Flotte.JouerCombat(flotteA, flotteB);
+		
+		System.out.println("Vainqueur: ");
+		System.out.println(vainqueur);
 	}
 
 }
