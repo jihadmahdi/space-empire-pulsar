@@ -94,7 +94,11 @@ public class Flotte
 					}
 						
 					flotteEquCourante.setMeilleureCible(MeilleureCible);
-					MeilleureCible.ajouterAttaque(AttaqueMeilleureCible);
+					if (MeilleureCible != null)
+					{
+						// La meilleure cible est nulle (aucune cible) dans le cas où tous les ennemis sont suffisament blindé pour n'encaisser aucun dégats.
+						MeilleureCible.ajouterAttaque(AttaqueMeilleureCible);
+					}
 				}
 			}
 			
@@ -164,7 +168,7 @@ public class Flotte
 	 * @param classe
 	 * @return
 	 */
-	private FlotteEquivalente RecupererFlotteEquivalente(eClasse classe)
+	public FlotteEquivalente RecupererFlotteEquivalente(eClasse classe)
 	{
 		return m_FlottesEquivalentes.get(classe.ordinal());
 	}
@@ -188,5 +192,10 @@ public class Flotte
 		}
 		sb.append("</Flotte "+m_sNom+">"+AlgoTests.LINE_SEPARATOR);
 		return sb.toString();
+	}
+
+	public String getM_sNom()
+	{
+		return m_sNom;
 	}
 }

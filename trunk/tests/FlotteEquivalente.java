@@ -3,58 +3,79 @@
  */
 package tests;
 
+import java.util.Iterator;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.Vector;
+import java.util.Map.Entry;
 
 import tests.Vaisseau.eClasse;
 
 /**
  * @author Axan
- *
+ * 
  */
 public class FlotteEquivalente
 {
-	private Vector<Vaisseau> m_liste_vaisseaux = new Vector<Vaisseau>();
-	private eClasse m_Classe;
-	private int m_Defense = 0;
-	private int m_Attaque = 0;
-	private int m_Arme = 0;
-	private int m_Armure = 0;
-	
-	/** Attributs utiles lors d'un combat */
-	private int m_DegatsAEncaisser = 0;
-	private int m_totalAttaques = 0;
-	private FlotteEquivalente m_MeilleureCible = null;
+	private TreeMap<Vaisseau, Integer>	m_liste_vaisseaux	= new TreeMap<Vaisseau, Integer>();
 
+	private eClasse							m_Classe;
+
+	private int								m_Defense			= 0;
+
+	private int								m_Attaque			= 0;
+
+	private int								m_Arme				= 0;
+
+	private int								m_Armure			= 0;
+
+	/** Attributs utiles lors d'un combat */
+	private int								m_DegatsAEncaisser	= 0;
+
+	private int								m_totalAttaques		= 0;
+
+	private FlotteEquivalente				m_MeilleureCible	= null;
+
+	public int getNbVaisseau(Vaisseau v)
+	{
+		if (!m_liste_vaisseaux.containsKey(v)) return 0;
+		return m_liste_vaisseaux.get(v);
+	}
+	
 	public FlotteEquivalente(eClasse classe)
 	{
 		m_Classe = classe;
-		m_liste_vaisseaux.removeAllElements();
+		m_liste_vaisseaux.clear();
 		refreshCaracs();
 	}
-	
+
 	public void ajouterVaisseaux(Vaisseau i_ModeleVaisseau, int i_Quantite)
 	{
-		for(int i=0; i<i_Quantite; ++i)
+		int deja_present = 0;
+		if (m_liste_vaisseaux.containsKey(i_ModeleVaisseau))
 		{
-			m_liste_vaisseaux.add(i_ModeleVaisseau.clone());
+			deja_present = m_liste_vaisseaux.get(i_ModeleVaisseau);
 		}
+
+		m_liste_vaisseaux.put(i_ModeleVaisseau, deja_present + i_Quantite);
+
 		refreshCaracs();
 	}
-	
+
 	public String toString()
 	{
 		StringBuffer sb = new StringBuffer();
-		sb.append("<Flotte Equivalente "+m_Classe.toString()+">"+AlgoTests.LINE_SEPARATOR);
-		for(int i=0; i<m_liste_vaisseaux.size(); ++i)
+		sb.append("<Flotte Equivalente " + m_Classe.toString() + ">" + AlgoTests.LINE_SEPARATOR);
+		Iterator<Entry<Vaisseau, Integer>> it = m_liste_vaisseaux.entrySet().iterator();
+		while (it.hasNext())
 		{
-			sb.append("    "+m_liste_vaisseaux.get(i).toString()+AlgoTests.LINE_SEPARATOR);
+			Entry<Vaisseau, Integer> e = it.next();
+			sb.append("    " + e.getValue() + " * " + e.getKey().toString() + AlgoTests.LINE_SEPARATOR);
 		}
-		sb.append(AlgoTests.LINE_SEPARATOR);
-		
+
 		return sb.toString();
 	}
-	
+
 	/**
 	 * @param object
 	 */
@@ -68,7 +89,7 @@ public class FlotteEquivalente
 	 */
 	public boolean estMorte()
 	{
-		return (m_liste_vaisseaux.size() <= 0);
+		return (m_Defense <= 0);
 	}
 
 	/**
@@ -85,17 +106,27 @@ public class FlotteEquivalente
 		m_Attaque = 0;
 		m_Arme = 0;
 		m_Armure = 0;
-		
-		for(int i=0; i < m_liste_vaisseaux.size(); ++i)
+
+		Iterator<Entry<Vaisseau, Integer>> it = m_liste_vaisseaux.entrySet().iterator();
+		while (it.hasNext())
 		{
-			Vaisseau vaisseau = m_liste_vaisseaux.get(i);
-			m_Defense += vaisseau.Defense;
-			m_Attaque += vaisseau.Attaque;
-			m_Arme += vaisseau.Arme;
-			m_Armure += vaisseau.Armure;
+			Entry<Vaisseau, Integer> e = it.next();
+			Vaisseau v = e.getKey();
+			int quantite = e.getValue();
+
+			if (quantite <= 0)
+			{
+				it.remove();
+				continue;
+			}
+
+			m_Defense += quantite * v.Defense;
+			m_Attaque += quantite * v.Attaque;
+			m_Arme += quantite * v.Arme;
+			m_Armure += quantite * v.Armure;
 		}
 	}
-	
+
 	/**
 	 * @return
 	 */
@@ -130,11 +161,11 @@ public class FlotteEquivalente
 
 	public static int getScoreAttaque(FlotteEquivalente attaquant, FlotteEquivalente defenseur)
 	{
-//		 On calcule le temps pour tuer la cible considérée, suivant son statut
+		// On calcule le temps pour tuer la cible considérée, suivant son statut
 		int statut = attaquant.getClasse().comparer(defenseur.getClasse());
 		int attaque = 0;
-		
-		switch(statut)
+
+		switch (statut)
 		{
 			case 1: // BN
 			{
@@ -152,7 +183,7 @@ public class FlotteEquivalente
 				break;
 			}
 		}
-		
+
 		return attaque;
 	}
 
@@ -163,7 +194,7 @@ public class FlotteEquivalente
 	{
 		m_DegatsAEncaisser += iDegats;
 	}
-	
+
 	public int getDegatsAEncaisser()
 	{
 		return m_DegatsAEncaisser;
@@ -174,23 +205,25 @@ public class FlotteEquivalente
 	 */
 	public void EncaisserDegats(boolean bFinaliser)
 	{
-		if (estMorte()) return;
-		if (m_DegatsAEncaisser <= 0) return;
-		
+		if (estMorte())
+			return;
+		if (m_DegatsAEncaisser <= 0)
+			return;
+
 		// On détermine les points de défense globaux restant
 		int DefRestante = m_Defense - m_DegatsAEncaisser;
-		
+
 		if (DefRestante <= 0)
 		{
-			m_liste_vaisseaux.removeAllElements();
+			m_liste_vaisseaux.clear();
 			refreshCaracs();
 			return;
 		}
-		
-		Vector<Vector<Vaisseau>> listes_possibles = new Vector<Vector<Vaisseau>>();
-		int reste = GenererListesPossiblesSelect(DefRestante, 0, listes_possibles, DefRestante);
+
+		Vector<TreeMap<Vaisseau, Integer>> listes_possibles = new Vector<TreeMap<Vaisseau, Integer>>();
+		int reste = GenererListesPossiblesSelect(DefRestante, listes_possibles);
 		Random dice = new Random();
-		Vector<Vaisseau> nouvelle_liste = null;
+		TreeMap<Vaisseau, Integer> nouvelle_liste = null;
 		if (listes_possibles.size() >= 1)
 		{
 			nouvelle_liste = listes_possibles.get(dice.nextInt(listes_possibles.size()));
@@ -198,34 +231,46 @@ public class FlotteEquivalente
 		else
 		{
 			// Aucun rachat content possible, on prend une liste vide.
-			nouvelle_liste = new Vector<Vaisseau>();
+			nouvelle_liste = new TreeMap<Vaisseau, Integer>();
 		}
-		
-		// On commencer par chercher le vaisseau le moins cher que l'on ai pas déjà racheté.
+
+		// On commencer par chercher le vaisseau le moins cher que l'on ai pas
+		// déjà racheté.
 		Vaisseau le_moins_cher = null;
-		for(int i=0; i < m_liste_vaisseaux.size(); ++i)
+		Iterator<Entry<Vaisseau, Integer>> it = m_liste_vaisseaux.entrySet().iterator();
+		while (it.hasNext())
 		{
-			Vaisseau vaisseau_courant = m_liste_vaisseaux.get(i);
-			if (!nouvelle_liste.contains(vaisseau_courant))
+			Entry<Vaisseau, Integer> e = it.next();
+			Vaisseau v = e.getKey();
+			int quantite = e.getValue();
+			if (quantite <= 0)
+				continue;
+
+			if ((nouvelle_liste.get(v) == null) || (nouvelle_liste.get(v) < quantite))
 			{
 				if (le_moins_cher == null)
 				{
-					le_moins_cher = vaisseau_courant;
+					le_moins_cher = v;
 					continue;
 				}
-				if (vaisseau_courant.Defense < le_moins_cher.Defense)
+				if (v.Defense < le_moins_cher.Defense)
 				{
-					le_moins_cher = vaisseau_courant;
+					le_moins_cher = v;
 				}
 			}
 		}
-		
-		if (!bFinaliser)
+
+		if ( !bFinaliser)
 		{
 			if (reste > 0)
 			{
-				// Si on ne finalise pas, on sauve forcément un dernier vaisseau avec les restes, mais on reporte les dégats qu'il a subit sur les dégats de la prochaine attaque 
-				nouvelle_liste.add(le_moins_cher);
+				// Si on ne finalise pas, on sauve forcément un dernier vaisseau
+				// avec les restes, mais on reporte les dégats qu'il a subit sur
+				// les dégats de la prochaine attaque
+				Integer nouvelle_qte = nouvelle_liste.get(le_moins_cher);
+				if (nouvelle_qte == null)
+					nouvelle_qte = 0;
+				nouvelle_liste.put(le_moins_cher, nouvelle_qte + 1);
 				m_DegatsAEncaisser = (le_moins_cher.Defense - reste);
 				reste = 0;
 			}
@@ -236,20 +281,26 @@ public class FlotteEquivalente
 		}
 		else
 		{
-			// Si on doit finaliser (ne pas reporter le reste pour la prochaine attaque), on regarde si celui-ci permet de rachetter un dernier vaisseau
-			
-			// Si on a de quoi payer la moitié de son prix avec le reste, alors on le compte bon.
+			// Si on doit finaliser (ne pas reporter le reste pour la prochaine
+			// attaque), on regarde si celui-ci permet de rachetter un dernier
+			// vaisseau
+
+			// Si on a de quoi payer la moitié de son prix avec le reste, alors
+			// on le compte bon.
 			if ((le_moins_cher.Defense / 2) < reste)
 			{
-				nouvelle_liste.add(le_moins_cher);
+				Integer nouvelle_qte = nouvelle_liste.get(le_moins_cher);
+				if (nouvelle_qte == null)
+					nouvelle_qte = 0;
+				nouvelle_liste.put(le_moins_cher, nouvelle_qte + 1);
 				reste = 0;
 			}
-			
+
 			m_DegatsAEncaisser = 0;
-		}		
-		
+		}
+
 		m_liste_vaisseaux = nouvelle_liste;
-		
+
 		refreshCaracs();
 	}
 
@@ -271,28 +322,51 @@ public class FlotteEquivalente
 	 * @param iPlusPetitReste
 	 * @return Plus petit reste
 	 */
-	private int GenererListesPossiblesSelect(int iDefRestante, int iDernierElement,
-			Vector<Vector<Vaisseau>> listes_possibles, int PlusPetitReste)
+	private int GenererListesPossiblesSelect(int iDefRestante, Vector<TreeMap<Vaisseau, Integer>> listes_possibles)
 	{
-		// POUR CHAQUE vaisseau DE LA m_liste_vaisseaux A PARTIR DE iDernierElement
+		return GenererListesPossiblesSelect(iDefRestante, m_liste_vaisseaux.firstKey(), listes_possibles, iDefRestante);
+	}
+
+	private int GenererListesPossiblesSelect(int iDefRestante, Vaisseau iDernierElement,
+			Vector<TreeMap<Vaisseau, Integer>> listes_possibles, int PlusPetitReste)
+	{
+		// POUR CHAQUE vaisseau DE LA m_liste_vaisseaux A PARTIR DE
+		// iDernierElement
 		// FAIRE
-		for (int i = iDernierElement; i < m_liste_vaisseaux.size(); ++i)
+		Iterator<Entry<Vaisseau, Integer>> it = m_liste_vaisseaux.tailMap(iDernierElement).entrySet().iterator();
+		while (it.hasNext())
 		{
 			// On récupère le vaisseau à partir de son index
-			Vaisseau v = m_liste_vaisseaux.get(i);
-
-			// SI le vaisseau peut être "racheté", c'est à dire qu'il reste suffisament de Défense pour que la flotte considère que le vaisseau a été sauvé. ALORS
-			if (v.Defense <= iDefRestante)
+			Entry<Vaisseau, Integer> e = it.next();
+			Vaisseau v = e.getKey();
+			Integer quantite = e.getValue();
+			if ((quantite == null) || (quantite <= 0))
 			{
-				// On calcule la Défense qu'il resterais à dépenser si l'on sauvais ce vaisseau
-				int NouvelleDefRestante = (iDefRestante - v.Defense);
+				continue;
+			}
 
-				// Si la nouvelle Def est plus petite que le plus petit reste observé, on l'ajoute 
+			// On calcule combien au maximum on peut "rachetter" de ce modèle de
+			// vaisseau (dans la limite de la quantité d'origine)
+			int max_qte_rachette = Math.min(quantite, iDefRestante / v.Defense);
+
+			Vaisseau v_next = m_liste_vaisseaux.higherKey(v);
+			
+			// On dénombre toutes les combinaisons de rachat (allant du max, a
+			// 1, sauf s'il n'y a pas de prochain vaisseau en liste)
+			int qte_rachette = max_qte_rachette;
+			do
+			{
+				// On calcule la Défense qu'il resterais à dépenser si l'on
+				// sauvais ce vaisseau
+				int NouvelleDefRestante = (iDefRestante - (v.Defense * qte_rachette));
+
+				// Si la nouvelle Def est plus petite que le plus petit reste
+				// observé, on l'ajoute
 				if (NouvelleDefRestante <= PlusPetitReste)
 				{
-					Vector<Vaisseau> nouvelle_liste = new Vector<Vaisseau>();
-					nouvelle_liste.add(v);
-
+					TreeMap<Vaisseau, Integer> nouvelle_liste = new TreeMap<Vaisseau, Integer>();
+					nouvelle_liste.put(v, qte_rachette);
+				
 					listes_possibles.add(nouvelle_liste);
 
 					PlusPetitReste = NouvelleDefRestante;
@@ -301,12 +375,15 @@ public class FlotteEquivalente
 				// On prépare une nouvelle liste de listes_possibles, que l'on
 				// rempli en apellant la méthode récursivement à partir de
 				// l'élement actuel + 1
-				Vector<Vector<Vaisseau>> sous_listes_possibles = new Vector<Vector<Vaisseau>>();
+				Vector<TreeMap<Vaisseau, Integer>> sous_listes_possibles = new Vector<TreeMap<Vaisseau,Integer>>();
 				// On note la PlusPetitePerte (reste) rencontré dans la
 				// sous-liste.
-				int ppp = GenererListesPossiblesSelect(NouvelleDefRestante, (i + 1), sous_listes_possibles,
-						PlusPetitReste);
-
+				int ppp = PlusPetitReste;
+				if (v_next != null)
+				{
+					ppp = GenererListesPossiblesSelect(NouvelleDefRestante, v_next, sous_listes_possibles, PlusPetitReste);
+				}
+				
 				// Sinon, c'est qu'on a bien de nouvelles listes PLUS
 				// intéressantes, on vire les anciennes et on notes les
 				// nouvelles
@@ -318,15 +395,19 @@ public class FlotteEquivalente
 
 				// On parcours la liste des sous_listes_possibles, que l'on
 				// ajoute au listes_possibles, aprés l'élément courant
+				TreeMap<Vaisseau, Integer> sous_liste_courante = null;
 				for (int j = 0; j < sous_listes_possibles.size(); ++j)
 				{
-					Vector<Vaisseau> nouvelle_liste = new Vector<Vaisseau>();
-					nouvelle_liste.add(v);
-					nouvelle_liste.addAll(sous_listes_possibles.get(j));
-
+					TreeMap<Vaisseau, Integer> nouvelle_liste = new TreeMap<Vaisseau, Integer>();
+					nouvelle_liste.put(v, qte_rachette);
+					sous_liste_courante = sous_listes_possibles.get(j);
+					nouvelle_liste.putAll(sous_liste_courante);
+					
 					listes_possibles.add(nouvelle_liste);
 				}
-			}
+				
+				--qte_rachette;
+			}while((qte_rachette > 0) && (v_next != null));
 			// FIN POUR
 		}
 
@@ -356,7 +437,7 @@ public class FlotteEquivalente
 	{
 		m_totalAttaques = 0;
 	}
-	
+
 	/**
 	 * M�thode r�cursive permettant de d�nombrer toutes les combinaisons
 	 * possible de rachat d'unit�e parmis les �l�ments de la flotte, avec le
@@ -370,66 +451,57 @@ public class FlotteEquivalente
 	 *            Listes en cours
 	 */
 	/*
-	private void GenererListesPossibles(int iDefRestante, int iDernierElement, Vector<Vector<Integer>> listes_possibles)
-	{
-		for (int i = iDernierElement; i < liste_elements.size(); ++i)
-		{
-			Vaisseau e = liste_elements.get(i);
-
-			if (e.Defense <= iDefRestante)
-			{
-				int NouvelleDefRestante = (iDefRestante - e.Defense);
-
-				Vector<Vector<Integer>> sous_liste_possibles = new Vector<Vector<Integer>>();
-				GenererListesPossibles(NouvelleDefRestante, (i + 1), sous_liste_possibles);
-
-				for (int j = 0; j < sous_liste_possibles.size(); ++j)
-				{
-					Vector<Integer> nouvelle_liste = new Vector<Integer>();
-					nouvelle_liste.add(i);
-					nouvelle_liste.addAll(sous_liste_possibles.get(j));
-
-					listes_possibles.add(nouvelle_liste);
-				}
-
-				Vector<Integer> nouvelle_liste = new Vector<Integer>();
-				nouvelle_liste.add(i);
-				nouvelle_liste.add(NouvelleDefRestante);
-
-				listes_possibles.add(nouvelle_liste);
-			}
-		}
-		/*
-		 * ALGORITHME FLOTTE.GenererListesPossibles(DefRestante,
-		 * dernier_element, listes_possibles) // On parcours la liste des
-		 * �l�ments � partir du dernier d�j� vu. POUR i ALLANT DE
-		 * dernier_element A Flotte.liste_elements.taille() FAIRE // On note
-		 * l'�l�ment courant Element e <- Flotte.liste_element[i] // Si sa
-		 * d�fense peut �tre "rachett�e" SI (e.Def <= DefRestante) ALORS // On
-		 * calcule combien il reste de Defense � rachetter NouvelleDefRestante <-
-		 * (DefRestante - e.Def) // On ajoute � la liste le r�sultat de la
-		 * "sous-liste" des possibles ListeElements[] sous_liste_possibles <-
-		 * VIDE GenererListesPossibles(NouvelleDefRestante, (i+1),
-		 * sous_liste_possibles)
-		 * 
-		 * POUR j ALLANT DE 0 A sous_liste_possibles.taille() FAIRE // On
-		 * initialise une nouvelle liste d'�l�ments. ListeElement nouvelle_liste <-
-		 * VIDE nouvelle_liste.Ajouter(e)
-		 * nouvelle_liste.AjouterListe(sous_listes_possibles[j])
-		 * 
-		 * listes_possibles.Ajouter(nouvelle_liste)
-		 * 
-		 * FIN POUR
-		 * 
-		 * ListeElement nouvelle_liste <- VIDE nouvelle_liste.Ajouter(e) // En
-		 * dernier �l�ment de la liste, on met le reste.
-		 * nouvelle_liste.Ajouter(DefRestante)
-		 * 
-		 * listes_possibles.Ajouter(nouvelle_liste) FSI
-		 * 
-		 * FIN POUR
-		 * 
-		 * FIN ALGORITHME
-		 */
-	//}
+	 * private void GenererListesPossibles(int iDefRestante, int
+	 * iDernierElement, Vector<Vector<Integer>> listes_possibles) { for (int i =
+	 * iDernierElement; i < liste_elements.size(); ++i) { Vaisseau e =
+	 * liste_elements.get(i);
+	 * 
+	 * if (e.Defense <= iDefRestante) { int NouvelleDefRestante = (iDefRestante -
+	 * e.Defense);
+	 * 
+	 * Vector<Vector<Integer>> sous_liste_possibles = new Vector<Vector<Integer>>();
+	 * GenererListesPossibles(NouvelleDefRestante, (i + 1),
+	 * sous_liste_possibles);
+	 * 
+	 * for (int j = 0; j < sous_liste_possibles.size(); ++j) { Vector<Integer>
+	 * nouvelle_liste = new Vector<Integer>(); nouvelle_liste.add(i);
+	 * nouvelle_liste.addAll(sous_liste_possibles.get(j));
+	 * 
+	 * listes_possibles.add(nouvelle_liste); }
+	 * 
+	 * Vector<Integer> nouvelle_liste = new Vector<Integer>();
+	 * nouvelle_liste.add(i); nouvelle_liste.add(NouvelleDefRestante);
+	 * 
+	 * listes_possibles.add(nouvelle_liste); } } /* ALGORITHME
+	 * FLOTTE.GenererListesPossibles(DefRestante, dernier_element,
+	 * listes_possibles) // On parcours la liste des �l�ments � partir du
+	 * dernier d�j� vu. POUR i ALLANT DE dernier_element A
+	 * Flotte.liste_elements.taille() FAIRE // On note l'�l�ment courant Element
+	 * e <- Flotte.liste_element[i] // Si sa d�fense peut �tre "rachett�e" SI
+	 * (e.Def <= DefRestante) ALORS // On calcule combien il reste de Defense �
+	 * rachetter NouvelleDefRestante <- (DefRestante - e.Def) // On ajoute � la
+	 * liste le r�sultat de la "sous-liste" des possibles ListeElements[]
+	 * sous_liste_possibles <- VIDE GenererListesPossibles(NouvelleDefRestante,
+	 * (i+1), sous_liste_possibles)
+	 * 
+	 * POUR j ALLANT DE 0 A sous_liste_possibles.taille() FAIRE // On initialise
+	 * une nouvelle liste d'�l�ments. ListeElement nouvelle_liste <- VIDE
+	 * nouvelle_liste.Ajouter(e)
+	 * nouvelle_liste.AjouterListe(sous_listes_possibles[j])
+	 * 
+	 * listes_possibles.Ajouter(nouvelle_liste)
+	 * 
+	 * FIN POUR
+	 * 
+	 * ListeElement nouvelle_liste <- VIDE nouvelle_liste.Ajouter(e) // En
+	 * dernier �l�ment de la liste, on met le reste.
+	 * nouvelle_liste.Ajouter(DefRestante)
+	 * 
+	 * listes_possibles.Ajouter(nouvelle_liste) FSI
+	 * 
+	 * FIN POUR
+	 * 
+	 * FIN ALGORITHME
+	 */
+	// }
 }
