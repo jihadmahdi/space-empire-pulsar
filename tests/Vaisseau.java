@@ -1,7 +1,14 @@
 package tests;
 
-public class Vaisseau
+public class Vaisseau implements Comparable<Vaisseau>
 {
+	public static final double FACTEUR_GLOBAL = 60;
+	public static final double FACTEUR_ATTAQUE= 1;
+	public static final double FACTEUR_DEFENSE= 1;
+	public static final double FACTEUR_ARME   = 1/3;
+	public static final double FACTEUR_ARMURE = 1/3;
+	public static final double FACTEUR_VITESSE= 5;
+	
 	public enum eClasse
 	{
 		DD, TANK, DIST;
@@ -54,11 +61,13 @@ public class Vaisseau
 	/** Armure de classes */
 	public int		Armure	= 0;
 
+	public double	Vitesse = 0;
+	
 	public eClasse	Classe		= null;
 
 	public String	Nom			= null;
 
-	public Vaisseau(Vaisseau modele)
+	public Vaisseau(Vaisseau modele) 
 	{
 		Nom = modele.Nom;
 		Defense = modele.Defense;
@@ -67,11 +76,6 @@ public class Vaisseau
 		
 		Arme = modele.Arme;
 		Armure = modele.Armure;
-	}
-
-	protected Vaisseau clone()
-	{
-		return new Vaisseau(this);
 	}
 	
 	public Vaisseau(String sNom, int iDef, int iAtt, eClasse iClasse, int iArme, int iArmure)
@@ -88,5 +92,25 @@ public class Vaisseau
 	public String toString()
 	{
 		return Nom+" Def:"+Defense+" / Att:"+Attaque+" / Arm:"+Arme+" / Bl:"+Armure;
+	}
+	
+	public double estimerValeur()
+	{
+		return FACTEUR_GLOBAL * ((Attaque * FACTEUR_ATTAQUE) + (Defense * FACTEUR_DEFENSE) + (Arme * FACTEUR_ARME) + (Armure * FACTEUR_ARMURE) + (Vitesse * FACTEUR_VITESSE) );
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Comparable#compareTo(java.lang.Object)
+	 */
+	public int compareTo(Vaisseau o)
+	{
+		// On range les vaisseaux par classes
+		if (this.Classe != o.Classe)
+		{
+			return (this.Classe.ordinal() - o.Classe.ordinal());
+		}
+		
+		// A classe identique, on range par valeur
+		return ((Double)(this.estimerValeur() - o.estimerValeur())).intValue();
 	}
 }
