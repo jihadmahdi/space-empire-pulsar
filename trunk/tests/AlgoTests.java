@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.io.StringReader;
 import java.util.Iterator;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -126,18 +125,24 @@ public class AlgoTests
 		return true;
 	}
 	
-	public static Flotte testCombat(PrintStream output) throws FileNotFoundException
+	public static Flotte testCombat(PrintStream output, Flotte flotteA, Flotte flotteB) throws FileNotFoundException
 	{
 		if (output == null)
 		{
 			output = new PrintStream(".\\output.txt");
 		}
 		
-		output.println("Composez la flotte A");
-		Flotte flotteA = SaisirFlotte("A", output);
+		if (flotteA == null)
+		{
+			output.println("Composez la flotte A");
+			flotteA = SaisirFlotte("A", output);
+		}
 		
-		output.println("Composez la flotte B");
-		Flotte flotteB = SaisirFlotte("B", output);
+		if (flotteB == null)
+		{
+			output.println("Composez la flotte B");
+			flotteB = SaisirFlotte("B", output);
+		}
 		
 		output.println("Lancement du combat..");
 		Flotte vainqueur = Flotte.JouerCombat(flotteA, flotteB);
@@ -147,47 +152,143 @@ public class AlgoTests
 		return vainqueur;
 	}
 	
-	public static void testEquilibre(PrintStream output, double pas, double offset) throws FileNotFoundException
+	private static Flotte jouerCombat(Vaisseau vaisseauFORT, Vaisseau vaisseauFAIBLE, int nb_FORT, int nb_FAIBLE, PrintStream output) throws FileNotFoundException
 	{
-		int facteur_taille = 1000000;
+		Flotte flotteForte = new Flotte("Champion");
+		flotteForte.ajouterVaisseau(vaisseauFORT, nb_FORT);
+		
+		Flotte flotteFaible = new Flotte("Chalanger");
+		flotteFaible.ajouterVaisseau(vaisseauFAIBLE, nb_FAIBLE);
+		
+		return testCombat(output, flotteForte, flotteFaible);
+	}
+	
+	public static void testEquilibre(PrintStream output, Vaisseau vaisseauFORT, Vaisseau vaisseauFAIBLE, int facteur_taille, double pas, double offset) throws FileNotFoundException
+	{
+		pas = Math.max(1, facteur_taille*pas);
 		PrintStream silent = new PrintStream(".\\output.txt");
 		
 		int i = 0;
 		int survivant = 0;
 		Flotte vainqueur = null;
 		
-		String sBN = "7\n";
-		clavier = new BufferedReader(new StringReader(sBN));
-		Vaisseau vaisseauBN= SaisirVaisseau(silent);
+		if (vaisseauFORT == null)
+		{
+			output.println("Choisissez le vaisseau Fort: ");
+			vaisseauFORT = SaisirVaisseau(output);
+		}
 		
-		String sTdT = "6\n";
-		clavier = new BufferedReader(new StringReader(sTdT));
-		Vaisseau vaisseauTdT = SaisirVaisseau(silent);
+		if (vaisseauFAIBLE == null)
+		{
+			output.println("Choisissez le vaisseau Faible: ");
+			vaisseauFAIBLE = SaisirVaisseau(output);
+		}
+		
 		double valeur_courante = 0;
+		int nb_FAIBLE = 0;
+		int nb_FAIBLE_derniere_valeur = 0;
+		int nb_FAIBLE_premier_nul = Integer.MAX_VALUE;
+		int nb_FAIBLE_dernier_nul = Integer.MAX_VALUE;
 		
 		do
 		{
 			valeur_courante = (1+offset + (i*pas));
 			++i;
-			output.print("Test n°"+i+": 1/"+valeur_courante+"\t\t");
 			
-			int nb_tdt = new Double(Double.valueOf(facteur_taille) * Double.valueOf(valeur_courante)).intValue();
-			String sEntree = sBN+(facteur_taille)+"\n0\n"+sTdT+nb_tdt+"\n0\n";
-			clavier = new BufferedReader(new StringReader(sEntree));
-			vainqueur = testCombat(silent);
+			nb_FAIBLE_derniere_valeur = nb_FAIBLE;
+			nb_FAIBLE = new Double(Double.valueOf(facteur_taille) * Double.valueOf(valeur_courante)).intValue();
 			
-			survivant = vainqueur.RecupererFlotteEquivalente(eClasse.DD).getNbVaisseau(vaisseauBN);
-			if (survivant == 0) survivant = -1 * vainqueur.RecupererFlotteEquivalente(eClasse.DIST).getNbVaisseau(vaisseauTdT);
+			output.print("Test n°"+i+": 1/"+valeur_courante+"\t"+facteur_taille+"/"+nb_FAIBLE+"\t");
+			
+			vainqueur = jouerCombat(vaisseauFORT, vaisseauFAIBLE, facteur_taille, nb_FAIBLE, silent);
+			
+			survivant = vainqueur.RecupererFlotteEquivalente(vaisseauFORT.Classe).getNbVaisseau(vaisseauFORT);
+			if (survivant == 0)
+			{
+				survivant = -1 * vainqueur.RecupererFlotteEquivalente(vaisseauFAIBLE.Classe).getNbVaisseau(vaisseauFAIBLE);
+				if (survivant == 0)
+				{
+					nb_FAIBLE_premier_nul = Math.min(nb_FAIBLE_premier_nul, nb_FAIBLE);
+					nb_FAIBLE_dernier_nul = Math.max(nb_FAIBLE_dernier_nul, nb_FAIBLE);
+				}
+			}
 			
 			output.println(survivant);
 			
-		}while(survivant > 0);
+		}while(survivant >= 0);
 		
-		output.println("L'équilibre est renversé à "+valeur_courante);
-		output.println("Il faut");
-		output.println(valeur_courante+" * "+vaisseauTdT);
-		output.println("pour battre");
-		output.println("1 * "+vaisseauBN);
+		// Recherche du match nul
+		int avant_premier_nul = Math.min(nb_FAIBLE_premier_nul, nb_FAIBLE_derniere_valeur);
+		int apres_dernier_nul = Math.min(nb_FAIBLE_dernier_nul, nb_FAIBLE_derniere_valeur);
+		
+		// BN gagne ]0;avant_premier_nul]
+		// MatchNUL/Coupure [premier_nul; dernier_nul]
+		// TdT gagne [apres_dernier_nul; +inf[
+		
+		int score_avant_premier_nul = 0; int score_premier_nul = 0;
+		int score_apres_dernier_nul = 0; int score_dernier_nul = 0;
+		
+		do
+		{ 
+			// Recherche arriere
+			vainqueur = jouerCombat(vaisseauFORT, vaisseauFAIBLE, facteur_taille, avant_premier_nul, silent);
+		
+			score_avant_premier_nul = vainqueur.RecupererFlotteEquivalente(vaisseauFORT.Classe).getNbVaisseau(vaisseauFORT);
+			if (score_avant_premier_nul == 0)
+			{
+				score_avant_premier_nul = -1 * vainqueur.RecupererFlotteEquivalente(vaisseauFAIBLE.Classe).getNbVaisseau(vaisseauFAIBLE);
+			}
+			if (score_avant_premier_nul <= 0)
+			{
+				--avant_premier_nul;
+				score_premier_nul = score_avant_premier_nul;
+			}
+		}while(score_avant_premier_nul <= 0);
+
+		do
+		{ 
+			// Recherche avant
+			vainqueur = jouerCombat(vaisseauFORT, vaisseauFAIBLE, facteur_taille, apres_dernier_nul, silent);
+		
+			score_apres_dernier_nul = vainqueur.RecupererFlotteEquivalente(vaisseauFORT.Classe).getNbVaisseau(vaisseauFORT);
+			if (score_apres_dernier_nul == 0)
+			{
+				score_apres_dernier_nul = -1 * vainqueur.RecupererFlotteEquivalente(vaisseauFAIBLE.Classe).getNbVaisseau(vaisseauFAIBLE);
+			}
+			if (score_apres_dernier_nul >= 0)
+			{
+				++apres_dernier_nul;
+				score_dernier_nul = score_apres_dernier_nul;
+			}
+		}while(score_apres_dernier_nul >= 0);
+		
+		int plage_nul = (apres_dernier_nul - avant_premier_nul);
+		
+		double taille = Double.valueOf(facteur_taille);
+		double coupure_premier = (Double.valueOf(avant_premier_nul + 1) / taille);
+		double coupure_avant_premier = (Double.valueOf(avant_premier_nul) / taille);
+		double coupure_dernier = (Double.valueOf(apres_dernier_nul - 1) / taille);
+		double coupure_apres_dernier = (Double.valueOf(apres_dernier_nul) / taille);
+		if (plage_nul == 0)
+		{	
+			output.println("Victoire jusqu'à\"[1/"+coupure_avant_premier+"; "+facteur_taille+"/"+avant_premier_nul+"]: "+score_avant_premier_nul);
+			output.println("Coupure en\t1/"+coupure_premier+"\t"+facteur_taille+"/"+(avant_premier_nul+1)+"]: "+score_premier_nul);
+			output.println("Défaite à partir de\t1/"+coupure_apres_dernier+"\t"+facteur_taille+"/"+apres_dernier_nul+"]: "+score_apres_dernier_nul);
+		}
+		else
+		{
+			output.println("Victoire jusqu'à\t[1/"+coupure_avant_premier+"; "+facteur_taille+"/"+avant_premier_nul+"]: "+score_avant_premier_nul);
+			output.println("Match nul depuis\t[1/"+coupure_premier+"\t"+facteur_taille+"/"+(avant_premier_nul+1)+"]: "+score_premier_nul);
+			output.println("Match nul jusqu'à\t[1/"+coupure_dernier+"\t"+facteur_taille+"/"+(apres_dernier_nul-1)+"]: "+score_dernier_nul);
+			output.println("Défaite à partir de\t[1/"+coupure_apres_dernier+"\t"+facteur_taille+"/"+apres_dernier_nul+"]: "+score_apres_dernier_nul);
+		}
+				
+		output.print("Il faut\t\t");
+		output.println(coupure_apres_dernier+"\t*\t"+vaisseauFAIBLE);
+		output.print("pour battre\t");
+		output.println("1\t*\t"+vaisseauFORT);
+		output.println("Etat du vainqueur: ");
+		output.println(vainqueur);
 	}
 	
 	public static void RemplirMagasin()
@@ -195,9 +296,23 @@ public class AlgoTests
 		TreeMap<String, Integer[]> Gabarits = new TreeMap<String, Integer[]>();
 		
 		// Ajout d'un gabarit, nom gabarit, puis dans l'ordre "Def", "Att", "Arme", "Armure"
-		Gabarits.put("Léger", new Integer[] {10,20,20,10});
-		Gabarits.put("Moyen", new Integer[] {30,40,40,30});
+		Gabarits.put("Léger", new Integer[] {100,20,20,20});
+		Gabarits.put("Moyen", new Integer[] {1000,40,40,30});
 		Gabarits.put("Lourd", new Integer[] {70,90,90,40});
+		
+		/* Notes sur l'équilibre
+		 * En faisant les tests avec un facteur_taille à 1 on a le nombre exact de Faible qu'il faut pour tuer un Fort.
+		 * En faisant les tests avec un facteur_taille à 100, on a en plus une précision sur les dégats encaissé par le vainqueur (dégats qui sont ignoré/rachetté avec un facteur_taille 1).
+		 * 
+		 * FACTEUR TAILLE 1:
+		 * On observe qu'a gabarit égal, le nombre de TdT qu'il faut pour tuer une BN semble obéir à la formule suivante :
+		 * nb_TdT = (Armure / Attaque) + 1
+		 * avec k ~= (20*10E-3) * Arme
+		 * k négligeale
+		 * 
+		 * 
+		 * Conclusion: Plus on augmente l'armure, plus on spécialise le modèle de vaisseau.
+		 */
 		
 		Iterator<Entry<String, Integer[]>> it = Gabarits.entrySet().iterator();
 		while(it.hasNext())
@@ -225,7 +340,7 @@ public class AlgoTests
 
 		try
 		{
-			testEquilibre(System.out, .001, 0);
+			testEquilibre(System.out, null, null, 1, .1, 0);
 		}
 		catch (FileNotFoundException e1)
 		{

@@ -30,7 +30,7 @@ public class FlotteEquivalente
 	private int								m_Armure			= 0;
 
 	/** Attributs utiles lors d'un combat */
-	private int								m_DegatsAEncaisser	= 0;
+	private double							m_DegatsAEncaisser	= 0;
 
 	private int								m_totalAttaques		= 0;
 
@@ -65,8 +65,13 @@ public class FlotteEquivalente
 	public String toString()
 	{
 		StringBuffer sb = new StringBuffer();
-		sb.append("<Flotte Equivalente " + m_Classe.toString() + ">" + AlgoTests.LINE_SEPARATOR);
 		Iterator<Entry<Vaisseau, Integer>> it = m_liste_vaisseaux.entrySet().iterator();
+		
+		if (it.hasNext())
+		{
+			sb.append("<Flotte Equivalente " + m_Classe.toString() + ">" + AlgoTests.LINE_SEPARATOR);
+		}
+		
 		while (it.hasNext())
 		{
 			Entry<Vaisseau, Integer> e = it.next();
@@ -89,7 +94,7 @@ public class FlotteEquivalente
 	 */
 	public boolean estMorte()
 	{
-		return (m_Defense <= 0);
+		return ((m_Defense <= m_DegatsAEncaisser) || (m_liste_vaisseaux.isEmpty()));
 	}
 
 	/**
@@ -134,6 +139,11 @@ public class FlotteEquivalente
 	{
 		return m_Defense;
 	}
+	
+	public double getDefenseCourante()
+	{
+		return Math.max(0, Double.valueOf(m_Defense) - m_DegatsAEncaisser);
+	}
 
 	/**
 	 * @return
@@ -159,43 +169,44 @@ public class FlotteEquivalente
 		return m_Armure;
 	}
 
-	public static int getScoreAttaque(FlotteEquivalente attaquant, FlotteEquivalente defenseur)
+	public static int getModifAttaque(FlotteEquivalente attaquant, FlotteEquivalente defenseur)
 	{
 		// On calcule le temps pour tuer la cible considérée, suivant son statut
 		int statut = attaquant.getClasse().comparer(defenseur.getClasse());
-		int attaque = 0;
+		int modif = 0;
 
 		switch (statut)
 		{
 			case 1: // BN
 			{
-				attaque = attaquant.getAttaque() + attaquant.getArme();
+				modif = attaquant.getArme();
 				break;
 			}
 			case 0: // EGO
 			{
-				attaque = attaquant.getAttaque();
+				modif = 0;
 				break;
 			}
 			case -1: // TdT
 			{
-				attaque = Math.max(0, attaquant.getAttaque() - defenseur.getArmure());
+				modif = -defenseur.getArmure();
 				break;
 			}
 		}
 
-		return attaque;
+		return modif;
 	}
 
 	/**
 	 * @return
 	 */
-	public void ajouterDegats(int iDegats)
+	public void ajouterDegats(double degats)
 	{
-		m_DegatsAEncaisser += iDegats;
+		if (degats < 0) throw new RuntimeException("Erreur: Dégats négatifs");
+		m_DegatsAEncaisser += degats;
 	}
 
-	public int getDegatsAEncaisser()
+	public double getDegatsAEncaisser()
 	{
 		return m_DegatsAEncaisser;
 	}
@@ -205,13 +216,11 @@ public class FlotteEquivalente
 	 */
 	public void EncaisserDegats(boolean bFinaliser)
 	{
-		if (estMorte())
-			return;
 		if (m_DegatsAEncaisser <= 0)
 			return;
 
-		// On détermine les points de défense globaux restant
-		int DefRestante = m_Defense - m_DegatsAEncaisser;
+		// On détermine les points de défense globaux restant, en arrondissant à l'entier inférieur.
+		int DefRestante = new Double(Math.floor(getDefenseCourante())).intValue();
 
 		if (DefRestante <= 0)
 		{
@@ -417,8 +426,9 @@ public class FlotteEquivalente
 	/**
 	 * @param attaqueMeilleureCible
 	 */
-	public void ajouterAttaque(int nouvelle_attaque)
+	public void ajouterAttaque(double nouvelle_attaque)
 	{
+		if (nouvelle_attaque < 0) throw new RuntimeException("Erreur: Attaque négative.");
 		m_totalAttaques += nouvelle_attaque;
 	}
 

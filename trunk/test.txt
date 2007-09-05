@@ -1,9 +1,0 @@
-Test
-
-vaisseau de combat
-	def (3)
-	atak (5)
-	
-over
-
-nombre pop=10
