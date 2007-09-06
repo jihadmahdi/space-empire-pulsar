@@ -144,13 +144,18 @@ public class FlotteEquivalente
 	{
 		return Math.max(0, Double.valueOf(m_Defense) - m_DegatsAEncaisser);
 	}
-
+		
 	/**
 	 * @return
 	 */
 	public int getAttaque()
 	{
 		return m_Attaque;
+	}
+	
+	public double getAttaqueCourante()
+	{
+		return Double.valueOf(m_Attaque) * (getDefenseCourante() / Double.valueOf(m_Defense));
 	}
 
 	/**
@@ -159,6 +164,11 @@ public class FlotteEquivalente
 	public int getArme()
 	{
 		return m_Arme;
+	}
+	
+	public double getArmeCourante()
+	{
+		return Double.valueOf(m_Arme) * (getDefenseCourante() / Double.valueOf(m_Defense));
 	}
 
 	/**
@@ -169,17 +179,17 @@ public class FlotteEquivalente
 		return m_Armure;
 	}
 
-	public static int getModifAttaque(FlotteEquivalente attaquant, FlotteEquivalente defenseur)
+	public static double getModifsAttaqueCourants(FlotteEquivalente attaquant, FlotteEquivalente defenseur)
 	{
 		// On calcule le temps pour tuer la cible considérée, suivant son statut
 		int statut = attaquant.getClasse().comparer(defenseur.getClasse());
-		int modif = 0;
+		double modif = 0;
 
 		switch (statut)
 		{
 			case 1: // BN
 			{
-				modif = attaquant.getArme();
+				modif = attaquant.getArmeCourante();
 				break;
 			}
 			case 0: // EGO
@@ -189,12 +199,20 @@ public class FlotteEquivalente
 			}
 			case -1: // TdT
 			{
-				modif = -defenseur.getArmure();
+				modif = -1 * (defenseur.getArmureMoyenne() * attaquant.getDefenseCourante());
 				break;
 			}
 		}
 
 		return modif;
+	}
+
+	/**
+	 * @return
+	 */
+	public double getArmureMoyenne()
+	{
+		return (Double.valueOf(m_Armure) / Double.valueOf(m_Defense));
 	}
 
 	/**
