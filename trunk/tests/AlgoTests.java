@@ -296,7 +296,7 @@ public class AlgoTests
 		TreeMap<String, Integer[]> Gabarits = new TreeMap<String, Integer[]>();
 		
 		// Ajout d'un gabarit, nom gabarit, puis dans l'ordre "Def", "Att", "Arme", "Armure"
-		Gabarits.put("Léger", new Integer[] {100,40,10,10});
+		Gabarits.put("Léger", new Integer[] {100,20,80,10});
 		Gabarits.put("Moyen", new Integer[] {1000,40,40,30});
 		Gabarits.put("Lourd", new Integer[] {70,90,90,40});
 		
