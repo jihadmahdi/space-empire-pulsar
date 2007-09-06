@@ -228,7 +228,7 @@ public class AlgoTests
 		int score_avant_premier_nul = 0; int score_premier_nul = 0;
 		int score_apres_dernier_nul = 0; int score_dernier_nul = 0;
 		
-		do
+		while((score_avant_premier_nul <= 0) && (avant_premier_nul > 0))
 		{ 
 			// Recherche arriere
 			vainqueur = jouerCombat(vaisseauFORT, vaisseauFAIBLE, facteur_taille, avant_premier_nul, silent);
@@ -243,9 +243,9 @@ public class AlgoTests
 				--avant_premier_nul;
 				score_premier_nul = score_avant_premier_nul;
 			}
-		}while(score_avant_premier_nul <= 0);
+		}
 
-		do
+		while((score_apres_dernier_nul >= 0) && (apres_dernier_nul > 0))
 		{ 
 			// Recherche avant
 			vainqueur = jouerCombat(vaisseauFORT, vaisseauFAIBLE, facteur_taille, apres_dernier_nul, silent);
@@ -260,7 +260,7 @@ public class AlgoTests
 				++apres_dernier_nul;
 				score_dernier_nul = score_apres_dernier_nul;
 			}
-		}while(score_apres_dernier_nul >= 0);
+		}
 		
 		int plage_nul = (apres_dernier_nul - avant_premier_nul);
 		
@@ -277,7 +277,7 @@ public class AlgoTests
 		}
 		else
 		{
-			output.println("Victoire jusqu'à\t[1/"+coupure_avant_premier+"; "+facteur_taille+"/"+avant_premier_nul+"]: "+score_avant_premier_nul);
+			output.println("Victoire jusqu'à\t[1/"+coupure_avant_premier+"\t"+facteur_taille+"/"+avant_premier_nul+"]: "+score_avant_premier_nul);
 			output.println("Match nul depuis\t[1/"+coupure_premier+"\t"+facteur_taille+"/"+(avant_premier_nul+1)+"]: "+score_premier_nul);
 			output.println("Match nul jusqu'à\t[1/"+coupure_dernier+"\t"+facteur_taille+"/"+(apres_dernier_nul-1)+"]: "+score_dernier_nul);
 			output.println("Défaite à partir de\t[1/"+coupure_apres_dernier+"\t"+facteur_taille+"/"+apres_dernier_nul+"]: "+score_apres_dernier_nul);
@@ -296,7 +296,7 @@ public class AlgoTests
 		TreeMap<String, Integer[]> Gabarits = new TreeMap<String, Integer[]>();
 		
 		// Ajout d'un gabarit, nom gabarit, puis dans l'ordre "Def", "Att", "Arme", "Armure"
-		Gabarits.put("Léger", new Integer[] {100,20,10,10});
+		Gabarits.put("Léger", new Integer[] {100,40,10,10});
 		Gabarits.put("Moyen", new Integer[] {1000,40,40,30});
 		Gabarits.put("Lourd", new Integer[] {70,90,90,40});
 		
