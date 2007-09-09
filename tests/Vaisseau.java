@@ -56,10 +56,10 @@ public class Vaisseau implements Comparable<Vaisseau>
 	public int		Attaque		= 0;
 
 	/** Arme de classes */
-	public int		Arme		= 0;
+	public double	BonusArme		= 0;
 
 	/** Armure de classes */
-	public int		Armure	= 0;
+	public double	BonusArmure	= 0;
 
 	public double	Vitesse = 0;
 	
@@ -74,29 +74,30 @@ public class Vaisseau implements Comparable<Vaisseau>
 		Attaque = modele.Attaque;
 		Classe = modele.Classe;
 		
-		Arme = modele.Arme;
-		Armure = modele.Armure;
+		BonusArme = modele.BonusArme;
+		BonusArmure = modele.BonusArmure;
 	}
 	
-	public Vaisseau(String sNom, int iDef, int iAtt, eClasse iClasse, int iArme, int iArmure)
+	public Vaisseau(String sNom, int iDef, int iAtt, eClasse iClasse, double iArme, double iArmure)
 	{
+		if (iArmure > 1.0) throw new NumberFormatException("Erreur: Bonus d'armure > 100%");
 		Nom = sNom;
 		Defense = iDef;
 		Attaque = iAtt;
 		Classe = iClasse;
 
-		Arme = iArme;
-		Armure = iArmure;
+		BonusArme = iArme;
+		BonusArmure = iArmure;
 	}
 	
 	public String toString()
 	{
-		return Nom+" Def:"+Defense+" / Att:"+Attaque+" / Arm:"+Arme+" / Bl:"+Armure;
+		return Nom+" Def:"+Defense+" / Att:"+Attaque+" / Arm:"+BonusArme+" / Bl:"+BonusArmure;
 	}
 	
 	public double estimerValeur()
 	{
-		return FACTEUR_GLOBAL * ((Attaque * FACTEUR_ATTAQUE) + (Defense * FACTEUR_DEFENSE) + (Arme * FACTEUR_ARME) + (Armure * FACTEUR_ARMURE) + (Vitesse * FACTEUR_VITESSE) );
+		return FACTEUR_GLOBAL * ((Attaque * FACTEUR_ATTAQUE) + (Defense * FACTEUR_DEFENSE) + (BonusArme * Attaque * FACTEUR_ARME) + (BonusArmure * Defense * FACTEUR_ARMURE) + (Vitesse * FACTEUR_VITESSE) );
 	}
 
 	/* (non-Javadoc)

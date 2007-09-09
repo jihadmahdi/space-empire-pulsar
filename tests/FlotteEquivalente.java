@@ -25,9 +25,9 @@ public class FlotteEquivalente
 
 	private int								m_Attaque			= 0;
 
-	private int								m_Arme				= 0;
+	private double							m_BonusArme			= 0;
 
-	private int								m_Armure			= 0;
+	private double							m_BonusArmure		= 0;
 
 	/** Attributs utiles lors d'un combat */
 	private double							m_DegatsAEncaisser	= 0;
@@ -109,15 +109,17 @@ public class FlotteEquivalente
 	{
 		m_Defense = 0;
 		m_Attaque = 0;
-		m_Arme = 0;
-		m_Armure = 0;
+		m_BonusArme = 0;
+		m_BonusArmure = 0;
 
 		Iterator<Entry<Vaisseau, Integer>> it = m_liste_vaisseaux.entrySet().iterator();
+		double quantite_totale = 0;
 		while (it.hasNext())
 		{
 			Entry<Vaisseau, Integer> e = it.next();
 			Vaisseau v = e.getKey();
-			int quantite = e.getValue();
+			double quantite = e.getValue();
+			
 
 			if (quantite <= 0)
 			{
@@ -125,11 +127,15 @@ public class FlotteEquivalente
 				continue;
 			}
 
+			quantite_totale += quantite;
 			m_Defense += quantite * v.Defense;
 			m_Attaque += quantite * v.Attaque;
-			m_Arme += quantite * v.Arme;
-			m_Armure += quantite * v.Armure;
+			m_BonusArme += quantite * v.BonusArme;
+			m_BonusArmure += quantite * v.BonusArmure;
 		}
+		
+		m_BonusArme /= quantite_totale;
+		m_BonusArmure /= quantite_totale;
 	}
 
 	/**
@@ -161,25 +167,20 @@ public class FlotteEquivalente
 	/**
 	 * @return
 	 */
-	public int getArme()
+	public double getBonusArme()
 	{
-		return m_Arme;
-	}
-	
-	public double getArmeCourante()
-	{
-		return Double.valueOf(m_Arme) * (getDefenseCourante() / Double.valueOf(m_Defense));
+		return m_BonusArme;
 	}
 
 	/**
 	 * @return
 	 */
-	public int getArmure()
+	public double getBonusArmure()
 	{
-		return m_Armure;
+		return m_BonusArmure;
 	}
 
-	public static double getModifsAttaqueCourants(FlotteEquivalente attaquant, FlotteEquivalente defenseur)
+	public static double getTotalAttaqueCourante(FlotteEquivalente attaquant, FlotteEquivalente defenseur)
 	{
 		// On calcule le temps pour tuer la cible considérée, suivant son statut
 		int statut = attaquant.getClasse().comparer(defenseur.getClasse());
@@ -189,30 +190,23 @@ public class FlotteEquivalente
 		{
 			case 1: // BN
 			{
-				modif = attaquant.getArmeCourante();
+				modif = attaquant.getAttaqueCourante() * (1 + attaquant.getBonusArme());
 				break;
 			}
 			case 0: // EGO
 			{
-				modif = 0;
+				modif = attaquant.getAttaqueCourante();
 				break;
 			}
 			case -1: // TdT
 			{
-				modif = -1 * (defenseur.getArmureMoyenne() * attaquant.getDefenseCourante());
+				//modif = -1 * (defenseur.getArmureMoyenne() * attaquant.getDefenseCourante());
+				modif = attaquant.getAttaqueCourante() * (1 - defenseur.getBonusArmure());
 				break;
 			}
 		}
 
 		return modif;
-	}
-
-	/**
-	 * @return
-	 */
-	public double getArmureMoyenne()
-	{
-		return (Double.valueOf(m_Armure) / Double.valueOf(m_Defense));
 	}
 
 	/**
