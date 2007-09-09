@@ -202,6 +202,7 @@ public class AlgoTests
 			
 			vainqueur = jouerCombat(vaisseauFORT, vaisseauFAIBLE, facteur_taille, nb_FAIBLE, silent);
 			
+			// TODO: Trouver un moyen permettant de récupérer le vainqueur même si les deux flottes ont les même vaisseau (nom de la flotte ?)
 			survivant = vainqueur.RecupererFlotteEquivalente(vaisseauFORT.Classe).getNbVaisseau(vaisseauFORT);
 			if (survivant == 0)
 			{
@@ -296,8 +297,8 @@ public class AlgoTests
 		TreeMap<String, Integer[]> Gabarits = new TreeMap<String, Integer[]>();
 		
 		// Ajout d'un gabarit, nom gabarit, puis dans l'ordre "Def", "Att", "Arme", "Armure"
-		Gabarits.put("Léger", new Integer[] {100,20,80,10});
-		Gabarits.put("Moyen", new Integer[] {1000,40,40,30});
+		Gabarits.put("Léger", new Integer[] {100,20,500,70});
+		Gabarits.put("Moyen", new Integer[] {1500,200,500,80});
 		Gabarits.put("Lourd", new Integer[] {70,90,90,40});
 		
 		/* Notes sur l'équilibre
@@ -324,7 +325,7 @@ public class AlgoTests
 			for(int i=0; i < eClasse.nbClasses; ++i)
 			{
 				eClasse classe = eClasse.values()[i];
-				magasin_vaisseaux.add(new Vaisseau(classe+" "+sGabarait, caracs[0], caracs[1], classe, caracs[2], caracs[3]));
+				magasin_vaisseaux.add(new Vaisseau(classe+" "+sGabarait, caracs[0], caracs[1], classe, Double.valueOf(caracs[2]) / 100.0, Double.valueOf(caracs[3]) / 100.0));
 			}
 		}
 	}

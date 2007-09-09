@@ -55,7 +55,7 @@ public class Flotte
 		FlotteEquivalente flotteEquCourante = null;
 		FlotteEquivalente MeilleureCible = null;
 		int flotte_adverse = 0;
-		double ModifCourant = 0;
+		double AttaqueCoup = 0;
 		double TempsFlotteCourante = Double.POSITIVE_INFINITY;
 		double TempsPremiereVictime = Double.POSITIVE_INFINITY;
 		
@@ -102,8 +102,8 @@ public class Flotte
 						throw new RuntimeException("Erreur, aucune cible possible, flotte déjà morte.");
 					}
 					
-					ModifCourant = FlotteEquivalente.getModifsAttaqueCourants(flotteEquCourante, MeilleureCible);
-					MeilleureCible.ajouterAttaque(Math.max(0,flotteEquCourante.getAttaqueCourante() + ModifCourant));
+					AttaqueCoup = FlotteEquivalente.getTotalAttaqueCourante(flotteEquCourante, MeilleureCible);
+					MeilleureCible.ajouterAttaque(Math.max(0,AttaqueCoup));
 				}
 			}
 
