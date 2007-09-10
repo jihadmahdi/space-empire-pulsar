@@ -118,7 +118,7 @@ public class Flotte
 					flotteEquCourante = FlottesEquivalentes.get(it_flotte).get(it_classe);
 					if (flotteEquCourante.estMorte()) continue;
 					
-					TempsFlotteCourante = flotteEquCourante.getDefenseCourante() / flotteEquCourante.getTotalAttaques();
+					TempsFlotteCourante = flotteEquCourante.getTempsSurvieAttaque();
 					
 					if (TempsFlotteCourante < TempsPremiereVictime)
 					{

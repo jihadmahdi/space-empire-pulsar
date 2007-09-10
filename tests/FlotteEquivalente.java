@@ -3,6 +3,9 @@
  */
 package tests;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.TreeMap;
@@ -21,7 +24,7 @@ public class FlotteEquivalente
 
 	private eClasse							m_Classe;
 
-	private int								m_Defense			= 0;
+	private BigInteger						m_Defense			= BigInteger.ZERO;
 
 	private int								m_Attaque			= 0;
 
@@ -30,7 +33,7 @@ public class FlotteEquivalente
 	private double							m_BonusArmure		= 0;
 
 	/** Attributs utiles lors d'un combat */
-	private double							m_DegatsAEncaisser	= 0;
+	private BigDecimal						m_DegatsAEncaisser	= BigDecimal.ZERO;
 
 	private int								m_totalAttaques		= 0;
 
@@ -66,10 +69,12 @@ public class FlotteEquivalente
 	{
 		StringBuffer sb = new StringBuffer();
 		Iterator<Entry<Vaisseau, Integer>> it = m_liste_vaisseaux.entrySet().iterator();
+		String total = "";
 		
 		if (it.hasNext())
 		{
 			sb.append("<Flotte Equivalente " + m_Classe.toString() + ">" + AlgoTests.LINE_SEPARATOR);
+			total = "    TOTAL Def:"+m_Defense+" / Att:"+m_Attaque+" / Arm:"+m_BonusArme+" / Bl:"+m_BonusArmure + AlgoTests.LINE_SEPARATOR;
 		}
 		
 		while (it.hasNext())
@@ -77,6 +82,8 @@ public class FlotteEquivalente
 			Entry<Vaisseau, Integer> e = it.next();
 			sb.append("    " + e.getValue() + " * " + e.getKey().toString() + AlgoTests.LINE_SEPARATOR);
 		}
+		
+		sb.append(total);
 
 		return sb.toString();
 	}
@@ -89,12 +96,17 @@ public class FlotteEquivalente
 		m_MeilleureCible = i_cible;
 	}
 
+	private BigDecimal getDefenseCourane()
+	{
+		return new BigDecimal(m_Defense).subtract(m_DegatsAEncaisser, MathContext.DECIMAL128);
+	}
+	
 	/**
 	 * @return
 	 */
 	public boolean estMorte()
 	{
-		return ((m_Defense <= m_DegatsAEncaisser) || (m_liste_vaisseaux.isEmpty()));
+		return ((getDefenseCourane().compareTo(BigDecimal.ZERO) <= 0) || (m_liste_vaisseaux.isEmpty()));
 	}
 
 	/**
@@ -107,10 +119,14 @@ public class FlotteEquivalente
 
 	private void refreshCaracs()
 	{
-		m_Defense = 0;
+		m_Defense = BigInteger.ZERO;
 		m_Attaque = 0;
 		m_BonusArme = 0;
 		m_BonusArmure = 0;
+		
+		BigInteger somme_attaque = BigInteger.ZERO;
+		BigDecimal somme_armure = BigDecimal.ZERO;
+		BigDecimal somme_arme = BigDecimal.ZERO;
 
 		Iterator<Entry<Vaisseau, Integer>> it = m_liste_vaisseaux.entrySet().iterator();
 		double quantite_totale = 0;
@@ -118,7 +134,7 @@ public class FlotteEquivalente
 		{
 			Entry<Vaisseau, Integer> e = it.next();
 			Vaisseau v = e.getKey();
-			double quantite = e.getValue();
+			long quantite = e.getValue();
 			
 
 			if (quantite <= 0)
@@ -128,27 +144,31 @@ public class FlotteEquivalente
 			}
 
 			quantite_totale += quantite;
-			m_Defense += quantite * v.Defense;
-			m_Attaque += quantite * v.Attaque;
-			m_BonusArme += quantite * v.BonusArme;
-			m_BonusArmure += quantite * v.BonusArmure;
+			
+			m_Defense = m_Defense.add(BigInteger.valueOf(quantite * v.Defense));
+			
+			// On calcule la moyenne des Attaques, pondérées par la participation du vaisseau à la Def totale.
+			// Ce faisant, on évite d'avoir a actualiser les caracs Vaisseau/Vaisseau lorsque ceux-ci meurent, en obtenant strictement le même résultat.
+			somme_attaque = somme_attaque.add(BigInteger.valueOf((quantite * v.Defense) * v.Attaque));
+			
+			// On calcule la moyenne des bonus Arme et Armure, pondèrés par la participation du vaisseau à la Def totale.
+			somme_arme = somme_arme.add(BigDecimal.valueOf(quantite * v.Defense * v.BonusArme));
+			somme_armure = somme_armure.add(BigDecimal.valueOf(quantite * v.Defense * v.BonusArmure));
 		}
 		
-		m_BonusArme /= quantite_totale;
-		m_BonusArmure /= quantite_totale;
-	}
-
-	/**
-	 * @return
-	 */
-	public int getDefense()
-	{
-		return m_Defense;
-	}
-	
-	public double getDefenseCourante()
-	{
-		return Math.max(0, Double.valueOf(m_Defense) - m_DegatsAEncaisser);
+		BigDecimal Defense = new BigDecimal(m_Defense);
+		
+		if (m_Defense.compareTo(BigInteger.ZERO) > 0)
+		{
+			m_Attaque = somme_attaque.divide(m_Defense).intValue();
+			m_BonusArme = somme_arme.divide(Defense, MathContext.DECIMAL128).doubleValue();
+			m_BonusArmure = somme_armure.divide(Defense, MathContext.DECIMAL128).doubleValue();
+		}
+		
+		if ((m_Attaque >= Integer.MAX_VALUE) || (m_BonusArme >= Integer.MAX_VALUE) || (m_BonusArmure >= Integer.MAX_VALUE))
+		{
+			throw new RuntimeException("Les caracs sont hors-limites (overflow)");
+		}
 	}
 		
 	/**
@@ -161,7 +181,7 @@ public class FlotteEquivalente
 	
 	public double getAttaqueCourante()
 	{
-		return Double.valueOf(m_Attaque) * (getDefenseCourante() / Double.valueOf(m_Defense));
+		return m_Attaque;
 	}
 
 	/**
@@ -200,7 +220,6 @@ public class FlotteEquivalente
 			}
 			case -1: // TdT
 			{
-				//modif = -1 * (defenseur.getArmureMoyenne() * attaquant.getDefenseCourante());
 				modif = attaquant.getAttaqueCourante() * (1 - defenseur.getBonusArmure());
 				break;
 			}
@@ -215,12 +234,7 @@ public class FlotteEquivalente
 	public void ajouterDegats(double degats)
 	{
 		if (degats < 0) throw new RuntimeException("Erreur: Dégats négatifs");
-		m_DegatsAEncaisser += degats;
-	}
-
-	public double getDegatsAEncaisser()
-	{
-		return m_DegatsAEncaisser;
+		m_DegatsAEncaisser = m_DegatsAEncaisser.add(BigDecimal.valueOf(degats));
 	}
 
 	/**
@@ -228,13 +242,13 @@ public class FlotteEquivalente
 	 */
 	public void EncaisserDegats(boolean bFinaliser)
 	{
-		if (m_DegatsAEncaisser <= 0)
+		if (m_DegatsAEncaisser.compareTo(BigDecimal.ZERO) <= 0)
 			return;
 
 		// On détermine les points de défense globaux restant, en arrondissant à l'entier inférieur.
-		int DefRestante = new Double(Math.floor(getDefenseCourante())).intValue();
+		BigInteger DefRestante = getDefenseCourane().toBigInteger();
 
-		if (DefRestante <= 0)
+		if (DefRestante.compareTo(BigInteger.ZERO) <= 0)
 		{
 			m_liste_vaisseaux.clear();
 			refreshCaracs();
@@ -292,12 +306,12 @@ public class FlotteEquivalente
 				if (nouvelle_qte == null)
 					nouvelle_qte = 0;
 				nouvelle_liste.put(le_moins_cher, nouvelle_qte + 1);
-				m_DegatsAEncaisser = (le_moins_cher.Defense - reste);
+				m_DegatsAEncaisser = BigDecimal.valueOf(le_moins_cher.Defense - reste);
 				reste = 0;
 			}
 			else
 			{
-				m_DegatsAEncaisser = 0;
+				m_DegatsAEncaisser = BigDecimal.ZERO;
 			}
 		}
 		else
@@ -308,7 +322,7 @@ public class FlotteEquivalente
 
 			// Si on a de quoi payer la moitié de son prix avec le reste, alors
 			// on le compte bon.
-			if ((le_moins_cher.Defense / 2) < reste)
+			if ((le_moins_cher != null) && ((le_moins_cher.Defense / 2) < reste))
 			{
 				Integer nouvelle_qte = nouvelle_liste.get(le_moins_cher);
 				if (nouvelle_qte == null)
@@ -317,7 +331,7 @@ public class FlotteEquivalente
 				reste = 0;
 			}
 
-			m_DegatsAEncaisser = 0;
+			m_DegatsAEncaisser = BigDecimal.ZERO;
 		}
 
 		m_liste_vaisseaux = nouvelle_liste;
@@ -337,19 +351,19 @@ public class FlotteEquivalente
 	 * Comme GenererListesPossibilites, mais filtre en ne gardant que les
 	 * possibilit�es ayant le moins de "perte" (le reste le plus petit).
 	 * 
-	 * @param iDefRestante
+	 * @param defRestante
 	 * @param iDernierElement
 	 * @param listes_possibles
 	 * @param iPlusPetitReste
 	 * @return Plus petit reste
 	 */
-	private int GenererListesPossiblesSelect(int iDefRestante, Vector<TreeMap<Vaisseau, Integer>> listes_possibles)
+	private int GenererListesPossiblesSelect(BigInteger defRestante, Vector<TreeMap<Vaisseau, Integer>> listes_possibles)
 	{
-		return GenererListesPossiblesSelect(iDefRestante, m_liste_vaisseaux.firstKey(), listes_possibles, iDefRestante);
+		return GenererListesPossiblesSelect(defRestante, m_liste_vaisseaux.firstKey(), listes_possibles, defRestante).intValue();
 	}
 
-	private int GenererListesPossiblesSelect(int iDefRestante, Vaisseau iDernierElement,
-			Vector<TreeMap<Vaisseau, Integer>> listes_possibles, int PlusPetitReste)
+	private BigInteger GenererListesPossiblesSelect(BigInteger defRestante, Vaisseau iDernierElement,
+			Vector<TreeMap<Vaisseau, Integer>> listes_possibles, BigInteger defRestante2)
 	{
 		// POUR CHAQUE vaisseau DE LA m_liste_vaisseaux A PARTIR DE
 		// iDernierElement
@@ -368,29 +382,30 @@ public class FlotteEquivalente
 
 			// On calcule combien au maximum on peut "rachetter" de ce modèle de
 			// vaisseau (dans la limite de la quantité d'origine)
-			int max_qte_rachette = Math.min(quantite, iDefRestante / v.Defense);
+			BigInteger max_qte_rachette = defRestante.divide(BigInteger.valueOf(v.Defense)).min(BigInteger.valueOf(quantite)); 
 
 			Vaisseau v_next = m_liste_vaisseaux.higherKey(v);
 			
 			// On dénombre toutes les combinaisons de rachat (allant du max, a
 			// 1, sauf s'il n'y a pas de prochain vaisseau en liste)
-			int qte_rachette = max_qte_rachette;
+			BigInteger qte_rachette = max_qte_rachette;
 			do
 			{
 				// On calcule la Défense qu'il resterais à dépenser si l'on
 				// sauvais ce vaisseau
-				int NouvelleDefRestante = (iDefRestante - (v.Defense * qte_rachette));
+				BigInteger cout = qte_rachette.multiply(BigInteger.valueOf(v.Defense));
+				BigInteger NouvelleDefRestante = defRestante.subtract(cout);
 
 				// Si la nouvelle Def est plus petite que le plus petit reste
 				// observé, on l'ajoute
-				if (NouvelleDefRestante <= PlusPetitReste)
+				if (NouvelleDefRestante.compareTo(defRestante2) <= 0)
 				{
 					TreeMap<Vaisseau, Integer> nouvelle_liste = new TreeMap<Vaisseau, Integer>();
-					nouvelle_liste.put(v, qte_rachette);
+					nouvelle_liste.put(v, qte_rachette.intValue());
 				
 					listes_possibles.add(nouvelle_liste);
 
-					PlusPetitReste = NouvelleDefRestante;
+					defRestante2 = NouvelleDefRestante;
 				}
 
 				// On prépare une nouvelle liste de listes_possibles, que l'on
@@ -399,19 +414,19 @@ public class FlotteEquivalente
 				Vector<TreeMap<Vaisseau, Integer>> sous_listes_possibles = new Vector<TreeMap<Vaisseau,Integer>>();
 				// On note la PlusPetitePerte (reste) rencontré dans la
 				// sous-liste.
-				int ppp = PlusPetitReste;
+				BigInteger ppp = defRestante2;
 				if (v_next != null)
 				{
-					ppp = GenererListesPossiblesSelect(NouvelleDefRestante, v_next, sous_listes_possibles, PlusPetitReste);
+					ppp = GenererListesPossiblesSelect(NouvelleDefRestante, v_next, sous_listes_possibles, defRestante2);
 				}
 				
 				// Sinon, c'est qu'on a bien de nouvelles listes PLUS
 				// intéressantes, on vire les anciennes et on notes les
 				// nouvelles
-				if (ppp < PlusPetitReste)
+				if (ppp.compareTo(defRestante2) < 0)
 				{
 					listes_possibles.removeAllElements();
-					PlusPetitReste = ppp;
+					defRestante2 = ppp;
 				}
 
 				// On parcours la liste des sous_listes_possibles, que l'on
@@ -420,19 +435,19 @@ public class FlotteEquivalente
 				for (int j = 0; j < sous_listes_possibles.size(); ++j)
 				{
 					TreeMap<Vaisseau, Integer> nouvelle_liste = new TreeMap<Vaisseau, Integer>();
-					nouvelle_liste.put(v, qte_rachette);
+					nouvelle_liste.put(v, qte_rachette.intValue());
 					sous_liste_courante = sous_listes_possibles.get(j);
 					nouvelle_liste.putAll(sous_liste_courante);
 					
 					listes_possibles.add(nouvelle_liste);
 				}
 				
-				--qte_rachette;
-			}while((qte_rachette > 0) && (v_next != null));
+				qte_rachette = qte_rachette.subtract(BigInteger.ONE);
+			}while((qte_rachette.compareTo(BigInteger.ZERO) > 0) && (v_next != null));
 			// FIN POUR
 		}
 
-		return PlusPetitReste;
+		return defRestante2;
 	}
 
 	/**
@@ -445,14 +460,6 @@ public class FlotteEquivalente
 	}
 
 	/**
-	 * @return
-	 */
-	public double getTotalAttaques()
-	{
-		return m_totalAttaques;
-	}
-
-	/**
 	 * 
 	 */
 	public void razAttaques()
@@ -461,69 +468,19 @@ public class FlotteEquivalente
 	}
 
 	/**
-	 * M�thode r�cursive permettant de d�nombrer toutes les combinaisons
-	 * possible de rachat d'unit�e parmis les �l�ments de la flotte, avec le
-	 * "porte-monnaie" D�fense disponible.
-	 * 
-	 * @param iDefRestante :
-	 *            D�f disponible pour le rachat des �lements "rescap�s".
-	 * @param iDernierElement :
-	 *            Dernier �l�ment visit� dans l'arbre des possibilit�s
-	 * @param listes_possibles :
-	 *            Listes en cours
+	 * @return
 	 */
-	/*
-	 * private void GenererListesPossibles(int iDefRestante, int
-	 * iDernierElement, Vector<Vector<Integer>> listes_possibles) { for (int i =
-	 * iDernierElement; i < liste_elements.size(); ++i) { Vaisseau e =
-	 * liste_elements.get(i);
-	 * 
-	 * if (e.Defense <= iDefRestante) { int NouvelleDefRestante = (iDefRestante -
-	 * e.Defense);
-	 * 
-	 * Vector<Vector<Integer>> sous_liste_possibles = new Vector<Vector<Integer>>();
-	 * GenererListesPossibles(NouvelleDefRestante, (i + 1),
-	 * sous_liste_possibles);
-	 * 
-	 * for (int j = 0; j < sous_liste_possibles.size(); ++j) { Vector<Integer>
-	 * nouvelle_liste = new Vector<Integer>(); nouvelle_liste.add(i);
-	 * nouvelle_liste.addAll(sous_liste_possibles.get(j));
-	 * 
-	 * listes_possibles.add(nouvelle_liste); }
-	 * 
-	 * Vector<Integer> nouvelle_liste = new Vector<Integer>();
-	 * nouvelle_liste.add(i); nouvelle_liste.add(NouvelleDefRestante);
-	 * 
-	 * listes_possibles.add(nouvelle_liste); } } /* ALGORITHME
-	 * FLOTTE.GenererListesPossibles(DefRestante, dernier_element,
-	 * listes_possibles) // On parcours la liste des �l�ments � partir du
-	 * dernier d�j� vu. POUR i ALLANT DE dernier_element A
-	 * Flotte.liste_elements.taille() FAIRE // On note l'�l�ment courant Element
-	 * e <- Flotte.liste_element[i] // Si sa d�fense peut �tre "rachett�e" SI
-	 * (e.Def <= DefRestante) ALORS // On calcule combien il reste de Defense �
-	 * rachetter NouvelleDefRestante <- (DefRestante - e.Def) // On ajoute � la
-	 * liste le r�sultat de la "sous-liste" des possibles ListeElements[]
-	 * sous_liste_possibles <- VIDE GenererListesPossibles(NouvelleDefRestante,
-	 * (i+1), sous_liste_possibles)
-	 * 
-	 * POUR j ALLANT DE 0 A sous_liste_possibles.taille() FAIRE // On initialise
-	 * une nouvelle liste d'�l�ments. ListeElement nouvelle_liste <- VIDE
-	 * nouvelle_liste.Ajouter(e)
-	 * nouvelle_liste.AjouterListe(sous_listes_possibles[j])
-	 * 
-	 * listes_possibles.Ajouter(nouvelle_liste)
-	 * 
-	 * FIN POUR
-	 * 
-	 * ListeElement nouvelle_liste <- VIDE nouvelle_liste.Ajouter(e) // En
-	 * dernier �l�ment de la liste, on met le reste.
-	 * nouvelle_liste.Ajouter(DefRestante)
-	 * 
-	 * listes_possibles.Ajouter(nouvelle_liste) FSI
-	 * 
-	 * FIN POUR
-	 * 
-	 * FIN ALGORITHME
+	public double getTempsSurvieAttaque()
+	{
+		return getDefenseCourane().divide(BigDecimal.valueOf(m_totalAttaques), MathContext.DECIMAL128).doubleValue();
+	}
+
+	/**
+	 * @return
 	 */
-	// }
+	public double getTotalAttaques()
+	{
+		return m_totalAttaques;
+	}
+
 }
