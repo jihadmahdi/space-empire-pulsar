@@ -5,9 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Iterator;
-import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.Vector;
+import java.util.TreeSet;
 import java.util.Map.Entry;
 
 import tests.Vaisseau.eClasse;
@@ -21,16 +20,21 @@ import tests.Vaisseau.eClasse;
 public class AlgoTests
 {
 	public static final String LINE_SEPARATOR = "\r\n";
-	private static Vector<Vaisseau> magasin_vaisseaux = new Vector<Vaisseau>();
+	private static TreeMap<Vaisseau, String> Gabarits = new TreeMap<Vaisseau, String>();
+	private static TreeSet<Vaisseau> magasin_vaisseaux = new TreeSet<Vaisseau>();
 	private static BufferedReader clavier = new BufferedReader(new InputStreamReader(System.in));
 	
-	private static SortedMap<String, Integer> map = new TreeMap<String, Integer>();
-
 	private static Vaisseau SaisirVaisseau(PrintStream output)
 	{
-		for(int i=0; i<magasin_vaisseaux.size(); ++i)
+		Iterator<Vaisseau> it = magasin_vaisseaux.iterator();
+		Vaisseau[] vaisseaux = new Vaisseau[magasin_vaisseaux.size()+1]; 
+		magasin_vaisseaux.toArray(vaisseaux);
+		
+		int i = 0;
+		while(it.hasNext())
 		{
-			output.println((i+1)+") "+magasin_vaisseaux.get(i));
+			output.println((i+1)+") "+it.next());
+			++i;
 		}
 		output.println("0) Finir");
 		
@@ -48,10 +52,10 @@ public class AlgoTests
 				output.println("Erreur de saisie");
 				choix = -1;
 			}
-		}while(choix < 0);
+		}while((choix < 0) || (choix > i));
 		
 		if (choix == 0) return null;
-		return magasin_vaisseaux.get(choix-1);
+		return vaisseaux[choix-1];
 	}
 	
 	private static Flotte SaisirFlotte(String sNomFlotte, PrintStream output)
@@ -86,45 +90,6 @@ public class AlgoTests
 		return flotte;
 	}
 	
-	private static void TestIterateursBis(String dernier_element)
-	{
-		Iterator<Entry<String, Integer>> it = map.tailMap(dernier_element).entrySet().iterator();
-		
-		while(it.hasNext())
-		{
-			Entry<String, Integer> e = it.next();
-			String k = e.getKey();
-			Integer v = e.getValue();
-			System.out.print("("+k+","+v+")");
-			if (it.hasNext())
-			{
-				System.out.print(", ");
-			}
-		}
-	}
-	
-	private static boolean TestIterateurs()
-	{
-		map.clear();
-		map.put("A", 2);
-		map.put("B", 1);
-		map.put("C", 3);
-		map.put("D", 3);
-		
-		Iterator<Entry<String, Integer>> it = map.entrySet().iterator();
-		
-		while(it.hasNext())
-		{
-			Entry<String, Integer> e = it.next();
-			String k = e.getKey();
-			System.out.print("1] "+k+" ");
-			TestIterateursBis(k);
-			System.out.print(AlgoTests.LINE_SEPARATOR);
-		}
-		
-		return true;
-	}
-	
 	public static Flotte testCombat(PrintStream output, Flotte flotteA, Flotte flotteB) throws FileNotFoundException
 	{
 		if (output == null)
@@ -152,19 +117,21 @@ public class AlgoTests
 		return vainqueur;
 	}
 	
-	private static Flotte jouerCombat(Vaisseau vaisseauFORT, Vaisseau vaisseauFAIBLE, int nb_FORT, int nb_FAIBLE, PrintStream output) throws FileNotFoundException
+	private static Flotte jouerCombat(String sNomFORT, String sNomFAIBLE, Vaisseau vaisseauFORT, Vaisseau vaisseauFAIBLE, int nb_FORT, int nb_FAIBLE, PrintStream output) throws FileNotFoundException
 	{
-		Flotte flotteForte = new Flotte("Champion");
+		Flotte flotteForte = new Flotte(sNomFORT);
 		flotteForte.ajouterVaisseau(vaisseauFORT, nb_FORT);
 		
-		Flotte flotteFaible = new Flotte("Chalanger");
+		Flotte flotteFaible = new Flotte(sNomFAIBLE);
 		flotteFaible.ajouterVaisseau(vaisseauFAIBLE, nb_FAIBLE);
 		
 		return testCombat(output, flotteForte, flotteFaible);
 	}
 	
-	public static void testEquilibre(PrintStream output, Vaisseau vaisseauFORT, Vaisseau vaisseauFAIBLE, int facteur_taille, double pas, double offset) throws FileNotFoundException
+	public static Double[] testEquilibre(PrintStream output, Vaisseau vaisseauFORT, Vaisseau vaisseauFAIBLE, int facteur_taille, double pas, double offset) throws FileNotFoundException
 	{
+		Double[] resultats = new Double[4];
+		
 		pas = Math.max(1, facteur_taille*pas);
 		PrintStream silent = new PrintStream(".\\output.txt");
 		
@@ -186,121 +153,256 @@ public class AlgoTests
 		
 		double valeur_courante = 0;
 		int nb_FAIBLE = 0;
-		int nb_FAIBLE_derniere_valeur = 0;
-		int nb_FAIBLE_premier_nul = Integer.MAX_VALUE;
-		int nb_FAIBLE_dernier_nul = Integer.MAX_VALUE;
+		// On recherche deux valeurs bornes (Victoire, Défaite), et le premier nul rencontré s'il y'en a un.
+		int borne_victoires = 0;
+		int borne_defaites = Integer.MAX_VALUE;
+		int borne_premier_nul = Integer.MAX_VALUE;
+		int borne_dernier_nul = 0;
+		
+		int score_derniere_victoire = facteur_taille;
+		int score_premiere_defaite = 0;
 		
 		do
 		{
-			valeur_courante = (1+offset + (i*pas));
 			++i;
-			
-			nb_FAIBLE_derniere_valeur = nb_FAIBLE;
-			nb_FAIBLE = new Double(Double.valueOf(facteur_taille) * Double.valueOf(valeur_courante)).intValue();
+			nb_FAIBLE = ((borne_defaites - borne_victoires) / 2) + borne_victoires;
+			valeur_courante = Double.valueOf(nb_FAIBLE) / Double.valueOf(facteur_taille);
 			
 			output.print("Test n°"+i+": 1/"+valeur_courante+"\t"+facteur_taille+"/"+nb_FAIBLE+"\t");
+			vainqueur = jouerCombat("Champion", "Chalanger", vaisseauFORT, vaisseauFAIBLE, facteur_taille, nb_FAIBLE, silent);
 			
-			vainqueur = jouerCombat(vaisseauFORT, vaisseauFAIBLE, facteur_taille, nb_FAIBLE, silent);
-			
-			// TODO: Trouver un moyen permettant de récupérer le vainqueur même si les deux flottes ont les même vaisseau (nom de la flotte ?)
-			survivant = vainqueur.RecupererFlotteEquivalente(vaisseauFORT.Classe).getNbVaisseau(vaisseauFORT);
-			if (survivant == 0)
+			if (vainqueur.getM_sNom().compareTo("Champion") == 0)
+			{
+				survivant = vainqueur.RecupererFlotteEquivalente(vaisseauFORT.Classe).getNbVaisseau(vaisseauFORT);
+			}
+			else
 			{
 				survivant = -1 * vainqueur.RecupererFlotteEquivalente(vaisseauFAIBLE.Classe).getNbVaisseau(vaisseauFAIBLE);
-				if (survivant == 0)
-				{
-					nb_FAIBLE_premier_nul = Math.min(nb_FAIBLE_premier_nul, nb_FAIBLE);
-					nb_FAIBLE_dernier_nul = Math.max(nb_FAIBLE_dernier_nul, nb_FAIBLE);
-				}
 			}
 			
-			output.println(survivant);
+			// Si le chalenger gagne
+			if (survivant < 0)
+			{
+				// On retente dans la moitié inférieure
+				borne_defaites = nb_FAIBLE;
+				score_premiere_defaite = survivant;
+			}
+			// Si le champion gagne
+			else if (survivant > 0)
+			{
+				// On retente dans la moitié suppérieure
+				borne_victoires = nb_FAIBLE;
+				score_derniere_victoire = survivant;
+			}
+			// Match nul
+			else
+			{
+				borne_premier_nul = Math.min(borne_premier_nul, nb_FAIBLE);
+				borne_dernier_nul = Math.max(borne_dernier_nul, nb_FAIBLE);
+			}
+		}while((borne_dernier_nul < borne_premier_nul) && (borne_victoires < borne_defaites));
+		
+		// Recherche du premier nul
+		while(borne_premier_nul > (borne_victoires +1))
+		{
+			++i;
+			nb_FAIBLE = ((borne_premier_nul - borne_victoires) / 2) + borne_victoires;
+			valeur_courante = Double.valueOf(nb_FAIBLE) / Double.valueOf(facteur_taille);
 			
-		}while(survivant >= 0);
-		
-		// Recherche du match nul
-		int avant_premier_nul = Math.min(nb_FAIBLE_premier_nul, nb_FAIBLE_derniere_valeur);
-		int apres_dernier_nul = Math.min(nb_FAIBLE_dernier_nul, nb_FAIBLE_derniere_valeur);
-		
-		// BN gagne ]0;avant_premier_nul]
-		// MatchNUL/Coupure [premier_nul; dernier_nul]
-		// TdT gagne [apres_dernier_nul; +inf[
-		
-		int score_avant_premier_nul = 0; int score_premier_nul = 0;
-		int score_apres_dernier_nul = 0; int score_dernier_nul = 0;
-		
-		while((score_avant_premier_nul <= 0) && (avant_premier_nul > 0))
-		{ 
-			// Recherche arriere
-			vainqueur = jouerCombat(vaisseauFORT, vaisseauFAIBLE, facteur_taille, avant_premier_nul, silent);
-		
-			score_avant_premier_nul = vainqueur.RecupererFlotteEquivalente(vaisseauFORT.Classe).getNbVaisseau(vaisseauFORT);
-			if (score_avant_premier_nul == 0)
+			output.print("Test n°"+i+": 1/"+valeur_courante+"\t"+facteur_taille+"/"+nb_FAIBLE+"\t");
+			vainqueur = jouerCombat("Champion", "Chalanger", vaisseauFORT, vaisseauFAIBLE, facteur_taille, nb_FAIBLE, silent);
+			
+			if (vainqueur.getM_sNom().compareTo("Champion") == 0)
 			{
-				score_avant_premier_nul = -1 * vainqueur.RecupererFlotteEquivalente(vaisseauFAIBLE.Classe).getNbVaisseau(vaisseauFAIBLE);
+				survivant = vainqueur.RecupererFlotteEquivalente(vaisseauFORT.Classe).getNbVaisseau(vaisseauFORT);
 			}
-			if (score_avant_premier_nul <= 0)
+			else
 			{
-				--avant_premier_nul;
-				score_premier_nul = score_avant_premier_nul;
+				survivant = -1 * vainqueur.RecupererFlotteEquivalente(vaisseauFAIBLE.Classe).getNbVaisseau(vaisseauFAIBLE);
 			}
-		}
-
-		while((score_apres_dernier_nul >= 0) && (apres_dernier_nul > 0))
-		{ 
-			// Recherche avant
-			vainqueur = jouerCombat(vaisseauFORT, vaisseauFAIBLE, facteur_taille, apres_dernier_nul, silent);
-		
-			score_apres_dernier_nul = vainqueur.RecupererFlotteEquivalente(vaisseauFORT.Classe).getNbVaisseau(vaisseauFORT);
-			if (score_apres_dernier_nul == 0)
+			
+			// Si le champion gagne
+			if (survivant > 0)
 			{
-				score_apres_dernier_nul = -1 * vainqueur.RecupererFlotteEquivalente(vaisseauFAIBLE.Classe).getNbVaisseau(vaisseauFAIBLE);
+				// On retente dans la moitié suppérieure
+				borne_victoires = nb_FAIBLE;
+				score_derniere_victoire = survivant;
 			}
-			if (score_apres_dernier_nul >= 0)
+			// Match nul
+			else if (survivant == 0)
 			{
-				++apres_dernier_nul;
-				score_dernier_nul = score_apres_dernier_nul;
+				// On retente dans la moitié inférieure
+				borne_premier_nul = nb_FAIBLE;
+			}
+			else
+			{
+				throw new RuntimeException("Champion n'est pas sensé perdre..");
 			}
 		}
 		
-		int plage_nul = (apres_dernier_nul - avant_premier_nul);
+		// Recherche du dernier nul
+		while(borne_dernier_nul < (borne_defaites-1))
+		{
+			++i;
+			nb_FAIBLE = ((borne_defaites - borne_dernier_nul) / 2) + borne_dernier_nul;
+			valeur_courante = Double.valueOf(nb_FAIBLE) / Double.valueOf(facteur_taille);
+			
+			output.print("Test n°"+i+": 1/"+valeur_courante+"\t"+facteur_taille+"/"+nb_FAIBLE+"\t");
+			vainqueur = jouerCombat("Champion", "Chalanger", vaisseauFORT, vaisseauFAIBLE, facteur_taille, nb_FAIBLE, silent);
+			
+			if (vainqueur.getM_sNom().compareTo("Champion") == 0)
+			{
+				survivant = vainqueur.RecupererFlotteEquivalente(vaisseauFORT.Classe).getNbVaisseau(vaisseauFORT);
+			}
+			else
+			{
+				survivant = -1 * vainqueur.RecupererFlotteEquivalente(vaisseauFAIBLE.Classe).getNbVaisseau(vaisseauFAIBLE);
+			}
+			
+			// Si le chalanger gagne
+			if (survivant < 0)
+			{
+				// On retente dans la moitié inférieure
+				borne_defaites = nb_FAIBLE;
+				score_premiere_defaite = survivant;
+			}
+			// Match nul
+			else if (survivant == 0)
+			{
+				// On retente dans la moitié inférieure
+				borne_dernier_nul = nb_FAIBLE;
+			}
+			else
+			{
+				throw new RuntimeException("Champion n'est pas sensé gagner..");
+			}
+		}
+		
+		int plage_nul = (borne_defaites - borne_premier_nul);
 		
 		double taille = Double.valueOf(facteur_taille);
-		double coupure_premier = (Double.valueOf(avant_premier_nul + 1) / taille);
-		double coupure_avant_premier = (Double.valueOf(avant_premier_nul) / taille);
-		double coupure_dernier = (Double.valueOf(apres_dernier_nul - 1) / taille);
-		double coupure_apres_dernier = (Double.valueOf(apres_dernier_nul) / taille);
+		double coupure_premier = (Double.valueOf(borne_premier_nul) / taille);
+		double coupure_avant_premier = (Double.valueOf(borne_victoires) / taille);
+		double coupure_dernier = (Double.valueOf(borne_dernier_nul) / taille);
+		double coupure_apres_dernier = (Double.valueOf(borne_defaites) / taille);
 		if (plage_nul == 0)
 		{	
-			output.println("Victoire jusqu'à\"[1/"+coupure_avant_premier+"; "+facteur_taille+"/"+avant_premier_nul+"]: "+score_avant_premier_nul);
-			output.println("Coupure en\t1/"+coupure_premier+"\t"+facteur_taille+"/"+(avant_premier_nul+1)+"]: "+score_premier_nul);
-			output.println("Défaite à partir de\t1/"+coupure_apres_dernier+"\t"+facteur_taille+"/"+apres_dernier_nul+"]: "+score_apres_dernier_nul);
+			output.println("Victoire jusqu'à\"[1/"+coupure_avant_premier+"; "+facteur_taille+"/"+borne_victoires+"]: "+score_derniere_victoire);
+			output.println("Défaite à partir de\t1/"+coupure_apres_dernier+"\t"+facteur_taille+"/"+borne_defaites+"]: "+score_premiere_defaite);
 		}
 		else
 		{
-			output.println("Victoire jusqu'à\t[1/"+coupure_avant_premier+"\t"+facteur_taille+"/"+avant_premier_nul+"]: "+score_avant_premier_nul);
-			output.println("Match nul depuis\t[1/"+coupure_premier+"\t"+facteur_taille+"/"+(avant_premier_nul+1)+"]: "+score_premier_nul);
-			output.println("Match nul jusqu'à\t[1/"+coupure_dernier+"\t"+facteur_taille+"/"+(apres_dernier_nul-1)+"]: "+score_dernier_nul);
-			output.println("Défaite à partir de\t[1/"+coupure_apres_dernier+"\t"+facteur_taille+"/"+apres_dernier_nul+"]: "+score_apres_dernier_nul);
+			output.println("Victoire jusqu'à\t[1/"+coupure_avant_premier+"\t"+facteur_taille+"/"+borne_victoires+"]: "+score_derniere_victoire);
+			output.println("Match nul depuis\t[1/"+coupure_premier+"\t"+facteur_taille+"/"+borne_premier_nul+"]: 0");
+			output.println("Match nul jusqu'à\t[1/"+coupure_dernier+"\t"+facteur_taille+"/"+borne_dernier_nul+"]: 0");
+			output.println("Défaite à partir de\t[1/"+coupure_apres_dernier+"\t"+facteur_taille+"/"+borne_defaites+"]: "+score_premiere_defaite);
 		}
-				
+		
+		// Victoire jusqu'a
+		resultats[0] = Double.valueOf(borne_victoires);
+		resultats[1] = coupure_avant_premier;
+		// Défaite à partir de
+		resultats[2] = Double.valueOf(borne_defaites);
+		resultats[3] = coupure_apres_dernier;
+		
 		output.print("Il faut\t\t");
 		output.println(coupure_apres_dernier+"\t*\t"+vaisseauFAIBLE);
 		output.print("pour battre\t");
 		output.println("1\t*\t"+vaisseauFORT);
 		output.println("Etat du vainqueur: ");
 		output.println(vainqueur);
+
+		return resultats;
+	}
+	
+	public static void EcrireSortie(PrintStream output, String sChampion, String sChalanger, double borneVictoire, double borneDefaite)
+	{
+		output.println("\""+sChampion+" v "+sChalanger+"\"\t\""+borneVictoire+"\"\t\""+borneDefaite+"\"");
+	}
+	
+	public static void TesterRapports(PrintStream output, int facteur_taille, eClasse Ego) throws FileNotFoundException
+	{
+		PrintStream silent = new PrintStream(".\\output.txt");
+		
+		Double[] resultat = null;
+		Vaisseau[] vaisseaux = new Vaisseau[magasin_vaisseaux.size()+1];
+		String[] gabarits = new String[Gabarits.keySet().size()];
+		Gabarits.values().toArray(gabarits);
+		magasin_vaisseaux.toArray(vaisseaux);
+		eClasse BN = eClasse.getBN(Ego);
+		eClasse TdT = eClasse.getTdT(Ego);
+		Vaisseau champion = null;
+		Vaisseau chalenger = null;
+		double pas = 1;
+		
+		String liste_titre_gabarits = "";
+		String liste_gabarits = "";
+		for(int gabarit = 0; gabarit < Gabarits.size(); ++gabarit)
+		{
+			if (!liste_titre_gabarits.isEmpty())
+			{
+				liste_titre_gabarits += "\t";
+				liste_gabarits += "\t";
+			}
+			liste_titre_gabarits += gabarits[gabarit];
+			champion = vaisseaux[Ego.ordinal()*Gabarits.size() + gabarit];
+			liste_gabarits += "Def:"+champion.Defense+" / Att:"+champion.Attaque+" / Arm:"+champion.BonusArme+" / Bl:"+champion.BonusArmure;
+		}
+		output.println("Facteur taille\t"+liste_titre_gabarits);
+		output.println(facteur_taille+"\t"+liste_gabarits);
+		output.println("");
+		output.println("Champion v Chalanger\tVictoire jusqu'à\tDéfaite à partir de");
+		
+		for(int gabarit_champion = 0; gabarit_champion < Gabarits.size(); ++gabarit_champion)
+		{
+			champion = vaisseaux[Ego.ordinal()*Gabarits.size() + gabarit_champion];
+			
+			for(int gabarit_chalenger = 0; gabarit_chalenger <= gabarit_champion; ++gabarit_chalenger)
+			{
+				chalenger = vaisseaux[TdT.ordinal()*Gabarits.size() + gabarit_chalenger];
+				resultat = testEquilibre(silent, champion, chalenger, facteur_taille, pas, 0);
+				
+				EcrireSortie(output, gabarits[gabarit_champion]+" BN", gabarits[gabarit_chalenger]+" TdT", resultat[0], resultat[2]);
+			}
+			for(int gabarit_chalenger = 0; gabarit_chalenger < gabarit_champion; ++gabarit_chalenger)
+			{
+				chalenger = vaisseaux[Ego.ordinal()*Gabarits.size() + gabarit_chalenger];
+				resultat = testEquilibre(silent, champion, chalenger, facteur_taille, pas, 0);
+				
+				EcrireSortie(output, gabarits[gabarit_champion]+" Ego", gabarits[gabarit_chalenger]+" Ego", resultat[0], resultat[2]);
+			}
+			for(int gabarit_chalenger = 0; gabarit_chalenger < gabarit_champion; ++gabarit_chalenger)
+			{
+				chalenger = vaisseaux[BN.ordinal()*Gabarits.size() + gabarit_chalenger];
+				resultat = testEquilibre(silent, champion, chalenger, facteur_taille, pas, 0);
+				
+				EcrireSortie(output, gabarits[gabarit_champion]+" TdT", gabarits[gabarit_chalenger]+" BN", resultat[0], resultat[2]);
+			}
+		}
+		output.println("");
 	}
 	
 	public static void RemplirMagasin()
 	{
-		TreeMap<String, Integer[]> Gabarits = new TreeMap<String, Integer[]>();
+		Gabarits.clear();
 		
 		// Ajout d'un gabarit, nom gabarit, puis dans l'ordre "Def", "Att", "Arme", "Armure"
-		Gabarits.put("Léger", new Integer[] {100,20,500,70});
-		Gabarits.put("Moyen", new Integer[] {1500,200,500,80});
-		Gabarits.put("Lourd", new Integer[] {70,90,90,40});
 		
+		// Les gabarits doivent forcément être ajoutés du plus petit au plus grand, pour garder compatibilité avec testerRapports()
+		
+		// LégerBN vs LégerTdT : 3/9
+		Gabarits.put(new Vaisseau("Modèle_Léger", 100, 20, eClasse.DD, 3.0, 0.5), "Léger");
+		// MoyenBN vs MoyenTdT : 5/12
+		// MoyenBN vs LégerTdT : 140/282
+		// MoyenEgo vs LégerEgo: 12/26
+		Gabarits.put(new Vaisseau("Modèle_Moyen", 500, 20, eClasse.DD, 3.5, 0.6), "Moyen");
+		// LourdBN vs LourdTdT : 8/18
+		// LourdBN vs MoyenTdT : 208/418
+		// LourdBN vs LégerTdT : 5204/10418
+		// LourdEgo vs MoyenEgo: 12/26
+		// LourdEgo vs LégerEgo: 312/626
+		Gabarits.put(new Vaisseau("Modèle_Lourd", 2500, 500, eClasse.DD, 4.0, 0.7), "Lourd");
+	
 		/* Notes sur l'équilibre
 		 * En faisant les tests avec un facteur_taille à 1 on a le nombre exact de Faible qu'il faut pour tuer un Fort.
 		 * En faisant les tests avec un facteur_taille à 100, on a en plus une précision sur les dégats encaissé par le vainqueur (dégats qui sont ignoré/rachetté avec un facteur_taille 1).
@@ -315,17 +417,18 @@ public class AlgoTests
 		 * Conclusion: Plus on augmente l'armure, plus on spécialise le modèle de vaisseau.
 		 */
 		
-		Iterator<Entry<String, Integer[]>> it = Gabarits.entrySet().iterator();
+		Iterator<Entry<Vaisseau, String>> it = Gabarits.entrySet().iterator();
 		while(it.hasNext())
 		{
-			Entry<String, Integer[]> e = it.next();
-			String sGabarait = e.getKey();
-			Integer[] caracs = e.getValue();
+			Entry<Vaisseau, String> e = it.next();
+			String sGabarait = e.getValue();
+			Vaisseau modele = e.getKey();
 			
 			for(int i=0; i < eClasse.nbClasses; ++i)
 			{
 				eClasse classe = eClasse.values()[i];
-				magasin_vaisseaux.add(new Vaisseau(classe+" "+sGabarait, caracs[0], caracs[1], classe, Double.valueOf(caracs[2]) / 100.0, Double.valueOf(caracs[3]) / 100.0));
+				Vaisseau nouveau = new Vaisseau(classe+" "+sGabarait, modele.Defense, modele.Attaque, classe, modele.BonusArme, modele.BonusArmure);
+				magasin_vaisseaux.add(nouveau);
 			}
 		}
 	}
@@ -341,11 +444,21 @@ public class AlgoTests
 
 		try
 		{
-			testEquilibre(System.out, null, null, 1, .1, 0);
+			//testEquilibre(System.out, null, null, 10, .1, 0);
+			for(int i=0; i<=5; ++i)
+			{
+				int facteur_taille = new Double(Math.pow(10, i)).intValue();
+				PrintStream ps = new PrintStream("c:\\rapport_combats_"+facteur_taille+".csv");
+				TesterRapports(ps, facteur_taille, eClasse.DD);
+				
+				if (!ps.equals(System.out))
+				{
+					ps.close();
+				}
+			}
 		}
 		catch (FileNotFoundException e1)
 		{
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 	}
