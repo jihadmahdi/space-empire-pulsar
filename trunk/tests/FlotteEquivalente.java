@@ -24,7 +24,7 @@ public class FlotteEquivalente
 
 	private eClasse							m_Classe;
 
-	private BigInteger						m_Defense			= BigInteger.ZERO;
+	private BigDecimal						m_Defense			= BigDecimal.ZERO;
 
 	private int								m_Attaque			= 0;
 
@@ -98,7 +98,7 @@ public class FlotteEquivalente
 
 	private BigDecimal getDefenseCourane()
 	{
-		return new BigDecimal(m_Defense).subtract(m_DegatsAEncaisser, MathContext.DECIMAL128);
+		return m_Defense.subtract(m_DegatsAEncaisser, MathContext.DECIMAL128);
 	}
 	
 	/**
@@ -119,7 +119,7 @@ public class FlotteEquivalente
 
 	private void refreshCaracs()
 	{
-		m_Defense = BigInteger.ZERO;
+		m_Defense = BigDecimal.ZERO;
 		m_Attaque = 0;
 		m_BonusArme = 0;
 		m_BonusArmure = 0;
@@ -145,7 +145,7 @@ public class FlotteEquivalente
 
 			quantite_totale += quantite;
 			
-			m_Defense = m_Defense.add(BigInteger.valueOf(quantite * v.Defense));
+			m_Defense = m_Defense.add(BigDecimal.valueOf(quantite * v.Defense));
 			
 			// On calcule la moyenne des Attaques, pondérées par la participation du vaisseau à la Def totale.
 			// Ce faisant, on évite d'avoir a actualiser les caracs Vaisseau/Vaisseau lorsque ceux-ci meurent, en obtenant strictement le même résultat.
@@ -156,13 +156,11 @@ public class FlotteEquivalente
 			somme_armure = somme_armure.add(BigDecimal.valueOf(quantite * v.Defense * v.BonusArmure));
 		}
 		
-		BigDecimal Defense = new BigDecimal(m_Defense);
-		
-		if (m_Defense.compareTo(BigInteger.ZERO) > 0)
+		if (m_Defense.compareTo(BigDecimal.ZERO) > 0)
 		{
-			m_Attaque = somme_attaque.divide(m_Defense).intValue();
-			m_BonusArme = somme_arme.divide(Defense, MathContext.DECIMAL128).doubleValue();
-			m_BonusArmure = somme_armure.divide(Defense, MathContext.DECIMAL128).doubleValue();
+			m_Attaque = somme_attaque.divide(m_Defense.toBigInteger()).intValue();
+			m_BonusArme = somme_arme.divide(m_Defense, MathContext.DECIMAL128).doubleValue();
+			m_BonusArmure = somme_armure.divide(m_Defense, MathContext.DECIMAL128).doubleValue();
 		}
 		
 		if ((m_Attaque >= Integer.MAX_VALUE) || (m_BonusArme >= Integer.MAX_VALUE) || (m_BonusArmure >= Integer.MAX_VALUE))
@@ -481,6 +479,14 @@ public class FlotteEquivalente
 	public double getTotalAttaques()
 	{
 		return m_totalAttaques;
+	}
+
+	/**
+	 * @return
+	 */
+	public BigDecimal getDefense()
+	{
+		return m_Defense;
 	}
 
 }
