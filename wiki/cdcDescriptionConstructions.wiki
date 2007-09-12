@@ -22,20 +22,20 @@ Elles ont deux fonctionnalités distinctes:
 	* Le remaniement des flottes existantes, qui se posent sur la piste de l'usine et y reste jusqu'a être de nouveaux affecté à une flotte.
 
 ==Module de défense (0人/4000資)==
-Les modules de défense sont la première protection des corps célestes, ils octroient des bonus de +50 en attaque et en défense au corps céleste si celui-ci est attaqué, ainsi qu'aux flottes alliées en orbite.
+Les modules de défense sont la première protection des corps célestes, ils octroient des bonus de +(*A DEFINIR*) en attaque et en défense au corps céleste si celui-ci est attaqué, ainsi qu'aux flottes alliées en orbite.
 Ces modules sont cumulables tant que le corps céleste dispose de slots libres.
 
 ==Module gouvernemental (0人/0資)==
 Ce module, pré-existant sur la première planète de chaque joueur, représente la capitale de son empire, le centre de commande et d'organisation de toute ces armées.
 C'est donc également un point vital qui doit être préservé à tout prix.
 Si l'invasion est imminante, le joueur peu toujours créer un vaisseau gouvernemental pour changer de capitale.
-Le module gouvernemental est alors détruit et sera recréé sur la planète destination du vaisseau gouvernemental, si toutefois elle est toujours libre.
+Le module gouvernemental est alors démonté et sera remonté sur la planète destination du vaisseau gouvernemental, si toutefois elle est toujours libre.
 A noter que si la planète destination ne possède pas de slots libre, le joueur devra obligatoirement en libérer un.
 La planète où est établi le module gouvernemental reçoi un bonus de production de +50% en 人 et 資.
 
 ==Comptoir intergalactique (0人/1000資)==
 Les comptoirs intergaliactique permettent d'acheminer les ressources entre les planètes.
-Ainsi, les nébuleuse et champs d'astéroïdes qui ne peuvent produire de vaisseaux ont tout intéret à disposer d'au moins un comptoir pour pouvoir acheminer leurs ressources vers les planètes qui elles sont plus pauves en carbone.
+Ainsi, les nébuleuse et champs d'astéroïdes qui ne peuvent produire de vaisseaux ont tout intéret à disposer d'au moins un comptoir pour pouvoir acheminer leurs ressources vers les planètes qui sont plus pauves en carbone.
 Les comptoirs ont deux fonctions pricipales :
 * Ils permettent de construire une route de l'espace, moyennant une prix qui dépend de la distance à couvrir (500資/Z).
 Cette route se fait d'un comptoir à un autre (ceux-ci ne pouvant plus servir à d'autre routes).
@@ -47,4 +47,5 @@ Le voyage est assuré par un transporteur qui a sa propre vitesse achemine la qu
 L'envoi prend le temps d'un allé simple, la planète destination encaisse le carbone reçu et le transporteur repart sur sa planète d'origine.
 Il met autant de temps pour y rentrer, puis repart automatiquement s'il a une commande en attente.
 Le joueur peut modifier la "commande" à tout moment, mais celle-ci n'est prise en compte que lorsque le transporteur est disponible.
-Les routes de l'espace et les échanges de ressource sont dissociés et peuvent concernet des destination différentes.
+
+Les routes de l'espace et les échanges de ressource sont dissociés et peuvent concerner des destinations différentes.

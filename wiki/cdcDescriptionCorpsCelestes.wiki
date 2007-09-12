@@ -23,16 +23,15 @@ Il existe différents types de corps célestes dont voici la liste:
 	Les planètes sont les seuls corps célestes offrant les deux types de ressources existantes: population et carbonne.
 	De ce fait, certaines constructions ne sont possibles que sur des planètes.
 	Elles sont un point stratégique important, même si leur ressources carbone sont très inférieures aux autres corps célestes desquels elles doivent s'approvisionner.
-	Les planètes neutres disposent d'une armée de défense fixé à la génération de l'univers suivant sa taille.
+	Les planètes neutres disposent d'une armée de défense fixé à la génération de l'univers suivant leurs taille.
 	{{{
 		人 par tour: [2500-7500]
 		人 max: [50K-150K]
 		資 max: [50K-100K]
 		Nb. slots: [6-15]
-		
+	}}}
 		Constructions autorisées:
 		Exploitation de ressources, Usine de vaisseaux, Module de défense, Module gouvernemental, Comptoir.
-	}}}
 
 ==Nébuleuse==
 	La nébuleuse est un corps celeste formé de gaz et de poussières.
@@ -42,10 +41,9 @@ Il existe différents types de corps célestes dont voici la liste:
 		人 max: 0
 		資 max: [100K-500K]
 		Nb. slots: [3-6]
-		
+	}}}
 		Constructions autorisées:
 		Exploitation de ressources,~~Usine de vaisseau~~, ~~Module de défense~~, ~~Module gouvernemental~~, Comptoir.
-	}}}
 		
 
 ==Champ d'astéroïde==
@@ -56,10 +54,9 @@ Il existe différents types de corps célestes dont voici la liste:
 		人 max: 0
 		資 max: [60K-300K]
 		Nb. slots: [4-8]
-		
+	}}}
 		Constructions autorisées:
 		Exploitation de ressources, ~~Usine de vaisseaux~~, Module de défense, ~~Module gouvernemental~~, Comptoir.
-	}}}
 
 ==Vortex==
 	Les vortex ont une origine encore méconnue. Leur formation est passionnément étudiée par l'ensemble de la communauté des chercheurs.

@@ -12,6 +12,7 @@ Cette page se propose de faire la liste des fonctionnalités de Space Empire Pul
 ==Should (Fonctionnalités qui devrait être implémentées)==
 	* Interface comprenant une partie vue 3D (jME).
 ==Can (Fonctionnalités qui pourrait être implémentées)==
+	* Serveur web de "liste des parties" (résultat XML, interpreté et affiché InGame)
 	* Possibilité de promener librement la caméra dans l'univers en 3D.
 	* Implémentation d'une AI "correcte" pour ajouter des joueurs artificiels.
 ==Wont (Fonctionnalité qui ne seront pas implémentées)==

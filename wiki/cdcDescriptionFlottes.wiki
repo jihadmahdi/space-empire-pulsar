@@ -7,34 +7,49 @@ Une flotte est un ensemble de vaisseaux, les caractéristiques d'une flotte dép
 Une flotte se créé sur une planète avec les vaisseaux disponibles sur celle-ci.
 En stationnment sur une planète, une flotte peut être dissociée et les vaisseaux ré-affectés à de nouvelles flottes.
 
-==Classesd de vaisseaux==
+==Classess de vaisseaux==
 Les vaisseaux sont rangés en 3 classes: Chasseurs, Destroyers, Artillerie.
+Chaque classe est étudiée pour être particulièrement efficace contre une autre, et a elle même une classe prédateur.
+{{{
+Chasseurs -> Artillerie
+Artillerie -> Destroyers
+Destroyers -> Chasseurs
+}}}
+
+Outre ces avantages en combat, chaque classe dispose d'un capacité hors-combat, qui lui donne un attrait stratégique plus ou moins important suivant le style de jeu du joueur.
+
 ===Chasseurs===
-Les chasseurs sont des vaisseaux rapides mais peu résistants, spécialisé dans la destruction des vaisseaux d'artillerie.
+Les chasseurs sont des vaisseaux rapides mais peu résistants, spécialisés dans la destruction des vaisseaux d'artillerie.
 En combat ils ont pour mission d'atteindre au plus vite l'artillerie ennemi et de la décimer, celle-ci étant particulièrement vulnérable en combat rapproché.
 Pour ce faire ils doivent cependant traverser la ligne des destroyers ennemi dont les tirs sont puissants.
 
+*Capacité spéciale*
+	Les chasseurs ont systématiquement leur vitesse doublée par rapport à leur gabarit.
+	Cet avantage ne s'exprime que lorsque les chasseurs ne se mélangent pas aux autres classes.
+	
 ===Destroyers===
-Les destroyers sont des vaisseaux blindés et possédant une énorme puissance de feu à courte distance.
+Les destroyers sont des vaisseaux blindés possédant une énorme puissance de feu à courte distance.
 En combat ils ont donc pour mission de former une ligne de défense devant l'artillerie, et d'éliminer le plus de chasseurs ennemi possible.
 Cependant ils sont les cibles de choix de l'artillerie ennemi, seule capable de percer efficacement leur blindage.
 
+*Capacité spéciale*
+	Les destroyers peuvent se mettre en position "défense" sur un corps céleste. Ils ne sont alors mobilisés lors d'une attaque, qu'une fois que toutes les autres unités sont mortes, et bénéficient pour le combat d'un bonus de défense spécial.
+	Seuls les destroyers mis manuellement en position "défense" le sont, les autres vaisseaux constituent la première ligne en cas d'attaque. Se sont deux combats distinct.
+	
 ===Artillerie===
-Les vaisseaux d'artillerie sont de lourds vaisseaux disposant de systèmes de visés longue porté et de lances missiles puissants.
-En combat ils ont pour mission d'éliminer le plus de Destroyer ennemi possible.
+Les vaisseaux d'artillerie sont de lourds vaisseaux disposant de systèmes de visés longue porté et de missiles perforants.
+En combat ils ont pour mission d'éliminer le plus de destroyers ennemi possible.
 Cependant ils sont eux même tributaire du nombre de destroyer allié qui les protège des chasseurs ennemis contre lesquels ils ne peuvent rien.
 
+*Capacité spéciale*
+	Les unités d'artilleries, qui sont les seules pourvues des appareils nécéssaires, peuvent en se sacrifiant obtenir des informations à jour sur un corps céleste ennemi.
+	La flotte envoyée en espion ne doit être composée que d'unitées d'artillerie pour que l'espionage fonctionne.
+	Si la flotte ainsi envoyée est suffisante pour conquérir le corps céleste visé, elle le conquiert.
+	
 ==Calcul des caractéristiques d'une flotte==
 Une flotte qui contient des vaisseaux représentant des 3 classes est modélisé par trois flottes équivalente de chaque classe.
 Pour les déplacement, la Vitesse de la flotte est la vitesse du vaisseau le plus lent.
-
-Flotte Equivalente de Classe
-{{{
-	Attaque = Somme Attaque de tous les vaisseaux de la classe + Bonus héro éventuel
-	Défense = Somme Defense de tous les vaisseaux de la classe + Bonus héro éventuel
-	Arme = Somme des bonus d'arme de tous les vaisseaux de la classe
-	Armure = Somme des bonus d'armure de tous les vaisseaux de la classe
-}}}
+Pour les détails concernant le calcul des caractéristiques des flottes équivalente, [cdcReglesCombats cf. les règles de combat].
 
 ==Calcul de la valeur d'un vaisseau==
 Afin de garantir un équilibre de prix et de puissance entre les vaisseaux, la formule suivante est proposée :
@@ -43,7 +58,11 @@ Soit 資 le coût en ressource (carbonne).
 Soit k une constante permettant de changer l'échèlle de mesure, car on souhaite parler de ressource en milliers, mais se limiter à des nombres a deux chiffres pour les caractéristiques.
 k=60
 
-2x人 + 資 = k x (Attaque + Arme + Défense + Armure + 5*Vitesse)
+p_attaque = p_defense = 1
+p_arme = p_armure = 1/3
+p_vitesse = 5
+
+2x人 + 資 = k x ( (p_attaque x Attaque) + (p_defense x Défense) + (p_arme x Attaque x Arme) + (p_armure x Defense x Armure) + (p_vitesse x Vitesse) )
 
 
 Voici la liste des différents vaisseaux :
@@ -62,46 +81,45 @@ Cependant si une flotte ennemie vient à occuper la zone où se trouve la sonde,
 }}}
 
 ===Vaisseau gouvernemental (200人/200資)===
-Le vaisseau gouvernemental ne peut être produit qu'une fois et sert à transporter le gouvernement (en fuite, par exemple).
-C'est un vaisseau particulièrement rapide, équipé d'armes légères en cas de besoin.
+Le vaisseau gouvernemental ne peut être produit que sur la planète disposant du module gouvernemental et sert à transporter le gouvernement (en fuite, par exemple).
+C'est un vaisseau particulièrement rapide, équipé d'armes légères en cas d'imprévu (on préfèrera cependant généralement lui adjoindre une flotte complète).
+Le vaisseau gouvernemental ne peut se déplacer qu'une fois, et sa destination est obligatoirement une planète.
 {{{
-	Attaque: 10
-	Defense: 20
+	Attaque: A DEFINIR
+	Defense: A DEFINIR
 	Vitesse: 2.5 Z/T
 }}}
-_Le vaisseau gouvernemental devrait avoir suffisament d'attaque pour abatre deux vaisseaux léger_
 
-===Vaisseaux léger (500人/1000資)===
-
-Chasseurs légers
+===Vaisseaux léger (A DEFINIR人/A DEFINIR資)===
+Les vaisseaux léger de chaque classes partagent les mêmes caractéristiques de base.
+On souhaite qu'un vaisseau léger BN puisse abattre 3 vaisseaux légers TdT et survivre.
 {{{
-	Attaque: 20
-
-===Vaisseaux moyen===
-
-
-===Vaisseaux lourds===
-
-Le vaisseau de combat léger permet de constituer à moindre coût des flottes rapides avec un attaque correcte.
-Ils sont en revanche peu résistants.
-{{{
-	Attaque: 20
-	Defense: 12
-	Vitesse: 2.0 Z/T
+	Attaque: A DEFINIR
+	Defense: A DEFINIR
+	Arme de classe: A DEFINIR
+	Defense de classe: A DEFINIR
 }}}
 
-===Combat lourd (1000人/2000資)===
-Le vaisseau de combat lourd constitue la base de toute flotte d'invasion.
+===Vaisseaux moyen (A DEFINIR人/A DEFINIR資)===
+Les vaisseaux moyen de chaque classes partagent les mêmes caractéristiques de base.
+On souhaite qu'un vaisseau moyen BN puisse abattre 4 vaisseaux moyen TdT et survivre.
+On souhaite qu'un vaisseau moyen puisse abattre 10 vaisseaux Ego légers et survivre.
 {{{
-	Attaque: 34
-	Defense: 44
-	Vitesse: 1.0 Z/T
+	Attaque: A DEFINIR
+	Defense: A DEFINIR
+	Arme de classe: A DEFINIR
+	Defense de classe: A DEFINIR
 }}}
+	
 
-===Combat d'assaut (2000人/3500資)===
-Le vaisseau de combat d'assaut est le noyau dur de toute flotte d'invansion.
+
+===Vaisseaux lourds (A DEFINIR人/A DEFINIR資)===
+Les vaisseaux lourds de chaque classes partagent les même caractéristiques de base.
+On souhaite qu'un vaisseau lourd BN puisse abattre 5 vaisseaux lourds TdT et survivre.
+On souhaite qu'un vaisseau lourd puisse abattre 10 vaisseux Ego moyens et survivre.
 {{{
-	Attaque: 78
-	Defense: 78
-	Vitesse: 0.46 Z/T
+	Attaque: A DEFINIR
+	Defense: A DEFINIR
+	Arme de classe: A DEFINIR
+	Defense de classe: A DEFINIR
 }}}

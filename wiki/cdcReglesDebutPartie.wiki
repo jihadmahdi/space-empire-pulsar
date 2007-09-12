@@ -16,7 +16,7 @@ Nombre de corps célestes à générer.
 _Par défaut: (nombre de joueurs x 2) + 1_
 
 ===Nombre de joueurs===
-Les joueurs doivent rejoindre le jeu en se connectant au serveur lorsque celui-ci est en création.
+Les joueurs doivent rejoindre le jeu en se connectant au serveur lorsque celui-ci est en création de partie.
 Les joueurs sont alors ajouté à la liste des joueurs et l'initiateur de la partie peut librement refuser des joueurs, ou en ajouter des artificiels (AI).
 Une fois la partie lancée, le nombre de joueur est fixé et il est impossible d'en ajouter.
 _Minimum: 2_
@@ -41,7 +41,7 @@ _Par défaut:_
 ||Champs d'astéroïdes||4-8||
 
 ===Avoir une flotte de départ===
-Si cette option est cochée, les joueurs disposent d'une flotte dès le départ, stationnées sur leur planètes respectives.
+Si cette option est cochée, les joueurs disposent d'une flotte dès le départ, stationnée sur leur planète respective.
 
 ==Conditions de victoire et de défaite==
 C'est en début de partie que l'on spécifie les conditions de victoire et défaite de la partie.
@@ -54,12 +54,18 @@ Chaque joueur dispose en début de partie d'un Module gouvernemental pré-constr
 Si un joueur perds la planète sur laquelle est établi ce Module gouvernemental, il perds la partie (le gouvernement est mort).
 Il est possible de migrer le Module gouvernemental d'une planète a une autre en créant un Vaisseau gouvernemental.
 La construction d'un tel vaisseau n'est possible que sur la planète où se trouve le module gouvernemental.
-Dès qu'un vaisseau gouvernemental est créé, le module gouvernemental de la planète est abandonné (le gouvernement quitte les lieu pour s'établir dans le vaisseau le temps du voyage).
+Dès qu'un vaisseau gouvernemental est créé, le module gouvernemental de la planète est démonté (le gouvernement quitte les lieu pour s'établir dans le vaisseau le temps du voyage).
 Le joueur peut garder le vaisseau gouvernemental en stationnement le temps de lui adjoindre une flotte, mais si ce vaisseau est perdu lors d'un assaut planétaire, le joueur perds la partie (le gouvernement est mort).
 
 Une fois lancé, et lorsque qu'il arrive sur la planète destination choisie:
 	* Soit il arrive a s'y poser et établi automatiquement un nouveau Module gouvernemental,
 	* Soit la planète est devenue hostile, un assaut planétaire est engagé à l'issue duquel le vaisseau gouvernemental aura réussi à se poser, ou aura été détruit.
+Lorsqu'il se pose et créé un nouveau Module gouvernemental, un slot est obligatoirement libéré si aucun n'est disponible.
+
+====Options====
+On doit définir le comportement de la population restante en cas d'élimination du gouvernement:
+	* Soit toutes les unitées sont alors considérés "neutres", elles ne produisent plus mais terminent leurs trajets, et défendent leurs positions.
+	* Soit toutes les unitées tombent aux mains du joueur qui a éliminé le gouvernement.
 
 ===Conquète totale===
 Le premier joueur ayant conquis tous les corps célestes et détruit toute les flottes ennemies gagne la partie.
@@ -70,7 +76,6 @@ Le premier joueur ayant atteind les seuils de ressource 資 et 人 fixées gagne
 
 ===Limite temps===
 Le jeu se termine au bout d'un nombre de tour fixé, le joueur ayant le plus haut score global gagne la partie.
-
 
 ==Calcul du score global d'un joueur==
 Le score global d'un joueur est calculé en prenant en compte toute ces possessions:

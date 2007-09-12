@@ -1,0 +1,24 @@
+#summary Cahier des charges: Description détaillée: Univers
+===[Index Index]>[cdcIndex Cahier des Charges]>Règles du jeu===
+
+=Gouvernement & Héros=
+==Gouvernement==
+Le gourvenement représente l'élite militaire de votre empire, celle par qui tout votre empire s'organise et tient.
+C'est donc une entité particulière qu'il vous faut protéger et sans laquelle la partie est perdue.
+
+Concrètement, le gouvernement peut prendre deux formes, une seule pouvant exister à la fois et en un seul exemplaire par joueur:
+	* Celle de la construction "Module gouvernemental", établi sur une planète à laquelle il apporte des bonus de production de 人 et 資.
+	* Celle d'un "Vaisseau gouvernemental", il n'apporte aucun bonus en stationnement, et ne peut faire qu'un seul trajet au terme duquel il établi un module gouvernemental sur la planète destination.
+	
+Le vaisseau gouvernemental ne peut être créé que sur la planète disposant du module gouvernemental.
+Lorsque le vaisseau gouvernemental est créé, le module gouvernemental est démonté.
+Le vaisseau gouvernemental peut être laissé en stationnement sur la planète, mais le joueur perds alors le bénéfice des bonus de productions que lui aurait octroyé le module gouvernemental.
+Le vaisseau gouvernemental ne peut voyager qu'a destination d'une planète (allié, neutre ou ennemie), seul ou accompagné d'une flotte.
+Au terme de son voyage, le vaisseau gouvernemental doit absolument pouvoir se poser sur la planète destination, sinon il est détruit.
+Lorsqu'il se pose sur la planète destination, le vaisseau gouvernemental est automatiquement démonté et un nouveau module gouvernemental construit.
+
+==Héros==
+Les héros sont des chefs millitaires exceptionnels, sous le commandemant desquels toute flotte arrive à accroitre son potentiel.
+Les héros n'ont donc pas de vaisseaux propres, ils doivent être attaché à une flotte ou demeurer sur la planète à défendre.
+Ils gagnent de l'expérience qui leur permet de monter de niveau, et les bonus qu'ils octroient dépendent du niveau qu'ils ont atteind.
+

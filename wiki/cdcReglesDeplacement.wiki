@@ -2,8 +2,8 @@
 ===[Index Index]>[cdcIndex Cahier des Charges]>Règles du jeu===
 
 =Rappel sur l'Univers=
-L'univers est si immense que malgré son la niveau avancé de la technologie actuelle, toute communication est impossible a plus d'une Zone de distance.
-Ainsi les voyages se font "à l'aveugle", les trajets affichés ne sont que des prévisions, et seule les sondes sont capable de donner une information actualisé sur les Zones qu'elles observent.
+L'univers est si immense que malgré le niveau avancé de la technologie actuelle, toute communication est impossible a plus d'une Zone de distance.
+Ainsi les voyages se font "à l'aveuglette", les trajets affichés ne sont que des prévisions, et seule les sondes sont capables de donner une information actualisé sur les Zones qu'elles observent.
 
 =Déplacements=
 
@@ -13,14 +13,14 @@ Et exception faite des Sondes, le point d'arrivé est également un corps céles
 Le lancement d'une flotte se fait en sélectionnant le corps céleste sur lequel elle stationne et en lui assignant une destination.
 A l'arrivée sur la destination, deux cas de figure sont possibles :
 	* La destination est alliée, la flotte y stationne alors en renfort.
-	* La destination est ennemie, un assaut est engagé au terme duquel le corps céleste est conquis, ou la flotte détruite.
+	* La destination est ennemie (ou neutre millitarisée), un assaut est engagé au terme duquel le corps céleste est conquis, ou la flotte détruite.
 
 ==Trajet==
 Une flotte envoyée vers une destination ne peut être déroutée en chemin, car une fois lancée, toute communication est impossible.
 Les voyages se font en ligne droite du point de départ vers la destination.
 Le temps de voyage est estimé en mesurant la distance du trajet et en la comparant a la vitesse de la flotte.
 A chaque tour, la flotte parcours le pourcentage du trajet que sa vitesse lui permet; Toutes les zones traversées a ce moment là sont considérée comme *visitées*.
-Si durant son trajet une flotte en croise une autre, c'est à dire que les deux empruntent la même case en même temps, chacun des joueurs reçoit un rapport sur la flotte ennemir aperçue, mais aucun combat n'est engagé.
+Si durant son trajet une flotte en croise une autre, c'est à dire que les deux empruntent la même case en même temps, chacun des joueurs reçoit un rapport sur la flotte ennemie aperçue, mais aucun combat n'est engagé.
 
 ==Cas particulier des Sondes==
 La sonde est la seule unité à pouvoir stationner sur une zone vide.

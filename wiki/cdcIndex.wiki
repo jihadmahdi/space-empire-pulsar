@@ -29,8 +29,8 @@
 				* Sonde
 				* Vaisseau gouvernemental
 				* Combat léger
+				* Combat moyen
 				* Combat lourd
-				* Combat d'assaut
 	# Règles du jeu
 		# [cdcReglesDebutPartie Début de partie]
 			* Options de début de partie
