@@ -3,6 +3,9 @@
  */
 package tests;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
 import java.util.Vector;
 
 import tests.Vaisseau.eClasse;
@@ -15,6 +18,10 @@ public class Flotte
 	private Vector<FlotteEquivalente>	m_FlottesEquivalentes	= new Vector<FlotteEquivalente>();
 
 	private String						m_sNom					= null;
+	private BigDecimal					m_Defense				= BigDecimal.ZERO;
+	private BigDecimal					m_Attaque				= BigDecimal.ZERO;
+	private BigDecimal					m_Arme					= BigDecimal.ZERO;
+	private BigDecimal					m_Armure				= BigDecimal.ZERO;
 
 	public Flotte(String sNom)
 	{
@@ -24,6 +31,45 @@ public class Flotte
 			m_FlottesEquivalentes.add(new FlotteEquivalente(eClasse.values()[classe]));
 	}
 
+	static public void refreshCaracsCombat(Flotte flotteA, Flotte flotteB)
+	{
+		BigDecimal somme_arme[] = {BigDecimal.ZERO, BigDecimal.ZERO};
+		BigDecimal somme_armure[] = {BigDecimal.ZERO, BigDecimal.ZERO};
+		for (int flotte = 0; flotte < 2; ++flotte)
+		{
+			Flotte flotteCourante = ((flotte == 0) ? flotteA : flotteB);
+			Flotte flotteEnnemie = ((flotte == 0) ? flotteB : flotteA);
+			BigDecimal somme_attaque = BigDecimal.ZERO;
+			
+			flotteCourante.m_Defense = BigDecimal.ZERO;
+			for (int classe = 0; classe < eClasse.nbClasses; ++classe)
+			{
+				FlotteEquivalente flotteEquCourante = flotteCourante.RecupererFlotteEquivalente(eClasse.getFromInt(classe));
+				FlotteEquivalente flotteEquTdT = flotteEnnemie.RecupererFlotteEquivalente(eClasse.getTdT(eClasse.getFromInt(classe)));
+				
+				BigDecimal Defense = flotteEquCourante.getDefense();
+				BigDecimal DefTdT = flotteEquTdT.getDefense();
+				
+				flotteCourante.m_Defense = flotteCourante.m_Defense.add(flotteEquCourante.getDefense());
+				somme_attaque = somme_attaque.add(Defense.multiply(BigDecimal.valueOf(flotteEquCourante.getAttaque())));
+				somme_arme[flotte] = somme_arme[flotte].add(Defense.multiply(DefTdT.multiply(BigDecimal.valueOf(flotteEquCourante.getBonusArme()))));
+				somme_armure[flotte]=somme_armure[flotte].add(Defense.multiply(DefTdT.multiply(BigDecimal.valueOf(flotteEquCourante.getBonusArmure()))));
+			}
+			flotteCourante.m_Attaque = somme_attaque.divide(flotteCourante.m_Defense, MathContext.DECIMAL128);
+		}
+		
+		BigDecimal DefDef = flotteA.m_Defense.multiply(flotteB.m_Defense);
+		flotteA.m_Arme = somme_arme[0].divide(DefDef, MathContext.DECIMAL128);
+		flotteA.m_Armure = somme_armure[0].divide(DefDef, MathContext.DECIMAL128);
+		flotteB.m_Arme = somme_arme[1].divide(DefDef, MathContext.DECIMAL128);
+		flotteB.m_Armure = somme_armure[1].divide(DefDef, MathContext.DECIMAL128);
+	}
+	
+	static public Flotte JouerCombat(Flotte flotteA, Flotte flotteB)
+	{
+		return JouerCombatAlgoFlottesMoyenne(flotteA, flotteB);
+	}
+	
 	/**
 	 * Algo de combat: 
 	 * Algo V2, sauf que:
@@ -35,7 +81,7 @@ public class Flotte
 	 * @param flotteB
 	 * @return
 	 */
-	static public Flotte JouerCombat(Flotte flotteA, Flotte flotteB)
+	static public Flotte JouerCombatAlgoFlottesEquivalentes(Flotte flotteA, Flotte flotteB)
 	{
 		Vector<Vector<FlotteEquivalente>> FlottesEquivalentes = new Vector<Vector<FlotteEquivalente>>();
 		Flotte vainqueur = null;
@@ -159,6 +205,56 @@ public class Flotte
 		return vainqueur;
 	}
 	
+	static public Flotte JouerCombatAlgoFlottesMoyenne(Flotte flotteA, Flotte flotteB)
+	{
+		Flotte vainqueur = null;
+		
+		refreshCaracsCombat(flotteA, flotteB);
+		BigDecimal flotteA_attaque_totale = flotteA.m_Attaque.multiply(flotteA.m_Arme.add(BigDecimal.ONE).subtract(flotteB.m_Armure));
+		BigDecimal flotteB_attaque_totale = flotteB.m_Attaque.multiply(flotteB.m_Arme.add(BigDecimal.ONE).subtract(flotteA.m_Armure));
+		
+		BigDecimal TempsFAtueFB = flotteB.m_Defense.divide(flotteA_attaque_totale, MathContext.DECIMAL128);
+		BigDecimal TempsFBtueFA = flotteA.m_Defense.divide(flotteB_attaque_totale, MathContext.DECIMAL128);
+		
+		if (TempsFAtueFB.compareTo(TempsFBtueFA) < 0)
+		{
+			flotteA.encaisserDegats(TempsFAtueFB.multiply(flotteB_attaque_totale));
+			flotteB.detruire();
+			
+			vainqueur = flotteA;
+		}
+		else
+		{
+			flotteB.encaisserDegats(TempsFBtueFA.multiply(flotteA_attaque_totale));
+			flotteA.detruire();
+			
+			vainqueur = flotteB;
+		}
+
+		return vainqueur;
+	}
+	
+	/**
+	 * 
+	 */
+	private void detruire()
+	{
+		encaisserDegats(m_Defense);
+	}
+
+	/**
+	 * @param decimal
+	 */
+	private void encaisserDegats(BigDecimal degats)
+	{
+		for (int classe = 0; classe < eClasse.nbClasses; ++classe)
+		{
+			FlotteEquivalente flotteEquCourante = RecupererFlotteEquivalente(eClasse.getFromInt(classe));
+			flotteEquCourante.ajouterDegats(degats.multiply(flotteEquCourante.getDefense()).divide(m_Defense, MathContext.DECIMAL128).doubleValue());
+			flotteEquCourante.EncaisserDegats(true);
+		}
+	}
+
 	/**
 	 * @return
 	 */
