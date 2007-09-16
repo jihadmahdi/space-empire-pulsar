@@ -3,10 +3,10 @@
 
 =Corps célestes=
 
-Les corps célestes sont des points stratégiques dont toutes las caractéristiques de début de partie (人/tour, 人 max, 資　max de départ, nombre de slots) sont visibles par tous les joueurs.
+Les corps célestes sont des points stratégiques dont toutes les caractéristiques de début de partie (人/tour, 人 max, 資　max de départ, nombre de slots) sont visibles par tous les joueurs.
 Ils fournissent les ressources nécessaires à la construction des flottes et des batiments.
 Les quantités de carbone associées aux corps celestes sont déterminées aléatoirement en début de partie, et s'épuisent à mesure que le joueur les exploite.
-Tout corps celeste est coloré suivant son appartenance: Neutre ou couleur du joueur propriétaire.
+Tout corps celeste est coloré suivant son appartenance: Sauvage ou couleur du joueur propriétaire.
 
 ==Caractéristiques==
 Les corps célestes sont définis par plusieurs caractéristiques, pouvant fluctuer durant le jeu :
@@ -17,13 +17,21 @@ Les corps célestes sont définis par plusieurs caractéristiques, pouvant fluct
 	Nb. slots: Nombre d'emplacement disponibles sur le corps céleste pour la construction de modules.
 }}}
 
+===Seuil naturel minimal de 資===
+Tout corps céleste surlequel le carbone n'est pas extrait par des modules d'extraction fournie tout de même une faible quantité de 資 par tour, jusqu'a un certain seuil, apellé seuil naturel minimal.
+Généralement, ce seuil permet tout juste la fabrication d'un module d'extraction.
+Même un corps céleste sauvage produit cette quantité naturelle de carbone par tour, jusqu'a atteindre le seuil.
+La production naturelle par tour est cependant très faible, inférieure à la production d'un module d'extraction, si bien qu'il est préférable de construire un module d'extraction dès que celà est possible.
+
+==Types de corps célestes==
+
 Il existe différents types de corps célestes dont voici la liste:
 
-==Planète==
-	Les planètes sont les seuls corps célestes offrant les deux types de ressources existantes: population et carbonne.
+===Planète===
+	Les planètes sont les seuls corps célestes offrant les deux types de ressources existantes: population 人 et carbonne 資.
 	De ce fait, certaines constructions ne sont possibles que sur des planètes.
 	Elles sont un point stratégique important, même si leur ressources carbone sont très inférieures aux autres corps célestes desquels elles doivent s'approvisionner.
-	Les planètes neutres disposent d'une armée de défense fixé à la génération de l'univers suivant leurs taille.
+	Les planètes sauvages disposent d'une armée de défense fixé à la génération de l'univers suivant leurs taille.
 	{{{
 		人 par tour: [2500-7500]
 		人 max: [50K-150K]
@@ -33,9 +41,9 @@ Il existe différents types de corps célestes dont voici la liste:
 		Constructions autorisées:
 		Exploitation de ressources, Usine de vaisseaux, Module de défense, Module gouvernemental, Comptoir.
 
-==Nébuleuse==
+===Nébuleuse===
 	La nébuleuse est un corps celeste formé de gaz et de poussières.
-	Sa structure mouvante ne permet pas l'accueuil de construction de batiments autre que l'exploitation et l'acheminement de carbonne.
+	Sa structure mouvante ne permet pas l'accueuil de construction de batiments autre que les modules d'extraction et les comptoirs nécéssaires à l'acheminement du carbonne.
 	{{{
 		人 par tour: 0
 		人 max: 0
@@ -46,7 +54,7 @@ Il existe différents types de corps célestes dont voici la liste:
 		Exploitation de ressources,~~Usine de vaisseau~~, ~~Module de défense~~, ~~Module gouvernemental~~, Comptoir.
 		
 
-==Champ d'astéroïde==
+===Champ d'astéroïde===
 	Les champs d'astéroïdes sont des lieux impropre à la vie, mais propice à la construction de batiments millitaires, et riche en carbonne.
 	Ainsi il est possible de construire la pluspart des batiments, sauf ceux dont la production nécéssite de la population.
 	{{{
@@ -58,11 +66,15 @@ Il existe différents types de corps célestes dont voici la liste:
 		Constructions autorisées:
 		Exploitation de ressources, ~~Usine de vaisseaux~~, Module de défense, ~~Module gouvernemental~~, Comptoir.
 
-==Vortex==
+===Vortex===
 	Les vortex ont une origine encore méconnue. Leur formation est passionnément étudiée par l'ensemble de la communauté des chercheurs.
 	La brillante théorie proposée par Ivanov Pertenchevko décrivant le vortex comme une hypercourbure de l'espace-temps permettant les déplacements au-dela du point critique vitesse lumière a recemment été approuvée par l'expérience après l'envoi de la sonde "Connaissance" qui a été localisée quelques secondes a peine a un point tres éloigné de l'univers connu.
 	
-	Les vortex sont génrés aléatoirement pendant la partie, et restent pour un nombre de tour également tiré au hasard.
-	Un vortex permet à qui l'emprunte de se téléporter automatiquement sur un corps céleste (qu'il soit allié, ennemi ou neutre) tiré au hasard (mais fixe pour chaque vortex).
+	Les vortex sont générés aléatoirement pendant la partie, et restent pour un nombre de tour également tiré au hasard.
+	Un vortex permet à qui l'emprunte de se téléporter automatiquement sur un corps céleste (qu'il soit allié, neutre ou sauvage) tiré au hasard (mais fixe pour chaque vortex).
 	Si un vortex apparait sur le chemin d'une flotte, celle-ci l'emprunte automatiquement lorsqu'elle le croise.
 	Si un vortex choisi pour destination disparait avant que la flotte ne l'atteigne, celle-ci achève son trajet jusqu'à la zone vide, puis repart automatiquement vers sa planète d'origine.
+	
+	Si une flotte emprunte un vortex accidentellement et attérie sur un corps céleste neutre, elle tente toujours de s'y poser pacifiquement.
+	Si on donne ordre à une flotte d'emprunter un vortex, on choisi "aller à ..." ou "attaquer ...".
+	

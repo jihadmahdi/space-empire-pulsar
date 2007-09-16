@@ -10,10 +10,13 @@ En revanche, chaque corps céleste ne peut construire qu'un seul batiment par to
 
 Voici la liste des constructions possibles :
 
-==Module d'extraction  資 (0人/0資)===
+==Module d'extraction  資 (0人/1000資)===
 Même si la technologie diffère suivant que l'on se trouve sur une planète, une nébuleuse ou un champs d'astéroïde, les modules d'extractions 資 présentent tous les même caractéristiques:
 Un module d'extraction 資 occupe un slot et permet de générer 2500 資 par tour.
-Ils sont cumulables tant que le corps céleste dispose de slots libres.
+Ils sont cumulables tant que le corps céleste dispose de slots libres, cependant le prix est exponentiel au nombre de module total.
+En effet, si le premier module d'extraction est construit sur la première source de carbone de la planète, les modules suivant doivent exploiter des filons plus sauvages et sont donc plus couteux à mettre en place.
+
+Prix du nième module d'extraction = Prix du premier module d'extraction * exponentielle(n-1)
 
 ==Usine de production de vaisseaux (500人/2000資)==
 Les usines de production de vaisseaux ne sont disponibles que sur les planètes, car elles nécéssitent beaucoup de main d'oeuvres.
@@ -43,7 +46,7 @@ Cette route se fait d'un comptoir à un autre (ceux-ci ne pouvant plus servir à
 Les routes de l'espace permettent à tout voyageur qui l'emprunte de substituer la vitesse de la route à sa propre vitesse. Celle-ci est très avantageuse pour la pluspart des vaisseaux.
 
 * Les comptoirs permettent également de procéder à des transferts réguliers de ressource carbone entre comptoirs.
-Le voyage est assuré par un transporteur qui a sa propre vitesse achemine la quantité de carbone définie par le joueur (dans les limites disponibles au moment du départ).
+Le voyage est assuré par un transporteur qui à sa propre vitesse achemine la quantité de carbone définie par le joueur (dans les limites disponibles au moment du départ).
 L'envoi prend le temps d'un allé simple, la planète destination encaisse le carbone reçu et le transporteur repart sur sa planète d'origine.
 Il met autant de temps pour y rentrer, puis repart automatiquement s'il a une commande en attente.
 Le joueur peut modifier la "commande" à tout moment, mais celle-ci n'est prise en compte que lorsque le transporteur est disponible.

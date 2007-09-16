@@ -16,10 +16,10 @@ La flotte équivalente est le regroupement des flottes moyenne de chaque classe.
 ===Caractéristiques des flottes équivalente de classe===
 Chaque flotte équivalente de classe se calcule suivant les formules ci-dessous:
 {{{
-	Defense = Somme Defense de tous les vaisseaux.
-	Attaque = Moyenne Attaque de tous les vaisseaux, pondérée par leur participation à la Defense totale.
-	Arme = Moyenne Arme de tous les vaisseaux, pondérée par leur participation à la Defense totale.
-	Armure = Moyenne Armure de tous les vaisseaux, pondérée par leur participation à la Defense totale.
+	Defense = Somme pour chaque Vaisseau v: v.Defense
+	Attaque = (1 + BonusHeroEventuel) x (Somme pour chaque Vaisseau v: v.Attaque x v.Defense) / Defense
+	Arme = (Somme pour chaque Vaisseau v: v.Arme x v.Defense) / Defense
+	Armure = (Somme pour chaque Vaisseau v: v.Armure x v.Defense) / Defense
 }}}
 
 ===Puissance brute===
@@ -27,33 +27,30 @@ On apelle "puissance brute" la puissance qui ne tient pas compte des arme et arm
 De même classe, deux adversaires opposent leurs puissance brutes, puisqu'il n'ont aucuns avantages particulier liés à leurs classes.
 
 On peut calculer la puissance brute d'une flotte avec la formule suivante:
-Puissance brute = Defense * Attaque
+Puissance brute = Defense * Attaque * (1+BonusHeroEventuel)
 
 Dans un combat opposant deux adversaires de même classe, (avant les règles de rachats) on a:
 Puissance(Survivant) = Puissance(PlusFort) - Puissance(PlusFaible)
 
-===Puissance ===
-On apelle "puissance moyenne" la puissance qui tient compte des arme et armure de classes, sans préjuger d'un adversaire
-
 ==Déroulement d'un combat==
 
-On détermine les flottes équivalentes de classes de chaque combattant A, B, pour un total de 6 flottes maximum:
+On détermine les sous flottes équivalentes de classes de chaque flotte combatante FA, FB, pour un total de 6 flottes maximum:
 {ChasseursA, DestroyeursA, ArtillerieA} contre {ChasseursB, DestroyersB, ArtillerieB}
 Toutes ne sont pas forcément représentée au départ, et ne le sont pas forcément à chaque tour de combat (elles peuvent avoir été détruites).
 
-A chaque tour de combat on détermine donc pour chaque flotte la cible la plus interessante encore en jeu, dans l'ordre suivant:
+A chaque tour de combat on détermine donc pour chaque sous flotte la cible la plus interessante encore en jeu, dans l'ordre suivant:
 Pour un attaquant Chasseur: Artillerie - Chasseurs - Destroyers
 Pour un attaquant Destroyer: Chasseurs - Destroyers - Artillerie
 Pour un attaquant Artillerie: Destroyers - Artillerie - Chasseurs
 Et on note pour chaque cible le total des intention d'attaques.
 
-Une fois toutes les flottes ayant déclarées leur cible, on détermine quelle flotte va être détruite en premier, et en combien de temps.
-Ainsi, chacun n'encaisse que les dégats correspondant à ce laps de temps pour ce tour de jeu, qui élimine forcément une flotte.
+Une fois toutes les sous flottes ayant déclarées leur cible, on détermine laquelle va être détruite en premier, et en combien de temps.
+Ainsi, chacune n'encaisse que les dégats correspondant à ce laps de temps pour ce tour de jeu, qui se termine forcément sur la mort d'une sous flotte.
 
-Si les deux opposants ont encore des flottes en vie, un nouveau tour s'engage.
-Lorsqu'un seul opposant a des flottes encore en vie, on détermine combien il reste de Défense à chacune de ses flottes équivalentes de classes, et on recalcul l'effectifs des vaisseaux qui peuvent encore la composer.
+Si les deux opposants ont encore des sous flottes en vie, un nouveau tour s'engage.
+Lorsque toutes les sous flottes d'une flotte sont détruites, on détermine combien il reste de Défense à chacune des sous flottes du vainqueur, et on recalcule les effectifs des vaisseaux qui peuvent encore les composer.
 
-Lorsqu'on essaie de déterminer les vaisseaux que l'on peut "rachetter" avec la défense restante, si celle-ci ne tombe pas juste, on applique la règle des 50% au vaisseau restant le moins cher:
+Lorsqu'on essaie de déterminer les vaisseaux que l'on peut "rachetter" avec la défense restante de chaque sous flotte, et que celle-ci ne tombe pas juste, on applique la règle des 50% aux vaisseaux restants les moins cher :
 	- Si la flotte était en position sur son corps céleste, le vaisseau le moins cher est automatiquement rachetté.
 	- Si la flotte viens de conquérir un corps céleste ennemi, le vaisseau le moins cher n'est sauvé que si les reste dépassent 50% de son prix de rachat.
 

@@ -48,6 +48,9 @@ C'est en début de partie que l'on spécifie les conditions de victoire et défa
 Si plusieurs conditions de victoire sont choisies, c'est le premier joueur en remplissant au moins une qui remporte la partie.
 De manière générale, le dernier joueur en course gagne automatiquement la partie.
 
+===Victoire en aliance===
+Autorise ou non la victoire en aliance: quelque soit la condition de victoire, tous les aliés du vainqueur sont vainqueurs.
+
 ===Protéger le gouvernement===
 Cette option rend disponibles la construction "Module gouvernemental" ainsi que le "Vaisseau gouvernemental".
 Chaque joueur dispose en début de partie d'un Module gouvernemental pré-construit sur sa planète d'origine.

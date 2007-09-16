@@ -6,6 +6,7 @@
 Une flotte est un ensemble de vaisseaux, les caractéristiques d'une flotte dépendent donc des vaisseaux qui la compose.
 Une flotte se créé sur une planète avec les vaisseaux disponibles sur celle-ci.
 En stationnment sur une planète, une flotte peut être dissociée et les vaisseaux ré-affectés à de nouvelles flottes.
+Le joueur a la possibilité de nommer les flottes qu'il compose.
 
 ==Classess de vaisseaux==
 Les vaisseaux sont rangés en 3 classes: Chasseurs, Destroyers, Artillerie.
@@ -25,7 +26,12 @@ Pour ce faire ils doivent cependant traverser la ligne des destroyers ennemi don
 
 *Capacité spéciale*
 	Les chasseurs ont systématiquement leur vitesse doublée par rapport à leur gabarit.
-	Cet avantage ne s'exprime que lorsque les chasseurs ne se mélangent pas aux autres classes.
+	De plus, ils sont étudiés pour pouvoir tracter (ou propulser, selon les modèles), les vaisseaux des autres classes, a condition toute fois d'être en nombre suffisant.
+	Ainsi, une flotte composée de Chasseurs calcule sa vitesse suivant la formule :
+
+	Flotte.V = PlusLente(E.V) x (1 + (Chasseurs.Def x (k + Chasseurs.Armure) / Flotte.Def))
+	k étant une constante de réglage: 1 - Armure du plus petit gabarit, soit k = 0.5
+	Dans la formule, on considère que Armure donne un taux de spécialisation de la sous flotte de Chasseurs.
 	
 ===Destroyers===
 Les destroyers sont des vaisseaux blindés possédant une énorme puissance de feu à courte distance.
@@ -33,8 +39,13 @@ En combat ils ont donc pour mission de former une ligne de défense devant l'art
 Cependant ils sont les cibles de choix de l'artillerie ennemi, seule capable de percer efficacement leur blindage.
 
 *Capacité spéciale*
-	Les destroyers peuvent se mettre en position "défense" sur un corps céleste. Ils ne sont alors mobilisés lors d'une attaque, qu'une fois que toutes les autres unités sont mortes, et bénéficient pour le combat d'un bonus de défense spécial.
-	Seuls les destroyers mis manuellement en position "défense" le sont, les autres vaisseaux constituent la première ligne en cas d'attaque. Se sont deux combats distinct.
+	Les destroyers peuvent se mettre en position "défense" sur un corps céleste.
+	Ils bénéficient alors d'un bonus (bonus à l'attaque, en réalité) si le corps céleste est attaqué.
+	Le joueur doit mettre lui même les unités en mode "défense".
+	Lorsque le joueur souhaite remobiliser ses destroyers, ceux-ci prennent un tour à ce redéployer avant d'être disponibles.
+	
+	BonusAttaque des destroyers fortifiés = Destroyers.Attaque x k x Destroyers.Armure
+	k étant un facteur de réglage, soit k = 1
 	
 ===Artillerie===
 Les vaisseaux d'artillerie sont de lourds vaisseaux disposant de systèmes de visés longue porté et de missiles perforants.
@@ -42,13 +53,29 @@ En combat ils ont pour mission d'éliminer le plus de destroyers ennemi possible
 Cependant ils sont eux même tributaire du nombre de destroyer allié qui les protège des chasseurs ennemis contre lesquels ils ne peuvent rien.
 
 *Capacité spéciale*
-	Les unités d'artilleries, qui sont les seules pourvues des appareils nécéssaires, peuvent en se sacrifiant obtenir des informations à jour sur un corps céleste ennemi.
-	La flotte envoyée en espion ne doit être composée que d'unitées d'artillerie pour que l'espionage fonctionne.
-	Si la flotte ainsi envoyée est suffisante pour conquérir le corps céleste visé, elle le conquiert.
+	Les unités d'artilleries, qui sont équipées de canons et d'appareils de visée longue portée, peuvent effectuer des bombardement de planète à planète.
+	Le missile met un certain temps à arriver sur sa cible, et a un certain pourcentage de chance de faire mouche.
+	Le temps de refroidissement du canon est proportionnel à la distance de tir, ainsi une artillerie doit attendre autant de temps avant de pouvoir procéder à un nouveau tir.
 	
+	Chance de toucher un batiment = k * Ar.Def
+	k étant un facteur de réglage, il est tel que la flotte la plus énorme ne devrait pas avoir une chance de toucher suppérieure à 50%.
+	
+	La chance de toucher est amoindrie par l'éventuelle présence de module de défense sur la planète cible : Chance de toucher finale = Chance de toucher - Protection
+	
+	Si le missile fait mouche, un batiement choisi au hasard est détruit sur la planète cible.
+	Si la planète cible de dispose pas de batiments, on calcule la puissance du missile:
+	
+	Puissance missile = k' * Ar.Def
+	
+	Ce missile entame alors directement les caractéristiques de base du corps céleste avec la répartition suivante (a, b, c et d étant les constantes servant à "régler" le comportement du missile):
+	
+	Puissance missile = a * echelle_carbone * degats_sur(carbone_brut) + b * echelle_carbone * degats_sur(carbone_récolté) + c * echelle_gen_pop * degats_sur(génération_pop) + d * echelle_pop * degats_sur(pop_actuelle)
+
+	Note: L'assaillant n'a pas de retour sur le fait que son missile ai touché ou pas.
+
 ==Calcul des caractéristiques d'une flotte==
 Une flotte qui contient des vaisseaux représentant des 3 classes est modélisé par trois flottes équivalente de chaque classe.
-Pour les déplacement, la Vitesse de la flotte est la vitesse du vaisseau le plus lent.
+Pour les déplacement, la Vitesse de la flotte est calculée suivant son effectif de chasseurs et la vitesse du plus lent de ses vaisseaux.
 Pour les détails concernant le calcul des caractéristiques des flottes équivalente, [cdcReglesCombats cf. les règles de combat].
 
 ==Calcul de la valeur d'un vaisseau==
@@ -74,6 +101,7 @@ Il peut être envoyé sur toute zone vide ou planète alliée et y demeurer.
 A son lancement, une zone (vide ou planète) est choisie comme destination, dès qu'elle l'atteind, elle s'y installe et ne pourra plus en bouger.
 La sonde permet de voir les déplacements des flottes se trouvant a proximité (le bout de trajet, sous forme de segment, avec des informations sur la flotte aperçue).
 Cependant si une flotte ennemie vient à occuper la zone où se trouve la sonde, celle-ci est automatiquement détruite, celà peut arriver par hasard si la sonde se trouve sur le chemin d'une flotte, où si la sonde a été repérée par une sonde ennemie.
+Les sondes fonctionne à l'énergie solaire, elles ne peuvent donc s'éloigner de celui-ci que dans une certaine limite.
 {{{
 	Attaque: 0
 	Defense: 1
@@ -89,6 +117,7 @@ Le vaisseau gouvernemental ne peut se déplacer qu'une fois, et sa destination e
 	Defense: A DEFINIR
 	Vitesse: 2.5 Z/T
 }}}
+Lorsque le vaisseau gouvernemental est en déplacement, le joueur perds tout contrôle le temps du voyage.
 
 ===Vaisseaux léger (A DEFINIR人/A DEFINIR資)===
 Les vaisseaux léger de chaque classes partagent les mêmes caractéristiques de base.

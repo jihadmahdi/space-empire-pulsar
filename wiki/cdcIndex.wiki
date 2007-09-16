@@ -42,7 +42,7 @@
 			* Cas particulier des sondes
 		# [cdcReglesCombats Combats]
 		# [cdcReglesGouvHeros Héros]
-	# [cdcReseau Partie en réseau]
+	# [cdcReseau Multijoueur & Diplomatie]
 	# [cdcInterface Interface de jeu]
 	
 	[cdcBlog Blog]

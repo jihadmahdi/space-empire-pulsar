@@ -8,7 +8,7 @@ C'est donc une entité particulière qu'il vous faut protéger et sans laquelle 
 
 Concrètement, le gouvernement peut prendre deux formes, une seule pouvant exister à la fois et en un seul exemplaire par joueur:
 	* Celle de la construction "Module gouvernemental", établi sur une planète à laquelle il apporte des bonus de production de 人 et 資.
-	* Celle d'un "Vaisseau gouvernemental", il n'apporte aucun bonus en stationnement, et ne peut faire qu'un seul trajet au terme duquel il établi un module gouvernemental sur la planète destination.
+	* Celle d'un "Vaisseau gouvernemental", qui n'apporte aucun bonus en stationnement, et ne peut faire qu'un seul trajet au terme duquel il établi un module gouvernemental sur la planète destination.
 	
 Le vaisseau gouvernemental ne peut être créé que sur la planète disposant du module gouvernemental.
 Lorsque le vaisseau gouvernemental est créé, le module gouvernemental est démonté.
@@ -19,6 +19,23 @@ Lorsqu'il se pose sur la planète destination, le vaisseau gouvernemental est au
 
 ==Héros==
 Les héros sont des chefs millitaires exceptionnels, sous le commandemant desquels toute flotte arrive à accroitre son potentiel.
-Les héros n'ont donc pas de vaisseaux propres, ils doivent être attaché à une flotte ou demeurer sur la planète à défendre.
-Ils gagnent de l'expérience qui leur permet de monter de niveau, et les bonus qu'ils octroient dépendent du niveau qu'ils ont atteind.
+Les héros n'ont donc pas de vaisseaux propres, ils doivent être attaché à une flotte ou demeurer sur la planète à défendre, ils peuvent être dissocié et réaffecter à une nouvelle flotte comme n'importe quel vaisseau lorsqu'ils sont sur une planète.
+Ils gagnent de l'expérience grace à laquelle les bonus qu'ils octroient augmentent.
+Chaque joueur ne peut avoir qu'un seul héro, mais si celui-ci meurs, un nouveau peut être créé (avec 0XP).
 
+Le héro reçoit l'expérience des combats qu'il mène, celle-ci ne prend en compte que la puissance brute de la flotte abattue :
+
+Experience reçue d'un combat = Puissance brute de l'ennemi = Ennemi.Defense x Ennemi.Attaque x (1+Ennemi.BonusHeroEventuel)
+
+Le héro applique son bonus à l'attaque de chaque sous flotte de la façon suivante :
+
+SousFlotte.Attaque = (1 + Hero.Bonus) x (Somme pour chaque Vaisseau v: v.Attaque x v.Defense) / Defense
+
+===Réglage de la courbe d'XP===
+Hero.XP = echelle x ((K^Hero.Bonus) - K) / (K^BonusMax)
+K = 2 semble avoir une bonne alure.
+echelle = 5120.10^3 = echelle nécéssaire dosé en fonction de l'XP souhaitée pour avoir un Bonus de 2. Pour 10K d'XP, il faut une échelle de 5120.10^3.
+BonusMax = 10 = Valeur de Bonus à partir de laquelle la progression en XP nécéssaire est jugée "impossible", une fois ce bonus atteind, le Héro continue de progresser mais à une vitesse très faible.
+
+Soit:
+Hero.Bonus = ln( ( (Hero.XP x K^BonusMax) / echelle ) + K ) / ln(K)
