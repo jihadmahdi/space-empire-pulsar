@@ -60,14 +60,15 @@ La construction d'un tel vaisseau n'est possible que sur la planète où se trou
 Dès qu'un vaisseau gouvernemental est créé, le module gouvernemental de la planète est démonté (le gouvernement quitte les lieu pour s'établir dans le vaisseau le temps du voyage).
 Le joueur peut garder le vaisseau gouvernemental en stationnement le temps de lui adjoindre une flotte, mais si ce vaisseau est perdu lors d'un assaut planétaire, le joueur perds la partie (le gouvernement est mort).
 
-Une fois lancé, et lorsque qu'il arrive sur la planète destination choisie:
+Une fois le vaisseau gouvernemental lancé, le joueur perds temporairement le contrôle de ses planètes et flottes (car le gouvernement perds la communication).
+Lorsque qu'il arrive sur la planète destination choisie:
 	* Soit il arrive a s'y poser et établi automatiquement un nouveau Module gouvernemental,
 	* Soit la planète est devenue hostile, un assaut planétaire est engagé à l'issue duquel le vaisseau gouvernemental aura réussi à se poser, ou aura été détruit.
 Lorsqu'il se pose et créé un nouveau Module gouvernemental, un slot est obligatoirement libéré si aucun n'est disponible.
 
 ====Options====
 On doit définir le comportement de la population restante en cas d'élimination du gouvernement:
-	* Soit toutes les unitées sont alors considérés "neutres", elles ne produisent plus mais terminent leurs trajets, et défendent leurs positions.
+	* Soit toutes les unitées sont alors considérés "sauvages", elles ne produisent plus mais terminent leurs trajets, et défendent leurs positions.
 	* Soit toutes les unitées tombent aux mains du joueur qui a éliminé le gouvernement.
 
 ===Conquète totale===

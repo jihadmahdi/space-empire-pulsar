@@ -31,7 +31,7 @@ Pour ce faire ils doivent cependant traverser la ligne des destroyers ennemi don
 
 	Flotte.V = PlusLente(E.V) x (1 + (Chasseurs.Def x (k + Chasseurs.Armure) / Flotte.Def))
 	k étant une constante de réglage: 1 - Armure du plus petit gabarit, soit k = 0.5
-	Dans la formule, on considère que Armure donne un taux de spécialisation de la sous flotte de Chasseurs.
+	Dans la formule, on considère que Armure indique le taux de spécialisation de la sous flotte de Chasseurs.
 	
 ===Destroyers===
 Les destroyers sont des vaisseaux blindés possédant une énorme puissance de feu à courte distance.
@@ -60,16 +60,17 @@ Cependant ils sont eux même tributaire du nombre de destroyer allié qui les pr
 	Chance de toucher un batiment = k * Ar.Def
 	k étant un facteur de réglage, il est tel que la flotte la plus énorme ne devrait pas avoir une chance de toucher suppérieure à 50%.
 	
-	La chance de toucher est amoindrie par l'éventuelle présence de module de défense sur la planète cible : Chance de toucher finale = Chance de toucher - Protection
+	La chance de toucher est amoindrie par l'éventuelle présence de module de défense sur la planète cible :
+	Chance de toucher finale = Chance de toucher - Protection
 	
-	Si le missile fait mouche, un batiement choisi au hasard est détruit sur la planète cible.
-	Si la planète cible de dispose pas de batiments, on calcule la puissance du missile:
-	
+	Si le missile fait mouche, un batiement choisi au hasard est détruit sur la planète cible (le module gouvernemental étant toujours le dernier batiment détruit).
+	Dans tous les cas, les caractéristiques et ressources du corps céleste visé sont entammé par le bombardement, suivant sa puissance :
+		
 	Puissance missile = k' * Ar.Def
 	
-	Ce missile entame alors directement les caractéristiques de base du corps céleste avec la répartition suivante (a, b, c et d étant les constantes servant à "régler" le comportement du missile):
+	Le missile entame les caractéristiques de base du corps céleste avec la répartition suivante (a, b, c et d étant les constantes servant à "régler" le comportement du missile):
 	
-	Puissance missile = a * echelle_carbone * degats_sur(carbone_brut) + b * echelle_carbone * degats_sur(carbone_récolté) + c * echelle_gen_pop * degats_sur(génération_pop) + d * echelle_pop * degats_sur(pop_actuelle)
+	Degats = Puissance missile = a * echelle_carbone * degats_sur(carbone_brut) + b * echelle_carbone * degats_sur(carbone_récolté) + c * echelle_gen_pop * degats_sur(génération_pop) + d * echelle_pop * degats_sur(pop_actuelle)
 
 	Note: L'assaillant n'a pas de retour sur le fait que son missile ai touché ou pas.
 
@@ -112,6 +113,7 @@ Les sondes fonctionne à l'énergie solaire, elles ne peuvent donc s'éloigner d
 Le vaisseau gouvernemental ne peut être produit que sur la planète disposant du module gouvernemental et sert à transporter le gouvernement (en fuite, par exemple).
 C'est un vaisseau particulièrement rapide, équipé d'armes légères en cas d'imprévu (on préfèrera cependant généralement lui adjoindre une flotte complète).
 Le vaisseau gouvernemental ne peut se déplacer qu'une fois, et sa destination est obligatoirement une planète.
+Lorsque le vaisseau gouvernemental est en déplacement, toute communication est impossible pour le joueur, c'est à dire qu'il ne peut plus donner d'ordre a ses planètes et flottes, il est contraint de passer ses tours jusqu'a ce que son gouvernement arrive à destination.
 {{{
 	Attaque: A DEFINIR
 	Defense: A DEFINIR

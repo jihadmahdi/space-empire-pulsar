@@ -10,23 +10,25 @@ Ainsi les voyages se font "à l'aveuglette", les trajets affichés ne sont que d
 ==Départ et arrivé==
 Le départ d'une flotte est nécéssairement un corps céleste.
 Et exception faite des Sondes, le point d'arrivé est également un corps céleste.
-Le lancement d'une flotte se fait en sélectionnant le corps céleste sur lequel elle stationne et en lui assignant une destination.
-A l'arrivée sur la destination, deux cas de figure sont possibles :
-	* La destination est alliée, la flotte y stationne alors en renfort.
-	* La destination est ennemie (ou neutre millitarisée), un assaut est engagé au terme duquel le corps céleste est conquis, ou la flotte détruite.
+Le lancement d'une flotte se fait en sélectionnant le corps céleste sur lequel elle stationne et en lui assignant une destination et un ordre: "se poser pacifiquement" ou "attaquer".
+A l'arrivée sur la destination, plusieurs cas de figure sont possibles :
+	* La destination est alliée, la flotte y stationne alors en renfort quelque soit l'ordre donné au départ.
+	* La destination est sauvage ou neutre, la flotte a reçue ordre de se poser pacifiquement, elle se fera tout de même attaquer si le comportement défini par le maître de la destination est "ennemi".
+	* La destination est neutre, la flotte a reçu ordre de se poser pacifiquement, elle se pose sans encombre si le comportement définir par le maître de la destination est "neutre".
+	* La destination est sauvage ou neutre, la flotte a reçue ordre d'attaquer, elle attaque en arrivant sur le corps céleste.
 
 ==Trajet==
 Une flotte envoyée vers une destination ne peut être déroutée en chemin, car une fois lancée, toute communication est impossible.
 Les voyages se font en ligne droite du point de départ vers la destination.
 Le temps de voyage est estimé en mesurant la distance du trajet et en la comparant a la vitesse de la flotte.
 A chaque tour, la flotte parcours le pourcentage du trajet que sa vitesse lui permet; Toutes les zones traversées a ce moment là sont considérée comme *visitées*.
-Si durant son trajet une flotte en croise une autre, c'est à dire que les deux empruntent la même case en même temps, chacun des joueurs reçoit un rapport sur la flotte ennemie aperçue, mais aucun combat n'est engagé.
+Si durant son trajet une flotte en croise une autre, c'est à dire que les deux empruntent la même case en même temps, chacun des joueurs recevra (lorsque la flotte arrivera à destination) un rapport sur la flotte ennemie aperçue, mais aucun combat n'est engagé.
 
 ==Cas particulier des Sondes==
 La sonde est la seule unité à pouvoir stationner sur une zone vide.
 Après sa fabrication, la sonde doit être lancée sur un zone, pouvant être un corps céleste, ou vide.
 Une fois sa destination atteinte, la sonde se déploie, elle n'a alors plus la capacité de se déplacer mais permet de voir ce qui se passe autour d'elle (jusqu'a une certaine limite).
-Les sondes sont invisible pour l'ennemi, a moins que celui-ci n'est lui même intallé une sonde à porté.
+Les sondes sont invisible pour l'ennemi (comme tout autre vaisseau), a moins que celui-ci n'est lui même intallé une sonde à porté.
 Dès lors, une sonde ennemi constitue pour toute flotte de combat une "destination valide".
 Une flotte qui a pour destination une sonde voyage jusqu'a elle, la détruit, et engage automatiquement le voyage retour.
 

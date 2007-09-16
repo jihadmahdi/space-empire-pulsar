@@ -27,69 +27,80 @@ Ainsi, il est possible de communiquer avec les autres joueurs par Chat, en filtr
 	- Aux alliés seulements,
 	- A un joueur particulier.
 
-Il est possible de procéder à des échanges de carbone :
-Le joueur qui donne choisie le comptoir de la planète source et le montant (dans les limites du stock actuel de la planète source); Le joueur qui reçoit choisi le comptoir de la planète destination, ce qui détermine le temps que mettra le carbone à arriver. On considère cependant que le transporteur dépéché pour l'échange entre joueur est dédié à cette tâche.
+Le choix est fait de laisser aux joueurs les moyens de gérer eux même la diplomatie selon leur bonnes volontés.
+Ainsi toute forme de relation diplomatique (amicale, neutre, hostile) est implicitement possible hors d'une alliance, mais seul le système d'alliance offre de réelles garanties aux joueurs au prix des obligations auxquelles celà les soumets.
 
-===Attitudes entre joueurs===
-Le jeu ne distingue que deux types de relations diplomatiques, mais en réalité c'est aux joueurs de "jouer le jeu diplomatique".
-Les joueurs neutres peuvent adopter une attitude d'ennemis, mais ils peuvent tout aussi bien être alliés sans avoir signé de pacte d'alliance (celà suppose une coordination des joueurs, basés sur la communication privé entre ceux-ci).
-Une alliance "discrète" n'offre pas les avantages d'un pacte d'alliance, mais peut s'avérer tout aussi payante.
+===Dons, échanges===
+Il est possible de procéder à des dons de carbones, ou échanges si les joueurs se mettent d'accord sur une contrepartie, cependant l'échange est non sécurisé.
+Le joueur qui donne choisie le comptoir de la planète source et le montant (dans les limites du stock actuel de la planète source).
+Le joueur qui reçoit choisi le comptoir de la planète destination, ce qui détermine le temps que mettra le carbone à arriver.
+On considère cependant que le transporteur dépéché pour l'échange entre joueur est dédié à cette tâche.
 
-Un pacte d'alliance n'est donc pas le seul moyen d'alliance possible, il représente plutôt un lien fort entre deux empires, par lequel ceux-ci se sont engagés à échanger leurs données, partager leur territoire, et à se défendre mutuellement.
-	- Les joueurs alliés partagent leur données sur l'univers (position des flottes, sondes, etc..),
-	- ils peuvent librement circuler sur les corps célestes de leur allié, et emprunter les routes spaciales,
-	- les flottes en garnison sur une planète allié se fondent à la flotte de défense planètaire si l'assaillant n'est pas lui même un allié.
+===Diplimatie hors pacte d'alliance===
+La diplomatie hors pacte d'alliance n'offre aucune garantie aux joueurs, elle repose entièrement sur leur honnêteté, ou leur manque d'honnêteté. Elle est donc au plus prêt de la réalitée.
+Chaque joueur doit prouver en permanance sa bonne foi et sa confiance a ses amis en ne les attaquant pas.
+Tous les joueurs hors alliance sont considéré "neutres", bien que par le biais du Chat ils puissent constitué de réelles "alliances" fondées sur la confiance mutuelle.
 
-===Déclarer la guerre===
-Les joueurs qui ne sont pas alliés n'ont pas besoin de se déclarer la guerre pour s'attaquer. Celà signifie que tous les joueurs non alliés sont des ennemis potentiels.
-En revanche, on ne peut pas trahir un allié aussi simplement. En effet, le fait de partager les données sur l'univers en temps d'alliance rends impossible le secret d'une trahison complotée.
-Ainsi, un joueur qui souhaite trahir un allié doit au préalable y déclarer la guerre, celà se fait dès lors qu'il envoi une flotte sur un corps céleste allié avec pour ordre de l'attaquer.
-Toutes les flottes du traitre qui sont à ce moment en garnison sur des corps célestes de l'allié trahi sont détruites.
-Toutes les flottes de l'allié trahis qui seraient en garnison sur des corps célestes du traitre fuient automatiquement vers le corps céleste allié le plus proche.
-Note: Il se peut que pendant leur fuite, le corps céleste de destination change lui même d'attitude, la flotte attaquera automatiquement si la destination se révèle être ennemie à son arrivée.
+====Déplacement de flottes entre joueurs non alliés====
+Afin de ne pas ralonger le temps de jeu en demandant à chaque fois au joueur s'il souhaite "attaquer" ou "laisser en paix" les flottes étrangères qui viennent se poser sur ses corps célestes, il est nécéssaire que chaque joueur ai déjà configuré ses attitudes par défaut.
+Ainsi, il y a deux sortes de comportement à définir :
+	* Le comportement de ses planètes lorsqu'une flotte étrangère pacifique souhaite se poser.
+	* Le comportement de ses propres flottes lorsqu'elles sont posées pacifiquement sur un corps céleste étrangé et que celui-ci est attaqué.
+	
+=====Comportement des planètes face aux nouvelles flottes étrangères=====
+Le premier comportement peut être modifié à tout moment et est défini entre le joueur courant et chaque joueur non allié suivant les statuts :
+	- Hostile (par défaut) : Les flottes de ce joueur sont attaquées a vue même si elles viennent pacifiquement.
+	- Neutre : Les flottes ont l'autorisation de se poser si elle viennent pacifiquement.
+	
+=====Comportement de chaque flotte en stationnement sur un corps céleste étranger, en cas d'attaque=====
+Le second comportement est défini pour chaque flotte du joueur et perdure même si celle-ci change de corps céleste, il ne faut donc pas oublier de le mettre à jour manuellement lorsqu'on déplace la flotte :
+	- Amical : Les flottes rejoignent les forces de la planète si celle-ci est attaquée, sauf si l'assaillant est lui même un allié du joueur.
+	- Fuir (par défaut) : Les flottes fuient le combat et vont sur le corps céleste allié le plus proche.
+	- Hostile : Les flottes rejoignent les forces de l'assaillant (quelqu'il soit), et en cas de victoire sont automatiquement autorisée à ce poser.
 
-===Diplomatie fermée===
-Chaque joueur n'a connaissance que de sa propre diplomatie.
-C'est à dire que les alliances ne lient que des couples de joueurs, mais il est tout a fait possible qu'un même joueur soit allié avec deux joueurs eux-même en guerre.
-Il est même possible qu'alors le joueur neutre favorise l'un ou l'autre de ses alliés par des dons de ressource carbone.
-C'est une des facettes de la diplomatie.
+NOTE: Si deux flottes (ou plusieurs) d'un même joueur sont posée sur une planète étrangère avec un comportement contradictoire (Amical/Hostile), en cas d'attaques elles adaoptent automatiquement la Fuite.
 
-Cependant, il est possible de connaitre les relations diplomatique d'un joueur en envoyant une sonde espionner l'une de ses planètes.
+=====Flottes en stationnement: Passer à l'attaque !=====
+A tout moment, le joueur peut donner ordre aux flottes stationnées pacifiquement d'attaquer. Toutes les flottes du joueur présente dans la zone sont alors automatiquement mobilisées. L'attaque se fait en fin de tour.
 
-====================
-I
+=====Flottes étrangères en stationnement: S'en débarasser !=====
+A tout moment, le joueur peut donner ordre aux forces de son corps céleste d'abattre les flottes étrangèes en stationnement. Il choisi alors le joueur cible, et toutes ses flottes en stationnement sont automatiquement attaquées. L'attaque se fait en fin de tour.
+S'il perds, le corps céleste reviens au joueur attaqué, les autres flottes éventuellement en stationnement le reste.
 
-Diplomatie naturelle "Déplacer vers ..." / "Attaquer ..."
-à reception d'une flotte étrangère qui viens pacifiquement, on aura "Abattre" / "Laisser se poser".
+===Pacte d'alliance===
+Le pacte d'alliance est un lien fort permettant a plusieurs joueurs de s'allier en ayant une garantie sur l'honnêteté de leurs camarades.
+En effet, trahir une alliance fait perdre définitivement les bonus lié au module gouvernemental.
+Les pactes d'alliance sont donc contagieux (l'allié de mes alliés est mon allié, bref, nous sommes tous alliés).
+Pour s'allier a un joueur, celui-ci doit ne faire partie d'aucune alliance, et l'alliance doit voter son adhéson à l'unanimitée (un tour pour lancer l'invitation, un tour pour voter, un tour pour le résultat).
+L'alliance est crée à l'origine par l'accord des deux premiers participants (un tour pour lancer l'invitation, un tour pour accepter/refuser l'invitation, un tour pour le résultat).
 
-Comportement d'une flotte de passage sur une planète qui se fait attaquer:
-"Hostile", en cas d'attaque de la planète, la flotte prend systématiquement parti contre la planète.
-"Amical", on défend la planète et on reste posée si on gagne.
-"Fuir", on fuit systématiquement vers la planète alliée la plus proche.
+Faire partie d'une alliance apporte certains droits/devois :
 
-Les flottes posées pacifiquement ne peuvent pas recevoir l'ordre d'attaquer.
-Si une nouvelle flotte arrive avec l'ordre d'attaquer, elle mobilise cependant toutes les flottes déjà présente.
+- Les données (cartes) de tous les membres (la position de leurs flottes, routes commerciales, sondes, etc..) sont fusionnées et visibles par tous.
+- Les flottes sont toujours autorisées à se poser chez un allié.
+- Il est impossible d'attaquer, ou de se faire attaquer par, un allié.
+- Les flottes en garnisons sur un corps allié qui se fait attaquer participent automatiquement aux forces de défenses.
+- Les messages privés d'un allié à un joueur ne faisant pas parti de l'alliance ont 30% de chance d'être interceptés et diffusés à toute l'alliance.
+- Les cartes étant partagées, les échanges commerciaux d'un membre avec un joueur non membre sont visibles par tous (sans être particulièrement mis en évidence).
+- Chaque membre peut faire par de son souhait d'exclure un autre membre en proposant un vote (le membre ciblé ne vote pas):
+	* Si l'exclusion est votée à l'unanimité, elle est prononcée et l'alliance ne subit aucun malus de trahison.
+	* Si l'exclusion est votée à plus de 50% mais pas a l'unanimité, le membre est exclu mais l'alliance subit le malus de trahison (pas le membre exclu).
+	* Si l'exclusion n'est pas voté à plus de 50%, elle n'est pas prononcée, et aucune mesure n'est prise même si l'on peut imaginer que celà va créer quelques tensions au sein de l'alliance.
 
-Sur les planètes, boutons: "Abatre flottes de passages de tel joueur".
-Si au même tour, le joueur A de la planète choisi d'abatre les flottes d'un joueur X, et que ce joueur X fait décoler ses flottes pour une autre destination, le joueur A n'a pas le temps d'attaquer les flottes du joueur X.
+- Enfin un joueur peut décider unilatéralement de quitter l'alliance, il subit alors les malus de trahison.
 
-II
+====Malus de trahison====
+Le malus de trahison signifie la perte définitive des bonus de production lié à la possession d'un module gouvernemental.
+De plus, un/les joueur(s) subissant le malus de trahison n'a/ont pas le droit d'attaquer ses/leur ancien(s) allié(s) avant N tours.
+Le(s) joueur(s) anciennement allié(s) ont/a quant à eux/lui le droit d'attaquer le(s) traitre(s).
+Si le(s) traitre(s) est/sont attaqué(s) avant les N tours, il(s) a/ont le droit de riposter immédiatement.
 
-Pactes d'alliance.
-Les pactes d'alliance sont contagieux (l'allié de mes alliés est mon allié).
-Pour s'allier a un joueur, celui-ci doit ne faire partie d'aucune alliance, et l'alliance doit voter son adhésion à l'unanimitée (un tour pour inviter, un tour pour voter, un tour résultat).
+Note: Une flotte partie avec un ordre d'attaque qui arrive sur une planète d'un joueur avec lequel on s'est allié entre temps annule automatiquement son attaque.
 
-Les messages privés d'un joueur a un joueur ne faisant pas parti de l'alliance ont un % de chance d'être diffusés à tout ses alliés.
-Les cartes étants partagées entre tous les membres d'une alliance, les échanges commerciaux entre un joueur de l'alliance et un joueur hors alliance sont visibles par tous, mais ne font pas l'objet d'une attention particulière dans les messages. C'est donc a chacun d'être vigilant sur les échanges commerciaux de ses alliés.
+== Divers ==
 
-Chaque membre d'une alliance peut faire part de son souhait d'exclure un autre membre en proposant un vote (le membre concernée ne vote pas) :
-Si l'exclusion est votée à l'unanimité, l'exclusion est prononcée et l'alliance ne subit aucun revers.
-Si l'exclusion est votée à plus de 50% mais pas a l'unanimitée, le membre est exclus, mais l'alliance n'as pas le droit de l'attaquer avant N tours de jeu (sauf si le membre exclus lance lui même une attaque).
+===Option jeu rapide===
+A partir du moment où ils ont validé leur tour, et tant que le dernier joueur n'a pas validé le sien, on compte un bonus de génération de ressources pour les joueurs les plus rapides.
 
-Un membre peut décider de lui même de quitter son alliance, il n'as alors le droit d'attaquer aucun membre de l'alliance avant N tours de jeu (sauf s'il se fait attaquer par un membre de l'alliance, auquel cas toute pénalité est annulée).
-
-Une flotte partie avec un ordre d'attaque qui arrive sur une planète d'un joueur avec lequel on s'est allié entre temps annule son attaque (elle comprend à son arrivé que la planète n'est pas hostile, tout ça tout ça..., la planète cible transmet elle même le message)
-
-==========
-
-Idée: Temps de jeu: à partir du moment où ils ont validé leur tour, et tant que le dernier joueur n'a pas validé, on compte un bonus de génération de ressources pour les joueurs les plus rapides.
+===Option grève à la trahison===
+En plus du malus de trahison prévu, le traitre qui quitte l'alliance perds sa production pendant un nombre de tour proportionnel au nombre de tours qu'il a passé dans l'alliance récement trahie.

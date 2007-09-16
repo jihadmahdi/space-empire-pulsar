@@ -18,7 +18,7 @@ Cette page drèsse la liste des fonctionnalités de Space Empire Pulsar, triées
 	* Serveur web de "liste des parties" (résultat XML, interpreté et affiché dans le jeu)
 	* Implémentation de joueurs bots avec une AI "correcte".
 	
-	* Les corps célestes appartiennent a une galaxie, disposant d'une étoile centrale. Ainsi tous les corps célestes d'une même galaxie ont un cycle de révolution (éliptique) autour de leur étoile. Rayon différent pour chaque corps céleste, orbite de même alure (elipse orientée de façon identique), vitesse variable (+ rapide lorsque proche de l'étoile), plans différents.
+	* ADD-ON: Les corps célestes appartiennent a une galaxie, disposant d'une étoile centrale. Ainsi tous les corps célestes d'une même galaxie ont un cycle de révolution (éliptique) autour de leur étoile. Le rayon est différent pour chaque corps céleste, mais l'élipse a la même alure (orientée de façon identique), la vitesse varie suivant la distance avec l'étoile (+ rapide lorsque proche de l'étoile), les plans des orbites sont différents pour chaque corps céleste.
 
 ==Wont (Fonctionnalité qui ne seront pas implémentées)==
 	* Le temps d'un tour de jeu doit rester relativement court, toute fonctionnalité qui tendrait à l'augmenter déraisonablement  sera refusée.

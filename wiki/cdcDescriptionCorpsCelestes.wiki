@@ -30,7 +30,7 @@ Il existe différents types de corps célestes dont voici la liste:
 ===Planète===
 	Les planètes sont les seuls corps célestes offrant les deux types de ressources existantes: population 人 et carbonne 資.
 	De ce fait, certaines constructions ne sont possibles que sur des planètes.
-	Elles sont un point stratégique important, même si leur ressources carbone sont très inférieures aux autres corps célestes desquels elles doivent s'approvisionner.
+	Elles sont un point stratégique important, même si leurs ressources carbone sont très inférieures aux autres corps célestes desquels elles doivent s'approvisionner.
 	Les planètes sauvages disposent d'une armée de défense fixé à la génération de l'univers suivant leurs taille.
 	{{{
 		人 par tour: [2500-7500]
@@ -40,19 +40,6 @@ Il existe différents types de corps célestes dont voici la liste:
 	}}}
 		Constructions autorisées:
 		Exploitation de ressources, Usine de vaisseaux, Module de défense, Module gouvernemental, Comptoir.
-
-===Nébuleuse===
-	La nébuleuse est un corps celeste formé de gaz et de poussières.
-	Sa structure mouvante ne permet pas l'accueuil de construction de batiments autre que les modules d'extraction et les comptoirs nécéssaires à l'acheminement du carbonne.
-	{{{
-		人 par tour: 0
-		人 max: 0
-		資 max: [100K-500K]
-		Nb. slots: [3-6]
-	}}}
-		Constructions autorisées:
-		Exploitation de ressources,~~Usine de vaisseau~~, ~~Module de défense~~, ~~Module gouvernemental~~, Comptoir.
-		
 
 ===Champ d'astéroïde===
 	Les champs d'astéroïdes sont des lieux impropre à la vie, mais propice à la construction de batiments millitaires, et riche en carbonne.
@@ -66,15 +53,14 @@ Il existe différents types de corps célestes dont voici la liste:
 		Constructions autorisées:
 		Exploitation de ressources, ~~Usine de vaisseaux~~, Module de défense, ~~Module gouvernemental~~, Comptoir.
 
-===Vortex===
-	Les vortex ont une origine encore méconnue. Leur formation est passionnément étudiée par l'ensemble de la communauté des chercheurs.
-	La brillante théorie proposée par Ivanov Pertenchevko décrivant le vortex comme une hypercourbure de l'espace-temps permettant les déplacements au-dela du point critique vitesse lumière a recemment été approuvée par l'expérience après l'envoi de la sonde "Connaissance" qui a été localisée quelques secondes a peine a un point tres éloigné de l'univers connu.
-	
-	Les vortex sont générés aléatoirement pendant la partie, et restent pour un nombre de tour également tiré au hasard.
-	Un vortex permet à qui l'emprunte de se téléporter automatiquement sur un corps céleste (qu'il soit allié, neutre ou sauvage) tiré au hasard (mais fixe pour chaque vortex).
-	Si un vortex apparait sur le chemin d'une flotte, celle-ci l'emprunte automatiquement lorsqu'elle le croise.
-	Si un vortex choisi pour destination disparait avant que la flotte ne l'atteigne, celle-ci achève son trajet jusqu'à la zone vide, puis repart automatiquement vers sa planète d'origine.
-	
-	Si une flotte emprunte un vortex accidentellement et attérie sur un corps céleste neutre, elle tente toujours de s'y poser pacifiquement.
-	Si on donne ordre à une flotte d'emprunter un vortex, on choisi "aller à ..." ou "attaquer ...".
-	
+===Nébuleuse===
+	La nébuleuse est un corps celeste formé de gaz et de poussières.
+	Sa structure mouvante ne permet pas l'accueuil de construction de batiments autre que les modules d'extraction et les comptoirs nécéssaires à l'acheminement du carbonne.
+	{{{
+		人 par tour: 0
+		人 max: 0
+		資 max: [100K-500K]
+		Nb. slots: [3-6]
+	}}}
+		Constructions autorisées:
+		Exploitation de ressources,~~Usine de vaisseau~~, ~~Module de défense~~, ~~Module gouvernemental~~, Comptoir.

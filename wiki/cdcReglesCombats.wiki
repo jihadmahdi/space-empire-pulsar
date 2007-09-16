@@ -4,10 +4,10 @@
 =Combats=
 
 Les combats opposent la pluspart du temps une flotte aux forces en présence sur un corps céleste.
-Dans ce cas, il est nécéssaire de représenter la "flotte" équivalente aux forces disponibles sur le corps céleste attaqué.
+Dans ce cas, il est nécéssaire de représenter la "flotte" équivalente aux forces disponibles sur le corps céleste.
 
 ==Flotte équivalente==
-La flotte équivalente est le regroupement de toutes les forces disponible sur la planète en une même flotte, celà comprend :
+La flotte équivalente est le regroupement de toutes les forces disponibles sur la planète en une même flotte, celà comprend :
 
 Les flottes en stationnement, les vaisseaux en attente dans les usines,  les module de défense et enfin les héros éventuellement présents.
 Chacun de ces éléments dispose des caractéristiques (Attaque, Défense, ...)
@@ -23,8 +23,8 @@ Chaque flotte équivalente de classe se calcule suivant les formules ci-dessous:
 }}}
 
 ===Puissance brute===
-On apelle "puissance brute" la puissance qui ne tient pas compte des arme et armure de classes.
-De même classe, deux adversaires opposent leurs puissance brutes, puisqu'il n'ont aucuns avantages particulier liés à leurs classes.
+On apelle "puissance brute" la puissance qui ne tient pas compte des spécialisations de classes (des arme et armure).
+Deux adversaires de même classe opposent leurs puissance brutes, puisqu'il n'ont aucuns avantages particulier liés à leurs classes.
 
 On peut calculer la puissance brute d'une flotte avec la formule suivante:
 Puissance brute = Defense * Attaque * (1+BonusHeroEventuel)
@@ -53,6 +53,10 @@ Lorsque toutes les sous flottes d'une flotte sont détruites, on détermine comb
 Lorsqu'on essaie de déterminer les vaisseaux que l'on peut "rachetter" avec la défense restante de chaque sous flotte, et que celle-ci ne tombe pas juste, on applique la règle des 50% aux vaisseaux restants les moins cher :
 	- Si la flotte était en position sur son corps céleste, le vaisseau le moins cher est automatiquement rachetté.
 	- Si la flotte viens de conquérir un corps céleste ennemi, le vaisseau le moins cher n'est sauvé que si les reste dépassent 50% de son prix de rachat.
+
+===Combats multipartites===
+
+Avec les flottes pacifiques en stationnement sur un corps céleste, suivant les comportements définis il peut arriver que les puissances en combat soient composées de flottes de plusieurs joueurs à la fois. Le combat est cependant toujours résolu comme s'il s'agissait de 2 ennemis, et ce n'est qu'au moment des rachats des flottes qu'on redivise la flotte survivante en plusieurs flottes survivantes.
 
 ===Contraintes===
 L'algorithme de déroulement des combats peut être amené à changer, mais il doit respecter les contraintes suivantes :
