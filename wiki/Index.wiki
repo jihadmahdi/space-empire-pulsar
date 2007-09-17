@@ -12,7 +12,5 @@ Il devrait être implémenté en JAVA, ce qui le rend multiplateforme.
 	# [Spécification|specIndex]
 	# [Developpement|devIndex]
 	# [Tests|testIndex]
-
----
-
+----------
 [Auteurs|auteurs]
