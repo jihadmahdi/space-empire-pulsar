@@ -2,7 +2,6 @@
 ===[Index|Index]>[cdcIndex|Cahier des Charges]>Descriptions===
 
 =Corps célestes=
-
 Les corps célestes sont des points stratégiques dont toutes les caractéristiques de début de partie (人/tour, 人 max, 資　max de départ, nombre de slots) sont visibles par tous les joueurs.
 Ils fournissent les ressources nécessaires à la construction des flottes et des batiments.
 Les quantités de carbone associées aux corps celestes sont déterminées aléatoirement en début de partie, et s'épuisent à mesure que le joueur les exploite.
@@ -24,7 +23,6 @@ Même un corps céleste sauvage produit cette quantité naturelle de carbone par
 La production naturelle par tour est cependant très faible, inférieure à la production d'un module d'extraction, si bien qu'il est préférable de construire un module d'extraction dès que celà est possible.
 
 ==Types de corps célestes==
-
 Il existe différents types de corps célestes dont voici la liste:
 
 ===Planète===
