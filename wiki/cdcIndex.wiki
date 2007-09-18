@@ -8,11 +8,11 @@
 	# Description détaillée
 		# [cdcDescriptionUnivers|Univers]
 		# [cdcDescriptionCorpsCelestes|Corps célestes]
-			¤ Caractéristiques des corps célestes
-			¤ Planètes
-			¤ Nébuleuses
-			¤ Champs d'astéroïdes
-			¤ Vortex
+			* Caractéristiques des corps célestes
+			* Planètes
+			* Nébuleuses
+			* Champs d'astéroïdes
+			* Vortex
 		# [cdcDescriptionRessources|Ressources]	
 			¤ Population (人)
 			¤ Ressource carbone (資)
