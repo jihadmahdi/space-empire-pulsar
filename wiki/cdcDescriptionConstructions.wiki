@@ -1,8 +1,7 @@
 #summary Cahier des charges: Description détaillée: Univers
-===[Index Index]>[cdcIndex Cahier des Charges]>Descriptions===
+===[Index|Index]>[cdcIndex|Cahier des Charges]>Descriptions===
 
 =Constructions=
-
 Les constructions se font moyennant 人 et 資 sur des corps célestes disposants de slots libres.
 Chaque construction apporte un effet particulier au corps céleste sur lequel elle est batie.
 Il est permi à tout moment au joueur de détruire des batiments pour libérer des slots.
