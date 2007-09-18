@@ -15,3 +15,6 @@ Quatrième ligne.
 Les pages ne sont plus mises à jours ???
 
 Et depuis Eclipse ??
+
+Liens:
+[Index|page d'index]

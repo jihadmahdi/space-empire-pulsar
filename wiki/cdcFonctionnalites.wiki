@@ -2,17 +2,14 @@
 ===[Index|Index]>[cdcIndex|Cahier des Charges]===
 
 =Fonctionnalités=
-
 Cette page drèsse la liste des fonctionnalités de Space Empire Pulsar, triées suivant les règles de MoSCoW:
 
 ==Must (Fonctionnalités obligatoire)==
 	* Implémentation des règles étendues telles que décrite dans le CdC.
 	* Architecture Client/Serveur (SGS).
 	* Support Multilangue simple (fichier .lng).
-
 ==Should (Fonctionnalités qui devrait être implémentées)==
 	* Interface comprenant une partie vue 3D ([http://www.jmonkeyengine.com/|jME]).
-
 ==Can (Fonctionnalités qui pourrait être implémentées)==
 	* Possibilité de promener librement la caméra dans l'univers en 3D.
 	* Serveur web de "liste des parties" (résultat XML, interpreté et affiché dans le jeu)

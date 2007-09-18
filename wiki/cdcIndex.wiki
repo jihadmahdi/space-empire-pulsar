@@ -2,7 +2,6 @@
 ===[Index|Retour sommaire]===
 
 =Cahier des charges : Space Empire Pulsar=
-
 ==Sommaire==
 	# [cdcDescriptionGenerale|Description générale]
 	# [cdcFonctionnalites|Fonctionnalités souhaitées]
@@ -45,5 +44,5 @@
 	# [cdcReseau|Multijoueur & Diplomatie]
 	# [cdcInterface|Interface de jeu]
 	
-	---------------------------------------------------
-	[cdcBlog|Blog]
+---------------------------------------------------
+[cdcBlog|Blog]
