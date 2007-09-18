@@ -1,5 +1,5 @@
 #summary Cahier des charges: Fonctionnalités
-===[Index Index]>[cdcIndex Cahier des Charges]===
+===[Index|Index]>[cdcIndex|Cahier des Charges]===
 
 =Fonctionnalités=
 
@@ -11,7 +11,7 @@ Cette page drèsse la liste des fonctionnalités de Space Empire Pulsar, triées
 	* Support Multilangue simple (fichier .lng).
 
 ==Should (Fonctionnalités qui devrait être implémentées)==
-	* Interface comprenant une partie vue 3D ([http://www.jmonkeyengine.com/ jME]).
+	* Interface comprenant une partie vue 3D ([http://www.jmonkeyengine.com/|jME]).
 
 ==Can (Fonctionnalités qui pourrait être implémentées)==
 	* Possibilité de promener librement la caméra dans l'univers en 3D.
