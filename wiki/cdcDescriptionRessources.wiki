@@ -14,7 +14,7 @@ Une planète possède également un plafond maximum de 人 au delà duquel elle 
 
 Attention: La production de 人 par tour peut diminuer (de façon permanante) si la planète est victime de bombardements.
 
-===La ressource carbone, notée 資==
+==La ressource carbone, notée 資==
 Elle représente la réserve en carbone de chaque planète, elle est disponible sur tout [cdcDescriptionCorpsCelestes|corps céleste].
 Elle se trouve à l'état naturel jusqu'a un certain seuil, puis grace aux [cdcDescriptionConstructions|modules d'extraction 資].
 
