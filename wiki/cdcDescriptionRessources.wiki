@@ -1,8 +1,7 @@
 #summary Cahier des charges: Description détaillée: Univers
-===[Index Index]>[cdcIndex Cahier des Charges]>Descriptions===
+===[Index|Index]>[cdcIndex|Cahier des Charges]>Descriptions===
 
 =Ressources=
-
 Il existe deux types de ressources:
 
 ==La population, notée 人==
@@ -17,7 +16,7 @@ Attention: La production de 人 par tour peut diminuer (de façon permanante) si
 
 ===La ressource carbone, notée 資==
 Elle représente la réserve en carbone de chaque planète.
-Elle est disponible sur tout [cdcDescriptionCorpsCelestes corps céleste], jusqu'a un certain seuil naturel, puis grace aux [cdcDescriptionConstructions modules d'extraction 資].
+Elle est disponible sur tout [cdcDescriptionCorpsCelestes|corps céleste], jusqu'a un certain seuil naturel, puis grace aux [cdcDescriptionConstructions|modules d'extraction 資].
 
-Un corps céleste possède une production de 資 par tour, dépendant du nombre de [cdcDescriptionConstructions modules d'extraction 資] construits (ou production naturelle en l'absence de tout module d'extraction).
+Un corps céleste possède une production de 資 par tour, dépendant du nombre de [cdcDescriptionConstructions|modules d'extraction 資] construits (ou production naturelle en l'absence de tout module d'extraction).
 Un corps céleste possède une réserve maximale de 資 au delà de laquelle il devient définitivement stérile et ne peut plus produire.
