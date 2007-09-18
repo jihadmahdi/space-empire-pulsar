@@ -1,21 +1,25 @@
 #summary Cahier des charges: Description détaillée: Univers
-===[Index Index]>[cdcIndex Cahier des Charges]>Descriptions===
+===[Index|Index]>[cdcIndex|Cahier des Charges]>Descriptions===
 
 =Univers=
-_"Deux choses sont infinies : l'univers et la bêtise humaine, pour l'univers, je n'en ai pas acquis la certitude absolue." A. Enstein_
+//"Deux choses sont infinies : l'univers et la bêtise humaine, pour l'univers, je n'en ai pas acquis la certitude absolue." A. Enstein//
 
 ==Mesure de l'univers==
-L'univers est un damier en 3 dimensions dont la taille est paramètrable en début de partie. Ce damier est découpé en zones, repérées par leurs coordonnées (x, y, z). Chaque zone peut être vide, occupée par un corps céleste, une flotte, ou les deux.
+L'univers est un damier en 3 dimensions dont la taille est paramètrable en début de partie.
+Ce damier est découpé en zones, repérées par leurs coordonnées (x, y, z).
+Chaque zone peut être vide, occupée par un corps céleste, une flotte, ou les deux.
 
 On peut déterminer la distance entre deux zones en mesurant la ligne imaginaire qui les lie par un lien direct, et cette distance permet au joueur de calculer le temps que mettront ses flottes pour faire le voyage.
 
-Une zone représente le volume minimal capable de contenir tout corps céleste (les plus volumineux étant généralement les planètes). Elle délimite également la visibilité maximale de toute les unités (hors unités spéciales).
+Une zone représente le volume minimal capable de contenir tout corps céleste (les plus volumineux étant généralement les planètes).
+Elle délimite également la visibilité maximale de toute les unités (hors unités spéciales).
 Ainsi, deux flottes en déplacement ne s'apercevront que si elles croisent la même zone au même moment.
 
 ==Notes sur la communication==
 L'univers est d'une étendue si immense que toute communication au delà d'une zone n'est possible qu'avec une technologie avancée et coûteuse. Cette technologie n'est donc disponible que sur les corps célestes.
 Ainsi, toute flotte envoyée en déplacement n'est plus joignable avant qu'elle n'atteigne sa destination, et réussisse à s'y établir.
-C'est à dire qu'une flotte qui serait envoyée pour attaquer un corps céleste ennemi n'aura pu communiquer aucune information si elle est détruite lors de l'attaque. Le gouvernement n'aura pu que déduire son échec par l'absence de communication au jour prévu de l'attaque.
+C'est à dire qu'une flotte qui serait envoyée pour attaquer un corps céleste ennemi n'aura pu communiquer aucune information si elle est détruite lors de l'attaque.
+Le gouvernement n'aura pu que déduire son échec par l'absence de communication au jour prévu de l'attaque.
 De même, une flotte qui en aurait aperçue une autre durant son voyage (c'est à dire que les deux flottes se sont croisées au même moment sur la même zone), ou bien qui aurait détruit une sonde ennemi sur son passage, ne pourra en faire le rapport qu'une fois arrivée sur un corps céleste.
 
 Les seules exceptions étant les sondes, celles-ci sont équipées d'équipement lourd leur permettant de communiquer dès lors qu'elles se déploient et reste stationnement.
@@ -36,7 +40,7 @@ Les phénomènes astraux sont des évènements dont la probabilité reste mysté
 	Si on donne ordre à une flotte d'emprunter un vortex, on choisi "aller à ..." ou "attaquer ...".
 	
 ===Pulsar===
-	[http://fr.wikipedia.org/wiki/Pulsar pulsar]
+	[http://fr.wikipedia.org/wiki/Pulsar|pulsar]
 	* A DEFINIR *
 	Phénomène ou Batiment ?
 	Idée: effet: rend la communication impossible pour tous les corps célestes compris dans la zone d'effet.
