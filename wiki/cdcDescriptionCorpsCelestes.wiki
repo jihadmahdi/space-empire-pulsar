@@ -10,10 +10,10 @@ Tout corps celeste est coloré suivant son appartenance: Sauvage ou couleur du j
 ==Caractéristiques==
 Les corps célestes sont définis par plusieurs caractéristiques, pouvant fluctuer durant le jeu :
 
-##人 par tour##:	Production de population à chaque tour de jeu.
-##人 max##:		Valeur maximale de population autorisée sur la planète, au delà la production s'arrète, jusqu'a ce que la population soit redevenue inférieure au maximum autorisé.
-##資 max##:		Réserve en ressource carbone disponible sur le corps céleste, cette valeur diminue à chaque tour passé a extraire le carbone, jusqu'a ce que le corps céleste soit stérile.
-##Nb. slots##:	Nombre d'emplacement disponibles sur le corps céleste pour la construction de modules.
+||	##人 par tour##	||	Production de population à chaque tour de jeu.	||
+||	##人 max##		||	Valeur maximale de population autorisée sur la planète, au delà la production s'arrète, jusqu'a ce que la population soit redevenue inférieure au maximum autorisé. ||
+||	##資 max##		||	Réserve en ressource carbone disponible sur le corps céleste, cette valeur diminue à chaque tour passé a extraire le carbone, jusqu'a ce que le corps céleste soit stérile. ||
+||	##Nb. slots##	||	Nombre d'emplacement disponibles sur le corps céleste pour la construction de modules. ||
 
 ===Seuil naturel minimal de 資===
 Tout corps céleste surlequel le carbone n'est pas extrait par des modules d'extraction fournie tout de même une faible quantité de 資 par tour, jusqu'a un certain seuil, apellé seuil naturel minimal.
