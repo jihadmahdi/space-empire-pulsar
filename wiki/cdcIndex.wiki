@@ -1,29 +1,29 @@
 #summary Sommaire du cahier des charges
-===[Index Retour sommaire]===
+===[Index|Retour sommaire]===
 
 =Cahier des charges : Space Empire Pulsar=
 
 ==Sommaire==
-	# [cdcDescriptionGenerale Description générale]
-	# [cdcFonctionnalites Fonctionnalités souhaitées]
+	# [cdcDescriptionGenerale|Description générale]
+	# [cdcFonctionnalites|Fonctionnalités souhaitées]
 	# Description détaillée
-		# [cdcDescriptionUnivers Univers]
-		# [cdcDescriptionCorpsCelestes Corps célestes]
+		# [cdcDescriptionUnivers|Univers]
+		# [cdcDescriptionCorpsCelestes|Corps célestes]
 			* Caractéristiques des corps célestes
 			* Planètes
 			* Nébuleuses
 			* Champs d'astéroïdes
 			* Vortex
-		# [cdcDescriptionRessources Ressources]	
+		# [cdcDescriptionRessources|Ressources]	
 			* Population (人)
 			* Ressource carbone (資)
-		# [cdcDescriptionConstructions Constructions]
+		# [cdcDescriptionConstructions|Constructions]
 			* Module d'exploitation de ressources
 			* Usine de production de vaisseaux
 			* Module de défense
 			* Module d'administration gouvernementale
 			* Comptoir intergalactique
-		# [cdcDescriptionFlottes Flottes]
+		# [cdcDescriptionFlottes|Flottes]
 			* Calcul des caractéristiques d'une flotte
 			* Type de vaisseaux
 				* Sonde
@@ -32,17 +32,18 @@
 				* Combat moyen
 				* Combat lourd
 	# Règles du jeu
-		# [cdcReglesDebutPartie Début de partie]
+		# [cdcReglesDebutPartie|Début de partie]
 			* Options de début de partie
 			* Conditions de victoire et de défaite
 			* Rège de calcul du score global d'un joueur
-		# [cdcReglesDeplacement Déplacement]
+		# [cdcReglesDeplacement|Déplacement]
 			* Départ & Arrivé
 			* Trajet
 			* Cas particulier des sondes
-		# [cdcReglesCombats Combats]
-		# [cdcReglesGouvHeros Héros]
-	# [cdcReseau Multijoueur & Diplomatie]
-	# [cdcInterface Interface de jeu]
+		# [cdcReglesCombats|Combats]
+		# [cdcReglesGouvHeros|Héros]
+	# [cdcReseau|Multijoueur & Diplomatie]
+	# [cdcInterface|Interface de jeu]
 	
-	[cdcBlog Blog]
+	---------------------------------------------------
+	[cdcBlog|Blog]
