@@ -75,7 +75,7 @@ Cependant ils sont eux même tributaire du nombre de destroyer allié qui les pr
 ==Calcul des caractéristiques d'une flotte==
 Une flotte qui contient des vaisseaux représentant des 3 classes est modélisé par trois flottes équivalente de chaque classe.
 Pour les déplacement, la Vitesse de la flotte est calculée suivant son effectif de chasseurs et la vitesse du plus lent de ses vaisseaux.
-Pour les détails concernant le calcul des caractéristiques des flottes équivalente, [cdcReglesCombats cf. les règles de combat].
+Pour les détails concernant le calcul des caractéristiques des flottes équivalente, [cdcReglesCombats|cf. les règles de combat].
 
 ==Calcul de la valeur d'un vaisseau==
 Afin de garantir un équilibre de prix et de puissance entre les vaisseaux, la formule suivante est proposée :
