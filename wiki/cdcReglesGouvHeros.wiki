@@ -1,5 +1,5 @@
 #summary Cahier des charges: Description détaillée: Univers
-===[Index Index]>[cdcIndex Cahier des Charges]>Règles du jeu===
+===[Index|Index]>[cdcIndex|Cahier des Charges]>Règles du jeu===
 
 =Gouvernement & Héros=
 ==Gouvernement==
@@ -8,8 +8,8 @@ C'est donc une entité particulière qu'il vous faut protéger et sans laquelle 
 En d'autres termes, le gouvernement représente le joueur.
 
 Concrètement, le gouvernement peut prendre deux formes, une seule pouvant exister à la fois et en un seul exemplaire par joueur:
-	* Celle de la construction "Module gouvernemental", établi sur une planète à laquelle il apporte des bonus de production de 人 et 資.
-	* Celle d'un "Vaisseau gouvernemental", qui n'apporte aucun bonus en stationnement, et ne peut faire qu'un seul trajet au terme duquel il établi un module gouvernemental sur la planète destination.
+	¤ Celle de la construction "Module gouvernemental", établi sur une planète à laquelle il apporte des bonus de production de 人 et 資.
+	¤ Celle d'un "Vaisseau gouvernemental", qui n'apporte aucun bonus en stationnement, et ne peut faire qu'un seul trajet au terme duquel il établi un module gouvernemental sur la planète destination.
 	
 Le vaisseau gouvernemental ne peut être créé que sur la planète disposant du module gouvernemental.
 Lorsque le vaisseau gouvernemental est créé, le module gouvernemental est démonté.
@@ -17,10 +17,10 @@ Le vaisseau gouvernemental peut être laissé en stationnement sur la planète, 
 Le vaisseau gouvernemental ne peut voyager qu'a destination d'une planète (alliée, sauvage ou neutre), seul ou accompagné d'une flotte.
 Au terme de son voyage, le vaisseau gouvernemental doit absolument pouvoir se poser sur la planète destination, sinon il est détruit.
 Lorsqu'il arrive a destination, plusieurs cas de figure se présentent:
-	* La destination est une planète du joueur: Le vaisseau gouvernemental se pose et établi un nouveau module gouvernemental.
-	* La destination est une planète alliée: Le vaisseau gouvernemental se pose pacifiquement et retrouve ses capacités de communication.
-	* La destination est une planète neutre, dont le comportement est "neutre": Le vaisseau gouvernemental se pose pacifiquement et retrouve ses capacités de communication, mais il est susceptible de se faire attaquer a tout moment par son hôte.
-	* La destination est une planète sauvage, ou neutre dont le comportement est "ennemi": Le vaisseau gouernemental est attaqué, soit il est détruit, soit il conquiert la planète.
+	¤ La destination est une planète du joueur: Le vaisseau gouvernemental se pose et établi un nouveau module gouvernemental.
+	¤ La destination est une planète alliée: Le vaisseau gouvernemental se pose pacifiquement et retrouve ses capacités de communication.
+	¤ La destination est une planète neutre, dont le comportement est "neutre": Le vaisseau gouvernemental se pose pacifiquement et retrouve ses capacités de communication, mais il est susceptible de se faire attaquer a tout moment par son hôte.
+	¤ La destination est une planète sauvage, ou neutre dont le comportement est "ennemi": Le vaisseau gouernemental est attaqué, soit il est détruit, soit il conquiert la planète.
 
 Durant son voyage, gouvernement est coupé du reste de l'empire (communication impossible), le joueur perds donc l'actualisation des informations de son empire, et ne peut plus passer d'ordres, il n'a pas non plus de rapport sur les éventuelles attaques subies par ses planètes ou flottes.
 Le joueur perds aussi le chat multijoueur.
@@ -34,17 +34,17 @@ Chaque joueur ne peut avoir qu'un seul héro, mais si celui-ci meurs, un nouveau
 
 Le héro reçoit l'expérience des combats qu'il mène, celle-ci ne prend en compte que la puissance brute de la flotte abattue :
 
-Experience reçue d'un combat = Puissance brute de l'ennemi = Ennemi.Defense x Ennemi.Attaque x (1+Ennemi.BonusHeroEventuel)
+Experience reçue d'un combat = Puissance brute de l'ennemi = Ennemi.Defense * Ennemi.Attaque * (1+Ennemi.BonusHeroEventuel)
 
 Le héro applique son bonus à l'attaque de chaque sous flotte de la façon suivante :
 
-SousFlotte.Attaque = (1 + Hero.Bonus) x (Somme pour chaque Vaisseau v: v.Attaque x v.Defense) / Defense
+SousFlotte.Attaque = (1 + Hero.Bonus) * (Somme pour chaque Vaisseau v: v.Attaque * v.Defense) / Defense
 
 ===Réglage de la courbe d'XP===
-Hero.XP = echelle x ((K^Hero.Bonus) - K) / (K^BonusMax)
+Hero.XP = echelle * ((K^Hero.Bonus) - K) / (K^BonusMax)
 K = 2 semble avoir une bonne alure.
 echelle = 5120.10^3 = echelle nécéssaire dosé en fonction de l'XP souhaitée pour avoir un Bonus de 2. Pour 10K d'XP, il faut une échelle de 5120.10^3.
 BonusMax = 10 = Valeur de Bonus à partir de laquelle la progression en XP nécéssaire est jugée "impossible", une fois ce bonus atteind, le Héro continue de progresser mais à une vitesse très faible.
 
 Soit:
-Hero.Bonus = ln( ( (Hero.XP x K^BonusMax) / echelle ) + K ) / ln(K)
+Hero.Bonus = ln( ( (Hero.XP * K^BonusMax) / echelle ) + K ) / ln(K)
