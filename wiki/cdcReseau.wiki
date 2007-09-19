@@ -96,7 +96,7 @@ Si le(s) traitre(s) est/sont attaqué(s) avant les N tours, il(s) a/ont le droit
 
 Note: Une flotte partie avec un ordre d'attaque qui arrive sur une planète d'un joueur avec lequel on s'est allié entre temps annule automatiquement son attaque.
 
-== Divers ==
+==Divers==
 ===Option jeu rapide===
 A partir du moment où ils ont validé leur tour, et tant que le dernier joueur n'a pas validé le sien, on compte un bonus de génération de ressources pour les joueurs les plus rapides.
 
