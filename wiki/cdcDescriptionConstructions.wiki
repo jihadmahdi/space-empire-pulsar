@@ -38,14 +38,14 @@ La planète où est établi le module gouvernemental reçoi un bonus de producti
 ==Comptoir intergalactique (0人/1000資)==
 Les comptoirs intergaliactique permettent d'acheminer les ressources entre les planètes.
 Ainsi, les nébuleuse et champs d'astéroïdes qui ne peuvent produire de vaisseaux ont tout intéret à disposer d'au moins un comptoir pour pouvoir acheminer leurs ressources vers les planètes qui sont plus pauves en carbone.
-Les comptoirs ont deux fonctions pricipales :
-¤ ===Routes de l'espace===
-Ils permettent de construire une route de l'espace, moyennant une prix qui dépend de la distance à couvrir (500資/Z).
-Cette route se fait d'un comptoir à un autre (ceux-ci ne pouvant plus servir à d'autre routes).
-
+Les comptoirs ont deux fonctions pricipales : La construction de routes de l'espace, et les échanges commerciaux.
+===Routes de l'espace===
+Les comptoirs permettent de construire des routes de l'espace, moyennant un prix qui dépend de la distance à couvrir (500資/Z).
+Une route se fait d'un comptoir à un autre (ceux-ci ne pouvant servir que pour une route à la fois).
 Les routes de l'espace permettent à tout voyageur qui l'emprunte de substituer la vitesse de la route à sa propre vitesse. Celle-ci est très avantageuse pour la pluspart des vaisseaux.
 
-* Les comptoirs permettent également de procéder à des transferts réguliers de ressource carbone entre comptoirs.
+===Echanges commerciaux===
+Les comptoirs permettent également de procéder à des transferts réguliers de ressource carbone entre comptoirs.
 Le voyage est assuré par un transporteur qui à sa propre vitesse achemine la quantité de carbone définie par le joueur (dans les limites disponibles au moment du départ).
 L'envoi prend le temps d'un allé simple, la planète destination encaisse le carbone reçu et le transporteur repart sur sa planète d'origine.
 Il met autant de temps pour y rentrer, puis repart automatiquement s'il a une commande en attente.
