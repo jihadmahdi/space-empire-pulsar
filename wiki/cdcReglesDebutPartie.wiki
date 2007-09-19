@@ -1,41 +1,39 @@
 #summary Cahier des charges: Description détaillée: Univers
-===[Index Index]>[cdcIndex Cahier des Charges]>Règles du jeu===
+===[Index Index]>[cdcIndex|Cahier des Charges]>Règles du jeu===
 
 =Début de partie=
-
 ==Options de début de partie==
 L'initiateur de la partie est celui qui choisi les options de la partie, voici la liste des options et paramètres disponibles :
 
-
 ===Taille de l'univers===
 Taille de chaque dimension (x, y, z) de l'univers à générer.
-_Par défaut: 20x20x20_
+//Par défaut: 20x20x20//
 
 ===Nombre de corps célestes===
 Nombre de corps célestes à générer.
-_Par défaut: (nombre de joueurs x 2) + 1_
+//Par défaut: (nombre de joueurs x 2) + 1//
 
 ===Nombre de joueurs===
 Les joueurs doivent rejoindre le jeu en se connectant au serveur lorsque celui-ci est en création de partie.
 Les joueurs sont alors ajouté à la liste des joueurs et l'initiateur de la partie peut librement refuser des joueurs, ou en ajouter des artificiels (AI).
 Une fois la partie lancée, le nombre de joueur est fixé et il est impossible d'en ajouter.
-_Minimum: 2_
+//Minimum: 2//
 
 ===Quantité de 資 de départ===
 Quantité de ressource carbone disponible sur les planètes de départ de chaque joueurs.
-_Par défaut: 150K_
+//Par défaut: 150K//
 
 ===Le niveau de 資 des corps célestes neutres===
 Quantité de ressource carbone disponible sur les corps célestes neutres (fourchette).
 Afin de garder l'équilibre du jeu, les champs d'astéroïdes ne devraient pas fournir plus de 60% des ressources fournies par les nébuleuses.
-_Par défaut:_
+//Par défaut://
 ||Nébuleuses||100K-500K||
 ||Champs d'astéroïdes||60K-300K||
 
 ===Le nombre de slots disponibles sur les corps célestes===
 Quantité de slots de construction disponibles sur chaque type de corps célestes (fourchette).
 Afin de garder l'équilibre du jeu, les planètes devraient fournir plus de slots que les autres corps célestes.
-_Par défaut:_
+//Par défaut://
 ||Planètes||6-15||
 ||Nébuleuses||3-6||
 ||Champs d'astéroïdes||4-8||
