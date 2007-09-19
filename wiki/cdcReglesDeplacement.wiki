@@ -1,21 +1,20 @@
 #summary Cahier des charges: Description détaillée: Univers
-===[Index Index]>[cdcIndex Cahier des Charges]>Règles du jeu===
+===[Index|Index]>[cdcIndex|Cahier des Charges]>Règles du jeu===
 
 =Rappel sur l'Univers=
 L'univers est si immense que malgré le niveau avancé de la technologie actuelle, toute communication est impossible a plus d'une Zone de distance.
 Ainsi les voyages se font "à l'aveuglette", les trajets affichés ne sont que des prévisions, et seule les sondes sont capables de donner une information actualisé sur les Zones qu'elles observent.
 
 =Déplacements=
-
 ==Départ et arrivé==
 Le départ d'une flotte est nécéssairement un corps céleste.
 Et exception faite des Sondes, le point d'arrivé est également un corps céleste.
 Le lancement d'une flotte se fait en sélectionnant le corps céleste sur lequel elle stationne et en lui assignant une destination et un ordre: "se poser pacifiquement" ou "attaquer".
 A l'arrivée sur la destination, plusieurs cas de figure sont possibles :
-	* La destination est alliée, la flotte y stationne alors en renfort quelque soit l'ordre donné au départ.
-	* La destination est sauvage ou neutre, la flotte a reçue ordre de se poser pacifiquement, elle se fera tout de même attaquer si le comportement défini par le maître de la destination est "ennemi".
-	* La destination est neutre, la flotte a reçu ordre de se poser pacifiquement, elle se pose sans encombre si le comportement définir par le maître de la destination est "neutre".
-	* La destination est sauvage ou neutre, la flotte a reçue ordre d'attaquer, elle attaque en arrivant sur le corps céleste.
+	¤ La destination est alliée, la flotte y stationne alors en renfort quelque soit l'ordre donné au départ.
+	¤ La destination est sauvage ou neutre, la flotte a reçue ordre de se poser pacifiquement, elle se fera tout de même attaquer si le comportement défini par le maître de la destination est "ennemi".
+	¤ La destination est neutre, la flotte a reçu ordre de se poser pacifiquement, elle se pose sans encombre si le comportement définir par le maître de la destination est "neutre".
+	¤ La destination est sauvage ou neutre, la flotte a reçue ordre d'attaquer, elle attaque en arrivant sur le corps céleste.
 
 ==Trajet==
 Une flotte envoyée vers une destination ne peut être déroutée en chemin, car une fois lancée, toute communication est impossible.
