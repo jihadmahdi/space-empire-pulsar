@@ -1,5 +1,5 @@
 #summary Cahier des charges: Description détaillée: Univers
-===[Index Index]>[cdcIndex Cahier des Charges]>Règles du jeu===
+===[Index|Index]>[cdcIndex|Cahier des Charges]>Règles du jeu===
 
 =Interface=
 
