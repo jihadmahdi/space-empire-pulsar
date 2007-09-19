@@ -1,8 +1,7 @@
 #summary Cahier des charges: Description détaillée: Univers
-===[Index Index]>[cdcIndex Cahier des Charges]>Descriptions===
+===[Index|Index]>[cdcIndex|Cahier des Charges]>Descriptions===
 
 =Flottes & vaisseaux=
-
 Une flotte est un ensemble de vaisseaux, les caractéristiques d'une flotte dépendent donc des vaisseaux qui la compose.
 Une flotte se créé sur une planète avec les vaisseaux disponibles sur celle-ci.
 En stationnment sur une planète, une flotte peut être dissociée et les vaisseaux ré-affectés à de nouvelles flottes.
@@ -11,25 +10,24 @@ Le joueur a la possibilité de nommer les flottes qu'il compose.
 ==Classess de vaisseaux==
 Les vaisseaux sont rangés en 3 classes: Chasseurs, Destroyers, Artillerie.
 Chaque classe est étudiée pour être particulièrement efficace contre une autre, et a elle même une classe prédateur.
-{{{
+{{
 Chasseurs -> Artillerie
 Artillerie -> Destroyers
 Destroyers -> Chasseurs
-}}}
-
-Outre ces avantages en combat, chaque classe dispose d'un capacité hors-combat, qui lui donne un attrait stratégique plus ou moins important suivant le style de jeu du joueur.
+}}
+Outre ces avantages en combat, chaque classe dispose d'une capacité hors-combat, qui lui donne un attrait stratégique plus ou moins important suivant le style de jeu du joueur.
 
 ===Chasseurs===
 Les chasseurs sont des vaisseaux rapides mais peu résistants, spécialisés dans la destruction des vaisseaux d'artillerie.
 En combat ils ont pour mission d'atteindre au plus vite l'artillerie ennemi et de la décimer, celle-ci étant particulièrement vulnérable en combat rapproché.
 Pour ce faire ils doivent cependant traverser la ligne des destroyers ennemi dont les tirs sont puissants.
 
-*Capacité spéciale*
+##Capacité spéciale##
 	Les chasseurs ont systématiquement leur vitesse doublée par rapport à leur gabarit.
 	De plus, ils sont étudiés pour pouvoir tracter (ou propulser, selon les modèles), les vaisseaux des autres classes, a condition toute fois d'être en nombre suffisant.
 	Ainsi, une flotte composée de Chasseurs calcule sa vitesse suivant la formule :
 
-	Flotte.V = PlusLente(E.V) x (1 + (Chasseurs.Def x (k + Chasseurs.Armure) / Flotte.Def))
+	Flotte.V = PlusLente(E.V) * (1 + (Chasseurs.Def * (k + Chasseurs.Armure) / Flotte.Def))
 	k étant une constante de réglage: 1 - Armure du plus petit gabarit, soit k = 0.5
 	Dans la formule, on considère que Armure indique le taux de spécialisation de la sous flotte de Chasseurs.
 	
@@ -38,13 +36,13 @@ Les destroyers sont des vaisseaux blindés possédant une énorme puissance de f
 En combat ils ont donc pour mission de former une ligne de défense devant l'artillerie, et d'éliminer le plus de chasseurs ennemi possible.
 Cependant ils sont les cibles de choix de l'artillerie ennemi, seule capable de percer efficacement leur blindage.
 
-*Capacité spéciale*
+##Capacité spéciale##
 	Les destroyers peuvent se mettre en position "défense" sur un corps céleste.
 	Ils bénéficient alors d'un bonus (bonus à l'attaque, en réalité) si le corps céleste est attaqué.
 	Le joueur doit mettre lui même les unités en mode "défense".
 	Lorsque le joueur souhaite remobiliser ses destroyers, ceux-ci prennent un tour à ce redéployer avant d'être disponibles.
 	
-	BonusAttaque des destroyers fortifiés = Destroyers.Attaque x k x Destroyers.Armure
+	BonusAttaque des destroyers fortifiés = Destroyers.Attaque * k * Destroyers.Armure
 	k étant un facteur de réglage, soit k = 1
 	
 ===Artillerie===
@@ -52,7 +50,7 @@ Les vaisseaux d'artillerie sont de lourds vaisseaux disposant de systèmes de vi
 En combat ils ont pour mission d'éliminer le plus de destroyers ennemi possible.
 Cependant ils sont eux même tributaire du nombre de destroyer allié qui les protège des chasseurs ennemis contre lesquels ils ne peuvent rien.
 
-*Capacité spéciale*
+##Capacité spéciale##
 	Les unités d'artilleries, qui sont équipées de canons et d'appareils de visée longue portée, peuvent effectuer des bombardement de planète à planète.
 	Le missile met un certain temps à arriver sur sa cible, et a un certain pourcentage de chance de faire mouche.
 	Le temps de refroidissement du canon est proportionnel à la distance de tir, ainsi une artillerie doit attendre autant de temps avant de pouvoir procéder à un nouveau tir.
@@ -90,7 +88,7 @@ p_attaque = p_defense = 1
 p_arme = p_armure = 1/3
 p_vitesse = 5
 
-2x人 + 資 = k x ( (p_attaque x Attaque) + (p_defense x Défense) + (p_arme x Attaque x Arme) + (p_armure x Defense x Armure) + (p_vitesse x Vitesse) )
+2x人 + 資 = k * ( (p_attaque * Attaque) + (p_defense * Défense) + (p_arme * Attaque * Arme) + (p_armure * Defense * Armure) + (p_vitesse * Vitesse) )
 
 
 Voici la liste des différents vaisseaux :
@@ -103,44 +101,44 @@ A son lancement, une zone (vide ou planète) est choisie comme destination, dès
 La sonde permet de voir les déplacements des flottes se trouvant a proximité (le bout de trajet, sous forme de segment, avec des informations sur la flotte aperçue).
 Cependant si une flotte ennemie vient à occuper la zone où se trouve la sonde, celle-ci est automatiquement détruite, celà peut arriver par hasard si la sonde se trouve sur le chemin d'une flotte, où si la sonde a été repérée par une sonde ennemie.
 Les sondes fonctionne à l'énergie solaire, elles ne peuvent donc s'éloigner de celui-ci que dans une certaine limite.
-{{{
+{{
 	Attaque: 0
 	Defense: 1
 	Vitesse: 1.5 Z/T
-}}}
+}}
 
 ===Vaisseau gouvernemental (200人/200資)===
 Le vaisseau gouvernemental ne peut être produit que sur la planète disposant du module gouvernemental et sert à transporter le gouvernement (en fuite, par exemple).
 C'est un vaisseau particulièrement rapide, équipé d'armes légères en cas d'imprévu (on préfèrera cependant généralement lui adjoindre une flotte complète).
 Le vaisseau gouvernemental ne peut se déplacer qu'une fois, et sa destination est obligatoirement une planète.
 Lorsque le vaisseau gouvernemental est en déplacement, toute communication est impossible pour le joueur, c'est à dire qu'il ne peut plus donner d'ordre a ses planètes et flottes, il est contraint de passer ses tours jusqu'a ce que son gouvernement arrive à destination.
-{{{
+{{
 	Attaque: A DEFINIR
 	Defense: A DEFINIR
 	Vitesse: 2.5 Z/T
-}}}
+}}
 Lorsque le vaisseau gouvernemental est en déplacement, le joueur perds tout contrôle le temps du voyage.
 
 ===Vaisseaux léger (A DEFINIR人/A DEFINIR資)===
 Les vaisseaux léger de chaque classes partagent les mêmes caractéristiques de base.
 On souhaite qu'un vaisseau léger BN puisse abattre 3 vaisseaux légers TdT et survivre.
-{{{
+{{
 	Attaque: A DEFINIR
 	Defense: A DEFINIR
 	Arme de classe: A DEFINIR
 	Defense de classe: A DEFINIR
-}}}
+}}
 
 ===Vaisseaux moyen (A DEFINIR人/A DEFINIR資)===
 Les vaisseaux moyen de chaque classes partagent les mêmes caractéristiques de base.
 On souhaite qu'un vaisseau moyen BN puisse abattre 4 vaisseaux moyen TdT et survivre.
 On souhaite qu'un vaisseau moyen puisse abattre 10 vaisseaux Ego légers et survivre.
-{{{
+{{
 	Attaque: A DEFINIR
 	Defense: A DEFINIR
 	Arme de classe: A DEFINIR
 	Defense de classe: A DEFINIR
-}}}
+}}
 	
 
 
@@ -148,9 +146,9 @@ On souhaite qu'un vaisseau moyen puisse abattre 10 vaisseaux Ego légers et surv
 Les vaisseaux lourds de chaque classes partagent les même caractéristiques de base.
 On souhaite qu'un vaisseau lourd BN puisse abattre 5 vaisseaux lourds TdT et survivre.
 On souhaite qu'un vaisseau lourd puisse abattre 10 vaisseux Ego moyens et survivre.
-{{{
+{{
 	Attaque: A DEFINIR
 	Defense: A DEFINIR
 	Arme de classe: A DEFINIR
 	Defense de classe: A DEFINIR
-}}}
+}}
