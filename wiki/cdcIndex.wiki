@@ -3,46 +3,46 @@
 
 =Cahier des charges : Space Empire Pulsar=
 ==Sommaire==
-	ñ [cdcDescriptionGenerale|Description générale]
-	ñ [cdcFonctionnalites|Fonctionnalités souhaitées]
-	ñ Description détaillée
-		ñ [cdcDescriptionUnivers|Univers]
-		ñ [cdcDescriptionCorpsCelestes|Corps célestes]
-			ね Caractéristiques des corps célestes
-			ね Planètes
-			ね Nébuleuses
-			ね Champs d'astéroïdes
-			ね Vortex
-		ñ [cdcDescriptionRessources|Ressources]	
-			ね Population (人)
-			ね Ressource carbone (資)
-		ñ [cdcDescriptionConstructions|Constructions]
-			ね Module d'exploitation de ressources
-			ね Usine de production de vaisseaux
-			ね Module de défense
-			ね Module d'administration gouvernementale
-			ね Comptoir intergalactique
-		ñ [cdcDescriptionFlottes|Flottes]
-			ね Calcul des caractéristiques d'une flotte
-			ね Type de vaisseaux
-				ね Sonde
-				ね Vaisseau gouvernemental
-				ね Combat léger
-				ね Combat moyen
-				ね Combat lourd
-	ñ Règles du jeu
-		ñ [cdcReglesDebutPartie|Début de partie]
-			ね Options de début de partie
-			ね Conditions de victoire et de défaite
-			ね Rège de calcul du score global d'un joueur
-		ñ [cdcReglesDeplacement|Déplacement]
-			ね Départ & Arrivé
-			ね Trajet
-			ね Cas particulier des sondes
-		ñ [cdcReglesCombats|Combats]
-		ñ [cdcReglesGouvHeros|Héros]
-	ñ [cdcReseau|Multijoueur & Diplomatie]
-	ñ [cdcInterface|Interface de jeu]
+	# [cdcDescriptionGenerale|Description générale]
+	# [cdcFonctionnalites|Fonctionnalités souhaitées]
+	# Description détaillée
+		# [cdcDescriptionUnivers|Univers]
+		# [cdcDescriptionCorpsCelestes|Corps célestes]
+			¤ Caractéristiques des corps célestes
+			¤ Planètes
+			¤ Nébuleuses
+			¤ Champs d'astéroïdes
+			¤ Vortex
+		# [cdcDescriptionRessources|Ressources]	
+			¤ Population (人)
+			¤ Ressource carbone (資)
+		# [cdcDescriptionConstructions|Constructions]
+			¤ Module d'exploitation de ressources
+			¤ Usine de production de vaisseaux
+			¤ Module de défense
+			¤ Module d'administration gouvernementale
+			¤ Comptoir intergalactique
+		# [cdcDescriptionFlottes|Flottes]
+			¤ Calcul des caractéristiques d'une flotte
+			¤ Type de vaisseaux
+				¤ Sonde
+				¤ Vaisseau gouvernemental
+				¤ Combat léger
+				¤ Combat moyen
+				¤ Combat lourd
+	# Règles du jeu
+		# [cdcReglesDebutPartie|Début de partie]
+			¤ Options de début de partie
+			¤ Conditions de victoire et de défaite
+			¤ Rège de calcul du score global d'un joueur
+		# [cdcReglesDeplacement|Déplacement]
+			¤ Départ & Arrivé
+			¤ Trajet
+			¤ Cas particulier des sondes
+		# [cdcReglesCombats|Combats]
+		# [cdcReglesGouvHeros|Héros]
+	# [cdcReseau|Multijoueur & Diplomatie]
+	# [cdcInterface|Interface de jeu]
 	
 ---------------------------------------------------
 [cdcBlog|Blog]
