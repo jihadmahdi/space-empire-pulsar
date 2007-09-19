@@ -1,11 +1,11 @@
 #summary Cahier des charges: Description détaillée: Univers
 ===[Index|Index]>[cdcIndex|Cahier des Charges]>Règles du jeu===
 
-=Rappel sur l'Univers=
+=Déplacements=
+==Rappel sur l'Univers==
 L'univers est si immense que malgré le niveau avancé de la technologie actuelle, toute communication est impossible a plus d'une Zone de distance.
 Ainsi les voyages se font "à l'aveuglette", les trajets affichés ne sont que des prévisions, et seule les sondes sont capables de donner une information actualisé sur les Zones qu'elles observent.
 
-=Déplacements=
 ==Départ et arrivé==
 Le départ d'une flotte est nécéssairement un corps céleste.
 Et exception faite des Sondes, le point d'arrivé est également un corps céleste.
