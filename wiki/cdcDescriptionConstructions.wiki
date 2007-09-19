@@ -20,11 +20,11 @@ Prix du nième module d'extraction = Prix du premier module d'extraction * expon
 ==Usine de production de vaisseaux (500人/2000資)==
 Les usines de production de vaisseaux ne sont disponibles que sur les planètes, car elles nécéssitent beaucoup de main d'oeuvres.
 Elles ont deux fonctionnalités distinctes:
-	* La fabrication de nouveaux vaisseaux (moyennant le prix du vaisseau choisi), qui sont alors disponibles dans l'entrepot de l'usine, prêt à être affectés à une flotte.
-	* Le remaniement des flottes existantes, qui se posent sur la piste de l'usine et y reste jusqu'a être de nouveaux affecté à une flotte.
+	¤ La fabrication de nouveaux vaisseaux (moyennant le prix du vaisseau choisi), qui sont alors disponibles dans l'entrepot de l'usine, prêt à être affectés à une flotte.
+	¤ Le remaniement des flottes existantes, qui se posent sur la piste de l'usine et y reste jusqu'a être de nouveaux affecté à une flotte.
 
 ==Module de défense (0人/4000資)==
-Les modules de défense sont la première protection des corps célestes, ils octroient des bonus de +(*A DEFINIR*) en attaque et en défense au corps céleste si celui-ci est attaqué, ainsi qu'aux flottes alliées en orbite.
+Les modules de défense sont la première protection des corps célestes, ils octroient des bonus de +(##A DEFINIR##) en attaque et en défense au corps céleste si celui-ci est attaqué, ainsi qu'aux flottes alliées en orbite.
 Ces modules sont cumulables tant que le corps céleste dispose de slots libres.
 
 ==Module gouvernemental (0人/0資)==
@@ -39,9 +39,10 @@ La planète où est établi le module gouvernemental reçoi un bonus de producti
 Les comptoirs intergaliactique permettent d'acheminer les ressources entre les planètes.
 Ainsi, les nébuleuse et champs d'astéroïdes qui ne peuvent produire de vaisseaux ont tout intéret à disposer d'au moins un comptoir pour pouvoir acheminer leurs ressources vers les planètes qui sont plus pauves en carbone.
 Les comptoirs ont deux fonctions pricipales :
-* Ils permettent de construire une route de l'espace, moyennant une prix qui dépend de la distance à couvrir (500資/Z).
+¤ ===Routes de l'espace===
+Ils permettent de construire une route de l'espace, moyennant une prix qui dépend de la distance à couvrir (500資/Z).
 Cette route se fait d'un comptoir à un autre (ceux-ci ne pouvant plus servir à d'autre routes).
-===Routes de l'espace===
+
 Les routes de l'espace permettent à tout voyageur qui l'emprunte de substituer la vitesse de la route à sa propre vitesse. Celle-ci est très avantageuse pour la pluspart des vaisseaux.
 
 * Les comptoirs permettent également de procéder à des transferts réguliers de ressource carbone entre comptoirs.
