@@ -28,3 +28,7 @@ Liens:
 ||	##資 max##		||	Réserve en ressource carbone disponible sur le corps céleste, cette valeur diminue à chaque tour passé a extraire le carbone, jusqu'a ce que le corps céleste soit stérile. ||
 ||	##Nb. slots##	||	Nombre d'emplacement disponibles sur le corps céleste pour la construction de modules. ||
 ||
+
+Une formule math juste pour la forme..
+<math>S(f)(t)=a_{0}+sum{n=1}{+infty}{a_{n} cos(n omega t)+b_{n} sin(n omega t)}</math>
+Yeah !
