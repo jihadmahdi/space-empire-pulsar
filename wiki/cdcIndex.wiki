@@ -1,4 +1,4 @@
-#summary Sommaire du cahier des charges
+#summary Space Empire Pulsar : Cachier des charges : Sommaire
 ===[Index|Retour sommaire]===
 
 =Cahier des charges : Space Empire Pulsar=

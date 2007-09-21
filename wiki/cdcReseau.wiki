@@ -1,5 +1,5 @@
-#summary Cahier des charges: Description détaillée: Univers
-===[Index|Index]>[cdcIndex|Cahier des Charges]>Règles du jeu===
+#summary Space Empire Pulsar : Cachier des charges : Multijoueur
+===[Index|Index]>[cdcIndex|Cahier des Charges]===
 
 =Multijoueurs & Diplomatie=
 Space Empire Pulsar est un jeu multijoueur en réseau (local ou Internet), même si des "bots" seront peut être implémentés dans le futur.

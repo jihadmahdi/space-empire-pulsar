@@ -1,4 +1,4 @@
-#summary Cahier des charges: Description détaillée: Univers
+#summary Space Empire Pulsar : Cachier des charges : Règles du jeu : Gouvernement & Héros
 ===[Index|Index]>[cdcIndex|Cahier des Charges]>Règles du jeu===
 
 =Gouvernement & Héros=

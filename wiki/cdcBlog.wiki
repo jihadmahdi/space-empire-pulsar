@@ -1,7 +1,9 @@
-#summary Cahier des charges: BLOG
+#summary Space Empire Pulsar : Cachier des charges : BLOG
 ===[Index Index]>[cdcIndex Cahier des Charges]===
 
 =BLOG=
 
 Cette page est faite pour servir de BLOG sur le CDC.
 La discution se fait au fil des commentaires laissés sur la page.
+
+Note: Blog accessible depuis le viewer [http://code.google.com/p/space-empire-pulsar/wiki/cdcBlog GoogleCode] uniquement.

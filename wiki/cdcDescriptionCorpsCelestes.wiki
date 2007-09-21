@@ -1,4 +1,4 @@
-#summary Cahier des charges: Description détaillée: Univers
+#summary Space Empire Pulsar : Cachier des charges : Description détaillée : Corps célestes
 ===[Index|Index]>[cdcIndex|Cahier des Charges]>Descriptions===
 
 =Corps célestes=

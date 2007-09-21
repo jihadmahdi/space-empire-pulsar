@@ -1,5 +1,5 @@
-#summary Cahier des charges: Description détaillée: Univers
-===[Index|Index]>[cdcIndex|Cahier des Charges]>Règles du jeu===
+#summary Space Empire Pulsar : Cachier des charges : Interface
+===[Index|Index]>[cdcIndex|Cahier des Charges]===
 
 =Interface=
 

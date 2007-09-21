@@ -1,4 +1,4 @@
-#summary Cahier des charges: Fonctionnalités
+#summary Space Empire Pulsar : Cachier des charges : Fonctionnalités
 ===[Index|Index]>[cdcIndex|Cahier des Charges]===
 
 =Fonctionnalités=

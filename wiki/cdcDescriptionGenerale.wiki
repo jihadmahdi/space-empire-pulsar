@@ -1,4 +1,4 @@
-#summary Cahier des charges: Description générale
+#summary Space Empire Pulsar : Cachier des charges : Description générale
 ===[Index|Index]>[cdcIndex|Cahier des Charges]===
 
 =Description générale=
