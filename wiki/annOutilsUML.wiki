@@ -7,15 +7,13 @@ Celà permet entre autre de profiter de la gestion en configuration (projet part
 
 Cette page liste les plugins UML disponibles pour Eclipse, seuls ceux compatible avec la version Europa ont été testé.
 Les fonctionnalités souhaitées sont :
-
 ##Must##
 	¤ Modéliser des diagrammes de classes graphiquement.
 	¤ Synchronisation Diagramme/Code, ou support de la génération et du reverse.
 	¤ Compatible projets partagés (SVN).
 ##Should##
 	¤ Robuste, fiable, léger.
-	¤ Modéliser les autres diagrammes UML: diagrammes de séquence, diagrammes d'états-transitions.
-	
+	¤ Modéliser les autres diagrammes UML: diagrammes de séquence, diagrammes d'états-transitions.	
 ##Can##
 	¤ Modéliser les autres diagrammes UML.
 
