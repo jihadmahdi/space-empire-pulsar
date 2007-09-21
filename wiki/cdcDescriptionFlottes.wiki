@@ -27,7 +27,7 @@ Pour ce faire ils doivent cependant traverser la ligne des destroyers ennemi don
 	De plus, ils sont étudiés pour pouvoir tracter (ou propulser, selon les modèles), les vaisseaux des autres classes, a condition toute fois d'être en nombre suffisant.
 	Ainsi, une flotte composée de Chasseurs calcule sa vitesse suivant la formule :
 
-	<math>Flotte.V = PlusLente(E.V) * (1 + (Chasseurs.Def * (k + Chasseurs.Armure) / Flotte.Def))</math>
+	<math>Flotte_Vitesse = PlusLente(E.Vitesse) * (1 + (Chasseurs_Def * (k + Chasseurs_Armure) / Flotte_Def))</math>
 	k étant une constante de réglage: 1 - Armure du plus petit gabarit, soit k = 0.5
 	Dans la formule, on considère que Armure indique le taux de spécialisation de la sous flotte de Chasseurs.
 	
@@ -42,7 +42,7 @@ Cependant ils sont les cibles de choix de l'artillerie ennemi, seule capable de 
 	Le joueur doit mettre lui même les unités en mode "défense".
 	Lorsque le joueur souhaite remobiliser ses destroyers, ceux-ci prennent un tour à ce redéployer avant d'être disponibles.
 	
-	BonusAttaque des destroyers fortifiés = Destroyers.Attaque * k * Destroyers.Armure
+	<math>BonusAttaque des destroyers fortifiés = Destroyers.Attaque * k * Destroyers.Armure</math>
 	k étant un facteur de réglage, soit k = 1
 	
 ===Artillerie===
