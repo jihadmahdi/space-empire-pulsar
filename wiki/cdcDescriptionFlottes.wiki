@@ -68,7 +68,7 @@ Cependant ils sont eux même tributaire du nombre de destroyer allié qui les pr
 	
 	Le missile entame les caractéristiques de base du corps céleste avec la répartition suivante (a, b, c et d étant les constantes servant à "régler" le comportement du missile):
 	
-	<math>Dégats = {Puissance missile} = a * echelle_carbone * degats_{carbone brut} + b * echelle_carbone * degats_{carbone~récolté} + c * echelle_{génération pop} * degats_{génération~pop} + d * echelle_pop * degats_{pop~actuelle}</math>
+	<math>Dégats = Puissance~missile = a * echelle_carbone * degats_{carbone~brut} + b * echelle_carbone * degats_{carbone~récolté} + c * echelle_{génération~pop} * degats_{génération~pop} + d * echelle_pop * degats_{pop~actuelle}</math>
 
 	Note: L'assaillant n'a pas de retour sur le fait que son missile ai touché ou pas.
 
@@ -84,12 +84,11 @@ Soit 資 le coût en ressource (carbonne).
 Soit k une constante permettant de changer l'échèlle de mesure, car on souhaite parler de ressource en milliers, mais se limiter à des nombres a deux chiffres pour les caractéristiques.
 k=60
 
-p_attaque = p_defense = 1
-p_arme = p_armure = 1/3
-p_vitesse = 5
+<math>omega_Attaque = omega_Défense = 1</math>
+<math>omega_Arme = p_Armure = 1/3</math>
+<math>omega_Vitesse = 5</math>
 
-2x人 + 資 = k * ( (p_attaque * Attaque) + (p_defense * Défense) + (p_arme * Attaque * Arme) + (p_armure * Defense * Armure) + (p_vitesse * Vitesse) )
-
+<math>2*人 + 資 = k * ( (omega_Attaque * Attaque) + (omega_Défense * Défense) + (omega_Arme * Attaque * Arme) + (omega_Armure * Défense * Armure) + (omega_Vitesse * Vitesse) )</math>
 
 Voici la liste des différents vaisseaux :
 
