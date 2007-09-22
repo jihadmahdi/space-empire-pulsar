@@ -33,5 +33,8 @@ Une formule math juste pour la forme..
 <math>S(f)(t)=a_{0}+sum{n=1}{+infty}{a_{n} cos(n omega t)+b_{n} sin(n omega t)}</math>
 Yeah !
 
-Formule avec des vrais bouts d'unicode dedans.
+Formule avec des vrais kanjis dedans.
 <math>ね　+　こ　＝　猫</math>
+
+Formule avec juste des accents èêéëàâäae et des cedilles çìîï
+<math>èêéëàâäae != çìîï</math>
