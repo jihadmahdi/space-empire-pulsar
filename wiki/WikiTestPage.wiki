@@ -34,7 +34,7 @@ Une formule math juste pour la forme..
 Yeah !
 
 Formule avec des vrais kanjis dedans.
-<math>ね + こ = 猫</math>
+<math size=76>ね + こ = 猫</math>
 {{
 &#12397;&#12288;&#12288;&#12371;&#12288;&#65309;&#12288;&#29483;
 }}
