@@ -1,5 +1,5 @@
-#summary Space Empire Pulsar : Cachier des charges : Interface
-===[Index|Index]>[cdcIndex|Cahier des Charges]===
+#summary Index : Cahier des charges : Interface
+===[Index|Index]>[cdcIndex|Cahier des charges]===
 
 =Interface=
 

@@ -1,5 +1,5 @@
-#summary Space Empire Pulsar : Cachier des charges : Sommaire
-===[Index|Retour sommaire]===
+#summary Index : Cahier des charges
+===[Index|Index]===
 
 =Cahier des charges : Space Empire Pulsar=
 ==Sommaire==

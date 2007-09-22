@@ -1,5 +1,5 @@
-#summary Space Empire Pulsar : Cachier des charges : Description détaillée : Univers
-===[Index|Index]>[cdcIndex|Cahier des Charges]>Descriptions===
+#summary Index : Cahier des charges : Description détaillée : Univers
+===[Index|Index]>[cdcIndex|Cahier des charges]>Descriptions===
 
 =Univers=
 //"Deux choses sont infinies : l'univers et la bêtise humaine, pour l'univers, je n'en ai pas acquis la certitude absolue." A. Enstein//

@@ -1,5 +1,5 @@
-#summary Space Empire Pulsar : Cachier des charges : Règles du jeu : Combats
-===[Index|Index]>[cdcIndex|Cahier des Charges]>Règles du jeu===
+#summary Index : Cahier des charges : Règles du jeu : Combats
+===[Index|Index]>[cdcIndex|Cahier des charges]>Règles du jeu===
 
 =Combats=
 Les combats opposent la pluspart du temps une flotte aux forces en présence sur un corps céleste.

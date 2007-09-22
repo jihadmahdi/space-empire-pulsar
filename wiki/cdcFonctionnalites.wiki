@@ -1,5 +1,5 @@
-#summary Space Empire Pulsar : Cachier des charges : Fonctionnalités
-===[Index|Index]>[cdcIndex|Cahier des Charges]===
+#summary Index : Cahier des charges : Fonctionnalités
+===[Index|Index]>[cdcIndex|Cahier des charges]===
 
 =Fonctionnalités=
 Cette page drèsse la liste des fonctionnalités de Space Empire Pulsar, triées suivant les règles de MoSCoW:

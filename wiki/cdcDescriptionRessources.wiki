@@ -1,5 +1,5 @@
-#summary Space Empire Pulsar : Cachier des charges : Description détaillée : Ressources
-===[Index|Index]>[cdcIndex|Cahier des Charges]>Descriptions===
+#summary Index : Cahier des charges : Description détaillée : Ressources
+===[Index|Index]>[cdcIndex|Cahier des charges]>Descriptions===
 
 =Ressources=
 Il existe deux types de ressources:

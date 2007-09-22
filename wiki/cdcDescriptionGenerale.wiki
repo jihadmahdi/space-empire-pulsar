@@ -1,5 +1,5 @@
-#summary Space Empire Pulsar : Cachier des charges : Description générale
-===[Index|Index]>[cdcIndex|Cahier des Charges]===
+#summary Index : Cachier des charges : Description générale
+===[Index|Index]>[cdcIndex|Cachier des charges]===
 
 =Description générale=
 Space Empire Pulsar est un jeu de stratégie tour par tour, multijoueur, dont les règles inspirées de [http://en.wikipedia.org/wiki/Konquest|Konquest] sont largement étendues.

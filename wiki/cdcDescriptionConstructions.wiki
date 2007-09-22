@@ -1,5 +1,5 @@
-#summary Space Empire Pulsar : Cachier des charges : Description détaillée : Constructions
-===[Index|Index]>[cdcIndex|Cahier des Charges]>Descriptions===
+#summary Index : Cahier des charges : Description détaillée : Constructions
+===[Index|Index]>[cdcIndex|Cahier des charges]>Descriptions===
 
 =Constructions=
 Les constructions se font moyennant 人 et 資 sur des corps célestes disposants de slots libres.

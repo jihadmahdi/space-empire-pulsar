@@ -1,5 +1,5 @@
-#summary Space Empire Pulsar : Cachier des charges : Règles du jeu : Déplacements
-===[Index|Index]>[cdcIndex|Cahier des Charges]>Règles du jeu===
+#summary Index : Cahier des charges : Règles du jeu : Déplacements
+===[Index|Index]>[cdcIndex|Cahier des charges]>Règles du jeu===
 
 =Déplacements=
 ==Rappel sur l'Univers==

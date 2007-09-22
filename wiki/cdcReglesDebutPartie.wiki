@@ -1,5 +1,5 @@
-#summary Space Empire Pulsar : Cachier des charges : Règles du jeu : Début de partie
-===[Index Index]>[cdcIndex|Cahier des Charges]>Règles du jeu===
+#summary Index : Cahier des charges : Règles du jeu : Début de partie
+===[Index|Index]>[cdcIndex|Cahier des charges]>Règles du jeu===
 
 =Début de partie=
 ==Options de début de partie==

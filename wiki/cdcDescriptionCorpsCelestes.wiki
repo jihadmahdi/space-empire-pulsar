@@ -1,5 +1,5 @@
-#summary Space Empire Pulsar : Cachier des charges : Description détaillée : Corps célestes
-===[Index|Index]>[cdcIndex|Cahier des Charges]>Descriptions===
+#summary Index : Cahier des charges : Description détaillée : Corps célestes
+===[Index|Index]>[cdcIndex|Cahier des charges]>Descriptions===
 
 =Corps célestes=
 Les corps célestes sont des points stratégiques dont toutes les caractéristiques de début de partie (人/tour, 人 max, 資　max de départ, nombre de slots) sont visibles par tous les joueurs.
