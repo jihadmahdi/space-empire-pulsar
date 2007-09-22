@@ -38,13 +38,13 @@ Le héro reçoit l'expérience des combats qu'il mène, celle-ci ne prend en com
 
 Le héro applique son bonus à l'attaque de chaque sous flotte de la façon suivante :
 
-<math>SousFlotte_Attaque = (1 + Héro_Bonus) * sum{pour chaque vaisseau V}{dernier vaisseau}{V_Attaque * V_Défense) / SousFlotte_Défense}</math>
+<math>SousFlotte_Attaque = (1 + Héro_Bonus) * sum{pour chaque vaisseau V}{dernier vaisseau}{(V_Attaque * V_Défense) / SousFlotte_Défense}</math>
 
 ===Réglage de la courbe d'XP===
-<math>Héro_XP = échelle * ((K^{Héro_Bonus}) - K) / (K^BonusMax)</math>
+<math>Héro_XP = échelle * ((K^(Héro_Bonus)) - K) / K^BonusMax</math>
 K = 2 semble avoir une bonne alure.
 echelle = 5120.10^3 = echelle nécéssaire dosé en fonction de l'XP souhaitée pour avoir un Bonus de 2. Pour 10K d'XP, il faut une échelle de 5120.10^3.
 BonusMax = 10 = Valeur de Bonus à partir de laquelle la progression en XP nécéssaire est jugée "impossible", une fois ce bonus atteind, le Héro continue de progresser mais à une vitesse très faible.
 
 Soit:
-<math>Héro_Bonus = ln( ( (Héro_XP * K^BonusMax) / echelle ) + K ) / ln(K)</math>
+<math>Héro_Bonus = {ln( ( (Héro_XP * K^BonusMax) / echelle ) + K )} / {ln(K)}</math>
