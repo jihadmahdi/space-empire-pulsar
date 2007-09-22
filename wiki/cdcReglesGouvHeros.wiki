@@ -34,17 +34,17 @@ Chaque joueur ne peut avoir qu'un seul héro, mais si celui-ci meurs, un nouveau
 
 Le héro reçoit l'expérience des combats qu'il mène, celle-ci ne prend en compte que la puissance brute de la flotte abattue :
 
-Experience reçue d'un combat = Puissance brute de l'ennemi = Ennemi.Defense * Ennemi.Attaque * (1+Ennemi.BonusHeroEventuel)
+<math>Experience~reçue = Puissance_Brute(Ennemi) = Ennemi_Défense * Ennemi_Attaque * (1+HéroEnnemiEventuel_Bonus)</math>
 
 Le héro applique son bonus à l'attaque de chaque sous flotte de la façon suivante :
 
-SousFlotte.Attaque = (1 + Hero.Bonus) * (Somme pour chaque Vaisseau v: v.Attaque * v.Defense) / Defense
+<math>SousFlotte_Attaque = (1 + Héro_Bonus) * sum{pour chaque vaisseau V}{dernier vaisseau}{V_Attaque * V_Défense) / SousFlotte_Défense}</math>
 
 ===Réglage de la courbe d'XP===
-Hero.XP = echelle * ((K^Hero.Bonus) - K) / (K^BonusMax)
+<math>Héro_XP = échelle * ((K^{Héro_Bonus}) - K) / (K^BonusMax)</math>
 K = 2 semble avoir une bonne alure.
 echelle = 5120.10^3 = echelle nécéssaire dosé en fonction de l'XP souhaitée pour avoir un Bonus de 2. Pour 10K d'XP, il faut une échelle de 5120.10^3.
 BonusMax = 10 = Valeur de Bonus à partir de laquelle la progression en XP nécéssaire est jugée "impossible", une fois ce bonus atteind, le Héro continue de progresser mais à une vitesse très faible.
 
 Soit:
-Hero.Bonus = ln( ( (Hero.XP * K^BonusMax) / echelle ) + K ) / ln(K)
+<math>Héro_Bonus = ln( ( (Héro_XP * K^BonusMax) / echelle ) + K ) / ln(K)</math>
