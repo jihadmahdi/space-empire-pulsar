@@ -15,10 +15,10 @@ La flotte équivalente est le regroupement des flottes moyenne de chaque classe.
 ===Caractéristiques des flottes équivalente de classe===
 Chaque flotte équivalente de classe se calcule suivant les formules ci-dessous:
 
-<math>FlotteEquivalente_Défense = sum{pour chaque vaisseau v}{dernier vaisseau}{v_Défense}</math>
-<math>FlotteEquivalente_Attaque = (1 + HéroEventuel_Bonus) * sum{pour chaque vaisseau v}{dernier vaisseau}{(v_Attaque * v_Défense) / FlotteEquivalente_Défense}</math>
-<math>FlotteEquivalente_Arme = sum{pour chaque vaisseau v}{dernier vaisseau}{(v_Arme * v_Défense) / FlotteEquivalente_Défense}</math>
-<math>FlotteEquivalente_Armure = sum{pour chaque vaisseau v}{dernier vaisseau}{(v_Armure * v_Défense) / FlotteEquivalente_Défense}</math>
+<math>FlotteEquivalente_Défense = sum{pour~chaque~vaisseau~V}{dernier~vaisseau}{V_Défense}</math>
+<math>FlotteEquivalente_Attaque = (1 + HéroEventuel_Bonus) * sum{pour~chaque~vaisseau~V}{dernier~vaisseau}{(V_Attaque * V_Défense) / FlotteEquivalente_Défense}</math>
+<math>FlotteEquivalente_Arme = sum{pour~chaque~vaisseau~V}{dernier~vaisseau}{(V_Arme * V_Défense) / FlotteEquivalente_Défense}</math>
+<math>FlotteEquivalente_Armure = sum{pour~chaque~vaisseau~V}{dernier~vaisseau}{(V_Armure * V_Défense) / FlotteEquivalente_Défense}</math>
 
 ===Puissance brute===
 On apelle "puissance brute" la puissance qui ne tient pas compte des spécialisations de classes (des arme et armure).
