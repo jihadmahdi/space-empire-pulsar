@@ -14,22 +14,21 @@ La flotte équivalente est le regroupement des flottes moyenne de chaque classe.
 
 ===Caractéristiques des flottes équivalente de classe===
 Chaque flotte équivalente de classe se calcule suivant les formules ci-dessous:
-{{
-	Defense = Somme pour chaque Vaisseau v: v.Defense
-	Attaque = (1 + BonusHeroEventuel) * (Somme pour chaque Vaisseau v: v.Attaque * v.Defense) / Defense
-	Arme = (Somme pour chaque Vaisseau v: v.Arme * v.Defense) / Defense
-	Armure = (Somme pour chaque Vaisseau v: v.Armure * v.Defense) / Defense
-}}
+
+<math>FlotteEquivalente_Défense = sum{pour chaque vaisseau v}{dernier vaisseau}{v_Défense}</math>
+<math>FlotteEquivalente_Attaque = (1 + HéroEventuel_Bonus) * sum{pour chaque vaisseau v}{dernier vaisseau}{(v_Attaque * v_Défense) / FlotteEquivalente_Défense}</math>
+<math>FlotteEquivalente_Arme = sum{pour chaque vaisseau v}{dernier vaisseau}{(v_Arme * v_Défense) / FlotteEquivalente_Défense}</math>
+<math>FlotteEquivalente_Armure = sum{pour chaque vaisseau v}{dernier vaisseau}{(v_Armure * v_Défense) / FlotteEquivalente_Défense}</math>
 
 ===Puissance brute===
 On apelle "puissance brute" la puissance qui ne tient pas compte des spécialisations de classes (des arme et armure).
 Deux adversaires de même classe opposent leurs puissance brutes, puisqu'il n'ont aucuns avantages particulier liés à leurs classes.
 
 On peut calculer la puissance brute d'une flotte avec la formule suivante:
-Puissance brute = Defense * Attaque * (1+BonusHeroEventuel)
+<math>Puissance_Brute = Flotte_Défense * Flotte_Attaque * (1+HéroEventuel_Bonus)</math>
 
 Dans un combat opposant deux adversaires de même classe, (avant les règles de rachats) on a:
-Puissance(Survivant) = Puissance(PlusFort) - Puissance(PlusFaible)
+<math>Puissance_Brute(Survivant) = Puissance_Brute(PlusFort) - Puissance_Brute(PlusFaible)</math>
 
 ==Déroulement d'un combat==
 On détermine les sous flottes équivalentes de classes de chaque flotte combatante FA, FB, pour un total de 6 flottes maximum:

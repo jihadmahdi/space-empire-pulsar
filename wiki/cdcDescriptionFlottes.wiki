@@ -68,7 +68,7 @@ Cependant ils sont eux même tributaire du nombre de destroyer allié qui les pr
 	
 	Le missile entame les caractéristiques de base du corps céleste avec la répartition suivante (a, b, c et d étant les constantes servant à "régler" le comportement du missile):
 	
-	<math>Dégats = Puissance~missile = a * echelle_carbone * degats_{carbone~brut} + b * echelle_carbone * degats_{carbone~récolté} + c * echelle_{génération~pop} * degats_{génération~pop} + d * echelle_pop * degats_{pop~actuelle}</math>
+	<math>Dégats = Puissance~missile = alpha * echelle_carbone * degats_{carbone~brut} + b * echelle_carbone * degats_{carbone~récolté} + c * echelle_{génération~pop} * degats_{génération~pop} + d * echelle_pop * degats_{pop~actuelle}</math>
 
 	Note: L'assaillant n'a pas de retour sur le fait que son missile ai touché ou pas.
 
@@ -85,7 +85,7 @@ Soit k une constante permettant de changer l'échèlle de mesure, car on souhait
 k=60
 
 <math>omega_Attaque = omega_Défense = 1</math>
-<math>omega_Arme = p_Armure = 1/3</math>
+<math>omega_Arme = omega_Armure = 1/3</math>
 <math>omega_Vitesse = 5</math>
 
 <math>2*人 + 資 = k * ( (omega_Attaque * Attaque) + (omega_Défense * Défense) + (omega_Arme * Attaque * Arme) + (omega_Armure * Défense * Armure) + (omega_Vitesse * Vitesse) )</math>
