@@ -34,8 +34,10 @@ Une formule math juste pour la forme..
 Yeah !
 
 Formule avec des vrais kanjis dedans.
-<math>ね　+　こ　＝　猫</math>
+<math>ね + こ = 猫</math>
+{{
 &#12397;&#12288;&#12288;&#12371;&#12288;&#65309;&#12288;&#29483;
+}}
 
 Formule avec juste des accents èêéëàâäae et des cedilles çìîï
 <math>èêéëàâäae != çìîï</math>
