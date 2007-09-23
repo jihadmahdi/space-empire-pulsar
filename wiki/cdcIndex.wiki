@@ -1,7 +1,7 @@
 #summary Index : Cahier des charges
 ===[Index|Index]===
 
-=Cahier des charges : Space Empire Pulsar=
+=Cahier des charges=
 ==Sommaire==
 	# [cdcDescriptionGenerale|Description générale]
 	# [cdcFonctionnalites|Fonctionnalités souhaitées]

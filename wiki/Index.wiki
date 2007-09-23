@@ -15,7 +15,7 @@ Il devrait être implémenté en JAVA, ce qui le rend multiplateforme.
 	# [testIndex|Tests]
 
 ----------
-===Annexes===
+==Annexes==
 	# Outils utilisés
 		¤ [annOutilsUML|Modélisation UML]
 		¤ [annOutilsIDE|IDE]

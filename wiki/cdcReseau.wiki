@@ -1,4 +1,4 @@
-#summary Index : Cahier des charges : Multijoueur
+#summary Index : Cahier des charges : Multijoueur & Diplomatie
 ===[Index|Index]>[cdcIndex|Cahier des charges]===
 
 =Multijoueurs & Diplomatie=

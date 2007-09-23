@@ -1,4 +1,4 @@
-#summary Index : Cachier des charges : Description générale
+#summary Index : Cahier des charges : Description générale
 ===[Index|Index]>[cdcIndex|Cachier des charges]===
 
 =Description générale=
