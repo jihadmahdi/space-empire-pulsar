@@ -24,7 +24,7 @@ Cinquième ligne
 
 ==Liens==
 [Index|page d'index]
-[GoogleCode|http://space-empire-pulsar.googlecode.com]
+[http://space-empire-pulsar.googlecode.com|GoogleCode]
 
 ==Tableaux==
 ||
