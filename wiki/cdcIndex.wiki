@@ -1,8 +1,7 @@
 #summary Index : Cahier des charges
-===[Index|Index]===
 
 =Cahier des charges=
-==Sommaire==
+##Sommaire##
 	# [cdcDescriptionGenerale|Description générale]
 	# [cdcFonctionnalites|Fonctionnalités souhaitées]
 	# Description détaillée

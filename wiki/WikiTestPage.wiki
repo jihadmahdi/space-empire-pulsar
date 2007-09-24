@@ -1,28 +1,32 @@
 #summary Index : Page de test Wiki
-===[Index|Index]===
 
-=Tests=
-==Retour à la ligne !?==
+=Page de test Wiki=
+=Titres 1=
+==Titres 2==
 
+==Titres 3==
+
+==Sauts de lignes==
 Premiere ligne, finie par une \r\n.
 Deuxième ligne, finie par une balise HTML "br".<br>
 Troisième ligne, finie par une markup heading vide. = =
 Quatrième ligne.
 
+Cinquième ligne
+
+==Preformated==
 {{{
 <b>Test</b>
 }}}
 
-Les pages ne sont plus mises à jours ???
-
-Et depuis Eclipse ??
-
-Tests KANAS: (neko = neko)
+==Tests katakanas/kanjis (neko ga neko desu)==
 ねこ　＝　猫
 
-Liens:
+==Liens==
 [Index|page d'index]
+[GoogleCode|http://space-empire-pulsar.googlecode.com]
 
+==Tableaux==
 ||
 ||	##人 par tour##	||	Production de population à chaque tour de jeu.	||
 ||	##人 max##		||	Valeur maximale de population autorisée sur la planète, au delà la production s'arrète, jusqu'a ce que la population soit redevenue inférieure au maximum autorisé. ||
@@ -30,15 +34,18 @@ Liens:
 ||	##Nb. slots##	||	Nombre d'emplacement disponibles sur le corps céleste pour la construction de modules. ||
 ||
 
-Une formule math juste pour la forme..
+==Formules==
 <math>S(f)(t)=a_{0}+sum{n=1}{+infty}{a_{n} cos(n omega t)+b_{n} sin(n omega t)}</math>
-Yeah !
 
 Formule avec des vrais kanjis dedans.
 <math size=76>ね + こ = 猫</math>
 {{
-&#12397;&#12288;&#12288;&#12371;&#12288;&#65309;&#12288;&#29483;
+résultat attendu: &#12397;&#12288;&#12288;&#12371;&#12288;&#65309;&#12288;&#29483;
 }}
 
 Formule avec juste des accents èêéëàâäae et des cedilles çìîï
 <math>èêéëàâäae != çìîï</math>
+
+==Balises HTML==
+Image
+<img src='img/logo.png'>

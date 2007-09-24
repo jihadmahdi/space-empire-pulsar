@@ -1,0 +1,30 @@
+	Index	
+		Cahier des charges
+			Description générale
+			Fonctionnalités
+			Description détaillée
+				Univers
+				Corps célestes
+				Ressources
+				Constructions
+				Flottes & vaisseaux
+			Règles du jeu
+				Début de partie
+				Déplacements
+				Combats
+				Gouvernement & Héros	
+			Multijoueur & Diplomatie
+			Interface
+		Spécification
+		Développement
+		Tests
+		Annexes
+			Outils utilisés
+				Modélisation UML
+				IDE
+			Librairies utilisées
+			Divers
+				Wiki customisé
+		Forum
+		Auteurs
+		Page de test Wiki

@@ -1,5 +1,4 @@
 #summary Index : Cahier des charges : Multijoueur & Diplomatie
-===[Index|Index]>[cdcIndex|Cahier des charges]===
 
 =Multijoueurs & Diplomatie=
 Space Empire Pulsar est un jeu multijoueur en réseau (local ou Internet), même si des "bots" seront peut être implémentés dans le futur.
@@ -74,7 +73,7 @@ Les pactes d'alliance sont donc contagieux (l'allié de mes alliés est mon alli
 Pour s'allier a un joueur, celui-ci doit ne faire partie d'aucune alliance, et l'alliance doit voter son adhéson à l'unanimitée (un tour pour lancer l'invitation, un tour pour voter, un tour pour le résultat).
 L'alliance est crée à l'origine par l'accord des deux premiers participants (un tour pour lancer l'invitation, un tour pour accepter/refuser l'invitation, un tour pour le résultat).
 
-Faire partie d'une alliance apporte certains droits/devois :
+Faire partie d'une alliance apporte certains droits/devoirs :
 
 ¤ Les données (cartes) de tous les membres (la position de leurs flottes, routes commerciales, sondes, etc..) sont fusionnées et visibles par tous.
 ¤ Les flottes sont toujours autorisées à se poser chez un allié.

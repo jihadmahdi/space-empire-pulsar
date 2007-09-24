@@ -1,5 +1,4 @@
 #summary Index : Cahier des charges : Règles du jeu : Déplacements
-===[Index|Index]>[cdcIndex|Cahier des charges]>Règles du jeu===
 
 =Déplacements=
 ==Rappel sur l'Univers==

@@ -1,5 +1,4 @@
 #summary Space Empire Pulsar : Annexes : Outils utilisés : Modélisation UML
-===[Index|Index]===
 
 =Modélisation UML=
 Le projet étant en JAVA sous Eclipse, le choix a été fait d'utiliser de préférence des plugins Eclipse lorsque c'est possible.

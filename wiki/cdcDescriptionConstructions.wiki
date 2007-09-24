@@ -1,5 +1,4 @@
 #summary Index : Cahier des charges : Description détaillée : Constructions
-===[Index|Index]>[cdcIndex|Cahier des charges]>Descriptions===
 
 =Constructions=
 Les constructions se font moyennant 人 et 資 sur des corps célestes disposants de slots libres.
@@ -9,7 +8,7 @@ En revanche, chaque corps céleste ne peut construire qu'un seul batiment par to
 
 Voici la liste des constructions possibles :
 
-==Module d'extraction  資 (0人/1000資)===
+==Module d'extraction  資 (0人/1000資)==
 Même si la technologie diffère suivant que l'on se trouve sur une planète, une nébuleuse ou un champs d'astéroïde, les modules d'extractions 資 présentent tous les même caractéristiques:
 Un module d'extraction 資 occupe un slot et permet de générer 2500 資 par tour.
 Ils sont cumulables tant que le corps céleste dispose de slots libres, cependant le prix est exponentiel au nombre de module total.

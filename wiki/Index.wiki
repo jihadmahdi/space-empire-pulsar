@@ -1,6 +1,6 @@
 #summary Index
-
-=Space Empire Pulsar=
+<center><img src='img/logo.png' /></center>
+=Index=
 Space Empire Pulsar sera un jeu de stratégie tour par tour, multijoueur, inspiré de [http://en.wikipedia.org/wiki/Konquest|Konquest] avec de nouvelles règles et une vue en 3D.
 Il devrait être implémenté en JAVA, ce qui le rend multiplateforme.
 
@@ -8,14 +8,14 @@ Il devrait être implémenté en JAVA, ce qui le rend multiplateforme.
 ||Rédaction du cahier des charges||80%||
 ||Spécification et conception||A VENIR||
 
-==Sommaire==
+##Sommaire##
 	# [cdcIndex|Cahier des charges]
 	# [specIndex|Spécification]
-	# [devIndex|Developpement]
+	# [devIndex|Développement]
 	# [testIndex|Tests]
 
 ----------
-==Annexes==
+¤ Annexes
 	# Outils utilisés
 		¤ [annOutilsUML|Modélisation UML]
 		¤ [annOutilsIDE|IDE]

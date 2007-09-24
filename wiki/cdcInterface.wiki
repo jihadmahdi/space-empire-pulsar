@@ -1,5 +1,4 @@
 #summary Index : Cahier des charges : Interface
-===[Index|Index]>[cdcIndex|Cahier des charges]===
 
 =Interface=
 

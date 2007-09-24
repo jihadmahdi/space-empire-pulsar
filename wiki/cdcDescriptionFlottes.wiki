@@ -1,5 +1,4 @@
 #summary Index : Cahier des charges : Description détaillée : Flottes & vaisseaux
-===[Index|Index]>[cdcIndex|Cahier des charges]>Descriptions===
 
 =Flottes & vaisseaux=
 Une flotte est un ensemble de vaisseaux, les caractéristiques d'une flotte dépendent donc des vaisseaux qui la compose.
