@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="ASCII"?>
+<sni:SNI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:sni="http://sni" UID="57B503C4-5FF1-7BD1-2293-FFF83B1CEBA5" name="Planche" date="25/09/2007 11:22:36" titre="D&#xe9;tails corps c&#xe9;leste">
+  <lstObjets xsi:type="sni:Commentaire" UID="B5BDEDB3-CB17-87EF-EC91-7617AEA0D8AA" name="Ref" date="25/09/2007 15:31:33" X="5.0" Y="25.0" width="100.0" height="53.0" comment="R&#xe9;f&#xe9;rences :&#xA;  Planche01"/>
+  <lstObjets xsi:type="sni:UDC" UID="BF58C813-2A8D-8368-C8B6-73A4A83942CD" name="Groupe-2" date="25/09/2007 11:22:39" X="7.0" Y="86.0" width="791.0" height="184.0" backColor="0" groupBox="D&#xe9;tails corps c&#xe9;leste">
+    <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.3/@outputPorts.0"/>
+    <outputPorts name="out1" X="0.5" Y="0.9945652" linkPort="//@lstObjets.5/@inputPorts.0"/>
+    <lstNodes xsi:type="sni:AffObjet" UID="EC1A27AB-54DB-22D8-B87F-9E4F77EBE51A" name="Groupe-5.Aff-1" date="25/09/2007 11:14:24" X="7.0" Y="26.0" width="274.0" height="128.0" dispObjet="CorpsC&#xe9;leste" dispAttrib="(position, couleur propri&#xe9;taire,&#xD;&#xA;caract&#xe9;ristiques de bases,&#xD;&#xA;g&#xe9;n&#xe9;ration pop/tour, production carbone/tour,&#xD;&#xA;pop actuelle, carbone actuel, nb slots)">
+      <inputPorts name="in1" X="0.5" conditions="[appartient &#xe0; l'alliance OU pr&#xe9;sence flotte]"/>
+      <outputPorts name="out1" X="0.5" Y="0.9921875"/>
+    </lstNodes>
+    <lstNodes xsi:type="sni:AffListe" UID="1D84A9D0-6940-BDFB-8AFD-EB051B0DF201" name="Groupe-5.Coll-2" date="25/09/2007 11:18:21" X="300.0" Y="26.0" width="219.0" height="128.0" dispListe="Construction" dispAttrib="(type, quantit&#xe9;)">
+      <inputPorts name="in1" X="0.5" conditions="[appartient &#xe0; l'alliance OU pr&#xe9;sence flotte]"/>
+      <outputPorts name="out1" X="0.5" Y="0.9921875"/>
+    </lstNodes>
+    <lstNodes xsi:type="sni:AffListe" UID="F629187C-ED2D-FFD5-1425-E23D7A29FC03" name="Groupe-2.Coll-3" date="25/09/2007 11:24:35" X="538.0" Y="26.0" width="231.0" height="128.0" dispListe="Flotte" dispAttrib="(nom, caract&#xe9;ristiques &#xe9;quivalents)">
+      <inputPorts name="in1" X="0.5" conditions="[appartient &#xe0; l'alliance OU pr&#xe9;sence flotte]"/>
+      <outputPorts name="out1" X="0.5" Y="0.9921875"/>
+    </lstNodes>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Debut" UID="0C004FC9-80FF-91D5-9D79-8939746A9028" name="Debut-3" date="25/09/2007 11:23:08" X="357.0" Y="58.0" width="90.0" height="30.0" label="Planche02">
+    <outputPorts name="out1" X="0.5" Y="0.96666664" linkPort="//@lstObjets.3/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Lien" UID="4A5DA0C7-77D8-CB81-D4A6-7220502FEDE6" name="Lien-3" date="25/09/2007 11:23:10">
+    <inputPorts name="source" linkPort="//@lstObjets.2/@outputPorts.0"/>
+    <outputPorts name="target" linkPort="//@lstObjets.1/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Menu" UID="8A5BA686-A292-E4B7-6FE7-EFE72AE11F15" name="Menu-5" date="25/09/2007 15:30:13" X="17.0" Y="268.0" width="770.0" height="30.0">
+    <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.5/@outputPorts.0"/>
+    <outputPorts X="0.24935065" Y="2.4666667" conditions="[appartient au joueur ET construction choisie possible]"/>
+    <outputPorts X="0.74935067" Y="2.4666667" conditions="[Flotte et CorpsC&#xe9;leste appartiennent au joueur ET usine construite]"/>
+    <lstGroupes condLabel="1: Construction">
+      <lstOptions name="Nouvelle construction"/>
+    </lstGroupes>
+    <lstGroupes condLabel="1: Flotte">
+      <lstOptions name="R&#xe9;organiser flotte"/>
+    </lstGroupes>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Lien" UID="8A2F86D3-D15F-1D55-3942-B9898DB2CEF7" name="Lien-5" date="25/09/2007 15:30:14">
+    <inputPorts name="source" linkPort="//@lstObjets.1/@outputPorts.0"/>
+    <outputPorts name="target" linkPort="//@lstObjets.4/@inputPorts.0"/>
+  </lstObjets>
+</sni:SNI>
