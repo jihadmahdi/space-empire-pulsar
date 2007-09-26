@@ -7,22 +7,6 @@ Il devrait être implémenté en JAVA, ce qui le rend multiplateforme.
 ==Status==
 ||Rédaction du cahier des charges||80%||
 ||Spécification et conception||A VENIR||
-
-##Sommaire##
-	# [cdcIndex|Cahier des charges]
-	# [specIndex|Spécification]
-	# [devIndex|Développement]
-	# [testIndex|Tests]
-
-----------
-¤ Annexes
-	# Outils utilisés
-		¤ [annOutilsUML|Modélisation UML]
-		¤ [annOutilsIDE|IDE]
-	# Librairies utilisées
-		¤ ...
-	# Divers
-		¤ [wiki|Wiki customisé]
 	
 ----------
 [auteurs|Auteurs]
