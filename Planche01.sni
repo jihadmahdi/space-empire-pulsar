@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ASCII"?>
 <sni:SNI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:sni="http://sni" UID="C67D525B-258B-9747-58DD-D2B8C257EFFC" name="Planche" date="25/09/2007 10:51:39" titre="Affichage principal">
-  <lstObjets xsi:type="sni:Commentaire" UID="210C9217-5048-1E05-9F66-AC2D3397A28F" name="Ref" date="25/09/2007 15:31:33" X="5.0" Y="25.0" width="100.0" height="40.0" comment="R&#xe9;f&#xe9;rences :"/>
+  <lstObjets xsi:type="sni:Commentaire" UID="210C9217-5048-1E05-9F66-AC2D3397A28F" name="Ref" date="25/09/2007 15:31:33" X="5.0" Y="25.0" width="100.0" height="30.0" comment="R&#xe9;f&#xe9;rences :"/>
   <lstObjets xsi:type="sni:UDC" UID="23EC118F-03B4-328A-E4A8-A2D50971C756" name="Groupe-4" date="25/09/2007 11:06:03" X="29.0" Y="43.0" width="962.0" height="252.0" backColor="0" groupBox="Affichage principal">
     <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.5/@outputPorts.0"/>
     <outputPorts name="out1" X="0.5" Y="0.99603176" linkPort="//@lstObjets.3/@inputPorts.0"/>
@@ -8,7 +8,7 @@
       <inputPorts name="in1" X="0.5" conditions="[tous]"/>
       <outputPorts name="out1" X="0.5" Y="0.9879518"/>
     </lstNodes>
-    <lstNodes xsi:type="sni:AffListe" UID="3DC5D893-5791-3536-E0BC-BEDB75AD4BB9" name="Coll-5" date="25/09/2007 10:59:44" X="283.0" Y="44.0" width="224.0" height="84.0" backColor="0" dispListe="Flotte" dispAttrib="(nom, position, trajet parcouru,&#xD;&#xA;trajet complet)">
+    <lstNodes xsi:type="sni:AffListe" UID="3DC5D893-5791-3536-E0BC-BEDB75AD4BB9" name="Coll-5" date="25/09/2007 10:59:44" X="283.0" Y="44.0" width="224.0" height="84.0" backColor="0" dispListe="Flotte" dispAttrib="(nom, position, trajet parcouru,&#xD;&#xA;trajet complet, tour d'arriv&#xe9;e)">
       <inputPorts name="in1" X="0.5" conditions="[appartient &#xe0; l'alliance]"/>
       <outputPorts name="out1" X="0.5" Y="0.9880952"/>
     </lstNodes>
@@ -16,7 +16,7 @@
       <inputPorts name="in1" X="0.5" conditions="[appartient &#xe0; l'alliance]"/>
       <outputPorts name="out1" X="0.5" Y="0.9880952"/>
     </lstNodes>
-    <lstNodes xsi:type="sni:AffListe" UID="01E824EB-9F58-09A8-D39F-219986296611" name="Groupe-4.Coll-4" date="25/09/2007 11:33:06" X="723.0" Y="44.0" width="199.0" height="84.0" dispListe="Transport de carbone">
+    <lstNodes xsi:type="sni:AffListe" UID="01E824EB-9F58-09A8-D39F-219986296611" name="Groupe-4.Coll-4" date="25/09/2007 11:33:06" X="723.0" Y="44.0" width="215.0" height="84.0" dispListe="Transport de carbone" dispAttrib="(position, sens, trajet parcouru,&#xD;&#xA;trajet complet, tour d'arriv&#xe9;e)">
       <inputPorts name="in1" X="0.5" conditions="[appartient &#xe0; l'alliance]"/>
       <outputPorts name="out1" X="0.5" Y="0.9880952"/>
     </lstNodes>
