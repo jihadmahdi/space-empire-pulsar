@@ -12,7 +12,7 @@ Le lancement d'une flotte se fait en sélectionnant le corps céleste sur lequel
 A l'arrivée sur la destination, plusieurs cas de figure sont possibles :
 	¤ La destination est alliée, la flotte y stationne alors en renfort quelque soit l'ordre donné au départ.
 	¤ La destination est sauvage ou neutre, la flotte a reçue ordre de se poser pacifiquement, elle se fera tout de même attaquer si le comportement défini par le maître de la destination est "ennemi".
-	¤ La destination est neutre, la flotte a reçu ordre de se poser pacifiquement, elle se pose sans encombre si le comportement définir par le maître de la destination est "neutre".
+	¤ La destination est neutre, la flotte a reçu ordre de se poser pacifiquement, elle se pose sans encombre si le comportement défini par le maître de la destination est "neutre".
 	¤ La destination est sauvage ou neutre, la flotte a reçue ordre d'attaquer, elle attaque en arrivant sur le corps céleste.
 
 ==Trajet==
@@ -21,6 +21,16 @@ Les voyages se font en ligne droite du point de départ vers la destination.
 Le temps de voyage est estimé en mesurant la distance du trajet et en la comparant a la vitesse de la flotte.
 A chaque tour, la flotte parcours le pourcentage du trajet que sa vitesse lui permet; Toutes les zones traversées a ce moment là sont considérée comme *visitées*.
 Si durant son trajet une flotte en croise une autre, c'est à dire que les deux empruntent la même case en même temps, chacun des joueurs recevra (lorsque la flotte arrivera à destination) un rapport sur la flotte ennemie aperçue, mais aucun combat n'est engagé.
+
+==Retarder un départ==
+Il est possible d'assigner un trajet à une flotte en lui donnant ordre d'arriver à une date précise (suppérieure ou égale à la date minimale à pleine vitesse).
+Cette flotte calcule alors le nombre de tour qu'elle doit attendre avant de partir, et part automatiquement au tour où elle le doit.
+Tant que la flotte n'est pas partie, le joueur peut très bien annuler et donner un nouvel ordre à sa flotte.
+Cette fonctionnalitée permet entre autre de synchroniser l'arrivée de flottes de plusieurs joueurs sur une même destination (attaques groupées par exemple).
+
+==Synchronisation de flottes entre alliés==
+Entre joueurs alliés, qui partagent la même vue, il est possible de synchroniser une de ses flottes avec une flotte allié déjà en route, à condition que le temps de trajet de celle-ci soit suppérieur au trajet que mettrais la flotte à synchroniser.
+Dans ce cas, le joueur choisi pour destination la flotte alliée avec laquelle se synchroniser, et la flotte calcule d'elle même le retard qu'il lui faut appliquer pour être certaine d'arriver à destination en même temps que la flotte alliée.
 
 ==Cas particulier des Sondes==
 La sonde est la seule unité à pouvoir stationner sur une zone vide.

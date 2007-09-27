@@ -4,11 +4,12 @@
 Les constructions se font moyennant 人 et 資 sur des corps célestes disposants de slots libres.
 Chaque construction apporte un effet particulier au corps céleste sur lequel elle est batie.
 Il est permi à tout moment au joueur de détruire des batiments pour libérer des slots.
-En revanche, chaque corps céleste ne peut construire qu'un seul batiment par tour de jeu.
+En revanche, chaque corps céleste ne peut construire qu'un seul batiment par tour de jeu, le batiment n'étant disponible qu'au tour suivant.
 
 Voici la liste des constructions possibles :
 
-==Module d'extraction  資 (0人/1000資)==
+==Module d'extraction 資==
+0人/1000資
 Même si la technologie diffère suivant que l'on se trouve sur une planète, une nébuleuse ou un champs d'astéroïde, les modules d'extractions 資 présentent tous les même caractéristiques:
 Un module d'extraction 資 occupe un slot et permet de générer 2500 資 par tour.
 Ils sont cumulables tant que le corps céleste dispose de slots libres, cependant le prix est exponentiel au nombre de module total.
@@ -16,17 +17,20 @@ En effet, si le premier module d'extraction est construit sur la première sourc
 
 Prix du nième module d'extraction = Prix du premier module d'extraction * exponentielle(n-1)
 
-==Usine de production de vaisseaux (500人/2000資)==
+==Usine de production de vaisseaux==
+500人/2000資
 Les usines de production de vaisseaux ne sont disponibles que sur les planètes, car elles nécéssitent beaucoup de main d'oeuvres.
 Elles ont deux fonctionnalités distinctes:
 	¤ La fabrication de nouveaux vaisseaux (moyennant le prix du vaisseau choisi), qui sont alors disponibles dans l'entrepot de l'usine, prêt à être affectés à une flotte.
 	¤ Le remaniement des flottes existantes, qui se posent sur la piste de l'usine et y reste jusqu'a être de nouveaux affecté à une flotte.
 
-==Module de défense (0人/4000資)==
+==Module de défense==
+0人/4000資
 Les modules de défense sont la première protection des corps célestes, ils octroient des bonus de +(##A DEFINIR##) en attaque et en défense au corps céleste si celui-ci est attaqué, ainsi qu'aux flottes alliées en orbite.
 Ces modules sont cumulables tant que le corps céleste dispose de slots libres.
 
-==Module gouvernemental (0人/0資)==
+==Module gouvernemental==
+0人/0資
 Ce module, pré-existant sur la première planète de chaque joueur, représente la capitale de son empire, le centre de commande et d'organisation de toute ces armées.
 C'est donc également un point vital qui doit être préservé à tout prix.
 Si l'invasion est imminante, le joueur peu toujours créer un vaisseau gouvernemental pour changer de capitale.
@@ -34,7 +38,8 @@ Le module gouvernemental est alors démonté et sera remonté sur la planète de
 A noter que si la planète destination ne possède pas de slots libre, le joueur devra obligatoirement en libérer un.
 La planète où est établi le module gouvernemental reçoi un bonus de production de +50% en 人 et 資.
 
-==Comptoir intergalactique (0人/1000資)==
+==Comptoir intergalactique==
+0人/1000資
 Les comptoirs intergaliactique permettent d'acheminer les ressources entre les planètes.
 Ainsi, les nébuleuse et champs d'astéroïdes qui ne peuvent produire de vaisseaux ont tout intéret à disposer d'au moins un comptoir pour pouvoir acheminer leurs ressources vers les planètes qui sont plus pauves en carbone.
 Les comptoirs ont deux fonctions pricipales : La construction de routes de l'espace, et les échanges commerciaux.
@@ -51,3 +56,18 @@ Il met autant de temps pour y rentrer, puis repart automatiquement s'il a une co
 Le joueur peut modifier la "commande" à tout moment, mais celle-ci n'est prise en compte que lorsque le transporteur est disponible.
 
 Les routes de l'espace et les échanges de ressource sont dissociés et peuvent concerner des destinations différentes.
+
+==Canon à pulsar==
+50000人/100000資/2 slots détruits
+Les canon à pulsar sont des batiments coûteux qui ont une utilisation unique.
+Chaque canon à pulsar coûte en plus de son prix en 人 et 資 un sacrifice de 2 slots de construction qui sont définitivement perdus.
+Un usage massif de canon à pulsar sur un corps céleste peut donc réduire son nombre de slots à 0, ce qui risque de le rendre pratiquement inexploitable.
+
+Un canon à pulsar permet d'effectuer un seul tir :
+Le joueur doit choisir le point visé par le canon (une zone vide), et une orientation souhaitée du cône d'effet (une zone quelconque, plus est éloignée du point cible, plus le choix du joueur s'en trouve être précis).
+Un pulsar artificiel est alors tiré sur la zone choisi, et son orientation est déterminée suivant la distance à laquelle à été effectué le tir.
+L'angle final connait une erreur proportionnelle à la distance de tir (le sens est tiré au hasard).
+<math>Précision = 100 - k * Distance~de~tir</math>
+<math>Angle_erreur = D_100 - Précision</math>
+
+La porté du rayon émis par le pulsar artificiel est fixé, et sa durée d'effet est tirée au hasard sur une plage fixé.

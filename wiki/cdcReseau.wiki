@@ -35,7 +35,7 @@ Le joueur qui donne choisie le comptoir de la planète source et le montant (dan
 Le joueur qui reçoit choisi le comptoir de la planète destination, ce qui détermine le temps que mettra le carbone à arriver.
 On considère cependant que le transporteur dépéché pour l'échange entre joueur est dédié à cette tâche.
 
-===Diplimatie hors pacte d'alliance===
+===Diplomatie hors pacte d'alliance===
 La diplomatie hors pacte d'alliance n'offre aucune garantie aux joueurs, elle repose entièrement sur leur honnêteté, ou leur manque d'honnêteté. Elle est donc au plus prêt de la réalitée.
 Chaque joueur doit prouver en permanance sa bonne foi et sa confiance a ses amis en ne les attaquant pas.
 Tous les joueurs hors alliance sont considéré "neutres", bien que par le biais du Chat ils puissent constitué de réelles "alliances" fondées sur la confiance mutuelle.
@@ -76,6 +76,7 @@ L'alliance est crée à l'origine par l'accord des deux premiers participants (u
 Faire partie d'une alliance apporte certains droits/devoirs :
 
 ¤ Les données (cartes) de tous les membres (la position de leurs flottes, routes commerciales, sondes, etc..) sont fusionnées et visibles par tous.
+¤ Possibilité de synchroniser ses flottes de façon plus simple, en sélectionnant la flotte allié comme cible avec laquelle se synchroniser.
 ¤ Les flottes sont toujours autorisées à se poser chez un allié.
 ¤ Il est impossible d'attaquer, ou de se faire attaquer par, un allié.
 ¤ Les flottes en garnisons sur un corps allié qui se fait attaquer participent automatiquement aux forces de défenses.
@@ -94,6 +95,11 @@ Le(s) joueur(s) anciennement allié(s) ont/a quant à eux/lui le droit d'attaque
 Si le(s) traitre(s) est/sont attaqué(s) avant les N tours, il(s) a/ont le droit de riposter immédiatement.
 
 Note: Une flotte partie avec un ordre d'attaque qui arrive sur une planète d'un joueur avec lequel on s'est allié entre temps annule automatiquement son attaque.
+
+===Attaques multipartites===
+Lorsqu'un corps céleste est attaqué par plusieurs joueurs en même temps, il faut un moyen de déterminer à qui revient celui-ci en cas de victoire.
+¤ Si tous les joueurs vainqueurs sont alliés : Un vote est lancé au tour de la prise (durant lequel le corps céleste est "neutre"), au tour suivant l'élu prend possession du corps céleste (même s'il n'as pas participé au combat).
+¤ Si tous les vainqueurs ne sont pas alliés : On regroupe les partis, et on alloue à chacun un pourcentage de chance de prendre le contrôle de la planète en fonction du poids que représente sa flotte restante sur la somme des survivants, cette prise est pacifique et tous les autres partis se retrouvent posé pacifiquement sur le corps céleste.
 
 ==Divers==
 ===Option jeu rapide===
