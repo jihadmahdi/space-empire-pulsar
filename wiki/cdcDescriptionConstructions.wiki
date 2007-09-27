@@ -15,7 +15,7 @@ Un module d'extraction 資 occupe un slot et permet de générer 2500 資 par to
 Ils sont cumulables tant que le corps céleste dispose de slots libres, cependant le prix est exponentiel au nombre de module total.
 En effet, si le premier module d'extraction est construit sur la première source de carbone de la planète, les modules suivant doivent exploiter des filons plus sauvages et sont donc plus couteux à mettre en place.
 
-Prix du nième module d'extraction = Prix du premier module d'extraction * exponentielle(n-1)
+<math>Prix~du~nième~module~d'extraction = Prix~du~premier~module~d'extraction * e^{n-1}</math>
 
 ==Usine de production de vaisseaux==
 500人/2000資
