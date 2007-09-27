@@ -42,7 +42,7 @@ Les phénomènes astraux sont des évènements dont la probabilité reste mysté
 	Un pulsar est à l'état naturel le résultat de l'explosion d'un astre, dont résulte une étoile morte tournant rapidement sur elle-même (période de l'ordre de la seconde), et émettant un fort rayonnement électromagnétique dans la direction de son axe magnétique.
 	Celui-ci n'étant chez les pulsar, comme chez de nombreux autres corps céleste, pas parfaitement aligné avec l'axe de rotation, le faisceau émis en direction de l'axe magnétique balaie en réalité un cône.
 	L'astrophysicien 松山正則 (//Masanori Matsuyama//) fut le premier à étudier les effets de tels corps et à en explorer les utilisations possibles. Dans son article 明日は森閑　(//Demain le silence//) il attire l'attention sur les dérives millitaires qui pourraient selon lui réduire sous peu l'univers au silence.
-	De nos jours, les craintes de 松山 (//Matsuyama//) sont tout a fait confirmée puisque l'armée sais fabriquer articiellement de petits pulsars capables d'émèttre sur 4 ou 5 zones spatiales, et projète de construire des canon capable de propulser de tels artefacts n'importe où dans l'univers. 
+	De nos jours, les craintes de 松山 (//Matsuyama//) sont confirmées puisque l'armée est arrivé à fabriquer articiellement de petits pulsars capables d'émèttre sur 4 ou 5 zones spatiales, et projète de construire des canons capables de les propulser n'importe où dans la galaxie. 
 	
 	cf. le "Canon à pulsar" dans la liste des [cdcDescriptionConstructions|Constructions].
 	
