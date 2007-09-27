@@ -64,10 +64,16 @@ Chaque canon à pulsar coûte en plus de son prix en 人 et 資 un sacrifice de 
 Un usage massif de canon à pulsar sur un corps céleste peut donc réduire son nombre de slots à 0, ce qui risque de le rendre pratiquement inexploitable.
 
 Un canon à pulsar permet d'effectuer un seul tir :
-Le joueur doit choisir le point visé par le canon (une zone vide), et une orientation souhaitée du cône d'effet (une zone quelconque, plus est éloignée du point cible, plus le choix du joueur s'en trouve être précis).
+Le joueur doit choisir le point visé par le canon (une zone vide), et une orientation souhaitée du cône d'effet (une zone quelconque, plus elle est éloignée du point cible, plus le joueur peut affiner son choix).
 Un pulsar artificiel est alors tiré sur la zone choisi, et son orientation est déterminée suivant la distance à laquelle à été effectué le tir.
 L'angle final connait une erreur proportionnelle à la distance de tir (le sens est tiré au hasard).
 <math>Précision = 100 - k * Distance~de~tir</math>
 <math>Angle_erreur = D_100 - Précision</math>
 
 La porté du rayon émis par le pulsar artificiel est fixé, et sa durée d'effet est tirée au hasard sur une plage fixé.
+
+===L'effet "pulsar"===
+L'effet pulsar, comme le décrit l'astrophysicien 松山正則 (//Masanori Matsuyama//) se présente sous la forme de perturbations du champs magnétique, qui entrainnent l'incapacité à toute communication à travers l'espace (suivant les technologies connues à ce jour).
+Concrètement, les corps célestes et flottes pris dans la zone d'effet d'un pulsar perdent toute communication avec le reste de leur empire.
+Le joueur n'a plus accès aux dernières informations les concernant, et ne peut plus donner d'ordre de production, ni de déplacement aux flottes en présences.
+Si le gouvernement d'un joueur est touché, alors c'est tout son empire qui est paralysé, le joueur ne peut que "passer son tour" jusqu'a ce que l'effet disparaisse.
