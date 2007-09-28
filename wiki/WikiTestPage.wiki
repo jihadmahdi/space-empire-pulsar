@@ -48,4 +48,4 @@ Formule avec juste des accents èêéëàâäae et des cedilles çìîï
 
 ==Balises HTML==
 Image
-<img src='img/logo.gif'>
+<img src='img/logo.jpg'>
