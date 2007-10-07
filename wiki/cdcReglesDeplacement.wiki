@@ -40,4 +40,4 @@ Les sondes sont invisible pour l'ennemi (comme tout autre vaisseau), a moins que
 Dès lors, une sonde ennemi constitue pour toute flotte de combat une "destination valide".
 Une flotte qui a pour destination une sonde voyage jusqu'a elle, la détruit, et engage automatiquement le voyage retour.
 
-De plus, lors d'un voyage normal, si la flotte passe par une case occupée par une sonde ennemie (zone considérée comme _visitée_), celle-ci est automatiquement détruite.
+De plus, lors d'un voyage normal, si la flotte passe par une case occupée par une sonde ennemie (zone considérée comme //visitée//), celle-ci est automatiquement détruite.

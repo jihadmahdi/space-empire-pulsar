@@ -40,6 +40,7 @@ Cependant ils sont les cibles de choix de l'artillerie ennemi, seule capable de 
 	Ils bénéficient alors d'un bonus (bonus à l'attaque, en réalité) si le corps céleste est attaqué.
 	Le joueur doit mettre lui même les unités en mode "défense".
 	Lorsque le joueur souhaite remobiliser ses destroyers, ceux-ci prennent un tour à ce redéployer avant d'être disponibles.
+	Si la flotte comprend d'autres vaisseaux que les destroyers, ceux-ci sont également mobilisés.
 	
 	<math>Bonus~Attaque~des~Destroyers~fortifiés = Destroyers_Attaque * k * Destroyers_Armure</math>
 	k étant un facteur de réglage, soit k = 1
@@ -50,17 +51,17 @@ En combat ils ont pour mission d'éliminer le plus de destroyers ennemi possible
 Cependant ils sont eux même tributaire du nombre de destroyer allié qui les protège des chasseurs ennemis contre lesquels ils ne peuvent rien.
 
 ##Capacité spéciale##
-	Les unités d'artilleries, qui sont équipées de canons et d'appareils de visée longue portée, peuvent effectuer des bombardement de planète à planète.
+	Les unités d'artilleries, qui sont équipées de canons et d'appareils de visée longue portée, peuvent effectuer des bombardement de corps céleste à corps céleste.
 	Le missile met un certain temps à arriver sur sa cible, et a un certain pourcentage de chance de faire mouche.
 	Le temps de refroidissement du canon est proportionnel à la distance de tir, ainsi une artillerie doit attendre autant de temps avant de pouvoir procéder à un nouveau tir.
 	
 	<math>Chance~de~toucher = k * Artillerie_Défense</math>
 	k étant un facteur de réglage, il est tel que la flotte la plus énorme ne devrait pas avoir une chance de toucher suppérieure à 50%.
 	
-	La chance de toucher est amoindrie par l'éventuelle présence de module de défense sur la planète cible :
+	La chance de toucher est amoindrie par l'éventuelle présence de module de défense sur le corps céleste:
 	<math>Chance~de~toucher_finale = Chance~de~toucher - Protection</math>
 	
-	Si le missile fait mouche, un batiement choisi au hasard est détruit sur la planète cible (le module gouvernemental étant toujours le dernier batiment détruit).
+	Si le missile fait mouche, un batiement choisi au hasard est détruit sur le corps céleste cible (le module gouvernemental étant toujours le dernier batiment détruit).
 	Dans tous les cas, les caractéristiques et ressources du corps céleste visé sont entammé par le bombardement, suivant sa puissance :
 		
 	<math>Puissance~missile = {k prime} * Artillerie_Défense</math>

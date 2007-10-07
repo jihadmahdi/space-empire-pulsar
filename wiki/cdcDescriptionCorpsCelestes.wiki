@@ -34,7 +34,7 @@ Les planètes sauvages disposent d'une armée de défense fixé à la générati
 	資 max: [50K-100K]
 	Nb. slots: [6-15]
 }}
-Constructions autorisées:	Exploitation de ressources, Usine de vaisseaux, Module de défense, Module gouvernemental, Comptoir.
+Constructions autorisées:	Exploitation de ressources, Usine de vaisseaux, Module de défense, Module gouvernemental, Comptoir, Canon à pulsar.
 
 ===Champ d'astéroïde===
 Les champs d'astéroïdes sont des lieux impropre à la vie, mais propice à la construction de batiments millitaires, et riche en carbonne.
@@ -45,7 +45,7 @@ Ainsi il est possible de construire la pluspart des batiments, sauf ceux dont la
 	資 max: [60K-300K]
 	Nb. slots: [4-8]
 }}
-Constructions autorisées:	Exploitation de ressources, ~~Usine de vaisseaux~~, Module de défense, ~~Module gouvernemental~~, Comptoir.
+Constructions autorisées:	Exploitation de ressources, ~~Usine de vaisseaux~~, Module de défense, ~~Module gouvernemental~~, Comptoir, ~~Canon à pulsar~~.
 
 ===Nébuleuse===
 La nébuleuse est un corps celeste formé de gaz et de poussières.
@@ -56,4 +56,4 @@ Sa structure mouvante ne permet pas l'accueuil de construction de batiments autr
 	資 max: [100K-500K]
 	Nb. slots: [3-6]
 }}
-Constructions autorisées:	Exploitation de ressources,~~Usine de vaisseau~~, ~~Module de défense~~, ~~Module gouvernemental~~, Comptoir.
+Constructions autorisées:	Exploitation de ressources,~~Usine de vaisseau~~, ~~Module de défense~~, ~~Module gouvernemental~~, Comptoir, ~~Canon à pulsar~~.

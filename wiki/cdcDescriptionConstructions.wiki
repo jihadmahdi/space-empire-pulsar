@@ -27,6 +27,7 @@ Elles ont deux fonctionnalités distinctes:
 ==Module de défense==
 0人/4000資
 Les modules de défense sont la première protection des corps célestes, ils octroient des bonus de +(##A DEFINIR##) en attaque et en défense au corps céleste si celui-ci est attaqué, ainsi qu'aux flottes alliées en orbite.
+Les modules de défense offrent un pourcentage de protection contre les bombardements d'artillerie.
 Ces modules sont cumulables tant que le corps céleste dispose de slots libres.
 
 ==Module gouvernemental==
@@ -41,12 +42,13 @@ La planète où est établi le module gouvernemental reçoi un bonus de producti
 ==Comptoir intergalactique==
 0人/1000資
 Les comptoirs intergaliactique permettent d'acheminer les ressources entre les planètes.
-Ainsi, les nébuleuse et champs d'astéroïdes qui ne peuvent produire de vaisseaux ont tout intéret à disposer d'au moins un comptoir pour pouvoir acheminer leurs ressources vers les planètes qui sont plus pauves en carbone.
+Ainsi, les nébuleuse et champs d'astéroïdes qui ne peuvent produire de vaisseaux ont tout intéret à disposer d'au moins un comptoir pour pouvoir acheminer leurs ressources vers les planètes qui sont plus pauvres en carbone.
 Les comptoirs ont deux fonctions pricipales : La construction de routes de l'espace, et les échanges commerciaux.
 ===Routes de l'espace===
 Les comptoirs permettent de construire des routes de l'espace, moyennant un prix qui dépend de la distance à couvrir (500資/Z).
 Une route se fait d'un comptoir à un autre (ceux-ci ne pouvant servir que pour une route à la fois).
-Les routes de l'espace permettent à tout voyageur qui l'emprunte de substituer la vitesse de la route à sa propre vitesse. Celle-ci est très avantageuse pour la pluspart des vaisseaux.
+Les routes de l'espace permettent à tout voyageur qui l'emprunte de substituer la vitesse de la route à sa propre vitesse, si celle-ci est inférieure. Celle-ci est très avantageuse pour la pluspart des vaisseaux.
+Note: La vitesse des routes doit être telle que les Chasseurs soient toujours plus rapides même hors des routes.
 
 ===Echanges commerciaux===
 Les comptoirs permettent également de procéder à des transferts réguliers de ressource carbone entre comptoirs.
