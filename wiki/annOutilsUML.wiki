@@ -19,7 +19,7 @@ Les fonctionnalités souhaitées sont :
 ==Liste des plugins testés==
 ||[http://www.eclipse-plugins.info/eclipse/redirect_do.jsp?id=1598|Apollo]	||Shareware.||
 ||[http://www.eclipse-plugins.info/eclipse/redirect_do.jsp?id=1540|eUML2 Studio]	||La version evaluation Studio propose la synchro diagrammes/code, les seuls bridages sont à l'exportation image, et la licence (non-commerciale).||
-||====[http://www.eclipse-plugins.info/eclipse/redirect_do.jsp?id=1540|eUML2 Free]====||La version FREE offre déjà l'essentiel par rappot à la studio, et semble plus "légère": Synchro diagramme/code (gen/reverse), restrictions d'export et de licence en moins, on perds juste la génération de diagramme de séquence par rapport à la version Studio (le reste étant superflu).||
+||##[http://www.eclipse-plugins.info/eclipse/redirect_do.jsp?id=1540|eUML2 Free]##||La version FREE offre déjà l'essentiel par rappot à la studio, et semble plus "légère": Synchro diagramme/code (gen/reverse), restrictions d'export et de licence en moins, on perds juste la génération de diagramme de séquence par rapport à la version Studio (le reste étant superflu).||
 ||[http://www.eclipse-plugins.info/eclipse/redirect_do.jsp?id=1727|IdafeUML]||Gratuit et léger, mais ne supporte que le reverse, pas la génération.||
 ||[http://www.eclipse-plugins.info/eclipse/redirect_do.jsp?id=1760|ObjectAid]||Gratuit, mais ne supporte que la synchro code->diagramme, pas l'inverse.||
 

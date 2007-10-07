@@ -2,3 +2,58 @@
 
 =Interface=
 
+Le jeu se jouant au tour par tour, l'interface du jeu pourrait être vue comme un menu proposant au joueur de choisir les actions à effectuer à chaque tour.
+
+Voici l'arboresscence de ce menu, dont chaque branche peut être conditionnée :
+
+==Infos==
+	# Mesure de distance(Zone1, Zone2)
+		ERREUR si Zone1 hors Univers
+		ERREUR si Zone2 hors Univers
+		
+	# Afficher(Corps Céleste)
+		Afficher caracs de base (Corps Céleste)
+		SI (EstAllié(Joueur, Corps Céleste) OU PresenceFlotteAllie(Joueur, CorpsCéleste)) ALORS
+			Afficher les caracs courants(Corps Céleste)
+		FSI
+		
+	# Afficher(Flotte)
+		SI (EstAllié(Joueur, Flotte)) ALORS
+			Afficher caracs(Flotte)
+		FSI
+		
+	# Afficher(Routes)
+		SI (EstAlliée(Joueur, Route)) ALORS
+			Afficher caracs(Route)
+		FSI
+		
+	# Afficher(Echanges)
+		SI (EstAlliée(Joueur, Echange)) ALORS
+			Afficher caracs(Echange)
+		FSI
+	
+==Actions==
+	# Aller à (Flotte, Corps Céleste)
+		SI (!Possede(Joueur, Flotte)) ERREUR
+		
+	# Attaquer (Flotte, Corps Céleste)
+		SI (!Possede(Joueur, Flotte)) ERREUR
+		SI (EstAllie(Joueur, Corps Céleste)) ERREUR
+		
+	# Construire (Corps Céleste, Construction)
+		SI (!Possede(Joueur, Corps Céleste)) ERREUR
+		SI (!EstPossible(Corps Céleste, Construction)) ERREUR
+		SI (!PeutPayer(Corps Céleste, Construction)) ERREUR
+		SI (DejaConstruitACeTour(Corps Céleste)) ERREUR
+	
+	# Détruire (Corps Céleste, Construction)
+		SI (!Possede(Joueur, Corps Céleste)) ERREUR
+		SI (EstEtabli(Corps Céleste, Contruction) = 0) ERREUR
+		
+	# Fabriquer vaisseaux (Corps Céleste, Vaisseau, Quantite)
+		SI (!Possede(Joueur, Corps Céleste)) ERREUR
+		SI (EstEtabli(Corps Céleste, 'Usine Fabrication Vaisseaux') = 0) ERREUR
+		SI (!PeutPayer(Corps Céleste, Vaisseau, Quantite)) ERREUR
+		
+	# Construire Route Spaciale(Comptoir1, Comptoir2)
+		SI (!Possede(Joueur
