@@ -7,6 +7,10 @@ Il devrait être implémenté en JAVA, ce qui le rend multiplateforme.
 ==Status==
 ||Rédaction du cahier des charges||80%||
 ||Spécification et conception||A VENIR||
-	
+
+==Version PDF==
+Le site entier est disponible au format PDF, le fichier est mis à jour automatiquement tous les soirs.
+[http://sep.axan.org/sep.pdf|Télécharger le fichier PDF]
+
 ----------
 [auteurs|Auteurs]
