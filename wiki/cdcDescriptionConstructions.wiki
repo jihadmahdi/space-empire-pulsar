@@ -63,16 +63,13 @@ Les routes de l'espace et les échanges de ressource sont dissociés et peuvent 
 50000人/100000資/2 slots détruits
 Les canon à pulsar sont des batiments coûteux qui ont une utilisation unique.
 Chaque canon à pulsar coûte en plus de son prix en 人 et 資 un sacrifice de 2 slots de construction qui sont définitivement perdus.
-Un usage massif de canon à pulsar sur un corps céleste peut donc réduire son nombre de slots à 0, ce qui risque de le rendre pratiquement inexploitable.
+Un usage massif de canon à pulsar sur un corps céleste peut donc réduire son nombre de slots à 0, ce qui le rend pratiquement inexploitable.
 
 Un canon à pulsar permet d'effectuer un seul tir :
-Le joueur doit choisir le point visé par le canon (une zone vide), et une orientation souhaitée du cône d'effet (une zone quelconque, plus elle est éloignée du point cible, plus le joueur peut affiner son choix).
-Un pulsar artificiel est alors tiré sur la zone choisi, et son orientation est déterminée suivant la distance à laquelle à été effectué le tir.
-L'angle final connait une erreur proportionnelle à la distance de tir (le sens est tiré au hasard).
-<math>Précision = 100 - k * Distance~de~tir</math>
-<math>Angle_erreur = D_100 - Précision</math>
-
-La porté du rayon émis par le pulsar artificiel est fixé, et sa durée d'effet est tirée au hasard sur une plage fixé.
+Le joueur doit choisir le corps céleste ciblé, et peut ajuster la zone d'effet en paramètrant l'angle de décalage de l'axe magnétique du pulsar (et le sens).
+Un pulsar artificiel est tiré en ligne droite vers la cible choisie, lorsqu'il atteind sa cible, la zone d'effet forme un cône dont le centre est la trajectoire de tir, et dont l'angle est celui paramétré lors du tir.
+Quelque soit l'angle de décalage choisi, le volume d'effet est constant, ainsi plus l'angle est faible, plus le cône est long.
+La durée d'effet du pulsar est aléatoire mais dépend fortement de la distance de tir, ainsi il se peut si l'on tire de trop loin que l'effet ne dure pas plus d'un tour.
 
 ===L'effet "pulsar"===
 L'effet pulsar, comme le décrit l'astrophysicien 松山正則 (//Masanori Matsuyama//) se présente sous la forme de perturbations du champs magnétique, qui entrainnent l'incapacité à toute communication à travers l'espace (suivant les technologies connues à ce jour).
