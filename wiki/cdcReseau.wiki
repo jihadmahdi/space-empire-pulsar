@@ -1,6 +1,6 @@
 #summary Index : Cahier des charges : Multijoueur & Diplomatie
 
-=Multijoueurs & Diplomatie=
+=Multijoueur & Diplomatie=
 Space Empire Pulsar est un jeu multijoueur en réseau (local ou Internet), même si des "bots" seront peut être implémentés dans le futur.
 
 ==Lancement de la partie==

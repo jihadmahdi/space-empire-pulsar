@@ -2,58 +2,136 @@
 
 =Interface=
 
-Le jeu se jouant au tour par tour, l'interface du jeu pourrait être vue comme un menu proposant au joueur de choisir les actions à effectuer à chaque tour.
+Le jeu se jouant au tour par tour, l'interface du jeu pourrait être vue comme un menu proposant au joueur de choisir les commandes et actions à effectuer à chaque tour.
+Certaines commandes devront être considérée comme "automatiquement exécutées", pour ce qui est de l'affichage des infos de l'univers par exemple.
 
-Voici l'arboresscence de ce menu, dont chaque branche peut être conditionnée :
+Les paramètres de chaque commande sont ceux qui devront d'une manière où d'une autre pouvoir être spécifié par l'utilisateur (ex: sélection préalable) et l'algorithme qui suis ne concerne que les contrôles que pourraient faire l'interface cliente avant de valider la commande.
 
-==Infos==
-	# Mesure de distance(Zone1, Zone2)
+==Infos permanantes==
+	##Afficher Univers##
+		Afficher volume et quadrillage des zones
+		Placement des corps célestes avec leur couleur
+		Placement des flottes alliées en déplacement
+		Placement des routes alliées
+		Placement des échanges alliées
+		Placement des sondes alliées, afficher leur vues
+			
+==Infos sur demande==
+	##Mesure de distance(Zone1, Zone2)##
 		ERREUR si Zone1 hors Univers
 		ERREUR si Zone2 hors Univers
 		
-	# Afficher(Corps Céleste)
+	##AfficherDétails(Corps Céleste)##
 		Afficher caracs de base (Corps Céleste)
 		SI (EstAllié(Joueur, Corps Céleste) OU PresenceFlotteAllie(Joueur, CorpsCéleste)) ALORS
 			Afficher les caracs courants(Corps Céleste)
 		FSI
 		
-	# Afficher(Flotte)
+	##AfficherDétails(Flotte)##
 		SI (EstAllié(Joueur, Flotte)) ALORS
 			Afficher caracs(Flotte)
 		FSI
 		
-	# Afficher(Routes)
+	##AfficherDétails(Routes)##
 		SI (EstAlliée(Joueur, Route)) ALORS
 			Afficher caracs(Route)
 		FSI
 		
-	# Afficher(Echanges)
+	##AfficherDétails(Echanges)##
 		SI (EstAlliée(Joueur, Echange)) ALORS
 			Afficher caracs(Echange)
 		FSI
 	
+	##AfficherDétails(Sondes)##
+		SI (EstAlliée(Joueur, Sonde)) ALORS
+			Afficher vue(Sonde)
+		FSI
+		
+	##Synchroniser(Flotte, FlotteCible)##
+		SI (!Possede(Joueur, Flotte)) ERREUR
+		SI (!EstAlliée(Joueur, FlotteCible)) ERREUR
+		SI (!EnDeplacement(FlotteCible)) ERREUR
+		SI (EnDeplacement(Flotte)) ERREUR
+	
 ==Actions==
-	# Aller à (Flotte, Corps Céleste)
+	##Aller à (Flotte, Corps Céleste, Retard=0)##
 		SI (!Possede(Joueur, Flotte)) ERREUR
 		
-	# Attaquer (Flotte, Corps Céleste)
+	##Attaquer (Flotte, Corps Céleste, Retard=0)##
 		SI (!Possede(Joueur, Flotte)) ERREUR
 		SI (EstAllie(Joueur, Corps Céleste)) ERREUR
 		
-	# Construire (Corps Céleste, Construction)
+	##Construire (Corps Céleste, Construction)##
 		SI (!Possede(Joueur, Corps Céleste)) ERREUR
 		SI (!EstPossible(Corps Céleste, Construction)) ERREUR
 		SI (!PeutPayer(Corps Céleste, Construction)) ERREUR
 		SI (DejaConstruitACeTour(Corps Céleste)) ERREUR
 	
-	# Détruire (Corps Céleste, Construction)
+	##Détruire (Corps Céleste, Construction)##
 		SI (!Possede(Joueur, Corps Céleste)) ERREUR
 		SI (EstEtabli(Corps Céleste, Contruction) = 0) ERREUR
 		
-	# Fabriquer vaisseaux (Corps Céleste, Vaisseau, Quantite)
+	##Fabriquer vaisseaux (Corps Céleste, Vaisseau, Quantite)##
 		SI (!Possede(Joueur, Corps Céleste)) ERREUR
 		SI (EstEtabli(Corps Céleste, 'Usine Fabrication Vaisseaux') = 0) ERREUR
 		SI (!PeutPayer(Corps Céleste, Vaisseau, Quantite)) ERREUR
+		SI (Vaisseau = 'Vaisseau Gouvernemental') ALORS
+			SI (Quantite > 1) ERREUR
+			SI (!EstEtabli(Corps Céleste, 'Module Gouvernemental')) ERREUR
+		FSI
 		
-	# Construire Route Spaciale(Comptoir1, Comptoir2)
-		SI (!Possede(Joueur
+	##Construire Route Spaciale(Comptoir1, Comptoir2)##
+		SI (!Possede(Joueur, Comptoir1)) ERREUR
+		SI (!EstAllié(Joueur, Comptoir2)) ERREUR
+		SI (!PeutPayerRoute(Comptoir1, Comptoir2)) ERREUR
+		
+	##Passer commande ressource(Comptoir1, Comptoir2, Quantite)##
+		SI (!Possede(Joueur, Comptoir1)) ERREUR
+		SI (Possede(Joueur, Comptoir2)) ALORS
+			// Commerce intérieur, OK
+			RETOUR
+		SINON
+			SI (Ennemi(Joueur, Comptoir2)) ERREUR
+			// Commerce extérieur, OK
+
+	##Lancer pulsar(PlaneteOrigine, Corps céleste Cible, Angle, Sens)##
+		SI (!Possede(Joueur, PlaneteOrigine)) ERREUR
+		SI (!EstEtabli(PlaneteOrigine, 'Canon à Pulsar') = 0) ERREUR
+		SI ((SousEffetPulsar(Joueur)) ET (ADesAllies(Joueur)) ERREUR
+		
+	##Former flotte(Usine Fabrication Vaisseaux, Vaisseaux, Flotte=aucune)##
+		SI (!Possede(Joueur, Usine Fabrication Vaisseaux)) ERREUR
+		SI (!SontDisponibles(Usine Fabrication Vaisseaux, Vaisseaux)) ERREUR
+		SI ((Flotte != aucune) ET (!Possede(Joueur, Flotte))) ERREUR
+		
+	##Lancer sonde(Sonde, Zone)##
+		SI (!Possede(Joueur, Sonde)) ERREUR
+		SI (Zone hors univers) ERREUR
+
+	##ChangerAttitudeDiplomatieGenerale(AutreJoueur, Attitude)##
+		SI (EstAllié(Joueur, AutreJoueur)) ERREUR
+	
+	##ChangerComportementDiplomatieFlotte(Flotte, Comportement)##
+		SI (!Possede(Joueur, Flotte)) ERREUR
+		
+	##AttaqueFlottesEnPresence(Corps Céleste, JoueurCible)##
+		SI (!Possede(Joueur, Corps Céleste)) ERREUR
+		SI (EstAlliée(JoueurCible)) ERREUR
+		SI (ForcesEnPresence(JoueurCible, Corps Céleste) = 0) ERREUR
+		SI (ForcesEnPresence(Joueur, Corps Céleste) = 0) ERREUR
+		
+==Chat==
+
+	##Chatter(Msg, Filtre)##
+		SI (SousEffetPulsar(Joueur)) ERREUR
+		
+==Diplomatie==
+
+	##DemanderAlliance(JoueurCible)##
+		SI (EstAllié(JoueurCible)) ERREUR
+		
+	##DemanderExclusion(JoueurCible)##
+		SI (!EstAllié(JoueurCible)) ERREUR
+		
+	##QuitterAlliance()##
+		SI (!EstEnAlliance(Joueur)) ERREUR
