@@ -94,7 +94,7 @@ Les paramètres de chaque commande sont ceux qui devront d'une manière où d'un
 			SI (Ennemi(Joueur, Comptoir2)) ERREUR
 			// Commerce extérieur, OK
 
-	##Lancer pulsar(PlaneteOrigine, Corps céleste Cible, Angle, Sens)##
+	##Lancer pulsar(PlaneteOrigine, Corps céleste Cible, Angle)##
 		SI (!Possede(Joueur, PlaneteOrigine)) ERREUR
 		SI (!EstEtabli(PlaneteOrigine, 'Canon à Pulsar') = 0) ERREUR
 		SI ((SousEffetPulsar(Joueur)) ET (ADesAllies(Joueur)) ERREUR
@@ -135,3 +135,43 @@ Les paramètres de chaque commande sont ceux qui devront d'une manière où d'un
 		
 	##QuitterAlliance()##
 		SI (!EstEnAlliance(Joueur)) ERREUR
+
+=Elements dépendants=
+L'interface doit être capable d'afficher ces éléments en même temps.
+
+Zone
+	 !> Zone, Sonde
+
+Corps Céleste
+	 !> Corps Céleste, Retard, Angle, Construction, Vaisseaux, Flotte, Joueurs
+	 
+Flotte
+	 !> Corps Céleste, Flotte, Retard, Comportement, Vaisseaux, Usine
+	 
+Routes
+Echanges
+Sondes
+	 !> Zone
+Constructions
+	 !> Corps Céleste
+
+Vaisseaux
+	 !> Corps Céleste, Usine, Flotte, Quantite
+	 
+Comptoir
+	 !> Comptoir, quantité
+	 
+Usine
+	 !> Vaisseaux, Quantité
+
+Attitude
+	 !> Joueurs
+	 
+Comportement
+	 !> Flotte
+	 
+Joueurs
+	 !> Corps Céleste, Msg, Attitude
+
+Msg
+	 !> Joueurs
