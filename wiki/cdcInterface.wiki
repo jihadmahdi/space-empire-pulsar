@@ -17,61 +17,56 @@ Les paramètres de chaque commande sont ceux qui devront d'une manière où d'un
 		Placement des sondes alliées, afficher leur vues
 			
 ==Infos sur demande==
-	##Mesure de distance(Zone1, Zone2)##
+X	##Mesure de distance(Zone1, Zone2)##
 		ERREUR si Zone1 hors Univers
 		ERREUR si Zone2 hors Univers
 		
-	##AfficherDétails(Corps Céleste)##
+X	##AfficherDétails(Corps Céleste)##
 		Afficher caracs de base (Corps Céleste)
 		SI (EstAllié(Joueur, Corps Céleste) OU PresenceFlotteAllie(Joueur, CorpsCéleste)) ALORS
 			Afficher les caracs courants(Corps Céleste)
 		FSI
 		
-	##AfficherDétails(Flotte)##
+X	##AfficherDétails(Flotte)##
 		SI (EstAllié(Joueur, Flotte)) ALORS
 			Afficher caracs(Flotte)
 		FSI
 		
-	##AfficherDétails(Routes)##
+X	##AfficherDétails(Routes)##
 		SI (EstAlliée(Joueur, Route)) ALORS
 			Afficher caracs(Route)
 		FSI
 		
-	##AfficherDétails(Echanges)##
+X	##AfficherDétails(Echanges)##
 		SI (EstAlliée(Joueur, Echange)) ALORS
 			Afficher caracs(Echange)
 		FSI
-	
-	##AfficherDétails(Sondes)##
-		SI (EstAlliée(Joueur, Sonde)) ALORS
-			Afficher vue(Sonde)
-		FSI
 		
-	##Synchroniser(Flotte, FlotteCible)##
+X	##Synchroniser(Flotte, FlotteCible)##
 		SI (!Possede(Joueur, Flotte)) ERREUR
 		SI (!EstAlliée(Joueur, FlotteCible)) ERREUR
 		SI (!EnDeplacement(FlotteCible)) ERREUR
 		SI (EnDeplacement(Flotte)) ERREUR
 	
 ==Actions==
-	##Aller à (Flotte, Corps Céleste, Retard=0)##
+X	##Aller à (Flotte, Corps Céleste, Retard=0)##
 		SI (!Possede(Joueur, Flotte)) ERREUR
 		
-	##Attaquer (Flotte, Corps Céleste, Retard=0)##
+X	##Attaquer (Flotte, Corps Céleste, Retard=0)##
 		SI (!Possede(Joueur, Flotte)) ERREUR
 		SI (EstAllie(Joueur, Corps Céleste)) ERREUR
 		
-	##Construire (Corps Céleste, Construction)##
+X	##Construire (Corps Céleste, Construction)##
 		SI (!Possede(Joueur, Corps Céleste)) ERREUR
 		SI (!EstPossible(Corps Céleste, Construction)) ERREUR
 		SI (!PeutPayer(Corps Céleste, Construction)) ERREUR
 		SI (DejaConstruitACeTour(Corps Céleste)) ERREUR
 	
-	##Détruire (Corps Céleste, Construction)##
+X	##Détruire (Corps Céleste, Construction)##
 		SI (!Possede(Joueur, Corps Céleste)) ERREUR
 		SI (EstEtabli(Corps Céleste, Contruction) = 0) ERREUR
 		
-	##Fabriquer vaisseaux (Corps Céleste, Vaisseau, Quantite)##
+X	##Fabriquer vaisseaux (Corps Céleste, Vaisseau, Quantite)##
 		SI (!Possede(Joueur, Corps Céleste)) ERREUR
 		SI (EstEtabli(Corps Céleste, 'Usine Fabrication Vaisseaux') = 0) ERREUR
 		SI (!PeutPayer(Corps Céleste, Vaisseau, Quantite)) ERREUR
@@ -80,12 +75,15 @@ Les paramètres de chaque commande sont ceux qui devront d'une manière où d'un
 			SI (!EstEtabli(Corps Céleste, 'Module Gouvernemental')) ERREUR
 		FSI
 		
-	##Construire Route Spaciale(Comptoir1, Comptoir2)##
+X	##Construire Route Spaciale(Comptoir1, Comptoir2)##
 		SI (!Possede(Joueur, Comptoir1)) ERREUR
 		SI (!EstAllié(Joueur, Comptoir2)) ERREUR
 		SI (!PeutPayerRoute(Comptoir1, Comptoir2)) ERREUR
+
+X	##Detruire Route Spaciale(Route)##
+		SI (!Possede(Joueur, Route)) ERREUR
 		
-	##Passer commande ressource(Comptoir1, Comptoir2, Quantite)##
+X	##Passer commande ressource(Comptoir1, Comptoir2, Quantite)##
 		SI (!Possede(Joueur, Comptoir1)) ERREUR
 		SI (Possede(Joueur, Comptoir2)) ALORS
 			// Commerce intérieur, OK
@@ -94,46 +92,46 @@ Les paramètres de chaque commande sont ceux qui devront d'une manière où d'un
 			SI (Ennemi(Joueur, Comptoir2)) ERREUR
 			// Commerce extérieur, OK
 
-	##Lancer pulsar(PlaneteOrigine, Corps céleste Cible, Angle)##
+X	##Lancer pulsar(PlaneteOrigine, Corps céleste Cible, Angle)##
 		SI (!Possede(Joueur, PlaneteOrigine)) ERREUR
 		SI (!EstEtabli(PlaneteOrigine, 'Canon à Pulsar') = 0) ERREUR
 		SI ((SousEffetPulsar(Joueur)) ET (ADesAllies(Joueur)) ERREUR
 		
-	##Former flotte(Usine Fabrication Vaisseaux, Vaisseaux, Flotte=aucune)##
+X	##Former flotte(Usine Fabrication Vaisseaux, Vaisseaux, Flotte=aucune)##
 		SI (!Possede(Joueur, Usine Fabrication Vaisseaux)) ERREUR
 		SI (!SontDisponibles(Usine Fabrication Vaisseaux, Vaisseaux)) ERREUR
 		SI ((Flotte != aucune) ET (!Possede(Joueur, Flotte))) ERREUR
 		
-	##Lancer sonde(Sonde, Zone)##
+X	##Lancer sonde(Sonde, Zone)##
 		SI (!Possede(Joueur, Sonde)) ERREUR
 		SI (Zone hors univers) ERREUR
 
-	##ChangerAttitudeDiplomatieGenerale(AutreJoueur, Attitude)##
+X	##ChangerAttitudeDiplomatieGenerale(AutreJoueur, Attitude)##
 		SI (EstAllié(Joueur, AutreJoueur)) ERREUR
 	
-	##ChangerComportementDiplomatieFlotte(Flotte, Comportement)##
+X	##ChangerComportementDiplomatieFlotte(Flotte, Comportement)##
 		SI (!Possede(Joueur, Flotte)) ERREUR
 		
-	##AttaqueFlottesEnPresence(Corps Céleste, JoueurCible)##
+X	##AttaqueFlottesEnPresence(Corps Céleste, JoueursCibles)##
 		SI (!Possede(Joueur, Corps Céleste)) ERREUR
 		SI (EstAlliée(JoueurCible)) ERREUR
-		SI (ForcesEnPresence(JoueurCible, Corps Céleste) = 0) ERREUR
+		SI (ForcesEnPresence(JoueursCibles, Corps Céleste) = 0) ERREUR
 		SI (ForcesEnPresence(Joueur, Corps Céleste) = 0) ERREUR
 		
 ==Chat==
 
-	##Chatter(Msg, Filtre)##
+X	##Chatter(Msg, Filtre)##
 		SI (SousEffetPulsar(Joueur)) ERREUR
 		
 ==Diplomatie==
 
-	##DemanderAlliance(JoueurCible)##
+X	##DemanderAlliance(JoueurCible)##
 		SI (EstAllié(JoueurCible)) ERREUR
 		
-	##DemanderExclusion(JoueurCible)##
+X	##DemanderExclusion(JoueurCible)##
 		SI (!EstAllié(JoueurCible)) ERREUR
 		
-	##QuitterAlliance()##
+X	##QuitterAlliance()##
 		SI (!EstEnAlliance(Joueur)) ERREUR
 
 =Elements dépendants=

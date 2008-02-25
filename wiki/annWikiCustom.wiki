@@ -9,4 +9,7 @@ L'interpréteur Wiki est développé en PHP et permet entre autres :
 	* l'exportation au format PDF.
 
 ==BUGS==
-L'export PDF souffre quelques distortions : Les tableaux sont mal taillés, le texte barré n'est plus barré.
+L'export PDF souffre quelques distortions :
+	* Les tableaux sont mal taillés,
+	* les images trop larges dépassent,
+	* le texte barré n'est plus barré.
