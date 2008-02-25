@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="ASCII"?>
+<sni:SNI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:sni="http://sni" UID="8A4BBF06-24F3-F35F-A79E-23F3359AFF7F" name="Planche" date="25/02/2008 21:12:38" titre="Zone de Chat">
+  <lstObjets xsi:type="sni:Commentaire" UID="47443815-D6DC-C680-7404-C308724B1163" name="Ref" date="25/02/2008 22:15:32" X="5.0" Y="25.0" width="130.0" height="53.0" comment="R&#xe9;f&#xe9;rences :&#xA;  AffichagePrincipal"/>
+  <lstObjets xsi:type="sni:Debut" UID="9A3D6F4C-0C4B-5DA0-C587-55F4E84B6DFE" name="Debut-2" date="25/02/2008 21:12:59" X="399.0" Y="67.0" width="90.0" height="30.0" label="ZoneChat">
+    <outputPorts name="out1" X="0.5" Y="0.96666664" linkPort="//@lstObjets.3/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:UDC" UID="FEEBCD09-0388-B2F2-716C-9540F6495E7E" name="Groupe-3" date="25/02/2008 21:13:17" X="71.0" Y="95.0" width="747.0" height="209.0" backColor="0" groupBox="Zone de Chat">
+    <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.3/@outputPorts.0"/>
+    <outputPorts name="out1" X="0.5" Y="0.9952153" linkPort="//@lstObjets.5/@inputPorts.0"/>
+    <lstNodes xsi:type="sni:AffListe" UID="111D9C53-D351-D447-2501-F883FD7DF639" name="Groupe-3.Coll-1" date="25/02/2008 21:13:46" X="73.0" Y="53.0" width="264.0" height="124.0" dispListe="Messages" dispAttrib="(expediteur, date, destinataire, message)">
+      <inputPorts name="in1" X="0.5" conditions="[Visibles ET !SousEffetPulsar]"/>
+      <outputPorts name="out1" X="0.5" Y="0.9919355"/>
+    </lstNodes>
+    <lstNodes xsi:type="sni:AffListe" UID="6D342177-DE0C-4C33-E09D-EF97553D7D30" name="Groupe-3.Coll-2" date="25/02/2008 21:19:07" X="401.0" Y="69.0" width="230.0" height="81.0" dispListe="Destinataires possibles" dispAttrib="(nom, EstAllie)">
+      <inputPorts name="in1" X="0.5"/>
+      <outputPorts name="out1" X="0.5" Y="0.9876543"/>
+      <lstFiltres expression="alli&#xe9;s"/>
+      <lstFiltres expression="tous"/>
+      <lstFiltres expression="nom=?"/>
+    </lstNodes>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Lien" UID="EBA415D4-A5AB-3DD0-47B3-D09EA8BE3EC2" name="Lien-4" date="25/02/2008 21:13:21">
+    <inputPorts name="source" linkPort="//@lstObjets.1/@outputPorts.0"/>
+    <outputPorts name="target" linkPort="//@lstObjets.2/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Menu" UID="C16B1AC5-F3AF-23DF-F012-984945D1EA75" name="Menu-5" date="25/02/2008 21:15:08" X="242.0" Y="302.0" width="405.0" height="30.0">
+    <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.5/@outputPorts.0"/>
+    <outputPorts X="0.49876544" Y="2.4333334" conditions="[!SousEffetPulsar]"/>
+    <lstGroupes condLabel="1-N : Destinataire">
+      <lstOptions name="Envoyer un message"/>
+    </lstGroupes>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Lien" UID="B387867B-1396-AED7-73FF-FECE82A2294A" name="Lien-5" date="25/02/2008 21:15:09">
+    <inputPorts name="source" linkPort="//@lstObjets.2/@outputPorts.0"/>
+    <outputPorts name="target" linkPort="//@lstObjets.4/@inputPorts.0"/>
+  </lstObjets>
+</sni:SNI>
