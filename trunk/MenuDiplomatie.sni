@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="ASCII"?>
+<sni:SNI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:sni="http://sni" UID="4EC4036B-975B-5DAC-D6B6-62D363EEEDB2" name="Planche" date="25/02/2008 22:15:58" titre="Menu Diplomatie">
+  <lstObjets xsi:type="sni:Commentaire" UID="A6230F83-CBB2-5318-EF9F-D85B2B263669" name="Ref" date="25/02/2008 22:16:12" X="5.0" Y="25.0" width="100.0" height="30.0" comment="R&#xe9;f&#xe9;rences :"/>
+  <lstObjets xsi:type="sni:Debut" UID="423E31EB-2732-BFA6-49A5-A2D8E49F7349" name="Debut-2" date="25/02/2008 22:16:12" X="378.0" Y="37.0" width="144.0" height="30.0" label="MenuDiplomatie">
+    <outputPorts name="out1" X="0.5" Y="0.96666664" linkPort="//@lstObjets.3/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:UDC" UID="1ADF5B02-98CF-997D-C718-37FC5D47DD65" name="Groupe-3" date="25/02/2008 22:16:20" X="229.0" Y="65.0" width="443.0" height="213.0" backColor="0">
+    <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.3/@outputPorts.0"/>
+    <outputPorts name="out1" X="0.5" Y="0.9953052" linkPort="//@lstObjets.5/@inputPorts.0"/>
+    <lstNodes xsi:type="sni:AffListe" UID="55E375FE-A2DB-4E79-12B0-88723858EBE6" name="Groupe-3.Coll-1" date="25/02/2008 22:17:34" X="17.0" Y="36.0" width="256.0" height="144.0" dispListe="Joueur" dispAttrib="(nom, diplomatie)">
+      <inputPorts name="in1" X="0.5" conditions="[!EstAllie]"/>
+      <outputPorts name="out1" X="0.5" Y="0.9930556"/>
+    </lstNodes>
+    <lstNodes xsi:type="sni:AffListe" UID="F4B3B649-13F8-A017-E9B4-5F5B16D01318" name="Groupe-3.Coll-2" date="25/02/2008 22:26:02" X="280.0" Y="35.0" width="159.0" height="103.0" dispListe="Allie">
+      <inputPorts name="in1" X="0.5" conditions="[Allie]"/>
+      <outputPorts name="out1" X="0.5" Y="0.99029124"/>
+    </lstNodes>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Lien" UID="D0C7F53B-DB4C-027C-39A6-B1EBBACC8034" name="Lien-4" date="25/02/2008 22:16:22">
+    <inputPorts name="source" linkPort="//@lstObjets.1/@outputPorts.0"/>
+    <outputPorts name="target" linkPort="//@lstObjets.2/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Menu" UID="BC8B261B-5429-0256-3F70-EC03C00E0E0E" name="Menu-5" date="25/02/2008 22:16:40" X="134.0" Y="277.0" width="632.0" height="30.0">
+    <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.5/@outputPorts.0"/>
+    <outputPorts X="0.125" Y="2.4333334" conditions="[....]"/>
+    <outputPorts X="0.375" Y="2.4333334" conditions="[....]"/>
+    <outputPorts X="0.625" Y="2.4333334"/>
+    <outputPorts X="0.875" Y="2.4333334" conditions="[EstEnAlliance]"/>
+    <lstGroupes condLabel="1 : Joueur">
+      <lstOptions name="Changer Attitude Diplomatique "/>
+      <lstOptions name="Inviter Alliance"/>
+    </lstGroupes>
+    <lstGroupes condLabel="1 : Allie">
+      <lstOptions name="Demander Exclusion"/>
+    </lstGroupes>
+    <lstGroupes>
+      <lstOptions name="Quitter Alliance"/>
+    </lstGroupes>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Lien" UID="2B845283-1FBC-F5F2-6013-04EEDB79612D" name="Lien-5" date="25/02/2008 22:16:47">
+    <inputPorts name="source" linkPort="//@lstObjets.2/@outputPorts.0"/>
+    <outputPorts name="target" linkPort="//@lstObjets.4/@inputPorts.0"/>
+  </lstObjets>
+</sni:SNI>
