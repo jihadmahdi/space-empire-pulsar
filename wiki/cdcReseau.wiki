@@ -63,8 +63,13 @@ NOTE: Si deux flottes (ou plusieurs) d'un même joueur sont posée sur une plan�
 A tout moment, le joueur peut donner ordre aux flottes stationnées pacifiquement d'attaquer. Toutes les flottes du joueur présente dans la zone sont alors automatiquement mobilisées. L'attaque se fait en fin de tour.
 
 =====Flottes étrangères en stationnement: S'en débarasser !=====
-A tout moment, le joueur peut donner ordre aux forces de son corps céleste d'abattre les flottes étrangèes en stationnement. Il choisi alors le joueur cible, et toutes ses flottes en stationnement sont automatiquement attaquées. L'attaque se fait en fin de tour.
-S'il perds, le corps céleste reviens au joueur attaqué, les autres flottes éventuellement en stationnement le reste.
+A tout moment, le joueur peut donner ordre aux forces de son corps céleste d'abattre les flottes étrangèes en stationnement. Il choisi alors le ou les joueur(s) cible(s), et toutes ses/leurs flottes en stationnement sont automatiquement attaquées. L'attaque se fait en fin de tour.
+	¤ Si tous les joueurs attaqués sont alliés entre eux, ils forment un block et se battent.
+	¤ Sinon, les joueurs ayant au moins une flotte en comportement Hostile voient toutes leur flottes, ainsi que celles de leurs alliés prendre part au combat.
+	¤ Les flottes restantes des joueurs attaqués fuient.
+	¤ Les flottes restantes des joueurs non attaqués agissent selon leur comportement : fuient (Fuir) ou rejoignent le corps céleste (Amical) sans toutefois entrainer leurs alliés si ceux-ci n'ont pas mis le même comportement.
+
+S'il perds, le corps céleste reviens à l'une des alliance victorieuse, tirée au hasard selon la proportion de chaque joueur restant.
 
 ===Pacte d'alliance===
 Le pacte d'alliance est un lien fort permettant a plusieurs joueurs de s'allier en ayant une garantie sur l'honnêteté de leurs camarades.
