@@ -1,4 +1,4 @@
-package tests;
+package pretests;
 
 public class Vaisseau implements Comparable<Vaisseau>
 {

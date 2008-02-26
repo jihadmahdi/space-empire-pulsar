@@ -1,7 +1,7 @@
 /**
  * 
  */
-package tests;
+package pretests;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -12,7 +12,7 @@ import java.util.TreeMap;
 import java.util.Vector;
 import java.util.Map.Entry;
 
-import tests.Vaisseau.eClasse;
+import pretests.Vaisseau.eClasse;
 
 /**
  * @author Axan
