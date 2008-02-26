@@ -1,13 +1,13 @@
 /**
  * 
  */
-package tests;
+package pretests;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Vector;
 
-import tests.Vaisseau.eClasse;
+import pretests.Vaisseau.eClasse;
 
 /**
  * @author Axan Classe représentant une flotte de plusieurs vaisseaux.

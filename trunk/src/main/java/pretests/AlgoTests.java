@@ -1,4 +1,4 @@
-package tests;
+package pretests;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -9,7 +9,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.Map.Entry;
 
-import tests.Vaisseau.eClasse;
+import pretests.Vaisseau.eClasse;
 
 /**
  * Classe servant a des tests d'algos divers, rapides.
