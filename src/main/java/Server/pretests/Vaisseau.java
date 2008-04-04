@@ -1,5 +1,7 @@
-package pretests;
+package Server.pretests;
 
+/**
+ */
 public class Vaisseau implements Comparable<Vaisseau>
 {
 	public static final double FACTEUR_GLOBAL = 60;
@@ -9,6 +11,8 @@ public class Vaisseau implements Comparable<Vaisseau>
 	public static final double FACTEUR_ARMURE = 1/3;
 	public static final double FACTEUR_VITESSE= 5;
 	
+	/**
+	 */
 	public enum eClasse
 	{
 		DD, TANK, DIST;

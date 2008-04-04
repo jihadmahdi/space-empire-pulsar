@@ -1,6 +1,7 @@
-package pretests;
+package Server.pretests;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
@@ -9,7 +10,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.Map.Entry;
 
-import pretests.Vaisseau.eClasse;
+import Server.pretests.Vaisseau.eClasse;
+
 
 /**
  * Classe servant a des tests d'algos divers, rapides.
@@ -94,7 +96,7 @@ public class AlgoTests
 	{
 		if (output == null)
 		{
-			output = new PrintStream(".\\output.txt");
+			output = new PrintStream("."+File.separatorChar+"output.txt");
 		}
 		
 		if (flotteA == null)
@@ -133,7 +135,7 @@ public class AlgoTests
 		Double[] resultats = new Double[4];
 		
 		pas = Math.max(1, facteur_taille*pas);
-		PrintStream silent = new PrintStream(".\\output.txt");
+		PrintStream silent = new PrintStream("."+File.separatorChar+"output.txt");
 		
 		int i = 0;
 		int survivant = 0;
@@ -322,7 +324,7 @@ public class AlgoTests
 	
 	public static void TesterRapports(PrintStream output, int facteur_taille, eClasse Ego) throws FileNotFoundException
 	{
-		PrintStream silent = new PrintStream(".\\output.txt");
+		PrintStream silent = new PrintStream("."+File.separatorChar+"output.txt");
 		
 		Double[] resultat = null;
 		Vaisseau[] vaisseaux = new Vaisseau[magasin_vaisseaux.size()+1];
@@ -437,10 +439,24 @@ public class AlgoTests
 	 */
 	public static void main(String[] args)
 	{
+		File dir = new File(".");
+		
+		if (args.length > 0)
+		{
+				File test = new File(args[0]);
+				if (test.isDirectory())
+				{
+					if (!test.exists())
+					{
+						test.mkdirs();
+					}
+					dir = test;
+				}
+		}
+		
 		System.out.println("Test Algo de Combat");
 		
 		RemplirMagasin();
-		//SaisirVaisseau(System.out);
 
 		try
 		{
@@ -448,7 +464,9 @@ public class AlgoTests
 			for(int i=0; i<=5; ++i)
 			{
 				int facteur_taille = new Double(Math.pow(10, i)).intValue();
-				PrintStream ps = new PrintStream("c:\\rapport_combats_"+facteur_taille+".csv");
+				String file = dir.getAbsolutePath()+File.separatorChar+"rapport_combats_"+facteur_taille+".csv";
+				System.out.println("creating file : "+file);
+				PrintStream ps = new PrintStream(file);
 				TesterRapports(ps, facteur_taille, eClasse.DD);
 				
 				if (!ps.equals(System.out))
