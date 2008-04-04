@@ -1,21 +1,25 @@
 /**
  * 
  */
-package pretests;
+package Server.pretests;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Vector;
 
-import pretests.Vaisseau.eClasse;
+import Server.pretests.Vaisseau.eClasse;
+
 
 /**
- * @author Axan Classe représentant une flotte de plusieurs vaisseaux.
+ * @author  Axan Classe représentant une flotte de plusieurs vaisseaux.
  */
 public class Flotte
 {
 	private Vector<FlotteEquivalente>	m_FlottesEquivalentes	= new Vector<FlotteEquivalente>();
 
+	/**
+	 * @uml.property  name="m_sNom"
+	 */
 	private String						m_sNom					= null;
 	private BigDecimal					m_Defense				= BigDecimal.ZERO;
 	private BigDecimal					m_Attaque				= BigDecimal.ZERO;
@@ -300,6 +304,10 @@ public class Flotte
 		return sb.toString();
 	}
 
+	/**
+	 * @return
+	 * @uml.property  name="m_sNom"
+	 */
 	public String getM_sNom()
 	{
 		return m_sNom;

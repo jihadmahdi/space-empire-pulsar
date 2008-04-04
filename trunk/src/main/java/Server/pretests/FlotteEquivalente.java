@@ -1,7 +1,7 @@
 /**
  * 
  */
-package pretests;
+package Server.pretests;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -12,11 +12,11 @@ import java.util.TreeMap;
 import java.util.Vector;
 import java.util.Map.Entry;
 
-import pretests.Vaisseau.eClasse;
+import Server.pretests.Vaisseau.eClasse;
+
 
 /**
- * @author Axan
- * 
+ * @author   Axan
  */
 public class FlotteEquivalente
 {
