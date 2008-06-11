@@ -7,5 +7,7 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="org.maven.ide.eclipse.MAVEN2_CLASSPATH_CONTAINER"/>
 	<classpathentry kind="con" path="com.soyatec.uml.CONTAINER"/>
+	<classpathentry kind="lib" path="/home/axan/darkstar/sgs-client-0.9.6-r4193/lib/sgs-client.jar"/>
+	<classpathentry kind="lib" path="/home/axan/darkstar/sgs-0.9.6-r4193/lib/sgs.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
