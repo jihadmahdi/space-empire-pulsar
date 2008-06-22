@@ -3,7 +3,7 @@
  * @file Partie.java
  * @date 4 avr. 08
  */
-package Server.metier;
+package common.metier;
 
 
 public class Partie

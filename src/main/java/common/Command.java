@@ -3,7 +3,7 @@
  * @file command.java
  * @date 20 juin 08
  */
-package Common;
+package common;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

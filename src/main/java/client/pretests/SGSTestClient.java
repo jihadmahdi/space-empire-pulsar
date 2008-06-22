@@ -3,7 +3,7 @@
  * @file SGSTestClient.java
  * @date 4 avr. 08
  */
-package Client.pretests;
+package client.pretests;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
@@ -22,7 +22,6 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.swing.Action;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -31,15 +30,14 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-import Common.ClientServerProtocol;
-import Common.Command;
-import Common.ServerClientProtocol;
-import Server.metier.Partie;
-
 import com.sun.sgs.client.ClientChannel;
 import com.sun.sgs.client.ClientChannelListener;
 import com.sun.sgs.client.simple.SimpleClient;
 import com.sun.sgs.client.simple.SimpleClientListener;
+import common.ClientServerProtocol;
+import common.Command;
+import common.ServerClientProtocol;
+import common.metier.Partie;
 
 /**
  * A simple GUI client that interacts with an SGS server-side app.
@@ -416,8 +414,8 @@ public class SGSTestClient extends JFrame
         if (! simpleClient.isConnected())
             return;
 
-        String text = getInputText();
         /*
+        String text = getInputText();
         send(text);
         */
     }
