@@ -7,14 +7,23 @@ package Client.pretests;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.PasswordAuthentication;
 import java.nio.ByteBuffer;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Properties;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import javax.swing.Action;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -22,13 +31,32 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
+import Common.ClientServerProtocol;
+import Common.Command;
+import Common.ServerClientProtocol;
+import Server.metier.Partie;
+
 import com.sun.sgs.client.ClientChannel;
 import com.sun.sgs.client.ClientChannelListener;
 import com.sun.sgs.client.simple.SimpleClient;
 import com.sun.sgs.client.simple.SimpleClientListener;
 
 /**
- * 
+ * A simple GUI client that interacts with an SGS server-side app.
+ * It presents a basic chat interface with an output area and input
+ * field.
+ * <p>
+ * The client understands the following properties:
+ * <ul>
+ * <li><code>{@value #HOST_PROPERTY}</code> <br>
+ *     <i>Default:</i> {@value #DEFAULT_HOST} <br>
+ *     The hostname of the server.<p>
+ *
+ * <li><code>{@value #PORT_PROPERTY}</code> <br>
+ *     <i>Default:</i> {@value #DEFAULT_PORT} <br>
+ *     The port that the server is listening on.<p>
+ *
+ * </ul>
  */
 public class SGSTestClient extends JFrame
     implements SimpleClientListener, ActionListener
@@ -68,6 +96,8 @@ public class SGSTestClient extends JFrame
 
     /** The random number generator for login names. */
     private final Random random = new Random();
+    
+    private final Logger logger = Logger.getLogger(SGSTestClient.class.getName());
 
     // Main
 
@@ -116,13 +146,63 @@ public class SGSTestClient extends JFrame
         statusLabel = new JLabel();
         statusLabel.setFocusable(false);
         setStatus("Not Started");
-        c.add(statusLabel, BorderLayout.SOUTH);
+        JButton btnDemandeListeParties = new JButton("Liste parties");
+        btnDemandeListeParties.addActionListener(new ActionListener()
+		{
+		
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				sendCommand(ClientServerProtocol.eEvenements.DemandeListeParties);
+			}
+		
+		});
+        JButton btnCreerNouvellePartie = new JButton("Créer Partie");
+        btnCreerNouvellePartie.addActionListener(new ActionListener()
+		{
+		
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				String nomPartie = getInputText();
+				if (!nomPartie.isEmpty())
+				{
+					sendCommand(ClientServerProtocol.eEvenements.CreerNouvellePartie, nomPartie);
+				}
+				else
+				{
+					appendOutput("Veuillez saisir un nom de partie dans la zone de saisie (sans valider) puis cliquer \"Créer Partie\"");
+				}
+			}
+		
+		});
+        JPanel btnsPanel = new JPanel();
+        btnsPanel.setLayout(new FlowLayout());
+        btnsPanel.add(statusLabel);
+        btnsPanel.add(btnDemandeListeParties);
+        btnsPanel.add(btnCreerNouvellePartie);
+        
+        c.add(btnsPanel, BorderLayout.SOUTH);
         setSize(640, 480);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setVisible(true);
         simpleClient = new SimpleClient(this);
     }
 
+    private void sendCommand(ClientServerProtocol.eEvenements evnt, Serializable ... parameters)
+    {
+    	Command cmd = new Command(evnt.toString(), parameters);
+        logger.log(Level.INFO, "Envoi commande {0} au serveur", cmd.getCommand());
+        try
+		{
+			simpleClient.send(ByteBuffer.wrap(cmd.encode()));
+		}
+		catch (IOException e1)
+		{
+			logger.log(Level.WARNING, "Unable to send to {0} the command {1}", new Object[]{this, cmd.getCommand()});
+		}
+    }
+    
     /**
      * Allows subclasses to populate the input panel with
      * additional UI elements.  The base implementation
@@ -275,7 +355,36 @@ public class SGSTestClient extends JFrame
      * Decodes the message data and adds it to the display.
      */
     public void receivedMessage(ByteBuffer message) {
-        appendOutput("Server sent: " + decodeString(message));
+    	Command command;
+		try
+		{
+			byte buffer[] = new byte[message.capacity()];
+			message.get(buffer);
+			command = Command.decode(buffer);
+		}
+		catch (IOException e)
+		{
+			logger.log(Level.WARNING, "received unreadable command: {1}", new Object[]{message});
+			return;
+		}
+		
+		logger.log(Level.INFO, "received command: {0}", new Object[]{command.getCommand()});
+		
+		/*
+		machineClientSession.TraiterEvenement(eEvenements.valueOf(command.getCommand()), command.getParameters());
+		*/
+		
+		if (ServerClientProtocol.eEvenements.valueOf(command.getCommand()) == ServerClientProtocol.eEvenements.ReponseDemandeListeParties)
+		{
+			HashSet<Partie> parties = (HashSet<Partie>) command.getParameters()[0];
+			appendOutput("Liste des parties :");
+			Iterator<Partie> it = parties.iterator();
+			while(it.hasNext())
+			{
+				Partie p = it.next();
+				appendOutput(p.toString());
+			}
+		}
     }
 
     /**
@@ -308,9 +417,11 @@ public class SGSTestClient extends JFrame
             return;
 
         String text = getInputText();
+        /*
         send(text);
+        */
     }
-
+    
     /**
      * Encodes the given text and sends it to the server.
      * 
