@@ -1,4 +1,4 @@
-package Common;
+package common;
 /**
  * @author Escallier Pierre
  * @file ClientServerProtocol.java

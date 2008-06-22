@@ -3,7 +3,7 @@
  * @file ServerClientProtocol.java
  * @date 21 juin 08
  */
-package Common;
+package common;
 
 /**
  * 
