@@ -6,18 +6,20 @@
 package Server.pretests;
 
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import Server.metier.Partie;
+
 import com.sun.sgs.app.AppContext;
 import com.sun.sgs.app.AppListener;
-import com.sun.sgs.app.Channel;
-import com.sun.sgs.app.ChannelManager;
 import com.sun.sgs.app.ClientSession;
 import com.sun.sgs.app.ClientSessionListener;
-import com.sun.sgs.app.Delivery;
-import com.sun.sgs.app.ManagedReference;
+import com.sun.sgs.app.DataManager;
 
 /**
  * 
@@ -30,18 +32,9 @@ public class SGSTest implements Serializable, AppListener
     /** The {@link Logger} for this class. */
     private static final Logger logger =
         Logger.getLogger(SGSTest.class.getName());
-
-    /* The name of the first channel {@value #CHANNEL_1_NAME} */
-    static final String CHANNEL_1_NAME = "Foo";
-    /* The name of the second channel {@value #CHANNEL_2_NAME} */
-    static final String CHANNEL_2_NAME = "Bar";
     
-    /** 
-     * The first {@link Channel}.  The second channel is looked up
-     * by name.
-     */
-    private ManagedReference<Channel> channel1 = null;
-
+    private HashSet<Partie> listeParties = new HashSet<Partie>();
+    
     /**
      * {@inheritDoc}
      * <p>
@@ -49,20 +42,10 @@ public class SGSTest implements Serializable, AppListener
      * so they only need to be created here in {@code initialize}.
      */
     public void initialize(Properties props) {
-        ChannelManager channelMgr = AppContext.getChannelManager();
-        
-        // Create and keep a reference to the first channel.
-        Channel c1 = channelMgr.createChannel(CHANNEL_1_NAME, 
-                                              null, 
-                                              Delivery.RELIABLE);
-        channel1 = AppContext.getDataManager().createReference(c1);
-        
-        // We don't keep a reference to the second channel, to demonstrate
-        // looking it up by name when needed.  Also, this channel uses a
-        // {@link ChannelListener} to filter messages.
-        channelMgr.createChannel(CHANNEL_2_NAME, 
-                                 new SGSTestChannelListener(), 
-                                 Delivery.RELIABLE);
+        logger.info("Initializing Server");
+        DataManager dm = AppContext.getDataManager();
+        dm.setBinding("Server", this);
+        logger.info("Server initialized (bounded)");
     }
 
     /**
@@ -73,7 +56,26 @@ public class SGSTest implements Serializable, AppListener
      */
     public ClientSessionListener loggedIn(ClientSession session) {
         logger.log(Level.INFO, "User {0} has logged in", session.getName());
-        return new SGSTestSessionListener(session, channel1);
+        
+        return SGSTestClientSessionListener.loggedIn(session);
     }
+    
+    protected HashSet<Partie> getListeParties()
+    {
+    	return listeParties;
+    }
+
+	/**
+	 * @param nomPartie
+	 * @return
+	 */
+	public boolean creerPartie(String nomPartie)
+	{
+		if (listeParties.contains(nomPartie)) return false;
+		DataManager dm = AppContext.getDataManager();
+		dm.markForUpdate(this);
+		listeParties.add(new Partie(nomPartie));
+		return true;
+	}
 
 }
