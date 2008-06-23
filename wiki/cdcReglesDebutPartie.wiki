@@ -48,7 +48,7 @@ De manière générale, le dernier joueur en course gagne automatiquement la par
 ===Victoire en aliance===
 Autorise ou non la victoire en aliance: quelque soit la condition de victoire, tous les aliés du vainqueur sont vainqueurs.
 
-===Protéger le gouvernement===
+===Régimicide===
 Cette option rend disponibles la construction "Module gouvernemental" ainsi que le "Vaisseau gouvernemental".
 Chaque joueur dispose en début de partie d'un Module gouvernemental pré-construit sur sa planète d'origine.
 Si un joueur perds la planète sur laquelle est établi ce Module gouvernemental, il perds la partie (le gouvernement est mort).
