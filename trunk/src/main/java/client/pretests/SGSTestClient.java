@@ -193,7 +193,7 @@ public class SGSTestClient extends JFrame
         logger.log(Level.INFO, "Envoi commande {0} au serveur", cmd.getCommand());
         try
 		{
-			simpleClient.send(ByteBuffer.wrap(cmd.encode()));
+			simpleClient.send(cmd.encode());
 		}
 		catch (IOException e1)
 		{
@@ -356,9 +356,7 @@ public class SGSTestClient extends JFrame
     	Command command;
 		try
 		{
-			byte buffer[] = new byte[message.capacity()];
-			message.get(buffer);
-			command = Command.decode(buffer);
+			command = Command.decode(message);
 		}
 		catch (IOException e)
 		{

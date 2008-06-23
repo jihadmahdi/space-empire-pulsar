@@ -6,7 +6,7 @@
 package server;
 
 import java.io.Serializable;
-import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -16,13 +16,19 @@ import com.sun.sgs.app.AppListener;
 import com.sun.sgs.app.ClientSession;
 import com.sun.sgs.app.ClientSessionListener;
 import com.sun.sgs.app.DataManager;
+import com.sun.sgs.app.ManagedObject;
+import com.sun.sgs.app.ManagedReference;
 import com.sun.sgs.app.NameNotBoundException;
+import com.sun.sgs.app.util.ScalableHashMap;
+import common.metier.ConfigPartie;
 
 /**
  * 
  */
 public class SEPServer implements Serializable, AppListener
 {
+	private static final String SERVER_BINDING = "Server";
+	
 	public static final Level traceLevel = Level.INFO;
 	
 	/** Serialization version number */
@@ -30,6 +36,27 @@ public class SEPServer implements Serializable, AppListener
 
 	/** The {@link Logger} for this class. */
 	private static final Logger	logger				= Logger.getLogger(SEPServer.class.getName());
+	
+	public static class SEPServerException extends Exception
+	{
+
+		private static final long	serialVersionUID	= 1L;
+		SEPServerException() {super();}
+		SEPServerException(String msg) {super(msg);}
+		
+	}
+	public static class SEPServerCreerNouvellePartieException extends SEPServerException
+	{
+
+		private static final long	serialVersionUID	= 1L;
+		
+		public SEPServerCreerNouvellePartieException(String raison)
+		{
+			super(raison);
+		}
+	}
+	
+	protected ManagedReference<ScalableHashMap<String, ConfigPartie>> refNouvellesParties;
 
 	public SEPServer()
 	{
@@ -59,9 +86,17 @@ public class SEPServer implements Serializable, AppListener
 	@Override
 	public void initialize(Properties props)
 	{
-		logger.log(Level.INFO, "SEPServer initializing");
+		logger.log(Level.INFO, "SEPServer initializing.");
 		
-		logger.log(Level.INFO, "SEPServer initialized");
+		DataManager dm = AppContext.getDataManager();
+		
+		logger.log(Level.INFO, "Binding Server in DataManager.");
+		dm.setBinding(SERVER_BINDING, this);
+		
+		logger.log(Level.INFO, "Create empty nouvellesParties hashmap.");
+		refNouvellesParties = dm.createReference(new ScalableHashMap<String, ConfigPartie>());
+		
+		logger.log(Level.INFO, "SEPServer initialized.");
 	}
 
 	/*
@@ -90,5 +125,51 @@ public class SEPServer implements Serializable, AppListener
 		joueur.setSession(session);
 		return joueur;
 	}
+	
+	protected static SEPServer getServer()
+	{
+		DataManager dm = AppContext.getDataManager();
+		ManagedObject obj = dm.getBinding(SERVER_BINDING);
+		
+		if (!SEPServer.class.isInstance(obj))
+		{
+			String msg = "Object binded to \""+SERVER_BINDING+"\" is not a SEPServer object";
+			logger.log(Level.SEVERE, msg);
+			throw new RuntimeException(msg);
+		}
+		
+		return (SEPServer) obj;
+	}
+	
+	protected Hashtable<String, ConfigPartie> getNouvellesParties()
+	{
+		return new Hashtable<String, ConfigPartie>(refNouvellesParties.get());
+	}
 
+	/**
+	 * @param configPartie
+	 * @return
+	 * @throws SEPServerCreerNouvellePartieException 
+	 */
+	public void creerNouvellePartie(ConfigPartie configPartie) throws SEPServerCreerNouvellePartieException
+	{
+		ScalableHashMap<String, ConfigPartie> nouvellesParties = refNouvellesParties.getForUpdate();
+		if (nouvellesParties.containsKey(configPartie.getNom()))
+		{
+			throw new SEPServerCreerNouvellePartieException("Impossible de créer nouvelle partie \""+configPartie.getNom()+"\", une partie du même nom est déjà en création.");
+		}
+		
+		nouvellesParties.put(configPartie.getNom(), configPartie);
+	}
+
+	/**
+	 * @param clientSession
+	 * @param cfgPartie
+	 */
+	public void joindreNouvellePartie(SEPServerClientSessionListener clientSession, ConfigPartie cfgPartie)
+	{
+		// TODO : créer un channel pour la partie en création.
+		// Chaque partie (en création ou en cours) possède un channel à son nom.
+		// Faire une classe PartieEnCreation pour gérer tout ça (découpler la classe ConfigPartie de l'état de partie en création) ?
+	}
 }

@@ -12,6 +12,7 @@ public interface ServerClientProtocol
 {
 	static enum eEvenements
 	{
-		ReponseDemandeListeParties
+		ReponseDemandeListeParties,
+		ErreurCreerNouvellePartie
 	}
 }

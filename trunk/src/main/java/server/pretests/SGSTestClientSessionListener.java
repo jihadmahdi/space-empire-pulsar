@@ -25,7 +25,6 @@ import common.Command;
 import common.ServerClientProtocol;
 import common.ClientServerProtocol.eEtats;
 import common.ClientServerProtocol.eEvenements;
-import common.ClientServerProtocol.eTransitions;
 import common.metier.Partie;
 
 /**
@@ -45,7 +44,7 @@ class SGSTestClientSessionListener implements Serializable, ClientSessionListene
 	/** The prefix for player bindings in the {@code DataManager}. */
 	protected static final String									PLAYER_BIND_PREFIX	= "Player.";
 
-	private EPMachineEtats<eEvenements, eEtats, eTransitions>	machineClientSession= null;
+	private EPMachineEtats<eEtats,eEvenements>	machineClientSession= null;
 
 	/** The session this {@code ClientSessionListener} is listening to. */
 	private ManagedReference<ClientSession>							sessionRef			= null;
@@ -53,11 +52,11 @@ class SGSTestClientSessionListener implements Serializable, ClientSessionListene
 	/** player binding. */
 	private String													name				= null;
 
-	protected static EPMachineEtats<eEvenements, eEtats, eTransitions> genererMachineEtats(final SGSTestClientSessionListener clientSession, String nom)
+	protected static EPMachineEtats<eEtats, eEvenements> genererMachineEtats(final SGSTestClientSessionListener clientSession, String nom)
 	{
 		try
 		{
-			EPMachineEtats<eEvenements, eEtats, eTransitions> machineClientSession = EPMachineEtats.Creer("SGSTestClientSession" + nom);
+			EPMachineEtats<eEtats, eEvenements> machineClientSession = EPMachineEtats.Creer("SGSTestClientSession" + nom);
 
 			machineClientSession.AjouterEtat(eEtats.AttenteCommande);
 			machineClientSession.AjouterEtat(eEtats.AttenteCreationPartie);
@@ -79,7 +78,7 @@ class SGSTestClientSessionListener implements Serializable, ClientSessionListene
 
 					try
 					{
-						clientSession.sessionRef.get().send(ByteBuffer.wrap(cmd.encode()));
+						clientSession.sessionRef.get().send(cmd.encode());
 					}
 					catch (IOException e)
 					{
@@ -126,7 +125,7 @@ class SGSTestClientSessionListener implements Serializable, ClientSessionListene
 
 					try
 					{
-						clientSession.sessionRef.get().send(ByteBuffer.wrap(cmd.encode()));
+						clientSession.sessionRef.get().send(cmd.encode());
 					}
 					catch (IOException e)
 					{
@@ -247,9 +246,7 @@ class SGSTestClientSessionListener implements Serializable, ClientSessionListene
 		Command command;
 		try
 		{
-			byte buffer[] = new byte[message.capacity()];
-			message.get(buffer);
-			command = Command.decode(buffer);
+			command = Command.decode(message);
 		}
 		catch (IOException e)
 		{

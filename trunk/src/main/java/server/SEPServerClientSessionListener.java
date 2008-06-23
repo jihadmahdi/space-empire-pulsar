@@ -5,13 +5,17 @@
  */
 package server;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.util.Hashtable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import server.SEPServer.SEPServerCreerNouvellePartieException;
+import utils.SEPUtils;
 import EPLib.EPMachineEtats.EPMachineEtats;
-import EPLib.EPMachineEtats.EPMachineEtats.EPMachineEtatsAlreadyExistsException;
+import EPLib.EPMachineEtats.EPMachineEtats.EPMachineEtatsException;
 
 import com.sun.sgs.app.AppContext;
 import com.sun.sgs.app.ClientSession;
@@ -19,9 +23,11 @@ import com.sun.sgs.app.ClientSessionListener;
 import com.sun.sgs.app.DataManager;
 import com.sun.sgs.app.ManagedObject;
 import com.sun.sgs.app.ManagedReference;
+import common.Command;
+import common.ServerClientProtocol;
 import common.ClientServerProtocol.eEtats;
 import common.ClientServerProtocol.eEvenements;
-import common.ClientServerProtocol.eTransitions;
+import common.metier.ConfigPartie;
 
 /**
  * 
@@ -39,21 +45,104 @@ public class SEPServerClientSessionListener implements Serializable, ClientSessi
 		/** Serialization version. */
 		private static final long	serialVersionUID	= 1L;
 		
-		private EPMachineEtats<eEvenements, eEtats, eTransitions> machine;
+		private final EPMachineEtats<eEtats, eEvenements> machine;
+		private final SEPServerClientSessionListener clientSession;
+		private final String nom;
 		
-		public SEPServerClientStateMachine(SEPServerClientSessionListener clientSession)
+		public SEPServerClientStateMachine(final SEPServerClientSessionListener clientSession, final String nom)
 		{
-			String machineName = SEPServerClientStateMachine.class.getName()+"."+clientSession.getName(); 
+			this.clientSession = clientSession;
+			this.nom = nom;
+			
+			String machineName = SEPServerClientStateMachine.class.getName()+"."+nom; 
+
+			logger.log(Level.INFO, "EPMachineEtats.Creer(\""+machineName+"\")");
+			machine = EPMachineEtats.Creer(machineName);
+			
 			try
 			{
-				machine = EPMachineEtats.Creer(machineName);
+				machine.AjouterEtat(eEtats.AttenteCommande);
+				machine.AjouterEtat(eEtats.AttenteCreationPartie);
+				machine.AjouterEtat(eEtats.PartieEnCours);
+				
+				machine.AjouterEntryEvent(new EPMachineEtats.EPOperationCourteSansParametres()
+				{
+					private static final long	serialVersionUID	= 1L;
+
+					@Override
+					public void run()
+					{
+						// TODO	
+					}
+				
+					@Override
+					public String getName()
+					{
+						return "Tenter reconnexion";
+					}
+				
+				}, eEtats.AttenteCommande);
+				machine.AjouterEvenement(eEvenements.DemandeListeParties, new EPMachineEtats.EPOperationCourteSansParametres()
+				{
+					private static final long	serialVersionUID	= 1L;
+
+					@Override
+					public void run()
+					{
+						SEPServer server = SEPServer.getServer();
+						Hashtable<String, ConfigPartie> nouvellesParties = server.getNouvellesParties();
+						clientSession.sendCommand(ServerClientProtocol.eEvenements.ReponseDemandeListeParties, nouvellesParties);
+					}
+				
+					@Override
+					public String getName()
+					{
+						return "Envoyer liste parties";
+					}
+				
+				}, eEtats.AttenteCommande, true);
+				
+				machine.AjouterTransition(eEvenements.CreerNouvellePartie, new EPMachineEtats.EPOperationCourteAvecParametres()
+				{
+					private static final long	serialVersionUID	= 1L;
+
+					@Override
+					public void run(Object ... objects)
+					{
+						SEPUtils.checkParametersTypes(1, objects, "CreerNouvellePartie", ConfigPartie.class);
+						SEPServer server = SEPServer.getServer();
+						ConfigPartie cfgPartie = (ConfigPartie) objects[0];
+						
+						try
+						{
+							server.creerNouvellePartie(cfgPartie);
+						}
+						catch (SEPServerCreerNouvellePartieException e)
+						{
+							clientSession.sendCommand(ServerClientProtocol.eEvenements.ErreurCreerNouvellePartie, e.getMessage());
+							return;
+						}
+						
+						server.joindreNouvellePartie(clientSession, cfgPartie);
+					}
+				
+					@Override
+					public String getName()
+					{
+						return "Créer et joindre nouvelle partie";
+					}
+				
+				}, eEtats.AttenteCommande, eEtats.AttenteCreationPartie);
+				
 			}
-			catch (EPMachineEtatsAlreadyExistsException e)
+			catch (EPMachineEtatsException e)
 			{
-				throw new RuntimeException("Une machine-états de ce nom existe déjà : \""+machineName+"\"", e);
+				String msg = "Erreur de création de la machine-états pour "+clientSession.getName();
+				logger.log(Level.SEVERE, msg);
+				throw new RuntimeException(msg, e);
 			}
 			
-			// TODO machine-états
+			machine.Demarrer();
 		}
 		
 		protected boolean traiterEvenement(eEvenements evnt, Object ... parametres)
@@ -67,6 +156,8 @@ public class SEPServerClientSessionListener implements Serializable, ClientSessi
 	
 	/** Nom, qui ne devrait pas changer d'une session à l'autre. TODO à vérifier */
 	String name;
+	
+	SEPServerClientStateMachine machineEtats;
 
 	public String getName()
 	{
@@ -90,7 +181,20 @@ public class SEPServerClientSessionListener implements Serializable, ClientSessi
 	@Override
 	public void receivedMessage(ByteBuffer message)
 	{
-		logger.log(SEPServer.traceLevel, "User "+getName()+" receivedMessage");
+		Command command;
+		try
+		{
+			command = Command.decode(message);
+		}
+		catch (IOException e)
+		{
+			logger.log(Level.WARNING, "Received unreadable command from user "+getName()+" : \""+message+"\"");
+			return;
+		}
+
+		logger.log(SEPServer.traceLevel, "Received command from user "+getName()+" : "+command.getCommand());
+		
+		machineEtats.traiterEvenement(eEvenements.valueOf(command.getCommand()), command.getParameters());
 	}
 
 	/**
@@ -110,7 +214,24 @@ public class SEPServerClientSessionListener implements Serializable, ClientSessi
 		{
 			refSession = dm.createReference(session);
 			name = session.getName();
+			if (machineEtats == null)
+			{
+				machineEtats = new SEPServerClientStateMachine(this, name);
+			}
 		}
 	}
 
+	protected void sendCommand(ServerClientProtocol.eEvenements evnt, Serializable ... parameters)
+    {
+    	Command cmd = new Command(evnt.toString(), parameters);
+        logger.log(Level.INFO, "Envoi commande {0} au serveur", cmd.getCommand());
+        try
+		{       	
+        	refSession.get().send(cmd.encode());
+		}
+		catch (IOException e1)
+		{
+			logger.log(Level.WARNING, "Unable to send to "+getName()+" the command \""+cmd.getCommand()+"\"");
+		}
+    }
 }
