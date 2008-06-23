@@ -9,23 +9,33 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.Serializable;
 import java.net.PasswordAuthentication;
 import java.nio.ByteBuffer;
+import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import server.SEPServer;
+import utils.SEPUtils;
 
 import com.sun.sgs.client.ClientChannel;
 import com.sun.sgs.client.ClientChannelListener;
 import com.sun.sgs.client.simple.SimpleClient;
 import com.sun.sgs.client.simple.SimpleClientListener;
+import common.ClientServerProtocol;
+import common.Command;
+import common.ServerClientProtocol;
+import common.metier.ConfigPartie;
 
 /**
  * 
  */
 public class SEPConsoleClient implements SimpleClientListener
 {
-	
+
 	private static final Logger		logger	= Logger.getLogger(SEPConsoleClient.class.getName());
 
 	private final SimpleClient		client;
@@ -33,11 +43,12 @@ public class SEPConsoleClient implements SimpleClientListener
 	private final BufferedReader	keyboard;
 
 	private final PrintStream		display;
-	
-	private String status;
-	
-	private String userName;
-	private String password;
+
+	private String					status;
+
+	private String					userName;
+
+	private String					password;
 
 	public SEPConsoleClient()
 	{
@@ -63,10 +74,10 @@ public class SEPConsoleClient implements SimpleClientListener
 
 		return line;
 	}
-	
+
 	private String getInput(String msg, String defaultValue)
 	{
-		display.println(msg+((defaultValue==null)?"":" ["+defaultValue+"]")+" : ");
+		display.println(msg + ((defaultValue == null) ? "" : " [" + defaultValue + "]") + " : ");
 		String value;
 		do
 		{
@@ -75,8 +86,8 @@ public class SEPConsoleClient implements SimpleClientListener
 			{
 				return defaultValue;
 			}
-		}while(value == null);
-		
+		} while (value == null);
+
 		return value;
 	}
 
@@ -152,7 +163,18 @@ public class SEPConsoleClient implements SimpleClientListener
 			@Override
 			public void receivedMessage(ClientChannel channel, ByteBuffer message)
 			{
-				logger.log(Level.INFO, "receivedMessage from channel \"" + channel.getName() + "\"");
+				Command command;
+				try
+				{
+					command = Command.decode(message);
+				}
+				catch (IOException e)
+				{
+					logger.log(Level.WARNING, "Received unreadable command from channel \"" + channel.getName() + "\" : \"" + message + "\"");
+					return;
+				}
+
+				logger.log(SEPServer.traceLevel, "ReceivedMessage from channel \"" + channel.getName() + "\" : " + command.getCommand());
 			}
 
 			@Override
@@ -172,7 +194,43 @@ public class SEPConsoleClient implements SimpleClientListener
 	@Override
 	public void receivedMessage(ByteBuffer message)
 	{
-		logger.log(Level.INFO, "receivedMessage");
+		Command command;
+		try
+		{
+			command = Command.decode(message);
+		}
+		catch (IOException e)
+		{
+			logger.log(Level.WARNING, "Received unreadable command : \"" + message + "\"");
+			return;
+		}
+
+		ServerClientProtocol.eEvenements evt;
+
+		try
+		{
+			evt = ServerClientProtocol.eEvenements.valueOf(command.getCommand());
+		}
+		catch (IllegalArgumentException e)
+		{
+			logger.log(Level.WARNING, "Received unknown command : \"" + command.getCommand() + "\"");
+			return;
+		}
+
+		logger.log(SEPServer.traceLevel, "Received command : " + command.getCommand());
+
+		switch (evt)
+		{
+		case ReponseDemandeListeParties:
+		{
+			reponseDemandeListeParties(command.getParameters());
+			break;
+		}
+		default:
+		{
+			logger.log(Level.INFO, "Command \""+evt.toString()+"\" ignored.");
+		}
+		}
 	}
 
 	/*
@@ -211,10 +269,7 @@ public class SEPConsoleClient implements SimpleClientListener
 
 	private static enum eCommande
 	{
-		status,
-		login,
-		logout,
-		send		
+		status, login, logout, send, demandeListeParties
 	};
 
 	public void test()
@@ -242,6 +297,8 @@ public class SEPConsoleClient implements SimpleClientListener
 				}
 			} while (choix < 0);
 
+			if (choix == 0) continue;
+
 			eCommande cmd = eCommande.values()[choix - 1];
 
 			switch (cmd)
@@ -265,12 +322,50 @@ public class SEPConsoleClient implements SimpleClientListener
 			{
 				continue;
 			}
-			
+			case demandeListeParties:
+			{
+				demandeListeParties();
+				break;
+			}
+
 			default:
 				continue;
 			}
 
 		} while (choix != 0);
+	}
+
+	private void demandeListeParties()
+	{
+		display.println("sendCommand(" + ClientServerProtocol.eEvenements.DemandeListeParties + ")");
+		sendCommand(ClientServerProtocol.eEvenements.DemandeListeParties);
+	}
+	
+	private void reponseDemandeListeParties(Object ... parameters)
+	{
+		SEPUtils.checkParametersTypes(1, parameters, "reponseDemandeListeParties", Hashtable.class);
+		Hashtable<String, ConfigPartie> nouvellesParties;
+		try
+		{
+			nouvellesParties = (Hashtable<String, ConfigPartie>) parameters[0];
+		}
+		catch(ClassCastException e)
+		{
+			throw new IllegalArgumentException("reponseDemandeListeParties : parameters[0] expected to be a \"Hashtable<String, ConfigPartie>\" instance, but is a \""+parameters[0].getClass().getName()+"\" one.");
+		}
+		
+		StringBuilder sb = new StringBuilder();
+		Iterator<String> itNomParties = nouvellesParties.keySet().iterator();
+		while(itNomParties.hasNext())
+		{
+			sb.append(itNomParties.next());
+			if (itNomParties.hasNext())
+			{
+				sb.append(", ");
+			}
+		}
+		
+		display.println("Liste des parties en cours de création : "+sb.toString());
 	}
 
 	/**
@@ -279,7 +374,7 @@ public class SEPConsoleClient implements SimpleClientListener
 	private void send()
 	{
 		String msg = getInput("Message", null);
-		display.println("send(\""+msg+"\")");
+		display.println("send(\"" + msg + "\")");
 		try
 		{
 			client.send(ByteBuffer.wrap(msg.getBytes()));
@@ -297,7 +392,7 @@ public class SEPConsoleClient implements SimpleClientListener
 	{
 		String force = getInput("forcer", "false");
 		boolean bForce = (force.compareTo("false") != 0);
-		display.println("logout("+bForce+")");
+		display.println("logout(" + bForce + ")");
 		client.logout(bForce);
 	}
 
@@ -308,17 +403,17 @@ public class SEPConsoleClient implements SimpleClientListener
 	{
 		String host = getInput("Entrer adresse serveur", "localhost");
 		String port = getInput("Entrer port serveur", "1139");
-		
+
 		userName = getInput("Enter username", "guest");
 		password = getInput("Enter password", "pwd");
-	
+
 		Properties connectProps = new Properties();
-        connectProps.put("host", host);
-        connectProps.put("port", port);
-        
-        try
+		connectProps.put("host", host);
+		connectProps.put("port", port);
+
+		try
 		{
-        	display.println("login(\""+host+"\", \""+port+"\")");
+			display.println("login(\"" + host + "\", \"" + port + "\")");
 			client.login(connectProps);
 		}
 		catch (IOException e)
@@ -334,8 +429,22 @@ public class SEPConsoleClient implements SimpleClientListener
 	private String getStatus()
 	{
 		StringBuilder sb = new StringBuilder();
-		sb.append("["+(client.isConnected()?"Connected":"Disconnected")+"] ");
+		sb.append("[" + (client.isConnected() ? "Connected" : "Disconnected") + "] ");
 		sb.append(status);
 		return sb.toString();
+	}
+
+	protected void sendCommand(ClientServerProtocol.eEvenements evnt, Serializable ... parameters)
+	{
+		Command cmd = new Command(evnt.toString(), parameters);
+		logger.log(Level.INFO, "Envoi commande {0} au serveur", cmd.getCommand());
+		try
+		{
+			client.send(cmd.encode());
+		}
+		catch (IOException e1)
+		{
+			logger.log(Level.WARNING, "Unable to send command \"" + cmd.getCommand() + "\"");
+		}
 	}
 }

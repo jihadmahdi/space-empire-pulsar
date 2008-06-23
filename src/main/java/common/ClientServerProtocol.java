@@ -19,16 +19,19 @@ public interface ClientServerProtocol
 	
 	static enum eEvenements
 	{
+		// AttenteCommande
 		DemandeListeParties,
 		CreerNouvellePartie,
 		JoindreNouvellePartie,
+		
+		// AttenteCreationPartie
+		QuitterNouvellePartie,
 		CommandeChat,
-		AnoncerPret,
+		ModifConfigPartie,
+		ModifJoueur,
 		LancerPartie
+		
+		// PartieEnCours
 	};
 	
-	static enum eTransitions
-	{
-	
-	};
 }
