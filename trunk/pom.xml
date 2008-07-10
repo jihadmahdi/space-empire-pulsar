@@ -142,6 +142,7 @@
       <artifactId>forms</artifactId>
       <version>1.0.7</version>
     </dependency>
+    <!-- 
     <dependency>
       <groupId>com.projectdarkstar</groupId>
       <artifactId>darkstar-server</artifactId>
@@ -152,6 +153,7 @@
       <artifactId>darkstar-client</artifactId>
       <version>0.9.6</version>
     </dependency>
+    -->
   </dependencies>
   <reporting>
     <plugins>

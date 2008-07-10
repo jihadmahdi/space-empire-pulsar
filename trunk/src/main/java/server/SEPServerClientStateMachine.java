@@ -49,6 +49,16 @@ class SEPServerClientStateMachine implements Serializable
 	
 	private final EPMachineEtatsProxy<eEtats> machine;
 	
+	public IServerUser getIServerUserProxy()
+	{
+		return machine.getProxy(IServerUser.class);
+	}
+	
+	public IServerClientServerEventExecutor getIServerEventProxy()
+	{
+		return machine.getProxy(IServerClientServerEventExecutor.class);
+	}
+	
 	public SEPServerClientStateMachine(SEPServerClientSessionListener sessionListener, IServerUser clientExecutor, IServerClientServerEventExecutor serverExecutor)
 	{
 		String machineName = SEPServerClientStateMachine.class.getName()+"."+sessionListener.getName(); 
@@ -126,6 +136,8 @@ class SEPServerClientStateMachine implements Serializable
 		
 		machine.Demarrer();
 	}
+	
+	
 	
 	public void exportDOTfiles(File directory)
 	{

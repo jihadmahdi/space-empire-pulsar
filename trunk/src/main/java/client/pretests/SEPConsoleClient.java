@@ -43,16 +43,16 @@ import common.metier.PartieEnCreation;
 /**
  * 
  */
-public class SEPConsoleClient implements SimpleClientListener
+public class SEPConsoleClient implements SimpleClientListener, Runnable
 {
 
 	private static final Logger							logger			= Logger.getLogger(SEPConsoleClient.class.getName());
 
 	private SimpleClient								client;
 
-	private static final BufferedReader					keyboard		= new BufferedReader(new InputStreamReader(System.in));
+	private static BufferedReader					keyboard		= new BufferedReader(new InputStreamReader(System.in));
 
-	private static final PrintStream					display			= System.out;
+	private static PrintStream					display			= System.out;
 
 	private String										status;
 
@@ -64,6 +64,16 @@ public class SEPConsoleClient implements SimpleClientListener
 
 	protected Hashtable<ClientChannel, Vector<String>>	listeChannels	= new Hashtable<ClientChannel, Vector<String>>();
 
+	public static void setDisplay(PrintStream display)
+	{
+		SEPConsoleClient.display = display;
+	}
+	
+	public static void setKeyboard(BufferedReader keyboard)
+	{
+		SEPConsoleClient.keyboard = keyboard;
+	}
+	
 	private void initServices(RpcGateway gateway)
 	{
 		Set<IServerUser> serverUsers = gateway.remoteFindByType(IServerUser.class);
@@ -186,9 +196,30 @@ public class SEPConsoleClient implements SimpleClientListener
 	@Override
 	public ClientChannelListener joinedChannel(ClientChannel channel)
 	{
-		ClientChannelAdapter adapter = new ClientChannelAdapter();
+		final ClientChannelAdapter adapter = new ClientChannelAdapter();
 		ClientChannelListener listener = adapter.joinedChannel(channel);
-		initServices(adapter.getGateway());
+		
+		Thread runLater = new Thread(new Runnable()
+		{
+		
+			@Override
+			public void run()
+			{
+				try
+				{
+					Thread.sleep(2000);
+				}
+				catch(InterruptedException e)
+				{
+					e.printStackTrace();
+				}
+				
+				initServices(adapter.getGateway());
+			}
+		});
+
+        runLater.start();
+		
 		return listener;
 
 		/*
@@ -285,7 +316,7 @@ public class SEPConsoleClient implements SimpleClientListener
 	{
 		SEPConsoleClient consoleClient = new SEPConsoleClient();
 
-		consoleClient.test();
+		consoleClient.run();
 	}
 
 	private static enum eCommande
@@ -712,7 +743,7 @@ public class SEPConsoleClient implements SimpleClientListener
 	/**
 	 * @return
 	 */
-	private String getStatus()
+	public String getStatus()
 	{
 		StringBuilder sb = new StringBuilder();
 		sb.append("[" + (client.isConnected() ? "Connected" : "Disconnected") + "] ");
@@ -746,5 +777,14 @@ public class SEPConsoleClient implements SimpleClientListener
 		{
 			logger.log(Level.WARNING, "Unable to send command \"" + cmd.getCommand() + "\"");
 		}
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Runnable#run()
+	 */
+	@Override
+	public void run()
+	{
+		test();
 	}
 }
