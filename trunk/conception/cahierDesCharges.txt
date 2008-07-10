@@ -1360,3 +1360,111 @@ Soit:
 Soit:
 
 (PV / (Attaque + Arme)) * (Attaque - Armure)
+
+
+========================================
+
+(22:42:39) The Dude dit:  yo
+(22:42:40) The Dude dit:  i'm here
+(22:42:44) Axan dit:  yeah
+(22:43:00) Axan dit:  bon
+(22:43:51) Axan dit:  faudrait qu'on cause de comment es-ce qu'on veux notre architecture client/serveur au juste, parceque je me suis lancé plus ou moins dans mon truc et comme c'est pas non plus fixe dans ma tête, je me tatte..
+(22:44:38) The Dude dit:  pourquoi pas mais j'ai tres peu de connaissance sur le sujet
+(22:44:56) Axan dit:  t'inquiète, suffit de définir le résultat qu'on souhaite.
+(22:45:47) Axan dit:  En fait, la librairie DarkStar (SGS) est orienté MMO, donc ça gère pas d'emblé la "création de partie", "état de partie en attente de création", "lancement partie".. comme on pourrait l'entendre si on prend le cas de AgeOfEmpire par exemple.
+
+(22:46:27) Axan dit:  Puisque dans un MMO on créé pas de partie.. on se connecte et on retrouve le monde persistant (la "partie unique")
+(22:47:11) The Dude dit:  ok
+(22:49:54) Axan dit:  Donc.. es-ce qu'on fait comme un jeu LAN classique, c'est à dire que le serveur est une appli à part, lancée chez le joueur hôte, qui lui même est client de son serveur.
+Où es-ce que d'emblé on se la joue "MMO à la BattleNet", c'est à dire un serveur "en ligne sur le net", auquel les joueurs doivent se connecter (avec login/mdp), et depuis lequel ils peuvent lister les parties, créer une partie, joindre une partie
+(22:51:29) Axan dit:  je me doute bien qu'on va choisir les deux.. mais es-ce qu'on prend la 1ère dans l'optique d'un jour la bidouiller pour la rendre "communautaire en ligne", ou es-ce qu'on prend directement le seconde sachant qu'on bricolera une version "LAN" ?
+(22:52:21) Axan dit:  (ça c'est le premier choix à faire en gros, ensuite y'aura d'autres points de détails à voir)
+(22:54:46) The Dude dit:  hum
+(22:54:48) Axan dit:  ?
+(22:55:14) Axan dit:  (j'ai ma ptite préférence..)
+(22:56:07) The Dude dit:  je suis pas sur de comprendre
+(22:56:15) Axan dit:  quesqui te gène ?
+(22:57:06) The Dude dit:  dans les deux cas c'est une appli a part non?
+(22:57:26) The Dude dit:  soit elle tourne chez un joueur soit sur un serveur distant avec un systeme de compte?
+(22:57:31) Axan dit:  le serveur est dans les deux cas une appli à part oui.
+(22:57:33) Axan dit:  voilà
+(22:57:39) The Dude dit:  ok
+(22:58:05) Axan dit:  sachant que la librairie SGS est plutôt orienté pour le 2nd cas.
+(22:58:18) The Dude dit:  ba oui les deux et dans quel ordre ...euh ..honnetement ca m'est egal
+(22:59:25) Axan dit:  bha façon je pense que ça sera plus facile de "laniser" du mmo que l'inverse.
+(23:00:08) The Dude dit:  mais donc dans tout les cas c'est le joueur createur de la partie qui heberge (qui joue le role de serveur) une fois la partie lancée
+(23:00:18) Axan dit:  ben.. non.
+(23:00:29) The Dude dit:  hum je voie pas bien alors
+(23:00:35) Axan dit:  mais oui ça devrait.. hmm..
+(23:01:04) The Dude dit:  on peut pas tout heberger sur le serveur pour creer les aprtie c'est incrédible
+(23:01:15) Axan dit:  ok tu m'as convaincu que c'était naze l'idée sur serveur distant ^^
+(23:01:41) The Dude dit:  ba pour la partie creation c'est la plus belle option mais uniquement pour cet aspect
+(23:02:12) Axan dit:  ouaip.. mais faudrait déporter le serveur au lancement de la partie.. (comme du Diablo2)
+(23:02:17) The Dude dit:  oui
+(23:03:23) Axan dit:  hmm.. es-ce que ça marche vraiment comme ça le diablo2 ? c'est quand même persistant d2.. l'hôte de la partie peut déco la partie tourne toujours..
+(23:03:51) The Dude dit:  exact
+(23:03:57) Axan dit:  et quand Bnet lag, ça lag partout je crois me souvenir aussi
+(23:04:03) The Dude dit:  oui
+(23:04:14) The Dude dit:  sur warcraft 3 c'est hosté sur battlenet ok 
+(23:04:27) The Dude dit:  mais ca part du principe qu'on a des serveur costaud
+(23:05:26) Axan dit:  bon, ça empèche pas que dans l'idéal ça serait génial de pouvoir faire assumer la partie par un des joueurs.. mais ça suppose que:
+* Chaque joueur peut prendre le jeton "hôte" quand l'hôte crash.. en dernier recours, le serveur de partie garde la partie en attendant qu'un joueur reconnecte.
+(23:05:37) Axan dit:  et Surtout, ça suppose qu'on puisse faire confiance au client.
+(23:06:01) The Dude dit:  comment ca confiance
+(23:06:30) Axan dit:  (qu'il ai pas un client cheaté, cad si notre jeu est open source, il suffit de récupérer les sources et de se bidouiller son "serveur" tricheur comme on veux)
+(23:10:31) The Dude dit:  ok
+(23:10:58) The Dude dit:  ba je sais pas comment marche battlenet mais c'est bein fait alors
+(23:12:00) Axan dit:  Hmm.. en se creusant la tête je pense y'aurait moyen de faire porter le gros des traitements sur l'un des joueurs, tout en faisant qu'en cas de crash le jeton se passe automatiquement à un autre (sachant que de toute manière la partie se met en "pause" jusqu'à ce que le joueur revienne).
+(23:13:04) Axan dit:  et sachant qu'à chaque fin de tour on envoi non pas les ordres à traiter à SEPnet, mais juste le résultat (une capture à l'instant t de la partie) à SEPnet qui la sauvegarde ainsi à chaque nouveau tour.
+(23:13:39) Axan dit:  bha.. à partir de là.. le reste me semble assez faisable.
+(23:14:52) The Dude dit:  pourquoi pas oui
+(23:16:01) Axan dit:  bon, sinon côté utilisateur, tu imagine ça comment ?
+premier écran, il se loggue au server avec login/mdp (compte créé depuis le site).
+et ensuite ... ?
+(23:16:41) The Dude dit:  ensuite un chat
+(23:16:50) The Dude dit:  rejoindre creer et charger
+(23:16:54) The Dude dit:  ?
+(23:16:56) Axan dit:  un chat général de tous les users connecté a SEPnet ?
+(23:17:01) The Dude dit:  oui
+(23:17:09) The Dude dit:  qui sont pas dans une partie
+(23:18:19) The Dude dit:  bon c'est pas essentiel mais c'est un plus
+(23:18:38) Axan dit:  oui oui, mais c'est ce genre de détails que je voudrais fixer maintenant en fait
+(23:20:19) Axan | L1S2 level complete | Konnyaku 2 dit:  re
+(23:20:45) Axan dit:  donc, à la connexion, il arrive sur un chat général de tout les users non lancée dans une partie.
+je vois bien le bouton "créer partie", "lister partie en cours de création" avec pour chacune "rejoindre"
+(23:20:55) Axan dit:  sachant qu'on ne liste pas les parties en cours (lancée).
+(23:21:20) Axan dit:  et par contre, un onglet "partie en cours", qui liste les parties en cours pour lesquels le joueur à été inscrit (s'il a crashé en cours de partie)
+(23:23:06) The Dude dit:  dans cette optique ya pas besoin de lister alors
+(23:23:13) The Dude dit:  il n'a pas a voir plusieurs partie
+(23:23:24) Axan dit:  et bien.. si on admet "sauvegarder partie", pourquoi pas..
+(23:23:27) The Dude dit:  a la conexion il rejoint la partie précédement crashée
+(23:23:36) The Dude dit:  c'est pas crashé alors
+(23:23:44) Axan dit:  on peut gérer les deux
+(23:24:07) The Dude dit:  idealement
+(23:24:16) The Dude dit:  on pourrait visualiser les partie enregistrer
+(23:24:17) Axan dit:  en fait, les parties qui ont été désertée resteraient accessible 1jour (purgée ensuite) dans l'onglet "partie en cours" de tout les participants.
+(23:24:25) The Dude dit:  avrec pour chacune la liste des compte participant
+(23:24:37) Axan dit:  et les parties enregistrées resteraient pareil, sauf qu'elles seraient purgées que bien plus tard.
+(23:24:39) The Dude dit:  et voir qui est online en partie et/ou online dispo
+(23:24:58) The Dude dit:  et lancer une invitation a poursuivre aux compte associées
+(23:25:19) Axan dit:  yep
+(23:26:10) The Dude dit:  le souci c'est qu'un joueur peut decider par sa seule volonter de ne pas poursuivre une partie de la rendre impossible pour tout les autres joueurs
+(23:27:47) Axan dit:  et comme il n'y a pas de "chef de partie", je vois pas trop comment gérer
+(23:31:38) Axan dit:  dans l'idée au final de rendre le truc bien "mmo", je pense à faire que les joueurs aient intéret à finir et à gagner leurs parties (ça fait gagner des points à leur compte, monté d'XP, connerie dans le genre.. cf. DofusArena)..
+
+(23:33:46) Axan dit:  (oui bon, on se projète loin dans l'avenir, quand on vivra des abonements que les  joueurs désirant avoir l'accès "grosbill" paieront)
+(23:34:05) The Dude dit:  ^^
+(23:34:47) Axan dit:  si on considère que une déconnection = abandon (ce qui est quand même le cas dans de nombreux jeux), ça simplifie le problème, mais c'est quand même violent..
+(23:36:18) Axan dit:  (ha oui, l'idée pour MMOizer le truc, c'est de penser à une grosse MAP de l'univers infinie, chaque 'partie' est une bataille pour une galaxie qqpart dans l'univers infinie.. et donc les joueurs se battent pour étendre leur empire de galaxies en galaxies... wow !)
+(23:37:16) Axan dit:  ça sera pour bien plus tard mais y'a moyen de faire de jolie chose, il me semble que AOE3 a expérimenté dans cette voie.
+(23:38:09) Axan dit:  bref, si déco = perdu, c'est abusé.
+Mais on peut pas non plus laisser le choix aux joueurs restant de "continuer en kikant le déconnecté / attendre", pke c'est tout aussi violent.
+(23:38:39) The Dude dit:  oui
+(23:39:08) Axan dit:  on pourrait fixer un délai d'attente réglementé..
+(23:39:33) Axan dit:  les joueurs sont prévenus que s'ils déco, ils ont xx secondes pour revenir en jeu.
+(23:39:55) Axan dit:  mais alors on laisse tomber l'idée de "sauvegarder partie".
+(23:40:18) Axan dit:  en même temps.. c'était joli, mais pas primordial "sauvegarder partie".. quand on jou on jou jusqu'au bout !
+(23:40:35) Axan dit:  haha ! j'ai une idée vicieuse
+(23:41:18) Axan dit:  au permet aux joueurs de se mettre d'accord sur "pauser la partie (sauvegarder) et la reprendre à telle date telle heure" ^^
+et ceux qui sont pas au rendez-vous sont éliminés de la partie ^^
+(23:41:36) Axan dit:  ça me plait bien

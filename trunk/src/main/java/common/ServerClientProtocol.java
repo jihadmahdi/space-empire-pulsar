@@ -13,6 +13,10 @@ public interface ServerClientProtocol
 	static enum eEvenements
 	{
 		ReponseDemandeListeParties,
-		ErreurCreerNouvellePartie
+		ErreurCreerNouvellePartie,
+		ErreurJoindreNouvellePartie,
+		refreshChannelUserList,
+		ChatChannel,
+		ChatUserChannel
 	}
 }

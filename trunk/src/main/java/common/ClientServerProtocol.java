@@ -12,26 +12,42 @@ public interface ClientServerProtocol
 {
 	static enum eEtats
 	{
-		AttenteCommande,
-		AttenteCreationPartie,
-		PartieEnCours;
+		Connected,
+		OutOfGame,
+		InNewGame,
+		InGame,
+		InPausedGame
 	};
 	
 	static enum eEvenements
 	{
-		// AttenteCommande
-		DemandeListeParties,
-		CreerNouvellePartie,
-		JoindreNouvellePartie,
+		// Connected
+		sendPrivateMessage,
+		askFriendList,
+		addFriend,
+		removeFriend,
 		
-		// AttenteCreationPartie
-		QuitterNouvellePartie,
-		CommandeChat,
-		ModifConfigPartie,
-		ModifJoueur,
-		LancerPartie
+		// OutOfGame
+		sendOutGameChatMessage,
+		askNewGamesList,
+		askMyCurrentGamesList,
+		tryReconnectingGame,
+		createGame,
+		joinNewGame,
 		
-		// PartieEnCours
+		// InNewGame
+		askNewGameDatas,
+		changeNewGameConfig,
+		changeNewGamePlayerConfig,
+		exitNewGame,
+		sendNewGameChatMessage,
+		startNewGame,
+		
+		// InGame
+		onGameCommand,
+		
+		// InPausedGame
+		sendGameChatMessage
 	};
 	
 }
