@@ -18,6 +18,14 @@ import java.util.logging.Logger;
 import javax.security.auth.login.CredentialException;
 import javax.security.auth.login.LoginException;
 
+import sun.security.provider.MD5;
+
+import com.sun.sgs.app.AppContext;
+import com.sun.sgs.app.DataManager;
+import com.sun.sgs.app.ManagedObject;
+import com.sun.sgs.app.ManagedReference;
+import com.sun.sgs.app.util.ScalableHashMap;
+import com.sun.sgs.app.util.ScalableHashSet;
 import com.sun.sgs.auth.Identity;
 import com.sun.sgs.auth.IdentityAuthenticator;
 import com.sun.sgs.auth.IdentityCredentials;
@@ -27,54 +35,9 @@ import com.sun.sgs.impl.auth.NamePasswordCredentials;
  * 
  */
 public class SEPIdentityAuthenticator implements IdentityAuthenticator
-{
-	public static final class SEPIdentity implements Identity, Serializable
-	{
-		private static final Logger	logger				= Logger.getLogger(SEPIdentity.class.getName());
-
-		private static final long	serialVersionUID	= 1L;
-
-		private String				name;
-
-		public SEPIdentity(String name)
-		{
-			this.name = name;
-		}
-
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see com.sun.sgs.auth.Identity#getName()
-		 */
-		@Override
-		public String getName()
-		{
-			return name;
-		}
-
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see com.sun.sgs.auth.Identity#notifyLoggedIn()
-		 */
-		@Override
-		public void notifyLoggedIn()
-		{
-			logger.log(SEPServer.traceLevel, "notifyLoggedIn");
-		}
-
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see com.sun.sgs.auth.Identity#notifyLoggedOut()
-		 */
-		@Override
-		public void notifyLoggedOut()
-		{
-			logger.log(SEPServer.traceLevel, "notifyLoggedOut");
-		}
-
-	}
+{	
+	//private ManagedReference<ScalableHashMap<String, SEPIdentity>> refUsers;
+	private Hashtable<String, SEPIdentity> users = new Hashtable<String, SEPIdentity>();
 
 	private static final String	AUTHORIZED_USERS	= "AuthorizedUsers";
 
@@ -83,39 +46,20 @@ public class SEPIdentityAuthenticator implements IdentityAuthenticator
 	 */
 	public SEPIdentityAuthenticator(Properties props)
 	{
-
-	}
-
-	private Hashtable<String, String> getAuthorizedUsers()
-	{
-		Hashtable<String, String> authorizedUsers;
-
-		File f = new File("authorizedUsers");
-
-		try
+		/*
+		DataManager dm = AppContext.getDataManager();
+		
+		ScalableHashMap<String, SEPIdentity> initialUsersTable = new ScalableHashMap<String, SEPIdentity>();
+		initialUsersTable.put("guest", new SEPIdentity("guest", "pwd", false));
+		initialUsersTable.put("admin", new SEPIdentity("admin", "admin", true));
+		refUsers = dm.createReference(initialUsersTable);
+		*/
+		users.put("guest", new SEPIdentity("guest", "pwd", false));
+		for(int i=0; i < 10; ++i)
 		{
-			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(f));
-			Object obj = ois.readObject();
-			authorizedUsers = (Hashtable<String, String>) obj;
+			users.put("user"+i, new SEPIdentity("user"+i, "pwd"+i, false));
 		}
-		catch (Exception e)
-		{
-			authorizedUsers = new Hashtable<String, String>();
-			authorizedUsers.put("guest", "pwd");
-
-			try
-			{
-				f.createNewFile();
-				ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(f));
-				oos.writeObject(authorizedUsers);
-			}
-			catch (Exception ex)
-			{
-				// nop
-			}
-		}
-
-		return authorizedUsers;
+		users.put("admin", new SEPIdentity("admin", "no", true));
 	}
 
 	/*
@@ -132,16 +76,20 @@ public class SEPIdentityAuthenticator implements IdentityAuthenticator
 		}
 
 		NamePasswordCredentials npc = (NamePasswordCredentials) credentials;
-
-		Hashtable<String, String> authorizedUsers = getAuthorizedUsers();
-
 		String pwd = new String(npc.getPassword());
-		if ((pwd.isEmpty()) || (pwd.compareTo(authorizedUsers.get(npc.getName())) != 0))
+		
+		if (!users.containsKey(npc.getName()))
+		{
+				throw new CredentialException("Invalid username");
+		}
+	
+		SEPIdentity id = users.get(npc.getName());
+		if (!id.testPwd(pwd))
 		{
 			throw new CredentialException("Invalid password");
 		}
-
-		return new SEPIdentity(npc.getName());
+		
+		return id;
 	}
 
 	/*

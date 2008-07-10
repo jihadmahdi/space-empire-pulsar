@@ -10,25 +10,35 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.PasswordAuthentication;
 import java.nio.ByteBuffer;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Properties;
+import java.util.Set;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import net.orfjackal.darkstar.rpc.comm.ClientChannelAdapter;
+import net.orfjackal.darkstar.rpc.comm.RpcGateway;
 
 import server.SEPServer;
 import utils.SEPUtils;
 
+import com.sun.sgs.app.Channel;
 import com.sun.sgs.client.ClientChannel;
 import com.sun.sgs.client.ClientChannelListener;
 import com.sun.sgs.client.simple.SimpleClient;
 import com.sun.sgs.client.simple.SimpleClientListener;
 import common.ClientServerProtocol;
 import common.Command;
+import common.IServerUser;
 import common.ServerClientProtocol;
 import common.metier.ConfigPartie;
+import common.metier.PartieEnCreation;
 
 /**
  * 
@@ -36,28 +46,51 @@ import common.metier.ConfigPartie;
 public class SEPConsoleClient implements SimpleClientListener
 {
 
-	private static final Logger		logger	= Logger.getLogger(SEPConsoleClient.class.getName());
+	private static final Logger							logger			= Logger.getLogger(SEPConsoleClient.class.getName());
 
-	private final SimpleClient		client;
+	private SimpleClient								client;
 
-	private final BufferedReader	keyboard;
+	private static final BufferedReader					keyboard		= new BufferedReader(new InputStreamReader(System.in));
 
-	private final PrintStream		display;
+	private static final PrintStream					display			= System.out;
 
-	private String					status;
+	private String										status;
 
-	private String					userName;
+	private String										userName;
 
-	private String					password;
+	private String										password;
+
+	private IServerUser									serverUser;
+
+	protected Hashtable<ClientChannel, Vector<String>>	listeChannels	= new Hashtable<ClientChannel, Vector<String>>();
+
+	private void initServices(RpcGateway gateway)
+	{
+		Set<IServerUser> serverUsers = gateway.remoteFindByType(IServerUser.class);
+		assert serverUsers.size() == 1;
+		serverUser = serverUsers.iterator().next();
+	}
+
+	private void resetServices()
+	{
+		serverUser = null;
+	}
+
+	public IServerUser getServerUser()
+	{
+		if (serverUser == null)
+		{
+			throw new IllegalStateException("Not connected to server");
+		}
+		return serverUser;
+	}
 
 	public SEPConsoleClient()
 	{
 		client = new SimpleClient(this);
-		keyboard = new BufferedReader(new InputStreamReader(System.in));
-		display = System.out;
 	}
 
-	private String readLine()
+	private static String readLine()
 	{
 		String line = null;
 		do
@@ -75,7 +108,7 @@ public class SEPConsoleClient implements SimpleClientListener
 		return line;
 	}
 
-	private String getInput(String msg, String defaultValue)
+	private static String getInput(String msg, String defaultValue)
 	{
 		display.println(msg + ((defaultValue == null) ? "" : " [" + defaultValue + "]") + " : ");
 		String value;
@@ -134,6 +167,8 @@ public class SEPConsoleClient implements SimpleClientListener
 	@Override
 	public void disconnected(boolean graceful, String reason)
 	{
+		resetServices();
+
 		String msg = "disconnected " + (graceful ? "gracefull" : "forced");
 		if ((reason != null) && ( !reason.isEmpty()))
 		{
@@ -151,39 +186,34 @@ public class SEPConsoleClient implements SimpleClientListener
 	@Override
 	public ClientChannelListener joinedChannel(ClientChannel channel)
 	{
-		final SEPConsoleClient consoleClient = this;
-		final ClientChannel joinedChannel = channel;
+		ClientChannelAdapter adapter = new ClientChannelAdapter();
+		ClientChannelListener listener = adapter.joinedChannel(channel);
+		initServices(adapter.getGateway());
+		return listener;
 
-		return new ClientChannelListener()
-		{
-			SEPConsoleClient	client	= consoleClient;
-
-			ClientChannel		channel	= joinedChannel;
-
-			@Override
-			public void receivedMessage(ClientChannel channel, ByteBuffer message)
-			{
-				Command command;
-				try
-				{
-					command = Command.decode(message);
-				}
-				catch (IOException e)
-				{
-					logger.log(Level.WARNING, "Received unreadable command from channel \"" + channel.getName() + "\" : \"" + message + "\"");
-					return;
-				}
-
-				logger.log(SEPServer.traceLevel, "ReceivedMessage from channel \"" + channel.getName() + "\" : " + command.getCommand());
-			}
-
-			@Override
-			public void leftChannel(ClientChannel channel)
-			{
-				logger.log(Level.INFO, "left channel \"" + channel.getName() + "\"");
-			}
-
-		};
+		/*
+		 * final SEPConsoleClient consoleClient = this; final ClientChannel joinedChannel = channel;
+		 * 
+		 * logger.log(Level.INFO, "joinedChannel \"" + channel.getName() + "\""); listeChannels.put(channel, new Vector<String>());
+		 * 
+		 * return new ClientChannelListener() { SEPConsoleClient client = consoleClient;
+		 * 
+		 * ClientChannel channel = joinedChannel;
+		 * 
+		 * @Override public void receivedMessage(ClientChannel channel, ByteBuffer message) { Command command; try { command = Command.decode(message); } catch (IOException e) { logger.log(Level.WARNING, "Received unreadable command from channel \"" + channel.getName() + "\" : \"" + message + "\""); return; }
+		 * 
+		 * ServerClientProtocol.eEvenements evt;
+		 * 
+		 * try { evt = ServerClientProtocol.eEvenements.valueOf(command.getCommand()); } catch (IllegalArgumentException e) { logger.log(Level.WARNING, "Received unknown command from channel \"" + channel.getName() + "\" : \"" + command.getCommand() + "\""); return; }
+		 * 
+		 * logger.log(SEPServer.traceLevel, "ReceivedMessage from channel \"" + channel.getName() + "\" : " + command.getCommand());
+		 * 
+		 * switch (evt) { case refreshChannelUserList: { refreshChannelUserList(channel, command.getParameters()); break; } default: { logger.log(Level.INFO, "Command \"" + evt.toString() + "\" from channel \"" + channel.getName() + "\" ignored."); } } }
+		 * 
+		 * @Override public void leftChannel(ClientChannel channel) { logger.log(Level.INFO, "left channel \"" + channel.getName() + "\""); listeChannels.remove(channel); }
+		 * 
+		 * };
+		 */
 	}
 
 	/*
@@ -219,18 +249,9 @@ public class SEPConsoleClient implements SimpleClientListener
 
 		logger.log(SEPServer.traceLevel, "Received command : " + command.getCommand());
 
-		switch (evt)
-		{
-		case ReponseDemandeListeParties:
-		{
-			reponseDemandeListeParties(command.getParameters());
-			break;
-		}
-		default:
-		{
-			logger.log(Level.INFO, "Command \""+evt.toString()+"\" ignored.");
-		}
-		}
+		/*
+		 * switch (evt) { case ReponseDemandeListeParties: { reponseDemandeListeParties(command.getParameters()); break; } case ErreurCreerNouvellePartie: case ErreurJoindreNouvellePartie: { afficherErreur(evt, command.getParameters()); break; } default: { logger.log(Level.INFO, "Command \"" + evt.toString() + "\" ignored."); } }
+		 */
 	}
 
 	/*
@@ -269,7 +290,7 @@ public class SEPConsoleClient implements SimpleClientListener
 
 	private static enum eCommande
 	{
-		status, login, logout, send, demandeListeParties
+		newClient, status, login, logout, send, demandeListeParties, creerPartie, joindrePartie, listerChannels, channelSend, listerUserChannel, channelChat, channelUserChat
 	};
 
 	public void test()
@@ -278,10 +299,18 @@ public class SEPConsoleClient implements SimpleClientListener
 		do
 		{
 			display.println(getStatus());
-			for (int i = 0; i < eCommande.values().length; ++i)
+
+			for (int i = 0; i < 4/* eCommande.values().length */; ++i)
 			{
 				display.println(i + 1 + "] " + eCommande.values()[i]);
 			}
+
+			Method[] methods = IServerUser.class.getDeclaredMethods();
+			for (int i = 0; i < methods.length; ++i)
+			{
+				display.println(i + 4 + "] " + methods[i].toGenericString());
+			}
+
 			display.println("0] Quitter");
 
 			do
@@ -299,64 +328,321 @@ public class SEPConsoleClient implements SimpleClientListener
 
 			if (choix == 0) continue;
 
-			eCommande cmd = eCommande.values()[choix - 1];
+			if (choix < 4)
+			{
+				eCommande cmd = eCommande.values()[choix - 1];
 
-			switch (cmd)
-			{
-			case login:
-			{
-				login();
-				break;
+				switch (cmd)
+				{
+				case newClient:
+				{
+					if (client.isConnected()) client.logout(true);
+					client = new SimpleClient(this);
+				}
+				case login:
+				{
+					login();
+					break;
+				}
+				case logout:
+				{
+					logout();
+					break;
+				}
+				case send:
+				{
+					send();
+					break;
+				}
+				case status:
+				{
+					continue;
+				}
+				case demandeListeParties:
+				{
+					demandeListeParties();
+					break;
+				}
+				case creerPartie:
+				{
+					creerPartie();
+					break;
+				}
+				case joindrePartie:
+				{
+					joindrePartie();
+					break;
+				}
+				case listerChannels:
+				{
+					listerChannels();
+					break;
+				}
+				case channelSend:
+				{
+					channelSend();
+					break;
+				}
+				case listerUserChannel:
+				{
+					listerUserChannel();
+					break;
+				}
+				case channelChat:
+				{
+					channelChat();
+					break;
+				}
+				case channelUserChat:
+				{
+					channelUserChat();
+					break;
+				}
+				default:
+					continue;
+				}
 			}
-			case logout:
+			else
 			{
-				logout();
-				break;
+				Method method = methods[choix-4];
+				try
+				{
+					Object result = method.invoke(getServerUser());
+				}
+				catch (IllegalArgumentException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				catch (IllegalAccessException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				catch (InvocationTargetException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
-			case send:
-			{
-				send();
-				break;
-			}
-			case status:
-			{
-				continue;
-			}
-			case demandeListeParties:
-			{
-				demandeListeParties();
-				break;
-			}
-
-			default:
-				continue;
-			}
-
 		} while (choix != 0);
+	}
+
+	private void channelUserChat()
+	{
+		/*
+		ClientChannel channel = saisirChannel();
+		if (channel == null) return;
+
+		Vector<String> users = listeChannels.get(channel);
+		for (int i = 0; i < users.size(); ++i)
+		{
+			display.println(i + 1 + "] " + users.get(i));
+		}
+
+		int choix;
+		do
+		{
+			choix = Integer.valueOf(getInput("n° destinataire", "1"));
+		} while ((choix < 1) || (choix > users.size()));
+
+		String msg = getInput("Message", null);
+
+		sendCommand(ClientServerProtocol.eEvenements.ChatUserChannel, channel.getName(), users.get(choix - 1), msg);
+		*/
+	}
+
+	private void channelChat()
+	{
+		/*
+		ClientChannel channel = saisirChannel();
+		if (channel == null) return;
+
+		String msg = getInput("Message", null);
+		sendCommand(ClientServerProtocol.eEvenements.ChatChannel, channel.getName(), msg);
+		*/
+	}
+
+	private void listerUserChannel()
+	{
+		ClientChannel channel = saisirChannel();
+		if (channel == null) return;
+
+		Vector<String> users = listeChannels.get(channel);
+		display.println("Utilisateur du channel \"" + channel.getName() + "\" : " + users.toString());
+	}
+
+	private ClientChannel saisirChannel()
+	{
+		if (listeChannels.size() < 1)
+		{
+			display.println("Aucun channel joint.");
+			return null;
+		}
+
+		ClientChannel[] channels = listeChannels.keySet().toArray(new ClientChannel[0]);
+
+		for (int i = 0; i < channels.length; ++i)
+		{
+			display.println(i + 1 + "] " + channels[i].getName());
+		}
+
+		int choix;
+		do
+		{
+			choix = Integer.valueOf(getInput("n° channel", "1"));
+		} while ((choix < 1) || (choix > channels.length));
+
+		return channels[choix - 1];
+	}
+
+	private void channelSend()
+	{
+		ClientChannel channel = saisirChannel();
+		if (channel == null) return;
+
+		String msg = getInput("Message", null);
+		display.println("channel.send(\"" + msg + "\")");
+		try
+		{
+			channel.send(ByteBuffer.wrap(msg.getBytes()));
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
+
+	private void listerChannels()
+	{
+		display.println("Liste des channels joins :");
+		Iterator<ClientChannel> it = listeChannels.keySet().iterator();
+		while (it.hasNext())
+		{
+			ClientChannel channel = it.next();
+			display.print(channel.getName());
+			if (it.hasNext()) display.print(", ");
+		}
+		display.println();
+	}
+
+	private void refreshChannelUserList(ClientChannel channel, Object ... parametres)
+	{
+		SEPUtils.checkParametersTypes(1, parametres, "refreshChannelUserList", Vector.class);
+		Vector<String> listeUsers;
+		try
+		{
+			listeUsers = (Vector<String>) parametres[0];
+		}
+		catch (ClassCastException e)
+		{
+			throw new IllegalArgumentException("refreshChannelUserList : parameters[0] expected to be a \"Vector<String>\" instance, but is a \"" + parametres[0].getClass().getName() + "\" one.");
+		}
+
+		logger.log(Level.INFO, "refresh channel \"" + channel.getName() + "\" user list : " + listeUsers.toString());
+		listeChannels.put(channel, listeUsers);
+	}
+
+	private void afficherErreur(ServerClientProtocol.eEvenements evt, Object ... parametres)
+	{
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(evt.toString() + " :");
+		for (Object o : parametres)
+		{
+			if (String.class.isInstance(o))
+			{
+				sb.append("\n" + ((String) o));
+			}
+		}
+
+		display.println(sb.toString());
+	}
+
+	private void joindrePartie()
+	{
+		/*
+		String nomPartie = getInput("Nom partie", "partie de " + userName);
+
+		display.println("sendCommand(" + ClientServerProtocol.eEvenements.JoindreNouvellePartie + ", \"" + nomPartie + "\")");
+		sendCommand(ClientServerProtocol.eEvenements.JoindreNouvellePartie, nomPartie);
+		*/
+	}
+
+	private void creerPartie()
+	{
+		/*
+		String nomPartie = getInput("Nom partie", "partie de " + userName);
+		ConfigPartie configPartie = saisirConfigPartie();
+
+		display.println("sendCommand(" + ClientServerProtocol.eEvenements.CreerNouvellePartie + ", " + "\"" + nomPartie + "\", " + configPartie + ")");
+		sendCommand(ClientServerProtocol.eEvenements.CreerNouvellePartie, nomPartie, configPartie);
+		*/
+	}
+
+	private static ConfigPartie saisirConfigPartie()
+	{
+		ConfigPartie configPartie = new ConfigPartie();
+
+		String valeur = getInput("Dimension X", "default");
+		if (valeur.compareToIgnoreCase("default") != 0) configPartie.setDimX(Integer.valueOf(valeur));
+
+		valeur = getInput("Dimension Y", "default");
+		if (valeur.compareToIgnoreCase("default") != 0) configPartie.setDimY(Integer.valueOf(valeur));
+
+		valeur = getInput("Dimension Z", "default");
+		if (valeur.compareToIgnoreCase("default") != 0) configPartie.setDimZ(Integer.valueOf(valeur));
+
+		valeur = getInput("Nombre de corps célestes neutres", "default");
+		if (valeur.compareToIgnoreCase("default") != 0) configPartie.setNbCorpsCelestesNeutres(Integer.valueOf(valeur));
+
+		// TODO configPartie.setQtCarboneDepartCorpsCelestes(typeCorpsCeleste, min, max)
+		// TODO configPartie.setQtSlotsCorpsCelestes(typeCorpsCeleste, min, max)
+
+		valeur = getInput("Activer Victoire Totale", "default");
+		if (valeur.compareToIgnoreCase("default") != 0) configPartie.setConqueteTotale(Boolean.valueOf(valeur));
+
+		valeur = getInput("Activer Régimicide", "default");
+		if (valeur.compareToIgnoreCase("default") != 0) configPartie.setRegimicide(Boolean.valueOf(valeur));
+
+		valeur = getInput("Activer Assimilation des peuples neutralisés", "default");
+		if (valeur.compareToIgnoreCase("default") != 0) configPartie.setAssimilerPeuplesNeutralises(Boolean.valueOf(valeur));
+
+		// TODO configPartie.setVictoireEconomique(seuilPopulation, seuilCarbone)
+
+		valeur = getInput("Activer Victoire en Alliance", "default");
+		if (valeur.compareToIgnoreCase("default") != 0) configPartie.setVictoireEnAlliance(Boolean.valueOf(valeur));
+
+		valeur = getInput("Temps limite", "default");
+		if (valeur.compareToIgnoreCase("default") != 0) configPartie.setVictoireTempsLimite(Integer.valueOf(valeur));
+
+		return configPartie;
 	}
 
 	private void demandeListeParties()
 	{
+		/*
 		display.println("sendCommand(" + ClientServerProtocol.eEvenements.DemandeListeParties + ")");
 		sendCommand(ClientServerProtocol.eEvenements.DemandeListeParties);
+		*/
 	}
-	
+
 	private void reponseDemandeListeParties(Object ... parameters)
 	{
 		SEPUtils.checkParametersTypes(1, parameters, "reponseDemandeListeParties", Hashtable.class);
-		Hashtable<String, ConfigPartie> nouvellesParties;
+		Hashtable<String, PartieEnCreation> nouvellesParties;
 		try
 		{
-			nouvellesParties = (Hashtable<String, ConfigPartie>) parameters[0];
+			nouvellesParties = (Hashtable<String, PartieEnCreation>) parameters[0];
 		}
-		catch(ClassCastException e)
+		catch (ClassCastException e)
 		{
-			throw new IllegalArgumentException("reponseDemandeListeParties : parameters[0] expected to be a \"Hashtable<String, ConfigPartie>\" instance, but is a \""+parameters[0].getClass().getName()+"\" one.");
+			throw new IllegalArgumentException("reponseDemandeListeParties : parameters[0] expected to be a \"Hashtable<String, ConfigPartie>\" instance, but is a \"" + parameters[0].getClass().getName() + "\" one.");
 		}
-		
+
 		StringBuilder sb = new StringBuilder();
 		Iterator<String> itNomParties = nouvellesParties.keySet().iterator();
-		while(itNomParties.hasNext())
+		while (itNomParties.hasNext())
 		{
 			sb.append(itNomParties.next());
 			if (itNomParties.hasNext())
@@ -364,8 +650,8 @@ public class SEPConsoleClient implements SimpleClientListener
 				sb.append(", ");
 			}
 		}
-		
-		display.println("Liste des parties en cours de création : "+sb.toString());
+
+		display.println("Liste des parties en cours de création : " + sb.toString());
 	}
 
 	/**
@@ -432,6 +718,20 @@ public class SEPConsoleClient implements SimpleClientListener
 		sb.append("[" + (client.isConnected() ? "Connected" : "Disconnected") + "] ");
 		sb.append(status);
 		return sb.toString();
+	}
+
+	protected void sendCommand(ClientChannel channel, ClientServerProtocol.eEvenements evnt, Serializable ... parameters)
+	{
+		Command cmd = new Command(evnt.toString(), parameters);
+		logger.log(Level.INFO, "Envoi commande \"" + cmd.getCommand() + "\" au channel \"" + channel.getName() + "\"");
+		try
+		{
+			channel.send(cmd.encode());
+		}
+		catch (IOException e)
+		{
+			logger.log(Level.WARNING, "Unable to send command \"" + cmd.getCommand() + "\" to channel  \"" + channel.getName() + "\"");
+		}
 	}
 
 	protected void sendCommand(ClientServerProtocol.eEvenements evnt, Serializable ... parameters)

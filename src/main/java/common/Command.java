@@ -72,7 +72,7 @@ public class Command implements Serializable
 	
 	public static void main(String[] args) throws IOException
 	{
-		ConfigPartie cfgPartie = new ConfigPartie("nomPartie");
+		ConfigPartie cfgPartie = new ConfigPartie();
 		Hashtable<String, ConfigPartie> shm = new Hashtable<String, ConfigPartie>();
 		
 		Command cmd = new Command("TestCmd", new String("p0.String"), cfgPartie, shm);

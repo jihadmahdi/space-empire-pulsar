@@ -8,13 +8,11 @@ package common.metier;
 import java.io.Serializable;
 import java.util.Hashtable;
 
-
+/**
+ * Représente une config de partie, avec tout les paramètres nécéssaire à la création de la partie.
+ */
 public class ConfigPartie implements Serializable
 {
-
-	/**
-	 * 
-	 */
 	private static final long	serialVersionUID	= 1L;
 
 	/** 
@@ -90,16 +88,10 @@ public class ConfigPartie implements Serializable
 	private Integer victoireTempsLimite = null;
 	
 	/**
-	 * Nom de la partie.
+	 * Constructeur vide.
 	 */
-	private final String nom;
-	
-	/**
-	 * Constructeur, définit le nom de la partie.
-	 */
-	public ConfigPartie(String nom)
+	public ConfigPartie()
 	{
-		this.nom = nom;
 	}
 
 	/**
@@ -292,13 +284,5 @@ public class ConfigPartie implements Serializable
 	public void setVictoireTempsLimite(Integer victoireTempsLimite)
 	{
 		this.victoireTempsLimite = victoireTempsLimite;
-	}
-
-	/**
-	 * @return the nom
-	 */
-	public String getNom()
-	{
-		return nom;
 	}
 }

@@ -5,6 +5,10 @@
  */
 package utils;
 
+import java.io.Serializable;
+
+import com.sun.sgs.app.Task;
+
 /**
  * 
  */
@@ -33,5 +37,24 @@ public class SEPUtils
 				throw new IllegalArgumentException(errorMsgBase+" : parameters["+i+"] expected to be a \""+c.getName()+"\" instance, but is a \""+parameters[i].getClass().getName()+"\" one.");
 			}
 		}
+	}
+	
+	public static interface SerializableTask extends Serializable, Task {}
+	public static interface SerializableRunnable extends Serializable, Runnable {}
+	
+	public static class SerializableThread extends Thread implements Serializable
+	{
+		private static final long	serialVersionUID	= 1L;
+
+		/**
+		 * @param target
+		 * @param name
+		 */
+		public SerializableThread(SerializableRunnable target, String name)
+		{
+			super(target, name);
+			// TODO Auto-generated constructor stub
+		}
+		
 	}
 }
