@@ -74,9 +74,12 @@ public class SEPServerClientSessionListener implements Serializable, ClientSessi
 	
 	public SEPServerClientSessionListener(IUserAccount account)
 	{
+		logger.log(Level.WARNING, "SEPServerClientSessionListener.CTOR; name=="+this.name+"; statemachine=="+this.statemachine);
+		
 		this.refAccount = AppContext.getDataManager().createReference(account);
 		this.refSession = AppContext.getDataManager().createReference(account.getSession());
 		this.name = getSession().getName();
+		
 		this.statemachine = new SEPServerClientStateMachine(this, this, this);
 		this.statemachine.exportDOTfiles(new File("dot"));
 		
@@ -85,7 +88,7 @@ public class SEPServerClientSessionListener implements Serializable, ClientSessi
 		adapter.setChannel(channel);
 
 		gateway = adapter.getGateway();
-		//gateway.registerService(IServerUser.class, );
+		gateway.registerService(IServerUser.class, this.statemachine.getIServerUserProxy());
 
 		channel.join(getSession());
 	}

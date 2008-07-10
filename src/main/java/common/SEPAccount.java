@@ -11,6 +11,7 @@ import com.sun.sgs.app.AppContext;
 import com.sun.sgs.app.ClientSession;
 import com.sun.sgs.app.ManagedObject;
 import com.sun.sgs.app.ManagedReference;
+import com.sun.sgs.app.ObjectNotFoundException;
 
 /**
  * 
@@ -36,7 +37,14 @@ public class SEPAccount implements IUserAccount, ManagedObject, Serializable
 	@Override
 	public ClientSession getSession()
 	{
-		return (refSession==null)?null:refSession.get();
+		try
+		{
+			return (refSession==null)?null:refSession.get();
+		}
+		catch(ObjectNotFoundException e)
+		{
+			return null;
+		}
 	}
 
 	/* (non-Javadoc)
