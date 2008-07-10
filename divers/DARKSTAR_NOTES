@@ -1,0 +1,26 @@
+TODO:
+	Attention, lorsque les Effet d'une transition de la machine Etat renvoi une erreur, la transition est quand même complétée ! Du coup on se retrouve en AttenteCreationPartie alors que le server à refusé de créer la partie.
+
+Notes sur les bonnes façon de coder avec DarkStar Project
+
+Toutes les Task doivent être de courte durée.
+
+Les Task marchent comme des transactions, les données qu'elles modifient le sont donc de façon atomique.
+
+Le serveur est persistant et fault-tolerant, en cas de crash, toutes les données sont sauves à une Task prêt.
+
+Si une Task lève une exception qui implémente ExceptionRetryStatus elle pourra être relancée automatiquement (si la méthode shouldRetry retourne true).
+
+Les ManagedObject doivent implémenter Serializable.
+
+Si l'on fait une référence "normale" (et pas ManagedReference<T>) à un ManagedObject, la transaction lève ObjectIOException lors de son commit.
+
+Tout les objets auxquels font référence un ManagedObject doivent implémenter Serializable (tout ces attributs non transient et non primitifs)
+
+Un ManagedObject peut implémenter ManagedObjectRemoval pour avoir un callback lors de sa destruction (DataManager.removeObject)
+
+Les ManagedReference<T> ne doivent pas être utilisé comme attribut static, ni dans aucune partie du code qui n'est pas couverte par le DataManager.
+
+Si une Task implémente ManagedObject, elle est alors considérée comme étant déjà dans le DataManager et le programmeur doit se charger de sa supression lorsqu'elle n'est plus utilisée.
+Si une Task n'implémente pas ManagedObject, elle est laissé au GarbageCollector sitôt qu'elle se termine, le programmeur n'a pas à se soucier de sa suppression (comme une référence JAVA normale).
+
