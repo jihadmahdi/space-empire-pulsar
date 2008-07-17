@@ -1,6 +1,10 @@
 package server;
 
+import server.IdentityService.OffContextTask;
+
+import com.sun.sgs.app.Task;
 import com.sun.sgs.auth.Identity;
+import com.sun.sgs.kernel.TransactionScheduler;
 
 
 /**
@@ -30,6 +34,16 @@ public class IdentityManager
 	public Identity getIdentity()
 	{
 		return service.getIdentity();
+	}
+	
+	public void executeOffContectTask(OffContextTask target)
+	{
+		service.executeOffContextTask(target);
+	}
+	
+	public TransactionScheduler getTransactionScheduler()
+	{
+		return service.getTransactionScheduler();
 	}
 }
 

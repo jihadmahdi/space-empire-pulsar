@@ -7,6 +7,7 @@ package server;
 
 import java.io.PrintStream;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Scanner;
@@ -14,14 +15,18 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import utils.SEPUtils.SerializableTask;
 
 import com.sun.sgs.app.AppContext;
+import com.sun.sgs.app.Channel;
 import com.sun.sgs.app.ChannelManager;
 import com.sun.sgs.app.DataManager;
+import com.sun.sgs.app.NameNotBoundException;
 import com.sun.sgs.app.Task;
 import com.sun.sgs.app.TaskManager;
 import com.sun.sgs.auth.Identity;
+import com.sun.sgs.impl.util.ManagedSerializable;
 import com.sun.sgs.kernel.ComponentRegistry;
 import com.sun.sgs.kernel.KernelRunnable;
 import com.sun.sgs.kernel.TaskScheduler;
@@ -30,6 +35,7 @@ import com.sun.sgs.service.DataService;
 import com.sun.sgs.service.Service;
 import com.sun.sgs.service.Transaction;
 import com.sun.sgs.service.TransactionProxy;
+import common.IClientUser;
 
 /**
  * 
@@ -37,38 +43,40 @@ import com.sun.sgs.service.TransactionProxy;
 public class SEPServerConsoleService implements Service
 {
 	/** the logger. */
-	private final static Logger			logger				= Logger.getLogger(SEPServerConsoleService.class.getName());
+	private final static Logger			logger					= Logger.getLogger(SEPServerConsoleService.class.getName());
 
 	// a proxy providing access to the transaction state
-	static TransactionProxy				transactionProxy	= null;
+	static TransactionProxy				transactionProxy		= null;
 
-	static ComponentRegistry			componentRegistry	= null;
+	static ComponentRegistry			componentRegistry		= null;
 
-	static TaskScheduler				taskScheduler		= null;
-	
-	static TransactionScheduler			transactionScheduler= null;
+	static TaskScheduler				taskScheduler			= null;
+
+	static TransactionScheduler			transactionScheduler	= null;
 
 	// the data service used in the same context
-	static DataService					dataService			= null;
+	static DataService					dataService				= null;
 
-	static Identity						owner				= null;
+	static Identity						owner					= null;
 
 	// An SGS-instance that we need to spin off our own thread.
 	private boolean						worker_still_running;
 
 	private Thread						worker_thread;
 
-	private boolean						enabled				= true;
+	private boolean						enabled					= true;
 
-	private eServerCmd					lastCmd				= null;
+	private eServerCmd					lastCmd					= null;
 
-	private static final Scanner		in					= new Scanner(System.in);
+	private String[]					lastArgs				= null;
 
-	private static final PrintStream	out					= System.out;
+	private static final Scanner		in						= new Scanner(System.in);
+
+	private static final PrintStream	out						= System.out;
 
 	private static enum eServerCmd
 	{
-		help, listBounds, nettoyerPartieEnCreationVides, test
+		help, listBounds, nettoyerPartieEnCreationVides, sendChannel, listChannels, initClientUser, test
 	}
 
 	/**
@@ -156,6 +164,7 @@ public class SEPServerConsoleService implements Service
 				public void run()
 				{
 					String cmd = "";
+					String[] args = new String[0];
 
 					out.println("SEPServer Console command line is ready");
 					while (enabled)
@@ -171,35 +180,44 @@ public class SEPServerConsoleService implements Service
 							continue;
 						}
 
+						String[] a = cmd.split(" ");
+						cmd = a[0];
+						args = new String[a.length - 1];
+						for (int i = 0; i < args.length; ++i)
+						{
+							args[i] = a[i + 1];
+						}
+
 						synchronized (worker_thread)
 						{
-							for(eServerCmd cmdPossible : eServerCmd.values())
+							for (eServerCmd cmdPossible : eServerCmd.values())
 							{
 								if (cmd.compareToIgnoreCase(cmdPossible.toString()) == 0)
 								{
 									lastCmd = cmdPossible;
-									
+									lastArgs = args;
+
 									transactionScheduler.scheduleTask(new KernelRunnable()
 									{
-									
+
 										@Override
 										public void run() throws Exception
 										{
 											logger.log(Level.INFO, "transactionSchedeled !");
-											commandProcessingTaskFactory(lastCmd).run();
+											commandProcessingTaskFactory(lastCmd, lastArgs).run();
 										}
-									
+
 										@Override
 										public String getBaseTaskType()
 										{
 											return Task.class.getName();
 										}
 									}, owner);
-									
+
 									break;
 								}
 							}
-							
+
 							if (lastCmd == null)
 							{
 								out.println("CL> Commande inconnue, tapez \"help\" pour afficher la liste des commandes.");
@@ -214,10 +232,12 @@ public class SEPServerConsoleService implements Service
 			worker_thread.start();
 		}
 	}
-	
-	private static interface SerializableKernelRunnable extends KernelRunnable, Serializable {};
-	
-	private static SerializableKernelRunnable commandProcessingTaskFactory(final eServerCmd cmd)
+
+	private static interface SerializableKernelRunnable extends KernelRunnable, Serializable
+	{
+	};
+
+	private static SerializableKernelRunnable commandProcessingTaskFactory(final eServerCmd cmd, final String[] args)
 	{
 		SerializableKernelRunnable result = new SerializableKernelRunnable()
 		{
@@ -241,6 +261,28 @@ public class SEPServerConsoleService implements Service
 					SEPServer.getServer().nettoyerPartieEnCreationVides();
 					break;
 				}
+				case sendChannel:
+				{
+					if (args.length < 2)
+					{
+						out.println("Not enough parameters; syntax: sendChannel [channel] [message]");
+					}
+					else
+					{
+						sendChannel(args[0], args[1]);
+					}
+					break;
+				}
+				case listChannels:
+				{
+					listChannels();
+					break;
+				}
+				case initClientUser:
+				{
+					initClientUser();
+					break;
+				}
 				case test:
 				{
 					test();
@@ -251,7 +293,7 @@ public class SEPServerConsoleService implements Service
 					out.println("Not yet implemented or unknown command \"" + cmd.toString() + "\"");
 				}
 				}
-				
+
 			}
 
 			@Override
@@ -323,10 +365,63 @@ public class SEPServerConsoleService implements Service
 
 		out.println("SEPServer bounds list: " + sb.toString());
 	}
-	
-	static void test()
+
+	static void sendChannel(String channelName, String message)
+	{
+		Channel channel = null;
+		try
+		{
+			channel = AppContext.getChannelManager().getChannel(channelName);
+		}
+		catch (NameNotBoundException e)
+		{
+			out.println("Channel \"" + channelName + "\" does not exist");
+			return;
+		}
+
+		channel.send(null, ByteBuffer.wrap(message.getBytes()));
+	}
+
+	static void listChannels()
 	{
 		ChannelManager cm = AppContext.getChannelManager();
+		throw new NotImplementedException();
+	}
+
+	static void initClientUser()
+	{
+		SEPServerClientSessionListener client = null;
+
+		try
+		{
+			Object obj = AppContext.getDataManager().getBinding("guest");
+			client = SEPServerClientSessionListener.class.cast(obj);
+		}
+		catch (Exception e)
+		{
+			out.println(e.getMessage());
+			return;
+		}
+	}
+
+	static void test()
+	{
+		SEPServerClientSessionListener client = null;
+		IClientUser clientUser = null;
+		try
+		{
+			Object obj = AppContext.getDataManager().getBinding("guest");
+			client = SEPServerClientSessionListener.class.cast(obj);
+			clientUser = client.getClientUser();
+		}
+		catch (Exception e)
+		{
+			out.println(e.getMessage());
+			return;
+		}
+
+		clientUser.onGamePaused();
+		
 		out.println("CL> Test OK");
 	}
 }

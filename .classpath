@@ -6,10 +6,10 @@
 	<classpathentry excluding="**" kind="src" output="src/test/resources" path="src/test/resources"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="org.maven.ide.eclipse.MAVEN2_CLASSPATH_CONTAINER"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/darkstar-rpc"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/EPLib"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/darkstar-integration-test"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/sgs-client-src"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/sgs-src"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/general-darkstar-rpc"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

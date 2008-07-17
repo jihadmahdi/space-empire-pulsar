@@ -5,6 +5,8 @@
  */
 package common;
 
+import java.util.concurrent.ExecutionException;
+
 /**
  * Describe Server side user interface, that can be called from client.
  * This interface should be implemented as a listener in server side, and as a sender in client side.
@@ -24,12 +26,14 @@ public interface IServerUser
 	
 	/**
 	 * Ask server for the user friend list.
+	 * @throws ExecutionException 
+	 * @throws InterruptedException 
 	 * @see IClientUser#receiveFriendList(FriendList)
 	 * @category Connected
 	 * @category FriendList
 	 * @category Synchronizing call
 	 */
-	void askFriendList();
+	void askFriendList() throws InterruptedException, ExecutionException;
 	
 	/**
 	 * Add a new friend to the friend list.
