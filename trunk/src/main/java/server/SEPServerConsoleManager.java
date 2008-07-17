@@ -34,4 +34,5 @@ public class SEPServerConsoleManager
 		System.out.println("SEPServerConsoleManager CTOR");
 		this.service = service;
 	}
+
 }

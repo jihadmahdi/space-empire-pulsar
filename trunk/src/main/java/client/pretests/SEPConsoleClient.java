@@ -24,35 +24,65 @@ import java.util.logging.Logger;
 
 import net.orfjackal.darkstar.rpc.comm.ClientChannelAdapter;
 import net.orfjackal.darkstar.rpc.comm.RpcGateway;
-
 import server.SEPServer;
 import utils.SEPUtils;
 
-import com.sun.sgs.app.Channel;
 import com.sun.sgs.client.ClientChannel;
 import com.sun.sgs.client.ClientChannelListener;
 import com.sun.sgs.client.simple.SimpleClient;
 import com.sun.sgs.client.simple.SimpleClientListener;
 import common.ClientServerProtocol;
 import common.Command;
+import common.FriendList;
+import common.Game;
+import common.IClientUser;
+import common.IGameCommand;
+import common.IGameConfig;
+import common.IPlayerConfig;
 import common.IServerUser;
+import common.NewGame;
 import common.ServerClientProtocol;
+import common.User;
 import common.metier.ConfigPartie;
 import common.metier.PartieEnCreation;
 
 /**
  * 
  */
-public class SEPConsoleClient implements SimpleClientListener, Runnable
+public class SEPConsoleClient implements SimpleClientListener, Runnable, IClientUser
 {
+	private static class SEPConsoleClientChannelListener implements ClientChannelListener
+	{
 
+		/* (non-Javadoc)
+		 * @see com.sun.sgs.client.ClientChannelListener#leftChannel(com.sun.sgs.client.ClientChannel)
+		 */
+		@Override
+		public void leftChannel(ClientChannel channel)
+		{
+			logger.log(Level.INFO, "ClientChannelListener.leftChannel("+channel.getName()+")");
+		}
+
+		/* (non-Javadoc)
+		 * @see com.sun.sgs.client.ClientChannelListener#receivedMessage(com.sun.sgs.client.ClientChannel, java.nio.ByteBuffer)
+		 */
+		@Override
+		public void receivedMessage(ClientChannel channel, ByteBuffer message)
+		{
+			logger.log(Level.INFO, "ClientChannelListener.receivedMessage("+channel.getName()+", ...)");
+		}
+		
+	}
+	
+	private static final SEPConsoleClientChannelListener channelListener = new SEPConsoleClientChannelListener();
+	
 	private static final Logger							logger			= Logger.getLogger(SEPConsoleClient.class.getName());
 
 	private SimpleClient								client;
 
-	private static BufferedReader					keyboard		= new BufferedReader(new InputStreamReader(System.in));
+	private static BufferedReader						keyboard		= new BufferedReader(new InputStreamReader(System.in));
 
-	private static PrintStream					display			= System.out;
+	private static PrintStream							display			= System.out;
 
 	private String										status;
 
@@ -62,28 +92,19 @@ public class SEPConsoleClient implements SimpleClientListener, Runnable
 
 	private IServerUser									serverUser;
 
+	private RpcGateway									gatewayClient;
+	private RpcGateway									gatewayServer;
+
 	protected Hashtable<ClientChannel, Vector<String>>	listeChannels	= new Hashtable<ClientChannel, Vector<String>>();
 
 	public static void setDisplay(PrintStream display)
 	{
 		SEPConsoleClient.display = display;
 	}
-	
+
 	public static void setKeyboard(BufferedReader keyboard)
 	{
 		SEPConsoleClient.keyboard = keyboard;
-	}
-	
-	private void initServices(RpcGateway gateway)
-	{
-		Set<IServerUser> serverUsers = gateway.remoteFindByType(IServerUser.class);
-		assert serverUsers.size() == 1;
-		serverUser = serverUsers.iterator().next();
-	}
-
-	private void resetServices()
-	{
-		serverUser = null;
 	}
 
 	public IServerUser getServerUser()
@@ -188,20 +209,40 @@ public class SEPConsoleClient implements SimpleClientListener, Runnable
 		status = msg;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see com.sun.sgs.client.ServerSessionListener#joinedChannel(com.sun.sgs.client.ClientChannel)
-	 */
-	@Override
-	public ClientChannelListener joinedChannel(ClientChannel channel)
+	private void initServices(RpcGateway gateway)
 	{
-		final ClientChannelAdapter adapter = new ClientChannelAdapter();
+		logger.log(Level.INFO, "Client querying IClientUser service");
+		Set<IServerUser> serverUsers = gateway.remoteFindByType(IServerUser.class);
+		assert serverUsers.size() == 1;
+		serverUser = serverUsers.iterator().next();
+	}
+
+	private void resetServices()
+	{
+		serverUser = null;
+	}
+
+	private ClientChannelListener initServerRpc(ClientChannel channel)
+	{
+		ClientChannelAdapter adapter = new ClientChannelAdapter(true);
 		ClientChannelListener listener = adapter.joinedChannel(channel);
+
+		gatewayServer = adapter.getGateway();
+		gatewayServer.registerService(IClientUser.class, this);
 		
+		logger.log(Level.INFO, "Client registered IClientUser service");
+		
+		return listener;
+	}
+	
+	private ClientChannelListener initClientRpc(ClientChannel channel)
+	{
+		final ClientChannelAdapter adapter = new ClientChannelAdapter(false);
+		ClientChannelListener listener = adapter.joinedChannel(channel);
+
 		Thread runLater = new Thread(new Runnable()
 		{
-		
+
 			@Override
 			public void run()
 			{
@@ -209,42 +250,43 @@ public class SEPConsoleClient implements SimpleClientListener, Runnable
 				{
 					Thread.sleep(2000);
 				}
-				catch(InterruptedException e)
+				catch (InterruptedException e)
 				{
 					e.printStackTrace();
 				}
-				
-				initServices(adapter.getGateway());
+
+				gatewayClient = adapter.getGateway();
+				initServices(gatewayClient);
 			}
 		});
 
-        runLater.start();
+		runLater.start();
 		
 		return listener;
-
-		/*
-		 * final SEPConsoleClient consoleClient = this; final ClientChannel joinedChannel = channel;
-		 * 
-		 * logger.log(Level.INFO, "joinedChannel \"" + channel.getName() + "\""); listeChannels.put(channel, new Vector<String>());
-		 * 
-		 * return new ClientChannelListener() { SEPConsoleClient client = consoleClient;
-		 * 
-		 * ClientChannel channel = joinedChannel;
-		 * 
-		 * @Override public void receivedMessage(ClientChannel channel, ByteBuffer message) { Command command; try { command = Command.decode(message); } catch (IOException e) { logger.log(Level.WARNING, "Received unreadable command from channel \"" + channel.getName() + "\" : \"" + message + "\""); return; }
-		 * 
-		 * ServerClientProtocol.eEvenements evt;
-		 * 
-		 * try { evt = ServerClientProtocol.eEvenements.valueOf(command.getCommand()); } catch (IllegalArgumentException e) { logger.log(Level.WARNING, "Received unknown command from channel \"" + channel.getName() + "\" : \"" + command.getCommand() + "\""); return; }
-		 * 
-		 * logger.log(SEPServer.traceLevel, "ReceivedMessage from channel \"" + channel.getName() + "\" : " + command.getCommand());
-		 * 
-		 * switch (evt) { case refreshChannelUserList: { refreshChannelUserList(channel, command.getParameters()); break; } default: { logger.log(Level.INFO, "Command \"" + evt.toString() + "\" from channel \"" + channel.getName() + "\" ignored."); } } }
-		 * 
-		 * @Override public void leftChannel(ClientChannel channel) { logger.log(Level.INFO, "left channel \"" + channel.getName() + "\""); listeChannels.remove(channel); }
-		 * 
-		 * };
-		 */
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.sun.sgs.client.ServerSessionListener#joinedChannel(com.sun.sgs.client.ClientChannel)
+	 */
+	@Override
+	public ClientChannelListener joinedChannel(final ClientChannel channel)
+	{
+		if (channel.getName().startsWith("ClientRpcChannel:"))
+		{
+			logger.log(Level.INFO, "joined ClientRpcChannel");
+			return initClientRpc(channel);
+		}
+	
+		if (channel.getName().startsWith("ServerRpcChannel:"))
+		{
+			logger.log(Level.INFO, "joined ServerRpcChannel");
+			return initServerRpc(channel);
+		}
+		
+		logger.log(Level.INFO, "joingedChannel("+channel.getName()+")");
+		return channelListener;
 	}
 
 	/*
@@ -321,7 +363,7 @@ public class SEPConsoleClient implements SimpleClientListener, Runnable
 
 	private static enum eCommande
 	{
-		newClient, status, login, logout, send, demandeListeParties, creerPartie, joindrePartie, listerChannels, channelSend, listerUserChannel, channelChat, channelUserChat
+		newClient, status, login, logout, send, demandeListeParties, creerPartie, joindrePartie, listerChannels, initClientUser, channelSend, listerUserChannel, channelChat, channelUserChat
 	};
 
 	public void test()
@@ -339,7 +381,7 @@ public class SEPConsoleClient implements SimpleClientListener, Runnable
 			Method[] methods = IServerUser.class.getDeclaredMethods();
 			for (int i = 0; i < methods.length; ++i)
 			{
-				display.println(i + 4 + "] " + methods[i].toGenericString());
+				display.println(i + 4+1 + "] " + methods[i].toGenericString());
 			}
 
 			display.println("0] Quitter");
@@ -359,7 +401,7 @@ public class SEPConsoleClient implements SimpleClientListener, Runnable
 
 			if (choix == 0) continue;
 
-			if (choix < 4)
+			if (choix < (4+1))
 			{
 				eCommande cmd = eCommande.values()[choix - 1];
 
@@ -435,7 +477,7 @@ public class SEPConsoleClient implements SimpleClientListener, Runnable
 			}
 			else
 			{
-				Method method = methods[choix-4];
+				Method method = methods[choix - (4+1)];
 				try
 				{
 					Object result = method.invoke(getServerUser());
@@ -462,36 +504,25 @@ public class SEPConsoleClient implements SimpleClientListener, Runnable
 	private void channelUserChat()
 	{
 		/*
-		ClientChannel channel = saisirChannel();
-		if (channel == null) return;
-
-		Vector<String> users = listeChannels.get(channel);
-		for (int i = 0; i < users.size(); ++i)
-		{
-			display.println(i + 1 + "] " + users.get(i));
-		}
-
-		int choix;
-		do
-		{
-			choix = Integer.valueOf(getInput("n° destinataire", "1"));
-		} while ((choix < 1) || (choix > users.size()));
-
-		String msg = getInput("Message", null);
-
-		sendCommand(ClientServerProtocol.eEvenements.ChatUserChannel, channel.getName(), users.get(choix - 1), msg);
-		*/
+		 * ClientChannel channel = saisirChannel(); if (channel == null) return;
+		 * 
+		 * Vector<String> users = listeChannels.get(channel); for (int i = 0; i < users.size(); ++i) { display.println(i + 1 + "] " + users.get(i)); }
+		 * 
+		 * int choix; do { choix = Integer.valueOf(getInput("n° destinataire", "1")); } while ((choix < 1) || (choix > users.size()));
+		 * 
+		 * String msg = getInput("Message", null);
+		 * 
+		 * sendCommand(ClientServerProtocol.eEvenements.ChatUserChannel, channel.getName(), users.get(choix - 1), msg);
+		 */
 	}
 
 	private void channelChat()
 	{
 		/*
-		ClientChannel channel = saisirChannel();
-		if (channel == null) return;
-
-		String msg = getInput("Message", null);
-		sendCommand(ClientServerProtocol.eEvenements.ChatChannel, channel.getName(), msg);
-		*/
+		 * ClientChannel channel = saisirChannel(); if (channel == null) return;
+		 * 
+		 * String msg = getInput("Message", null); sendCommand(ClientServerProtocol.eEvenements.ChatChannel, channel.getName(), msg);
+		 */
 	}
 
 	private void listerUserChannel()
@@ -593,22 +624,19 @@ public class SEPConsoleClient implements SimpleClientListener, Runnable
 	private void joindrePartie()
 	{
 		/*
-		String nomPartie = getInput("Nom partie", "partie de " + userName);
-
-		display.println("sendCommand(" + ClientServerProtocol.eEvenements.JoindreNouvellePartie + ", \"" + nomPartie + "\")");
-		sendCommand(ClientServerProtocol.eEvenements.JoindreNouvellePartie, nomPartie);
-		*/
+		 * String nomPartie = getInput("Nom partie", "partie de " + userName);
+		 * 
+		 * display.println("sendCommand(" + ClientServerProtocol.eEvenements.JoindreNouvellePartie + ", \"" + nomPartie + "\")"); sendCommand(ClientServerProtocol.eEvenements.JoindreNouvellePartie, nomPartie);
+		 */
 	}
 
 	private void creerPartie()
 	{
 		/*
-		String nomPartie = getInput("Nom partie", "partie de " + userName);
-		ConfigPartie configPartie = saisirConfigPartie();
-
-		display.println("sendCommand(" + ClientServerProtocol.eEvenements.CreerNouvellePartie + ", " + "\"" + nomPartie + "\", " + configPartie + ")");
-		sendCommand(ClientServerProtocol.eEvenements.CreerNouvellePartie, nomPartie, configPartie);
-		*/
+		 * String nomPartie = getInput("Nom partie", "partie de " + userName); ConfigPartie configPartie = saisirConfigPartie();
+		 * 
+		 * display.println("sendCommand(" + ClientServerProtocol.eEvenements.CreerNouvellePartie + ", " + "\"" + nomPartie + "\", " + configPartie + ")"); sendCommand(ClientServerProtocol.eEvenements.CreerNouvellePartie, nomPartie, configPartie);
+		 */
 	}
 
 	private static ConfigPartie saisirConfigPartie()
@@ -653,9 +681,8 @@ public class SEPConsoleClient implements SimpleClientListener, Runnable
 	private void demandeListeParties()
 	{
 		/*
-		display.println("sendCommand(" + ClientServerProtocol.eEvenements.DemandeListeParties + ")");
-		sendCommand(ClientServerProtocol.eEvenements.DemandeListeParties);
-		*/
+		 * display.println("sendCommand(" + ClientServerProtocol.eEvenements.DemandeListeParties + ")"); sendCommand(ClientServerProtocol.eEvenements.DemandeListeParties);
+		 */
 	}
 
 	private void reponseDemandeListeParties(Object ... parameters)
@@ -779,12 +806,194 @@ public class SEPConsoleClient implements SimpleClientListener, Runnable
 		}
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.lang.Runnable#run()
 	 */
 	@Override
 	public void run()
 	{
 		test();
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#joinedNewGame(common.NewGame)
+	 */
+	@Override
+	public void joinedNewGame(NewGame newGame)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "joinedNewGame");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#onFriendConnection(common.User)
+	 */
+	@Override
+	public void onFriendConnection(User onlineFriend)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "onFriendConnection");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#onFriendDeconnection(common.User)
+	 */
+	@Override
+	public void onFriendDeconnection(User offlineFriend)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "onFriendDeconnection");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#onGameCommand(common.IGameCommand)
+	 */
+	@Override
+	public void onGameCommand(IGameCommand command)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "onGameCommand");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#onGamePaused()
+	 */
+	@Override
+	public void onGamePaused()
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "onGamePaused");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#onGameResume(common.Game)
+	 */
+	@Override
+	public void onGameResume(Game game)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "onGameResume");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#receiveFriendList(common.FriendList)
+	 */
+	@Override
+	public void receiveFriendList(FriendList friendList)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "receiveFriendList");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#receiveGameChatMessage(common.User, java.lang.String)
+	 */
+	@Override
+	public void receiveGameChatMessage(User sender, String msg)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "receiveGameChatMessage");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#receiveMyCurrentGamesList(java.util.Vector)
+	 */
+	@Override
+	public void receiveMyCurrentGamesList(Vector<Game> currentGamesList)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "receiveMyCurrentGamesList");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#receiveNewGameChatMessage(common.User, java.lang.String)
+	 */
+	@Override
+	public void receiveNewGameChatMessage(User sender, String msg)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "receiveNewGameChatMessage");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#receiveNewGameDatas(common.IGameConfig, java.util.Vector)
+	 */
+	@Override
+	public void receiveNewGameDatas(IGameConfig gameConfig, Vector<IPlayerConfig> playersConfigs)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "receiveNewGameDatas");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#receiveNewGamesList(java.util.Vector)
+	 */
+	@Override
+	public void receiveNewGamesList(Vector<NewGame> newGamesList)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "receiveNewGamesList");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#receiveOutGameChatMessage(common.User, java.lang.String)
+	 */
+	@Override
+	public void receiveOutGameChatMessage(User sender, String msg)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "receiveOutGameChatMessage");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#receivePrivateMessage(common.User, java.lang.String)
+	 */
+	@Override
+	public void receivePrivateMessage(User sender, String msg)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "receivePrivateMessage");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#reconnectingGame(common.Game)
+	 */
+	@Override
+	public void reconnectingGame(Game game)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "reconnectingGame");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#startingNewGame(common.Game)
+	 */
+	@Override
+	public void startingNewGame(Game game)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "startingNewGame");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#updateNewGameConfig(common.IGameConfig)
+	 */
+	@Override
+	public void updateNewGameConfig(IGameConfig gameConfig)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "updateNewGameConfig");
+	}
+
+	/* (non-Javadoc)
+	 * @see common.IClientUser#updateNewGamePlayerConfig(common.IPlayerConfig)
+	 */
+	@Override
+	public void updateNewGamePlayerConfig(IPlayerConfig playerConfig)
+	{
+		// TODO Auto-generated method stub
+		logger.log(Level.INFO, "updateNewGamePlayerConfig");
 	}
 }
