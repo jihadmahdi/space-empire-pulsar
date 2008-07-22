@@ -58,10 +58,10 @@ public class RpcGateway implements RpcServer, Serializable
     private final RpcProxyFactory proxyFactory;
     private final ServiceProvider serviceProvider;
 
-    public RpcGateway(MessageSender requestSender, MessageSender responseSender, boolean isManaged, long timeoutMs) {
+    public RpcGateway(MessageSender requestSender, MessageSender responseSender, IRpcFutureManager rpcFutureManager, long timeoutMs) {
         this.timeoutMs = timeoutMs;
         server = new RpcServerImpl(responseSender);
-        RpcClient client = new RpcClientImpl(requestSender, isManaged);
+        RpcClient client = new RpcClientImpl(requestSender, rpcFutureManager);
         proxyFactory = new RpcProxyFactory(client);
         serviceProvider = proxyFactory.create(client.getServiceProvider());
     }

@@ -35,6 +35,8 @@ import java.nio.ByteBuffer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import net.orfjackal.darkstar.rpc.core.ManagedRpcFutureManager;
+
 /**
  * @author Esko Luontola
  * @since 15.6.2008
@@ -48,14 +50,14 @@ public class ChannelAdapter extends RpcChannelAdapter implements ChannelListener
 	
 	private ManagedReference<Channel>	channel;																// TODO: will not run without TransparentReferences, because Channels are managed objects
 
-	public ChannelAdapter(boolean isMaster)
+	public ChannelAdapter(boolean isMaster, String idClient)
 	{
-		super(isMaster, true);
+		super(isMaster, new ManagedRpcFutureManager(idClient));
 	}
 
-	public ChannelAdapter(long timeoutMs, boolean isMaster)
+	public ChannelAdapter(long timeoutMs, boolean isMaster, String idClient)
 	{
-		super(timeoutMs, isMaster, true);
+		super(timeoutMs, isMaster, new ManagedRpcFutureManager(idClient));
 	}
 
 	public void setChannel(Channel channel)

@@ -53,7 +53,7 @@ public class RpcClientSpec extends Specification<Object> {
 
     public RpcClientSpec() {
         server = new DummySender();
-        client = new RpcClientImpl(server);
+        client = new RpcClientImpl(server, new ManagedRpcFutureManager("test"));
     }
 
 
@@ -89,7 +89,7 @@ public class RpcClientSpec extends Specification<Object> {
 
         public void theFutureMayNotBeMarkedDoneByAnotherResponse() {
             final Response rsp = Response.valueReturned(2L, "returnvalue");
-            final RpcFuture<?> rcpFuture = (RpcFuture<?>) future;
+            final UnmanagedRpcFuture<?> rcpFuture = (UnmanagedRpcFuture<?>) future;
             specify(new Block() {
                 public void run() throws Throwable {
                     rcpFuture.markDone(rsp);
@@ -179,7 +179,7 @@ public class RpcClientSpec extends Specification<Object> {
                 one(server).send(with(any(byte[].class))); will(throwException(new IOException()));
                 allowing(server).setCallback(with(any(MessageReciever.class)));
             }});
-            client = new RpcClientImpl(server);
+            client = new RpcClientImpl(server, new ManagedRpcFutureManager("test"));
             specify(new Block() {
                 public void run() throws Throwable {
                     client.remoteInvoke(42L, "foo", new Class<?>[0], null);

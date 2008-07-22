@@ -53,7 +53,7 @@ public class EndToEndSpec extends Specification<Object> {
 
     public EndToEndSpec() {
         server = new RpcServerImpl(network.getServerToClient());
-        client = new RpcClientImpl(network.getClientToServer());
+        client = new RpcClientImpl(network.getClientToServer(), new ManagedRpcFutureManager("test"));
 
         // initialize Foo on server
         fooService = mock(Foo.class);

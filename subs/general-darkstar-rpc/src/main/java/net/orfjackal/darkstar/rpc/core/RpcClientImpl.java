@@ -24,25 +24,17 @@
 
 package net.orfjackal.darkstar.rpc.core;
 
-import net.orfjackal.darkstar.rpc.*;
-
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
-import com.sun.sgs.app.AppContext;
-import com.sun.sgs.app.ManagedReference;
-import com.sun.sgs.impl.util.ManagedSerializable;
+import net.orfjackal.darkstar.rpc.IRpcFutureManager;
+import net.orfjackal.darkstar.rpc.MessageSender;
+import net.orfjackal.darkstar.rpc.ResponseReceiver;
+import net.orfjackal.darkstar.rpc.RpcClient;
+import net.orfjackal.darkstar.rpc.ServiceProvider;
+import net.orfjackal.darkstar.rpc.ServiceReference;
 
 /**
  * @author Esko Luontola
@@ -312,15 +304,14 @@ public class RpcClientImpl implements RpcClient, ResponseReceiver, Serializable
     private static final long serialVersionUID = 1L;
     private static final Logger log = Logger.getLogger(RpcClientImpl.class.getName());
 
-    //private final Map<Long, RpcFuture<?>> waitingForResponse;
-    //private final Map<Long, ManagedReference<ManagedSerializable<RpcFuture<?>>>> waitingForResponse = new ConcurrentHashMap<Long, ManagedReference<ManagedSerializable<RpcFuture<?>>>>();
+    private final IRpcFutureManager rpcFutureManager;
     private final MessageSender requestSender;
     private long nextRequestId = 1L;
 
-    public RpcClientImpl(MessageSender requestSender, boolean isManaged) {
+    public RpcClientImpl(MessageSender requestSender, IRpcFutureManager rpcFutureManager) {
         requestSender.setCallback(this);
         this.requestSender = requestSender;
-        //this.waitingForResponse = new ManageableConcurantHashMap<Long, RpcFuture<?>>(isManaged);
+        this.rpcFutureManager = rpcFutureManager;
     }
 
     public ServiceReference<ServiceProvider> getServiceProvider() {
@@ -347,24 +338,15 @@ public class RpcClientImpl implements RpcClient, ResponseReceiver, Serializable
     }
 
     private <V> Future<V> waitForResponseTo(Request rq) {
-        RpcFuture<V> f = new RpcFuture<V>(rq);
         
-        assert (RpcFuture.getById(rq.requestId) != null);
-        //assert !waitingForResponse.containsKey(rq.requestId);
-        
-        //waitingForResponse.put(rq.requestId, f);
-        return f;
+    	return rpcFutureManager.waitForResponseTo(rq);
+
     }
 
     public void receivedMessage(byte[] message) {
         Response rsp = Response.fromBytes(message);
-        RpcFuture<?> f = RpcFuture.getById(rsp.requestId);
-        //RpcFuture<?> f = waitingForResponse.remove(rsp.requestId);
-        if (f != null) {
-        	f.markDone(rsp);
-        } else {
-            log.warning("Unexpected response: " + rsp);
-        }
+        
+        rpcFutureManager.receivedResponse(rsp);
     }
 
     private synchronized long nextRequestId() {
@@ -372,7 +354,6 @@ public class RpcClientImpl implements RpcClient, ResponseReceiver, Serializable
     }
 
     public int waitingForResponse() {
-    	return RpcFuture.waitingForResponse();
-    	//return waitingForResponse.size();
+    	return rpcFutureManager.waitingForResponse();
     }
 }

@@ -33,6 +33,8 @@ import java.nio.ByteBuffer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import net.orfjackal.darkstar.rpc.core.RpcFutureManager;
+
 /**
  * @author Esko Luontola
  * @since 15.6.2008
@@ -47,12 +49,12 @@ public class ClientChannelAdapter extends RpcChannelAdapter implements ClientCha
 
 	public ClientChannelAdapter(boolean isMaster)
 	{
-		super(isMaster, false);
+		super(isMaster, new RpcFutureManager());
 	}
 
 	public ClientChannelAdapter(int timeoutMs, boolean isMaster)
 	{
-		super(timeoutMs, isMaster, false);
+		super(timeoutMs, isMaster, new RpcFutureManager());
 	}
 
 	public ClientChannelListener joinedChannel(ClientChannel channel)

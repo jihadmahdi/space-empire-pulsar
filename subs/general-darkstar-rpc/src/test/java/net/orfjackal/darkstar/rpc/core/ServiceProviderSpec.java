@@ -48,7 +48,7 @@ public class ServiceProviderSpec extends Specification<Object> {
 
     public ServiceProviderSpec() {
         server = new RpcServerImpl(network.getServerToClient());
-        client = new RpcClientImpl(network.getClientToServer());
+        client = new RpcClientImpl(network.getClientToServer(), new ManagedRpcFutureManager("test"));
         factory = new RpcProxyFactory(client);
     }
 

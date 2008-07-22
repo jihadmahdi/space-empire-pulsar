@@ -57,7 +57,7 @@ public class ChannelAdapterSpec extends Specification<Object> {
         public Object create() {
 
             // initialization on server
-            ChannelAdapter adapterOnServer = new ChannelAdapter(100, true);
+            ChannelAdapter adapterOnServer = new ChannelAdapter(100, true, "test");
             gatewayOnServer = adapterOnServer.getGateway();
             mockChannel = new MockChannel(adapterOnServer);
             adapterOnServer.setChannel(mockChannel.getChannel());

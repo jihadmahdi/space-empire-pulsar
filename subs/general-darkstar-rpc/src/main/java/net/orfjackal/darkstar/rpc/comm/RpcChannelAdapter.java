@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import net.orfjackal.darkstar.rpc.IRpcFutureManager;
 import net.orfjackal.darkstar.rpc.MessageSender;
 import net.orfjackal.darkstar.rpc.RequestReceiver;
 import net.orfjackal.darkstar.rpc.ResponseReceiver;
@@ -40,12 +41,12 @@ public abstract class RpcChannelAdapter implements IChannelAdapter, Serializable
 
 	private byte				responseHeader;
 
-	public RpcChannelAdapter(boolean isMaster, boolean isManaged)
+	public RpcChannelAdapter(boolean isMaster, IRpcFutureManager rpcFutureManager)
 	{
-		this(10000, isMaster, isManaged);
+		this(10000, isMaster, rpcFutureManager);
 	}
 
-	public RpcChannelAdapter(long timeoutMs, boolean isMaster, boolean isManaged)
+	public RpcChannelAdapter(long timeoutMs, boolean isMaster, IRpcFutureManager rpcFutureManager)
 	{
 		MessageSender requestSender;
 		MessageSender responseSender;
@@ -67,7 +68,7 @@ public abstract class RpcChannelAdapter implements IChannelAdapter, Serializable
 			responseHeader = RpcGateway.RESPONSE_FROM_SLAVE;
 		}
 
-		gateway = new RpcGateway(requestSender, responseSender, isManaged, timeoutMs);
+		gateway = new RpcGateway(requestSender, responseSender, rpcFutureManager, timeoutMs);
 	}
 
 	public RpcGateway getGateway()
