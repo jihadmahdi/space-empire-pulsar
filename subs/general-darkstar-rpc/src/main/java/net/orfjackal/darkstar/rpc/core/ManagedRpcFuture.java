@@ -17,7 +17,7 @@ import com.sun.sgs.app.ManagedReference;
 /**
  * 
  */
-public class ManagedRpcFuture<V> implements RpcFuture<V>, Serializable
+public class ManagedRpcFuture<V> implements IRpcFuture<V>, Serializable
 {
 
 	private static class RpcFutureBean<V> implements ManagedObject, Serializable
@@ -122,7 +122,7 @@ public class ManagedRpcFuture<V> implements RpcFuture<V>, Serializable
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see net.orfjackal.darkstar.rpc.core.RpcFuture#markDone(net.orfjackal.darkstar.rpc.core.Response)
+	 * @see net.orfjackal.darkstar.rpc.core.IRpcFuture#markDone(net.orfjackal.darkstar.rpc.core.Response)
 	 */
 	@Override
 	public void markDone(Response response)

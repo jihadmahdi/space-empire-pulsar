@@ -24,15 +24,8 @@
 
 package net.orfjackal.darkstar.rpc.core;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -40,8 +33,13 @@ import java.util.concurrent.TimeoutException;
  * @author Esko Luontola
  * @since 10.6.2008
  */
-public final class UnmanagedRpcFuture<V> implements RpcFuture<V>, Serializable
+/**
+ * @param <V>
+ */
+public final class UnmanagedRpcFuture<V> implements IRpcFuture<V>, Serializable
 {	
+	private static final long	serialVersionUID	= 1L;
+	
 	private final Request				request;
 	private Throwable exception;
 	private V value = null;
@@ -52,6 +50,10 @@ public final class UnmanagedRpcFuture<V> implements RpcFuture<V>, Serializable
 		this.request = request;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see net.orfjackal.darkstar.rpc.core.IRpcFuture#markDone(net.orfjackal.darkstar.rpc.core.Response)
+	 */
 	public void markDone(Response response)
 	{
 		if (response.requestId != request.requestId)
@@ -60,18 +62,13 @@ public final class UnmanagedRpcFuture<V> implements RpcFuture<V>, Serializable
 		}
 		if (response.exception != null)
 		{
-			setException(response.exception);
+			this.exception = response.exception;
 		}
 		else
 		{
 			value = (V) response.value;
 			isDone = true;
 		}
-	}
-
-	private void setException(Throwable t)
-	{
-		this.exception = t;
 	}
 
 	/* (non-Javadoc)

@@ -1,12 +1,8 @@
 package net.orfjackal.darkstar.rpc;
 import java.util.concurrent.Future;
 
-import com.sun.sgs.app.ManagedReference;
-
 import net.orfjackal.darkstar.rpc.core.Request;
 import net.orfjackal.darkstar.rpc.core.Response;
-import net.orfjackal.darkstar.rpc.core.RpcFuture;
-import net.orfjackal.darkstar.rpc.core.UnmanagedRpcFuture;
 
 /**
  * @author Escallier Pierre
