@@ -81,5 +81,6 @@ Le jeu se termine au bout d'un nombre de tour fixé, le joueur ayant le plus hau
 ==Calcul du score global d'un joueur==
 Le score global d'un joueur est calculé en prenant en compte toute ces possessions:
 Nombre et types de corps célestes, total des ressources 人 et 資, nombre et puissance des flottes, nombres et types de constructions.
+
 ===A DEFINIR===
 Poids de chaque paramètre dans la formule finale de calcul du score.
