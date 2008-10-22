@@ -31,7 +31,6 @@ import com.sun.sgs.app.TaskManager;
 import com.sun.sgs.app.util.ScalableHashMap;
 import common.Command;
 import common.IUserAccount;
-import common.SEPAccount;
 import common.ServerClientProtocol;
 import common.metier.ConfigPartie;
 import common.metier.PartieEnCreation;
@@ -51,55 +50,6 @@ public class SEPServer implements Serializable, AppListener
 
 	/** The {@link Logger} for this class. */
 	private static final Logger	logger				= Logger.getLogger(SEPServer.class.getName());
-
-	public static class SEPServerException extends Exception
-	{
-
-		private static final long	serialVersionUID	= 1L;
-
-		SEPServerException()
-		{
-			super();
-		}
-
-		SEPServerException(String msg)
-		{
-			super(msg);
-		}
-
-	}
-
-	public static class SEPServerDiffuserMessageException extends SEPServerException
-	{
-
-		private static final long	serialVersionUID	= 1L;
-
-		public SEPServerDiffuserMessageException(String raison)
-		{
-			super(raison);
-		}
-	}
-	
-	public static class SEPServerCreerNouvellePartieException extends SEPServerException
-	{
-
-		private static final long	serialVersionUID	= 1L;
-
-		public SEPServerCreerNouvellePartieException(String raison)
-		{
-			super(raison);
-		}
-	}
-	
-	public static class SEPServerJoindreNouvellePartieException extends SEPServerException
-	{
-		private static final long	serialVersionUID	= 1L;
-
-		public SEPServerJoindreNouvellePartieException(String raison)
-		{
-			super(raison);
-		}
-	}
 	
 	private static class NettoyerPartieEnCreationVidesTask implements Task, Serializable
 	{
@@ -172,10 +122,10 @@ public class SEPServer implements Serializable, AppListener
 		*/
 		
 		DataManager dm = AppContext.getDataManager();
-		IUserAccount account = null;
+		SEPAccount account = null;
 		try
 		{
-			account = (IUserAccount) dm.getBinding(id.getUID());
+			account = SEPAccount.getAccount(id.getUID());
 			ClientSession previousSession = account.getSession();
 			if ((previousSession != null) && (previousSession.isConnected()))
 			{
@@ -189,8 +139,7 @@ public class SEPServer implements Serializable, AppListener
 		{
 			logger.log(Level.WARNING, "New User loggedIn : \"" + id + "\"");
 			account = new SEPAccount(id.getUID());
-			logger.log(Level.WARNING, "setBinding("+id.getUID()+", "+account+")");
-			dm.setBinding(id.getUID(), account);
+			SEPAccount.saveAccount(account);
 		}
 
 		account.setSession(session);
@@ -223,6 +172,7 @@ public class SEPServer implements Serializable, AppListener
 	 * @return
 	 * @throws SEPServerCreerNouvellePartieException
 	 */
+	/*
 	public void creerNouvellePartie(String nomPartie, ConfigPartie configPartie) throws SEPServerCreerNouvellePartieException
 	{
 		ScalableHashMap<String, PartieEnCreation> nouvellesParties = refNouvellesParties.getForUpdate();
@@ -239,12 +189,14 @@ public class SEPServer implements Serializable, AppListener
 		logger.log(Level.INFO, "Nouvelle partie en cours de création : \""+nomPartie+"\"");
 		nouvellesParties.put(nomPartie, nouvellePartie);
 	}
+	*/
 
 	/**
 	 * @param clientSession
 	 * @param cfgPartie
 	 * @throws SEPServerJoindreNouvellePartieException 
 	 */
+	/*
 	public void joindreNouvellePartie(SEPServerClientSessionListener clientSession, String nomPartie) throws SEPServerJoindreNouvellePartieException
 	{
 		// TODO : créer un channel pour la partie en création.
@@ -280,6 +232,7 @@ public class SEPServer implements Serializable, AppListener
 		
 		sendCommand(channel, null, ServerClientProtocol.eEvenements.refreshChannelUserList, listeUsers);
 	}
+	*/
 
 	public Vector<String> getChannelUserList(Channel channel)
 	{
@@ -362,9 +315,10 @@ public class SEPServer implements Serializable, AppListener
 	 * @param clientSession
 	 * @param nomChannel
 	 * @param msg
-	 * @throws SEPServerDiffuserMessageException 
+	 * @throws SEPServerSendMessageException 
 	 */
-	public void diffuserMessage(SEPServerClientSessionListener clientSessionListener, String nomChannel, String msg) throws SEPServerDiffuserMessageException
+	/*
+	public void diffuserMessage(SEPServerClientSessionListener clientSessionListener, String nomChannel, String msg) throws SEPServerSendMessageException
 	{
 		Channel channel = null;
 		try
@@ -373,7 +327,7 @@ public class SEPServer implements Serializable, AppListener
 		}
 		catch(NameNotBoundException e)
 		{
-			throw new SEPServerDiffuserMessageException("Channel introuvable \""+nomChannel+"\"");
+			throw new SEPServerSendMessageException("Channel introuvable \""+nomChannel+"\"");
 		}
 		
 		Iterator<ClientSession> it = channel.getSessions();
@@ -386,17 +340,19 @@ public class SEPServer implements Serializable, AppListener
 				return;
 			}
 		}
-		throw new SEPServerDiffuserMessageException("Le client \""+clientSessionListener.getName()+"\" n'est pas présent dans le channel \""+channel.getName()+"\"");
+		throw new SEPServerSendMessageException("Le client \""+clientSessionListener.getName()+"\" n'est pas présent dans le channel \""+channel.getName()+"\"");
 	}
+	*/
 
 	/**
 	 * @param clientSession
 	 * @param nomChannel
 	 * @param user
 	 * @param msg
-	 * @throws SEPServerDiffuserMessageException 
+	 * @throws SEPServerSendMessageException 
 	 */
-	public void diffuserMessagePrive(SEPServerClientSessionListener clientSessionListener, String nomChannel, String nomUser, String msg) throws SEPServerDiffuserMessageException
+	/*
+	public void diffuserMessagePrive(SEPServerClientSessionListener clientSessionListener, String nomChannel, String nomUser, String msg) throws SEPServerSendMessageException
 	{
 		Channel channel = null;
 		try
@@ -405,7 +361,7 @@ public class SEPServer implements Serializable, AppListener
 		}
 		catch(NameNotBoundException e)
 		{
-			throw new SEPServerDiffuserMessageException("Channel introuvable \""+nomChannel+"\"");
+			throw new SEPServerSendMessageException("Channel introuvable \""+nomChannel+"\"");
 		}
 		
 		boolean senderFound = false;
@@ -435,6 +391,7 @@ public class SEPServer implements Serializable, AppListener
 			return;
 		}
 		
-		throw new SEPServerDiffuserMessageException("Le client \""+clientSessionListener.getName()+"\" et/ou le destinataire \"" + nomUser +"\" n'est pas présent dans le channel \""+channel.getName()+"\"");
+		throw new SEPServerSendMessageException("Le client \""+clientSessionListener.getName()+"\" et/ou le destinataire \"" + nomUser +"\" n'est pas présent dans le channel \""+channel.getName()+"\"");
 	}
+	*/
 }

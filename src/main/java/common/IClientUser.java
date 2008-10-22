@@ -6,6 +6,7 @@
 package common;
 
 import java.util.Vector;
+import java.util.concurrent.Future;
 
 /**
  * Describe Client side user interface, that can be called from server.
@@ -19,14 +20,7 @@ public interface IClientUser
 	 * @param msg
 	 * @see IServerUser#sendPrivateMessage(User, String)
 	 */
-	void receivePrivateMessage(User sender, String msg);
-	
-	/**
-	 * Receive friend list (with current states).
-	 * @param friendList
-	 * @see IServerUser#askFriendList()
-	 */
-	void receiveFriendList(FriendList friendList);
+	void receivePrivateMessage(String senderName, String msg);
 	
 	/**
 	 * Received when a friend get connected.
@@ -47,20 +41,6 @@ public interface IClientUser
 	 * @see IServerUser#sendOutGameChatMessage(String)
 	 */
 	void receiveOutGameChatMessage(User sender, String msg);
-	
-	/**
-	 * Receive new games list from the server.
-	 * @param newGamesList
-	 * @see IServerUser#askNewGamesList()
-	 */
-	void receiveNewGamesList(Vector<NewGame> newGamesList);
-	
-	/**
-	 * Receive the user current games list.
-	 * @param currentGamesList
-	 * @see IServerUser#askMyCurrentGamesList()
-	 */
-	void receiveMyCurrentGamesList(Vector<Game> currentGamesList);
 	
 	/**
 	 * The user just joined a new game.
@@ -122,7 +102,7 @@ public interface IClientUser
 	/**
 	 * Received when the current running game is paused by server (because at least one player is missing).
 	 */
-	void onGamePaused();
+	Future<Void> onGamePaused();
 	
 	/**
 	 * Receive message on the current running game channel from the sender.

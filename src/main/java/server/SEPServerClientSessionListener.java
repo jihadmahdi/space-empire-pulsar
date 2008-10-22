@@ -5,23 +5,20 @@
  */
 package server;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Set;
+import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import sun.security.action.GetLongAction;
-
+import net.orfjackal.darkstar.rpc.ServiceHelper;
 import net.orfjackal.darkstar.rpc.ServiceReference;
 import net.orfjackal.darkstar.rpc.comm.ChannelAdapter;
 import net.orfjackal.darkstar.rpc.comm.RpcGateway;
-import net.orfjackal.darkstar.rpc.core.RpcFuture;
 
 import com.sun.sgs.app.AppContext;
 import com.sun.sgs.app.Channel;
@@ -30,17 +27,19 @@ import com.sun.sgs.app.ClientSessionListener;
 import com.sun.sgs.app.Delivery;
 import com.sun.sgs.app.ManagedObject;
 import com.sun.sgs.app.ManagedReference;
+import com.sun.sgs.app.NameNotBoundException;
 import com.sun.sgs.app.Task;
-import com.sun.sgs.impl.util.ManagedSerializable;
-import com.sun.sgs.kernel.KernelRunnable;
 import common.Command;
+import common.FriendList;
 import common.Game;
 import common.IClientUser;
 import common.IGameCommand;
 import common.IGameConfig;
 import common.IPlayerConfig;
 import common.IServerUser;
-import common.IUserAccount;
+import common.NewGame;
+import common.FriendList.FriendInfo.FriendState;
+import common.IServerUser.UnknownUserException;
 
 /**
  * 
@@ -55,7 +54,7 @@ public class SEPServerClientSessionListener implements ManagedObject, Serializab
 	private static final Logger						logger				= Logger.getLogger(SEPServerClientSessionListener.class.getName());
 
 	/** Client account. */
-	private final ManagedReference<IUserAccount>	refAccount;
+	private final ManagedReference<SEPAccount>		refAccount;
 
 	/** Reference to the account current session. */
 	private final ManagedReference<ClientSession>	refSession;
@@ -72,9 +71,11 @@ public class SEPServerClientSessionListener implements ManagedObject, Serializab
 	/** Client StateMachine. */
 	private final SEPServerClientStateMachine		statemachine;
 
-	private IClientUser								clientUser;
+	public IClientUser								clientUser;
+	
+	private final ManagedReference<SEPServerClientSessionListener> refThis;
 
-	public SEPServerClientSessionListener(IUserAccount account)
+	public SEPServerClientSessionListener(SEPAccount account)
 	{
 		logger.log(Level.WARNING, "SEPServerClientSessionListener.CTOR; name==" + this.name + "; statemachine==" + this.statemachine);
 
@@ -83,23 +84,25 @@ public class SEPServerClientSessionListener implements ManagedObject, Serializab
 		this.name = getSession().getName();
 
 		this.statemachine = new SEPServerClientStateMachine(this, new SEPServerUser(this), new ServerClientServerEventExecutor(this));
-		this.statemachine.exportDOTfiles(new File("dot"));
 
 		AppContext.getTaskManager().scheduleTask(new InitServerRpcTask(this), 2000);
 
 		gatewayClient = initClientRpc();
 
 		AppContext.getDataManager().setBinding(getName(), this);
+		refThis = AppContext.getDataManager().createReference(this);
+
+		refAccount.get().setSessionListener(this);
 	}
 
-	IClientUser getClientUser() throws InterruptedException, ExecutionException
+	IClientUser getClientUser()
 	{
 		return clientUser;
 	}
 
 	private RpcGateway initClientRpc()
 	{
-		ChannelAdapter adapter = new ChannelAdapter(true);
+		ChannelAdapter adapter = new ChannelAdapter(true, name);
 		Channel channel = AppContext.getChannelManager().createChannel("ClientRpcChannel:" + name, adapter, Delivery.RELIABLE);
 		adapter.setChannel(channel);
 
@@ -115,7 +118,7 @@ public class SEPServerClientSessionListener implements ManagedObject, Serializab
 
 	private RpcGateway initServerRpcGateway()
 	{
-		ChannelAdapter adapter = new ChannelAdapter(false);
+		ChannelAdapter adapter = new ChannelAdapter(false, name);
 		Channel channel = AppContext.getChannelManager().createChannel("ServerRpcChannel:" + name, adapter, Delivery.RELIABLE);
 		channel.join(getSession());
 
@@ -176,6 +179,11 @@ public class SEPServerClientSessionListener implements ManagedObject, Serializab
 		return (refSession == null) ? null : refSession.get();
 	}
 
+	protected SEPAccount getAccount()
+	{
+		return (refAccount == null) ? null : SEPAccount.class.cast(refAccount.get());
+	}
+
 	/**
 	 * @param session
 	 */
@@ -199,24 +207,33 @@ public class SEPServerClientSessionListener implements ManagedObject, Serializab
 
 	private static class SEPServerUser implements IServerUser, Serializable
 	{
-		private static final long	serialVersionUID	= 1L;
-		private final ManagedReference<SEPServerClientSessionListener> refClientSessionListener;
-		
+		private static final long										serialVersionUID	= 1L;
+
+		private final ManagedReference<SEPServerClientSessionListener>	refClientSessionListener;
+
 		public SEPServerUser(SEPServerClientSessionListener clientSessionListener)
 		{
 			this.refClientSessionListener = AppContext.getDataManager().createReference(clientSessionListener);
 		}
-		
+
 		/*
 		 * (non-Javadoc)
 		 * 
 		 * @see common.IServerUser#addFriend(java.lang.String)
 		 */
 		@Override
-		public void addFriend(String newFriendName)
+		public void addFriend(String newFriendName) throws UnknownUserException
 		{
-			// TODO Auto-generated method stub
 			logger.log(Level.INFO, "addFriend");
+			SEPServerClientSessionListener clientListener = refClientSessionListener.get();
+			try
+			{
+				clientListener.getAccount().addFriend(newFriendName);
+			}
+			catch(NameNotBoundException e)
+			{
+				throw new UnknownUserException("User "+newFriendName+" does not exist");
+			}
 		}
 
 		/*
@@ -225,23 +242,22 @@ public class SEPServerClientSessionListener implements ManagedObject, Serializab
 		 * @see common.IServerUser#askFriendList()
 		 */
 		@Override
-		public void askFriendList() throws InterruptedException, ExecutionException
+		public Future<FriendList> askFriendList()
 		{
-			// TODO Auto-generated method stub
 			logger.log(Level.INFO, "askFriendList");
-			refClientSessionListener.get().clientUser.onGamePaused();
+			SEPServerClientSessionListener clientListener = refClientSessionListener.get();
+			SEPAccount clientAccount = clientListener.getAccount();
+			return ServiceHelper.wrap(clientAccount.getFriendList());
 		}
 
-		/*
-		 * (non-Javadoc)
-		 * 
+		/* (non-Javadoc)
 		 * @see common.IServerUser#askMyCurrentGamesList()
 		 */
 		@Override
-		public void askMyCurrentGamesList()
+		public Future<Vector<Game>> askMyCurrentGamesList()
 		{
-			// TODO Auto-generated method stub
 			logger.log(Level.INFO, "askMyCurrentGamesList");
+			return null;
 		}
 
 		/*
@@ -256,16 +272,14 @@ public class SEPServerClientSessionListener implements ManagedObject, Serializab
 			logger.log(Level.INFO, "askNewGameDatas");
 		}
 
-		/*
-		 * (non-Javadoc)
-		 * 
+		/* (non-Javadoc)
 		 * @see common.IServerUser#askNewGamesList()
 		 */
 		@Override
-		public void askNewGamesList()
+		public Future<Vector<NewGame>> askNewGamesList()
 		{
-			// TODO Auto-generated method stub
 			logger.log(Level.INFO, "askNewGamesList");
+			return null;
 		}
 
 		/*
@@ -348,8 +362,9 @@ public class SEPServerClientSessionListener implements ManagedObject, Serializab
 		@Override
 		public void removeFriend(String oldFriendName)
 		{
-			// TODO Auto-generated method stub
 			logger.log(Level.INFO, "removeFriend");
+			SEPServerClientSessionListener clientListener = refClientSessionListener.get();
+			clientListener.getAccount().removeFriend(oldFriendName);
 		}
 
 		/*
@@ -394,10 +409,33 @@ public class SEPServerClientSessionListener implements ManagedObject, Serializab
 		 * @see common.IServerUser#sendPrivateMessage(java.lang.String, java.lang.String)
 		 */
 		@Override
-		public void sendPrivateMessage(String receiverName, String msg)
+		public void sendPrivateMessage(String receiverName, String msg) throws SendMessageException
 		{
-			// TODO Auto-generated method stub
 			logger.log(Level.INFO, "sendPrivateMessage");
+			SEPServerClientSessionListener clientListener = refClientSessionListener.get();
+			SEPAccount receiverAccount = SEPAccount.getAccount(receiverName);
+			FriendState receiverState = receiverAccount.getState();
+			
+			if (receiverState == FriendState.NOT_CONNECTED)
+			{
+				throw new SendMessageException("Receiver "+receiverName+" is disconnected");
+			}
+			
+			SEPServerClientSessionListener receiverListener = receiverAccount.getSessionListener();
+			
+			if (receiverListener == null)
+			{
+				throw new SendMessageException("Receiver "+receiverName+" seems disconnected");
+			}
+			
+			IClientUser receiverClientUser = receiverListener.getClientUser();
+			
+			if (receiverClientUser == null)
+			{
+				throw new SendMessageException("Receiver "+receiverName+" connection does not seems to be completed yet");
+			}
+			
+			receiverClientUser.receivePrivateMessage(clientListener.getName(), msg);
 		}
 
 		/*
@@ -424,18 +462,18 @@ public class SEPServerClientSessionListener implements ManagedObject, Serializab
 			logger.log(Level.INFO, "tryReconnectingGame");
 		}
 	}
-	
+
 	private static class ServerClientServerEventExecutor implements IServerClientServerEventExecutor, Serializable
 	{
-		private static final long	serialVersionUID	= 1L;
-		
-		private final ManagedReference<SEPServerClientSessionListener> refClientSessionListener;
+		private static final long										serialVersionUID	= 1L;
+
+		private final ManagedReference<SEPServerClientSessionListener>	refClientSessionListener;
 
 		public ServerClientServerEventExecutor(SEPServerClientSessionListener clientSessionListener)
 		{
 			this.refClientSessionListener = AppContext.getDataManager().createReference(clientSessionListener);
 		}
-		
+
 		/*
 		 * (non-Javadoc)
 		 * 
@@ -486,136 +524,76 @@ public class SEPServerClientSessionListener implements ManagedObject, Serializab
 
 			logger.log(Level.INFO, "Server querying IClientUser service");
 
-			Future<Set<ServiceReference<IClientUser>>> futureClientUsers = listener.gatewayServer.nonBlockingRemoteFindByType(IClientUser.class);
+			final Future<Set<ServiceReference<IClientUser>>> futureClientUsers = listener.gatewayServer.nonBlockingRemoteFindByType(IClientUser.class);
 
-			long timeout = Long.MAX_VALUE;
-			WaitForClientUserTask waitForClientUserTask = new WaitForClientUserTask(futureClientUsers, listener, timeout);
-			AppContext.getTaskManager().scheduleTask(waitForClientUserTask);
+			ServiceHelper.serverWaitForFuture(futureClientUsers, new ServiceHelper.WaitForFutureListener<Set<ServiceReference<IClientUser>>>()
+			{
+				private static final long	serialVersionUID	= 1L;
+
+				@Override
+				public void onTimeOut(long elapsedTime)
+				{
+					logger.log(Level.SEVERE, "InitServerRpc failed -> Disconntect");
+					refListener.get().disconnected(false);
+				}
+			
+				@Override
+				public void onResultOK(Set<ServiceReference<IClientUser>> result)
+				{
+					logger.log(Level.INFO, "ClientUserCallback");
+					
+					SEPServerClientSessionListener listener = refListener.getForUpdate();
+					Set<IClientUser> clientUsers = listener.gatewayServer.asProxies(result);
+
+					assert clientUsers.size() == 1;
+
+					logger.log(Level.INFO, "InitClientUser Complete");
+					listener.clientUser = clientUsers.iterator().next();
+
+					logger.log(Level.INFO, "clientUser.onGamePaused");
+					
+					listener.clientUser.onGamePaused();
+					Future<Void> test = listener.clientUser.onGamePaused();
+
+					ServiceHelper.serverWaitForFuture(test, new ServiceHelper.WaitForFutureListener<Void>()
+					{
+						private static final long	serialVersionUID	= 1L;
+
+						@Override
+						public void onTimeOut(long elapsedTime)
+						{
+							logger.log(Level.SEVERE, "clientUser.onGamePaused timedout in "+elapsedTime);
+						}
+					
+						@Override
+						public void onResultOK(Void result)
+						{
+							logger.log(Level.INFO, "clientUser.onGamePaused result : "+result);
+						}
+					
+						@Override
+						public void onExceptionThrown(Throwable throwable)
+						{
+							logger.log(Level.INFO, "clientUser.onGamePaused thrown "+throwable);
+						}
+					});
+				}
+			
+				@Override
+				public void onExceptionThrown(Throwable throwable)
+				{
+					logger.log(Level.INFO, "InitServerRpc thrown : "+throwable+" -> Disconnect");
+					refListener.get().disconnected(false);
+				}
+			});
 		}
 	}
 
-	private static class WaitForClientUserTask implements Task, Serializable
+	/**
+	 * @return
+	 */
+	public FriendState getState()
 	{
-
-		private static final long										serialVersionUID	= 1L;
-
-		private final Future<Set<ServiceReference<IClientUser>>>		futureClientUsers;
-
-		private final ManagedReference<SEPServerClientSessionListener>	refListener;
-
-		private final long												timeOutMs;
-
-		private Long													startTime			= null;
-
-		private WaitForClientUserTask(long startTime, Future<Set<ServiceReference<IClientUser>>> futureClientUsers, SEPServerClientSessionListener listener, long timeOutMs)
-		{
-			this.startTime = startTime;
-			this.futureClientUsers = futureClientUsers;
-			this.refListener = AppContext.getDataManager().createReference(listener);
-			this.timeOutMs = timeOutMs;
-		}
-
-		public WaitForClientUserTask(Future<Set<ServiceReference<IClientUser>>> futureClientUsers, SEPServerClientSessionListener listener, long timeOutMs)
-		{
-			this.futureClientUsers = futureClientUsers;
-			this.refListener = AppContext.getDataManager().createReference(listener);
-			this.timeOutMs = timeOutMs;
-		}
-
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see com.sun.sgs.app.Task#run()
-		 */
-		@Override
-		public void run() throws Exception
-		{
-			StringBuilder trace = new StringBuilder("WaitForClientUserTask");
-
-			if (startTime == null)
-			{
-				startTime = System.currentTimeMillis();
-			}
-
-			Set<ServiceReference<IClientUser>> refs;
-
-			try
-			{
-				Future<Set<ServiceReference<IClientUser>>> refreshedFutureClientUsers = RpcFuture.refresh((RpcFuture<Set<ServiceReference<IClientUser>>>) futureClientUsers);
-
-				if (refreshedFutureClientUsers.isDone())
-				{
-					refs = refreshedFutureClientUsers.get();
-				}
-				else
-				{
-					throw new TimeoutException("little timeout");
-				}
-			}
-			catch (TimeoutException e)
-			{
-				long endTime = System.currentTimeMillis();
-				long elapsedTime = (endTime - startTime);
-
-				if (elapsedTime > timeOutMs)
-				{
-					trace.append(": big timeout");
-					logger.log(Level.INFO, trace.toString());
-
-					throw new TimeoutException("Querying for services failed (elapsedTime: " + elapsedTime + ")");
-				}
-
-				trace.append(": little timeout");
-				logger.log(Level.INFO, trace.toString());
-				AppContext.getTaskManager().scheduleTask(new WaitForClientUserTask(startTime, futureClientUsers, refListener.get(), timeOutMs), 1000);
-				return;
-			}
-
-			trace.append(": success");
-			logger.log(Level.INFO, trace.toString());
-			AppContext.getTaskManager().scheduleTask(new ClientUserCallback(refListener.get(), refs));
-		}
-
-	}
-
-	private static class ClientUserCallback implements Task, KernelRunnable, Serializable
-	{
-		private static final long										serialVersionUID	= 1L;
-
-		private final ManagedReference<SEPServerClientSessionListener>	refListener;
-
-		private final Set<ServiceReference<IClientUser>>				refs;
-
-		/**
-		 * 
-		 */
-		public ClientUserCallback(SEPServerClientSessionListener listener, Set<ServiceReference<IClientUser>> refs)
-		{
-			this.refListener = AppContext.getDataManager().createReference(listener);
-			this.refs = refs;
-		}
-
-		@Override
-		public void run() throws Exception
-		{
-			logger.log(Level.INFO, "ClientUserCallback");
-
-			SEPServerClientSessionListener listener = refListener.getForUpdate();
-			Set<IClientUser> clientUsers = listener.gatewayServer.asProxies(refs);
-
-			assert clientUsers.size() == 1;
-
-			logger.log(Level.INFO, "InitClientUser Complete");
-			listener.clientUser = clientUsers.iterator().next();
-
-			logger.log(Level.INFO, "clientUser.onGamePaused");
-			listener.clientUser.onGamePaused();
-		}
-
-		@Override
-		public String getBaseTaskType()
-		{
-			return Task.class.getName();
-		}
+		return statemachine.getState();
 	}
 }
