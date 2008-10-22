@@ -79,7 +79,8 @@ public class SEPIdentity implements Identity, Serializable
 	
 	public String getUID()
 	{
-		return name+"@"+cryptedPwd;
+		// Because password can be changed, each account must have a unique login name.
+		return name;//+"@"+cryptedPwd;
 	}
 
 }

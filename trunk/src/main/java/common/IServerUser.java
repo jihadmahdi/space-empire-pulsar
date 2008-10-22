@@ -5,7 +5,9 @@
  */
 package common;
 
+import java.util.Vector;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 /**
  * Describe Server side user interface, that can be called from client.
@@ -13,16 +15,56 @@ import java.util.concurrent.ExecutionException;
  */
 public interface IServerUser
 {
+	public static class ServerException extends Exception
+	{
+
+		private static final long	serialVersionUID	= 1L;
+
+		ServerException()
+		{
+			super();
+		}
+
+		ServerException(String msg)
+		{
+			super(msg);
+		}
+
+	}
+	
+	public static class SendMessageException extends ServerException
+	{
+
+		private static final long	serialVersionUID	= 1L;
+
+		public SendMessageException(String raison)
+		{
+			super(raison);
+		}
+	}
+	
+	public static class UnknownUserException extends ServerException
+	{
+
+		private static final long	serialVersionUID	= 1L;
+
+		public UnknownUserException(String raison)
+		{
+			super(raison);
+		}
+	}
+	
 	/**
 	 * User send private message to another user (it does not matter if they are in-game or not).
 	 * @param user 
 	 * @param msg
+	 * @throws SEPServerSendMessageException 
 	 * @see IClientUser#receivePrivateMessage(User, String)
 	 * @category Connected
 	 * @category Chat
 	 * @category Synchronized
 	 */
-	void sendPrivateMessage(String receiverName, String msg);
+	void sendPrivateMessage(String receiverName, String msg) throws SendMessageException;
 	
 	/**
 	 * Ask server for the user friend list.
@@ -33,15 +75,16 @@ public interface IServerUser
 	 * @category FriendList
 	 * @category Synchronizing call
 	 */
-	void askFriendList() throws InterruptedException, ExecutionException;
+	Future<FriendList> askFriendList();
 	
 	/**
 	 * Add a new friend to the friend list.
 	 * @param newFriend
+	 * @throws UnknownUserException 
 	 * @category Connected
 	 * @category FriendList
 	 */
-	void addFriend(String newFriendName);
+	void addFriend(String newFriendName) throws UnknownUserException;
 	
 	/**
 	 * Remove a friend from the friend list.
@@ -68,7 +111,7 @@ public interface IServerUser
 	 * @category GameBoard
 	 * @category Synchronized
 	 */
-	void askNewGamesList();
+	Future<Vector<NewGame>> askNewGamesList();
 	
 	/**
 	 * Ask server for the user current running games list.
@@ -77,7 +120,7 @@ public interface IServerUser
 	 * @category GameBoard
 	 * @category Synchronized
 	 */
-	void askMyCurrentGamesList();
+	Future<Vector<Game>> askMyCurrentGamesList();
 	
 	/**
 	 * Ask the server to try to reconnect the user to the current running game.
