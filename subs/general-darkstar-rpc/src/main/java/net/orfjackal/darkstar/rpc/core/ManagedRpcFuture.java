@@ -7,6 +7,7 @@ package net.orfjackal.darkstar.rpc.core;
 
 import java.io.Serializable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -22,13 +23,13 @@ public class ManagedRpcFuture<V> implements IRpcFuture<V>, Serializable
 
 	private static class RpcFutureBean<V> implements ManagedObject, Serializable
 	{
-		Throwable	exception;
+		Throwable		exception;
 
-		final Request request;
+		final Request	request;
 
-		boolean		isDone;
+		boolean			isDone;
 
-		V			value;
+		V				value;
 
 		public RpcFutureBean(Request request)
 		{
@@ -67,6 +68,13 @@ public class ManagedRpcFuture<V> implements IRpcFuture<V>, Serializable
 			Thread.sleep(10);
 		}
 
+		Throwable exception = refBean.get().exception;
+
+		if (exception != null)
+		{
+			throw new ExecutionException(exception);
+		}
+
 		return refBean.get().value;
 	}
 
@@ -92,6 +100,13 @@ public class ManagedRpcFuture<V> implements IRpcFuture<V>, Serializable
 			}
 
 			Thread.sleep(sleepTime);
+		}
+
+		Throwable exception = refBean.get().exception;
+
+		if (exception != null)
+		{
+			throw new ExecutionException(exception);
 		}
 
 		return refBean.get().value;
@@ -135,7 +150,8 @@ public class ManagedRpcFuture<V> implements IRpcFuture<V>, Serializable
 		}
 		if (response.exception != null)
 		{
-			bean.exception = response.exception;
+			setException(response.exception);
+			bean.isDone = true;
 		}
 		else
 		{
@@ -144,4 +160,8 @@ public class ManagedRpcFuture<V> implements IRpcFuture<V>, Serializable
 		}
 	}
 
+	void setException(Throwable t)
+	{
+		refBean.get().exception = t;
+	}
 }

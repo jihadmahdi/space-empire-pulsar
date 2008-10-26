@@ -26,6 +26,7 @@ package net.orfjackal.darkstar.rpc.core;
 
 import java.io.Serializable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -62,13 +63,19 @@ public final class UnmanagedRpcFuture<V> implements IRpcFuture<V>, Serializable
 		}
 		if (response.exception != null)
 		{
-			this.exception = response.exception;
+			setException(response.exception);
+			isDone = true;
 		}
 		else
 		{
 			value = (V) response.value;
 			isDone = true;
 		}
+	}
+	
+	private void setException(Throwable t)
+	{
+		exception = t;
 	}
 
 	/* (non-Javadoc)
@@ -89,6 +96,11 @@ public final class UnmanagedRpcFuture<V> implements IRpcFuture<V>, Serializable
 		while(isDone == false)
 		{
 			Thread.sleep(10);
+		}
+		
+		if (exception != null)
+		{
+			throw new ExecutionException(exception);
 		}
 		
 		return value;
@@ -114,6 +126,11 @@ public final class UnmanagedRpcFuture<V> implements IRpcFuture<V>, Serializable
 			}
 			
 			Thread.sleep(sleepTime);
+		}
+		
+		if (exception != null)
+		{
+			throw new ExecutionException(exception);
 		}
 		
 		return value;

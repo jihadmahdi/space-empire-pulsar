@@ -24,15 +24,22 @@
 
 package net.orfjackal.darkstar.rpc;
 
+import java.io.Serializable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import com.sun.sgs.app.AppContext;
+import com.sun.sgs.app.Task;
 
 /**
  * @author Esko Luontola
  * @since 10.6.2008
  */
 public final class ServiceHelper {
-
+	
     private ServiceHelper() {
     }
 
@@ -68,4 +75,117 @@ public final class ServiceHelper {
             return value;
         }
     }
+    
+    private static final long SERVER_WAIT_FOR_FUTURE_TIMEOUT = 10000;
+    
+    public static <V> void serverWaitForFuture(Future<V> future, WaitForFutureListener<V> waitForFutureListener)
+	{
+		AppContext.getTaskManager().scheduleTask(new WaitForFuture(future, waitForFutureListener, SERVER_WAIT_FOR_FUTURE_TIMEOUT));
+	}
+
+    public static interface WaitForFutureListener<V> extends Serializable
+    {
+    	void onResultOK(V result);
+    	void onExceptionThrown(Throwable throwable);
+    	void onTimeOut(long elapsedTime);
+    }
+    
+	private static class WaitForFuture<V> implements Task, Serializable
+	{
+		private static final Logger logger = Logger.getLogger(WaitForFuture.class.getName());
+		
+		private static final long	serialVersionUID	= 1L;
+
+		private final Future<V>		future;
+
+		private final long			timeOutMs;
+
+		private Long				startTime			= null;
+		
+		private final WaitForFutureListener<V> callbacks;
+		
+		private WaitForFuture(long startTime, Future<V> future, WaitForFutureListener<V> callbacks, long timeOutMs)
+		{
+			this.startTime = startTime;
+			this.future = future;
+			this.timeOutMs = timeOutMs;
+			this.callbacks = callbacks;
+		}
+
+		public WaitForFuture(Future<V> future, WaitForFutureListener<V> callbacks, long timeOutMs)
+		{
+			this.future = future;
+			this.timeOutMs = timeOutMs;
+			this.callbacks = callbacks;
+		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString()
+		{
+			return String.format("waitForFuture %s @ %s", future.getClass().getCanonicalName(), future.toString());
+		}
+		
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see com.sun.sgs.app.Task#run()
+		 */
+		@Override
+		public void run() throws Exception
+		{
+			StringBuilder trace = new StringBuilder(this.toString());
+
+			if (startTime == null)
+			{
+				startTime = System.currentTimeMillis();
+			}
+
+			V result;
+
+			try
+			{
+				if (future.isDone())
+				{
+					result = future.get();
+				}
+				else
+				{
+					throw new TimeoutException("["+this+"] little timeout");
+				}
+			}
+			catch (TimeoutException e)
+			{
+				long endTime = System.currentTimeMillis();
+				long elapsedTime = (endTime - startTime);
+
+				if (elapsedTime > timeOutMs)
+				{
+					trace.append(": big timeout");
+					logger.log(Level.INFO, trace.toString());
+					
+					callbacks.onTimeOut(elapsedTime);
+					return;
+				}
+
+				trace.append(": little timeout");
+				logger.log(Level.INFO, trace.toString());
+				AppContext.getTaskManager().scheduleTask(new WaitForFuture(startTime, future, callbacks, timeOutMs), 1000);
+				return;
+			}
+			catch(Throwable t)
+			{
+				trace.append(": exception thrown "+t);
+				logger.log(Level.INFO, trace.toString());
+				callbacks.onExceptionThrown(t);
+				return;
+			}
+
+			trace.append(": success");
+			logger.log(Level.INFO, trace.toString());
+			callbacks.onResultOK(result);
+		}
+	}
 }

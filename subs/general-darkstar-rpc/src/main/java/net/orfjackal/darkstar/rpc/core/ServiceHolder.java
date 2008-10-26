@@ -61,7 +61,7 @@ public final class ServiceHolder<T> implements Serializable {
         Class<T> type = reference.getServiceInterface();
         try {
             Method method = type.getMethod(methodName, paramTypes);
-            if (method.getReturnType().equals(ManagedReference.class) || method.getReturnType().equals(Future.class) || method.getReturnType().equals(Void.TYPE)) {
+            if (method.getReturnType().equals(Future.class) || method.getReturnType().equals(Void.TYPE)) {
                 return (Future<?>) method.invoke(service, parameters);
             } else {
                 throw new IllegalArgumentException("Illegal return type: " + method);
