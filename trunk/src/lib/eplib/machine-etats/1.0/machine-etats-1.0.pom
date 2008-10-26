@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?><project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>eplib</groupId>
+  <artifactId>machine-etats</artifactId>
+  <version>1.0</version>
+  <description>POM was created from install:install-file</description>
+<distributionManagement>
+	<repository>
+		<uniqueVersion>false</uniqueVersion>
+		<id>my-svn-maven-repo</id>
+		<url>svn:https://space-empire-pulsar.googlecode.com/svn/trunk/src/lib/</url>
+	</repository>
+</distributionManagement>
+</project>
