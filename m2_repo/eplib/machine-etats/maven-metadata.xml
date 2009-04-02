@@ -1,4 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?><metadata>
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata xsi:schemaLocation="http://maven.apache.org/METADATA/1.0.0 http://maven.apache.org/xsd/metadata-1.0.0.xsd" xmlns="http://maven.apache.org/METADATA/1.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <groupId>eplib</groupId>
   <artifactId>machine-etats</artifactId>
   <version>1.0</version>
@@ -6,6 +8,6 @@
     <versions>
       <version>1.0</version>
     </versions>
-    <lastUpdated>20081026193546</lastUpdated>
+    <lastUpdated>20090402222004</lastUpdated>
   </versioning>
 </metadata>
