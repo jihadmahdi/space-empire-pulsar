@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="${projectName}" xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/maven-navigation-1.0.xsd">
+	<bannerLeft>
+		<name>${projectName}</name>
+		<src>images/banniere.png</src>
+		<href>${url}</href>
+	</bannerLeft>
+	<!-- 
+		<bannerRight>
+		<src>http://maven.apache.org/images/maven-small.gif</src>
+		</bannerRight>
+	-->
+	<body>
+		<links>
+			<item name="Projet sur GoogleCode"
+				href="http://${projectArtifactId}.googlecode.com" />
+			<item name="Site Usage" href="usage/" />
+		</links>
+
+		<menu name="Projet">
+			<item name="Présentation" href="/index.html" />
+			<item name="Téléchargement" href="${downloadUrl}" />
+			<item name="Doc" href="/wiki" />
+			<item name="FAQ" href="/faq.html" />
+			<item name="TODO list" href="/todolist.html" />
+		</menu>
+
+
+		<menu ref="reports" />
+
+	</body>
+
+</project>
