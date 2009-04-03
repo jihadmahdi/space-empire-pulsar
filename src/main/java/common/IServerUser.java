@@ -54,6 +54,17 @@ public interface IServerUser
 		}
 	}
 	
+	public static class CreateGameException extends ServerException
+	{
+
+		private static final long	serialVersionUID	= 1L;
+
+		public CreateGameException(String raison)
+		{
+			super(raison);
+		}
+	}
+	
 	/**
 	 * User send private message to another user (it does not matter if they are in-game or not).
 	 * @param user 
@@ -137,11 +148,12 @@ public interface IServerUser
 	 * @param gameName
 	 * @param gamePassword
 	 * @param gameMaxPlayers
+	 * @throws CreateGameException 
 	 * @category Connected
 	 * @category GameBoard
 	 * @category Synchronized
 	 */
-	void createGame(String gameName, String gamePassword, int gameMaxPlayers);
+	void createGame(String gameName, String gamePassword, int gameMaxPlayers) throws CreateGameException;
 	
 	/**
 	 * Ask the server to join user to the new game.
