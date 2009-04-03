@@ -1,52 +1,205 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/maven-v4_0_0.xsd">
+	<!--
+		//TODO: Externaliser toutes les valeurs dans <properties/>, y compris
+		les variables "à ne pas toucher" qui seront classées.
+	-->
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>Space-Empire-Pulsar</groupId>
-	<artifactId>Space-Empire-Pulsar</artifactId>
-	<name>Space-Empire-Pulsar</name>
-	<version>0.0.1-SNAPSHOT</version>
-	<description>Space Empire Pulsar est un jeu de stratégie tour par
-		tour, multijoueur, inspiré de Konquest avec de nouvelles règles et une
-		vue en 3D. Il est
-		implémenté en JAVA, ce qui le rend multiplateforme.</description>
-	<url>http://sep.axan.org/</url>
-	<issueManagement>
-		<system>GoogleCode</system>
-		<url>http://code.google.com/${googleCodeId}/issues</url>
-	</issueManagement>
-	<developers>
-		<developer>
-			<name>Escallier Pierre</name>
-			<email>p.escallier@laposte.net</email>
-		</developer>
-		<developer>
-			<name>Cabanes Romain</name>
-			<email>lawilwilderwein@wanadoo.fr</email>
-		</developer>
-		<developer>
-			<name>Auriol Arnaud</name>
-			<email>aaa-auriol@club-internet.fr</email>
-		</developer>
-		<developer>
-			<name>Bezille Yoann</name>
-			<email>yohann.bezille@club-internet.fr</email>
-		</developer>
-	</developers>
+
+	<!-- The Basics -->
+	<groupId>epsofts</groupId>
+	<artifactId>${projectArtifactId}</artifactId>
+	<!--
+		Utiliser une property pour la version risque de poser problème ?
+	-->
+	<version>${projectVersion}</version>
+	<packaging>jar</packaging>
+
+	<dependencies>
+		<dependency>
+			<groupId>eplib</groupId>
+			<artifactId>machine-etats</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>eplib</groupId>
+			<artifactId>client-server-rpc</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.jgoodies</groupId>
+			<artifactId>forms</artifactId>
+			<!-- <version>1.0.7</version> -->
+			<version>1.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.4</version>
+			<type>jar</type>
+			<scope>test</scope>
+			<optional>true</optional>
+		</dependency>
+	</dependencies>
+	<!-- <parent></parent> -->
+	<!-- <dependencyManagement></dependencyManagement> -->
+	<!-- <modules></modules> -->
+	<properties>
+		<!-- project specific -->
+		<projectArtifactId>space-empire-pulsar</projectArtifactId>
+		<!--
+			Utiliser une property pour la version risque de poser problème ?
+		-->
+		<projectVersionBase>0.1</projectVersionBase>
+		<projectVersionSnapshot>-SNAPSHOT</projectVersionSnapshot>
+		<projectVersion>${projectVersionBase}r${buildNumber}${projectVersionSnapshot}</projectVersion>
+		<mainClass>TODO</mainClass>
+
+		<projectName>Space Empire Pulsar</projectName>
+		<description>
+			Space Empire Pulsar est un jeu de stratégie tour par tour, multijoueur, inspiré de Konquest avec de nouvelles règles et une vue en 3D.
+		</description>
+
+		<jvmArgs>-Xmx256M -Djava.util.logging.config.file=logging.properties</jvmArgs>
+
+		<releaseResourcesBaseDirectory>${basedir}/src</releaseResourcesBaseDirectory>
+		<resourcesBaseDirectory>${basedir}/src/main</resourcesBaseDirectory>
+
+		<releaseResourcesSubDirectory>release</releaseResourcesSubDirectory>
+		<filteredReleaseResourcesSubDirectory>filtered-release</filteredReleaseResourcesSubDirectory>
+
+		<resourcesSubDirectory>resources</resourcesSubDirectory>
+		<!--<resourcesSubDirectory>java</resourcesSubDirectory>-->
+		<!--<filteredResourcesSubDirectory>filtered-resources</filteredResourcesSubDirectory>-->
+		<filteredResourcesSubDirectory>java</filteredResourcesSubDirectory>
+
+		<releaseResourcesDirectory>${releaseResourcesBaseDirectory}/${releaseResourcesSubDirectory}</releaseResourcesDirectory>
+		<filteredReleaseResourcesDirectory>${releaseResourcesBaseDirectory}/${filteredReleaseResourcesSubDirectory}</filteredReleaseResourcesDirectory>
+
+		<resourcesDirectory>${resourcesBaseDirectory}/${resourcesSubDirectory}</resourcesDirectory>
+		<filteredResourcesDirectory>${resourcesBaseDirectory}/${filteredResourcesSubDirectory}</filteredResourcesDirectory>
+
+		<processedFilesBaseDirectory>${project.build.directory}/classes</processedFilesBaseDirectory>
+		<processedReleaseResourcesDirectory>${processedFilesBaseDirectory}/${releaseResourcesSubDirectory}</processedReleaseResourcesDirectory>
+		<processedFilteredReleaseResourcesDirectory>${processedFilesBaseDirectory}/${filteredReleaseResourcesSubDirectory}</processedFilteredReleaseResourcesDirectory>
+		<processedFilteredResourcesDirectory>${processedFilesBaseDirectory}/${filteredResourcesSubDirectory}</processedFilteredResourcesDirectory>
+
+		<packagingDirectory>${project.build.directory}/izpack</packagingDirectory>
+		<libSubDirectory>lib</libSubDirectory>
+		<installersDirectory>${project.build.directory}/distribs</installersDirectory>
+		<siteDirectory>${basedir}/src/site</siteDirectory>
+		<downloadUrl>${url}/releases</downloadUrl>
+		<hostDomain>axan.org</hostDomain>
+
+		<!-- Auteur -->
+		<authorName>Auriol Arnaud, Bezille Yoann, Cabanes Romain, Pierre Escallier</authorName>
+		<authorMail>p.escallier@laposte.net</authorMail>
+
+		<!-- External tools -->
+		<izpack2exeDirectory>/home/axan/IzPack/utils/izpack2exe</izpack2exeDirectory>
+		<izpack2appDirectory>/home/axan/IzPack/utils/izpack2app</izpack2appDirectory>
+
+		<!-- Env -->
+		<tmp>/tmp</tmp>
+
+		<!-- computed -->
+		<url>http://${projectArtifactId}.${hostDomain}</url>
+		<finalReleaseResourcesDirectory>${packagingDirectory}</finalReleaseResourcesDirectory>
+		<packagingLibDirectory>${packagingDirectory}/${libSubDirectory}</packagingLibDirectory>
+	</properties>
+
+	<!-- Build Settings -->
 	<build>
+		<resources>
+			<resource>
+				<filtering>false</filtering>
+				<directory>${releaseResourcesBaseDirectory}</directory>
+				<includes>
+					<include>${releaseResourcesSubDirectory}/**</include>
+				</includes>
+				<excludes>
+					<exclude>**/CVS</exclude>
+					<exclude>**/SVN</exclude>
+				</excludes>
+			</resource>
+			<resource>
+				<filtering>true</filtering>
+				<directory>${releaseResourcesBaseDirectory}</directory>
+				<includes>
+					<include>${filteredReleaseResourcesSubDirectory}/**</include>
+				</includes>
+				<excludes>
+					<exclude>**/CVS</exclude>
+					<exclude>**/SVN</exclude>
+				</excludes>
+			</resource>
+			<resource>
+				<filtering>true</filtering>
+				<directory>${filteredResourcesDirectory}</directory>
+				<includes>
+					<include>**/*.properties</include>
+				</includes>
+				<excludes>
+					<exclude>**/*.java</exclude>
+					<exclude>**/CVS</exclude>
+					<exclude>**/SVN</exclude>
+				</excludes>
+			</resource>
+			<resource>
+				<filtering>false</filtering>
+				<directory>${resourcesBaseDirectory}</directory>
+				<includes>
+					<include>${resourcesSubDirectory}/**</include>
+				</includes>
+				<excludes>
+					<exclude>**/CVS</exclude>
+					<exclude>**/SVN</exclude>
+				</excludes>
+			</resource>
+		</resources>
+		<extensions>
+			<extension>
+				<groupId>org.jvnet.wagon-svn</groupId>
+				<artifactId>wagon-svn</artifactId>
+				<version>1.9</version>
+			</extension>
+			<extension>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-ssh-external</artifactId>
+				<version>1.0-alpha-5</version>
+			</extension>
+		</extensions>
 		<plugins>
 			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>buildnumber-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+						<goals>
+							<goal>create</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<format>{0,date,yyMMdd}.{1,number}</format>
+					<items>
+						<item>timestamp</item>
+						<item>buildNumber1</item>
+					</items>
+					<doCheck>false</doCheck>
+					<doUpdate>false</doUpdate>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
 					<encoding>UTF-8</encoding>
 					<source>1.6</source>
 					<target>1.6</target>
-				</configuration>
-			</plugin>
-			<plugin>
-				<artifactId>maven-site-plugin</artifactId>
-				<configuration>
-					<outputEncoding>UTF-8</outputEncoding>
-					<inputEncoding>UTF-8</inputEncoding>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -61,16 +214,17 @@
 				</executions>
 			</plugin>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
 				<executions>
 					<execution>
 						<id>copy-dependencies</id>
-						<phase>package</phase>
+						<phase>process-resources</phase>
 						<goals>
 							<goal>copy-dependencies</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>${project.build.directory}/${versionedReleaseDirectory}/${libDirectory}</outputDirectory>
+							<outputDirectory>${packagingLibDirectory}</outputDirectory>
 							<overWriteReleases>false</overWriteReleases>
 							<overWriteSnapshots>false</overWriteSnapshots>
 							<overWriteIfNewer>true</overWriteIfNewer>
@@ -79,123 +233,233 @@
 				</executions>
 			</plugin>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
 				<configuration>
-					<finalName>SpaceEmpirePulsar</finalName>
-					<outputDirectory>${project.build.directory}/${versionedReleaseDirectory}</outputDirectory>
-					<includes>*.properties</includes>
+					<finalName>${projectArtifactId}</finalName>
+					<outputDirectory>${packagingDirectory}</outputDirectory>
+					<!--
+					<includes>
+						<include>**/*.properties</include>
+					</includes>
+					-->
 					<archive>
-						<index>true</index>
+						<index>false</index>
+						<!--
+							packaging bug if both "index" and "addClasspath" are true
+						-->
 						<manifest>
 							<addClasspath>true</addClasspath>
 							<addDefaultSpecificationEntries>false</addDefaultSpecificationEntries>
 							<addDefaultImplementationEntries>false</addDefaultImplementationEntries>
-							<mainClass>TODO</mainClass>
-							<classpathPrefix>${libDirectory}</classpathPrefix>
+							<mainClass>${mainClass}</mainClass>
+							<classpathPrefix>${libSubDirectory}</classpathPrefix>
 						</manifest>
 						<manifestEntries></manifestEntries>
 					</archive>
 				</configuration>
 			</plugin>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-antrun-plugin</artifactId>
 				<executions>
 					<execution>
-						<phase>package</phase>
+						<id>movefiles</id>
 						<goals>
 							<goal>run</goal>
 						</goals>
+						<phase>process-resources</phase>
+						<inherited>false</inherited>
 						<configuration>
 							<tasks>
-								<property name="finalReleaseDirectory" value="${project.build.directory}/${versionedReleaseDirectory}" />
+								<!-- On s'assure que les répertoires existent -->
+								<mkdir dir="${processedReleaseResourcesDirectory}" />
+								<mkdir dir="${processedFilteredReleaseResourcesDirectory}" />
+								<mkdir dir="${processedFilteredResourcesDirectory}" />
+
+								<echo>Deplacement des resources release ${processedReleaseResourcesDirectory} vers le répertoire ${finalReleaseResourcesDirectory}</echo>
+								<move todir="${finalReleaseResourcesDirectory}">
+									<fileset dir="${processedReleaseResourcesDirectory}">
+										<exclude name="**/CVS" />
+										<exclude name="**/SVN" />
+									</fileset>
+								</move>
+
+								<echo>Deplacement des resources release ${processedFilteredReleaseResourcesDirectory} vers le répertoire ${finalReleaseResourcesDirectory}</echo>
+								<move todir="${finalReleaseResourcesDirectory}">
+									<fileset dir="${processedFilteredReleaseResourcesDirectory}">
+										<exclude name="**/CVS" />
+										<exclude name="**/SVN" />
+									</fileset>
+								</move>
+
+								<echo>Deplacement des resources ${processedFilteredResourcesDirectory} vers ${processedFilesBaseDirectory}</echo>
+								<move todir="${processedFilesBaseDirectory}">
+									<fileset dir="${processedFilteredResourcesDirectory}">
+										<exclude name="**/CVS" />
+										<exclude name="**/SVN" />
+									</fileset>
+								</move>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>izpack</id>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<phase>package</phase>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<!-- On génère l'installeur JAR-->
+								<property name="filenameBase" value="${projectName}-${projectVersion}" />
+								<property name="izpackInput" value="${packagingDirectory}/install.xml" />
+								<property name="izpackOutput" value="${installersDirectory}/${filenameBase}-installer.jar" />
+
+								<echo>Creation du dossier ${installersDirectory}</echo>
+								<mkdir dir="${installersDirectory}" />
+
+								<echo>Execution de izpack: ${izpackInput} =>
+									${izpackOutput}</echo>
+								<taskdef name="izpack" classname="com.izforge.izpack.ant.IzPackTask" />
+								<izpack input="${izpackInput}" output="${izpackOutput}" basedir="${packagingDirectory}" />
+								
+								<!-- On génère l'installeur EXE -->
+								<property name="izpack2exeInput" value="${installersDirectory}/${filenameBase}-installer.jar" />
+								<property name="izpack2appInput" value="${izpack2exeInput}" />
+								<property name="izpack2exeOutput" value="${installersDirectory}/${filenameBase}-installer.exe" />
+								<property name="izpack2appOutput" value="${installersDirectory}/${filenameBase}-installer.app" />
+
+								<echo>Execution de izpack2exe : ${izpack2exeInput} =>
+									${izpack2exeOutput}</echo>
+
+								<exec executable="python" dir="${izpack2exeDirectory}" output="${tmp}/izpack2exe.std" error="${tmp}/izpack2exe.err">
+									<arg value="${izpack2exeDirectory}/izpack2exe.py" />
+									<arg value="--file" />
+									<arg value="${izpack2exeInput}" />
+									<arg value="--output" />
+									<arg value="${izpack2exeOutput}" />
+									<arg value="--no-upx" />
+									<arg value="--with-7z" />
+									<arg value="7z" />
+								</exec>
+
+								<echo>Execution de izpack2app : ${izpack2appInput} => ${izpack2appOutput}</echo>
+								<exec executable="python" dir="${izpack2appDirectory}">
+									<arg value="${izpack2appDirectory}/izpack2app.py" />
+									<arg value="${izpack2appInput}" />
+									<arg value="${izpack2appOutput}" />
+								</exec>
+
+							</tasks>
+						</configuration>
+					</execution>
+					<!--
+						<execution> <id>googlecodeUpdate</id> <goals> <goal>run</goal> </goals> <phase>verify</phase> <inherited>false</inherited> <configuration> <tasks>
+					-->
+					<!--
+						Ne fonctionne pas, le password n'est pas passable en paramètre, et antrun ne donne pas la saisie clavier. Runs the fullrelease task and uploads the
+						nightly release on google code. <exec executable="python" dir="${project.build.directory}"> <arg value="/media/data/Download/Code/googlecode_upload.py"/>
+						<arg value='
+					-->
+					<!--
+						config-dir=none' /> <arg value='-p jneutron' /> <arg value='-s Uploaded from Maven Ant Task Runner.' /> <arg value='-u p.escallier@laposte.net' /> <arg
+						value='-l Test,Type-Archive,OpSys-All' /> <arg value='${project.build.directory}/test.txt' /> </exec>
+					-->
+					<!--
+						Ne fonctionne pas, erreur de lib non fournies.. <taskdef classpath="${env.HOME}/.m2/repository/google/ant-googlecode/0.0.1/ant-googlecode-0.0.1.jar"
+						classname="net.bluecow.googlecode.ant.GoogleCodeUploadTask" name="gcupload" /> <gcupload username="googleuser" password="secretpassword"
+						projectname="myproject" filename="${project.build.directory}/test.txt" targetfilename="test.txt" summary="upload test" labels="test, upload, ant,
+						googlecode" />
+					-->
+					<!--
+						</tasks> </configuration> </execution>
+					-->
+					<execution>
+						<id>protectsite</id>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<phase>pre-site</phase>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<property name="htaccessmodel" value="${siteDirectory}/model.htaccess" />
+								<!--
+									Copie du fichier modèle .htaccess dans tous les dossiers à
+									protéger
+								-->
+								<echo>Protection des zones privés du site</echo>
+								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/apidocs/.htaccess" />
+								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/cobertura/.htaccess" />
+								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/testapidocs/.htaccess" />
+								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/usage/.htaccess" />
+								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/xref/.htaccess" />
+								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/xref-test/.htaccess" />
+
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>site-site</id>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<phase>verify</phase>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>On lance mvn site:deploy</echo>
+								<exec executable="mvn" dir="${basedir}">
+									<arg value="site:deploy" />
+								</exec>
+								<echo>On chmod u=rwX,go=rX le répertoire</echo>
+								<exec executable="ssh" dir="${basedir}">
+									<arg value="wwwaxan@axan.org" />
+									<arg value="chmod" />
+									<arg value="-R" />
+									<arg value="u=rwX,go=rX" />
+									<arg value="/home/wwwaxan/www/${projectArtifactId}" />
+								</exec>
 							</tasks>
 						</configuration>
 					</execution>
 				</executions>
+				<dependencies>
+					<dependency>
+						<groupId>org.codehaus.izpack</groupId>
+						<artifactId>izpack-standalone-compiler
+						</artifactId>
+						<version>4.0.1</version>
+					</dependency>
+					<!--
+						<dependency> <groupId>ant</groupId>
+						<artifactId>ant-utils</artifactId> </dependency>
+					-->
+					<!--
+						<dependency> <groupId>google</groupId>
+						<artifactId>ant-googlecode</artifactId> <version>0.0.1</version>
+
+						</dependency>
+					-->
+				</dependencies>
 			</plugin>
-			<plugin>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.4.3</version>
-			</plugin>
+			<!--
+				<plugin> <groupId>org.codehaus.izpack</groupId> <artifactId>izpack-maven-plugin</artifactId> <configuration> <izpackBasedir>${finalReleaseDirectory}
+				</izpackBasedir> </configuration> <executions> <execution> <id>standard-installer</id> <phase>package</phase> <goals> <goal>izpack</goal> </goals>
+				</execution> </executions> </plugin>
+			-->
 		</plugins>
-		<extensions>
-			<extension>
-				<groupId>org.jvnet.wagon-svn</groupId>
-				<artifactId>wagon-svn</artifactId>
-				<version>1.8</version>
-			</extension>
-		</extensions>
 	</build>
-	<repositories>
-		<repository>
-			<id>laughing-panda</id>
-			<name>Laughing Panda</name>
-			<url>http://www.laughingpanda.org/maven2</url>
-		</repository>
-		<repository>
-			<id>orfjackal</id>
-			<url>http://repo.orfjackal.net/maven2</url>
-		</repository>
-		<repository>
-			<id>java.net</id>
-			<url>http://download.java.net/maven/2</url>
-		</repository>
-		<repository>
-			<id>sep-svn-repo</id>
-			<url>http://space-empire-pulsar.googlecode.com/svn/m2_repo</url>
-		</repository>
-	</repositories>
-	<dependencies>
-		<dependency>
-			<groupId>eplib</groupId>
-			<artifactId>machine-etats</artifactId>
-			<version>1.0</version>
-		</dependency>
-		<!--
-			<dependency> <groupId>net.orfjackal.darkstar-contrib</groupId> <artifactId>darkstar-rpc</artifactId> <version>1.0.1</version> </dependency>
-		-->
-		<dependency>
-			<groupId>net.orfjackal.darkstar-contrib</groupId>
-			<artifactId>darkstar-integration-test</artifactId>
-			<version>1.0.1</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.projectdarkstar.server</groupId>
-			<artifactId>sgs-server</artifactId>
-			<version>0.9.6.1</version>
-		</dependency>
-		<dependency>
-			<groupId>com.projectdarkstar.client</groupId>
-			<artifactId>sgs-client</artifactId>
-			<version>0.9.6.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jdave</groupId>
-			<artifactId>jdave-junit4</artifactId>
-			<version>1.1-rc1</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.4</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.jgoodies</groupId>
-			<artifactId>forms</artifactId>
-			<version>1.0.7</version>
-		</dependency>
-		<!--
-			<dependency> <groupId>com.projectdarkstar</groupId> <artifactId>darkstar-server</artifactId> <version>0.9.6</version> </dependency> <dependency>
-			<groupId>com.projectdarkstar</groupId> <artifactId>darkstar-client</artifactId> <version>0.9.6</version> </dependency>
-		-->
-	</dependencies>
 	<reporting>
+		<excludeDefaults>false</excludeDefaults>
 		<plugins>
 			<plugin>
-				<artifactId>maven-project-info-reports-plugin</artifactId>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>
+					maven-project-info-reports-plugin
+				</artifactId>
 				<configuration>
 					<locales>fr</locales>
 					<inputEncoding>UTF-8</inputEncoding>
@@ -206,17 +470,31 @@
 						<reports>
 							<report>project-team</report>
 							<report>license</report>
+							<report>issue-tracking</report>
+							<report>scm</report>
+							<!--
+								<report>summary</report>
+								<report>index</report>
+								<report>cim</report>
+								<report>dependencies</report>
+								<report>dependency-convergence</report>
+								<report>issue-tracking</report>
+								<report>mailing-list</report> 
+								<report>scm</report>
+							-->
 						</reports>
 					</reportSet>
 				</reportSets>
 			</plugin>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-site-plugin</artifactId>
+				<version>2.0-beta-7</version>
 				<configuration>
 					<locales>fr</locales>
 					<inputEncoding>UTF-8</inputEncoding>
 					<outputEncoding>UTF-8</outputEncoding>
-					<templateFile>${basedir}/src/site/site.vm</templateFile>
+					<templateFile>${siteDirectory}/site.vm</templateFile>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -243,29 +521,109 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<configuration>
-					<includes>
-						<include>**/*Spec.java</include>
-					</includes>
-					<systemProperties>
-						<property>
-							<name>jdave.tools.specdox.format</name>
-							<value>xml</value>
-						</property>
-						<property>
-							<name>jdave.tools.specdox.dir</name>
-							<value>target/jdave</value>
-						</property>
-					</systemProperties>
-				</configuration>
 			</plugin>
 		</plugins>
+		<!--
+			Usefull mais pas séparés <plugin>
+			<groupId>org.codehaus.mojo</groupId>
+			<artifactId>jdepend-maven-plugin</artifactId> </plugin> +/- Useless &
+			pas séparés <plugin> <groupId>org.codehaus.mojo</groupId>
+			<artifactId>surefire-report-maven-plugin</artifactId> </plugin>
+			<plugin> <groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-pmd-plugin</artifactId> <configuration>
+			<format>xml</format> <linkXref>true</linkXref>
+			<sourceEncoding>utf-8</sourceEncoding>
+			<minimumTokens>100</minimumTokens> <targetJdk>1.5</targetJdk>
+			<rulesets> <ruleset>/rulesets/basic.xml</ruleset>
+			<ruleset>/rulesets/controversial.xml</ruleset> </rulesets>
+			</configuration> </plugin> Useless & pas dans un répertoire séparé
+			<plugin> <groupId>org.codehaus.mojo</groupId>
+			<artifactId>taglist-maven-plugin</artifactId> </plugin> <plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-checkstyle-plugin</artifactId> </plugin>
+		-->
 	</reporting>
-	<properties>
-		<versionedReleaseDirectory>${releaseDirectory}-${project.version}</versionedReleaseDirectory>
-		<releaseDirectory>release</releaseDirectory>
-		<googleCodeid>p/space-empire-pulsar</googleCodeid>
-		<libDirectory>lib</libDirectory>
-		<auteur>Bezille Yoann</auteur>
-	</properties>
+	<!-- More Project Information -->
+	<name>${projectName}</name>
+	<description>${description}</description>
+	<url>${url}</url>
+	<!-- <inceptionYear></inceptionYear> -->
+	<!-- <licenses></licenses> -->
+	<!-- <organization></organization> -->
+	<developers>
+		<developer>
+			<name>Auriol Arnaud</name>
+			<email>aaa-auriol@club-internet.fr</email>
+		</developer>
+		<developer>
+			<name>Bezille Yoann</name>
+			<email>yohann.bezille@club-internet.fr</email>
+		</developer>
+		<developer>
+			<name>Cabanes Romain</name>
+			<email>lawilwilderwein@wanadoo.fr</email>
+		</developer>
+		<developer>
+			<id>axan</id>
+			<name>Escallier Pierre</name>
+			<email>p.escallier@laposte.net</email>
+			<url>http://www.axan.org</url>
+			<organization></organization>
+			<organizationUrl></organizationUrl>
+			<roles>
+				<role>developer</role>
+			</roles>
+			<timezone>+2</timezone>
+			<properties>
+				<picUrl>http://cv.axan.org/id.jpg</picUrl>
+			</properties>
+		</developer>		
+	</developers>
+	<!-- <contributors></contributors> -->
+
+	<!-- Environment Settings -->
+	<issueManagement>
+		<system>GoogleCode</system>
+		<url>http://code.google.com/p/${projectArtifactId}/issues/list</url>
+	</issueManagement>
+	<!-- <ciManagement></ciManagement> -->
+	<!-- <mailingLists></mailingLists> -->
+	<scm>
+		<connection>scm:svn:http://${projectArtifactId}.googlecode.com/svn/trunk</connection>
+		<developerConnection>scm:svn:https://${projectArtifactId}.googlecode.com/svn/trunk</developerConnection>
+		<url>http://code.google.com/p/${projectArtifactId}/source/browse</url>
+	</scm>
+	<!-- <prerequisites></prerequisites> -->
+	<repositories>
+		<repository>
+			<id>codehaus-repository</id>
+			<name>Codehaus Repository</name>
+			<url>http://repository.codehaus.org</url>
+		</repository>
+		<repository>
+			<id>codehaus-snapshots-repository</id>
+			<name>Codehaus Snapshots Repository</name>
+			<url>http://snapshots.repository.codehaus.org</url>
+		</repository>
+		<repository>
+			<id>java.net</id>
+			<url>http://download.java.net/maven/2</url>
+		</repository>
+		<repository>
+			<id>sep-svn-repo</id>
+			<url>http://space-empire-pulsar.googlecode.com/svn/m2_repo</url>
+		</repository>
+	</repositories>
+	<!-- <pluginRepositories></pluginRepositories> -->
+
+	<distributionManagement>
+		<downloadUrl>${downloadUrl}</downloadUrl>
+		<site>
+			<id>axan.org</id>
+			<name>${projectName} Maven Site</name>
+			<url>scpexe://axan.org:/home/wwwaxan/public_html/${projectArtifactId}</url>
+		</site>
+	</distributionManagement>
+	<!-- <profiles></profiles> -->
+
 </project>
