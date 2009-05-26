@@ -1,0 +1,39 @@
+Principe d'affichage des infos
+Les infos sont triés suivant leur visibilité, certaines sont constament connues (ex: taille de l'univers), d'autres nécéssitent d'avoir la visibilité sur la zone source (ex: nombre de module de défense sur un corps céleste, la zone du corps céleste doit être visible).
+On distingue ainsi plusieurs niveaux d'informations :
+Information basique : éléments connus de tous (qui n'évoluent en principe pas), ex: taille de l'univers, position des corps célestes.
+Information à jour : information connue du fait que la zone source est actuellement visible.
+Information datée : information connue d'une zone qui n'est plus actuellement visible.
+
+Univers :		taille x;y;z, Corps Célestes
+
+CORPS CELESTES
+Planètes :		nom, position x;y;z, pop. max, pop, carbone max, pop./tour,　nb slots
+			[zone visible] pop, carbone, Constructions, owner
+Champs d'astéroïdes :	nom, position x;y;z, carbone max, carbone, nb slots
+			[zone visible] Constructions, owner
+Nébuleuses :		nom, position x;y;z, carbone max, carbone, nb slots
+			[zone visible] Constructions, owner
+
+Vortex :		position x;y;z
+Pulsar :		[une zone visible]
+
+CONSTRUCTIONS
+Module d'extraction :	[zone visible] nombre de modules construits, bonus de production total
+			[owner] prix du suivant
+Usine de vaisseaux :	[zone visible] types et quantités des vaisseaux en attente dans l'usine
+Module de défense :	[zone visible] nombre de modules construits, bonus de défense total
+Module gouvernemental :	[zone visible] -
+Comptoir :		[zone visible] nombre de comptoir construits, Routes de l'espace, commandes
+
+UNITES
+Flottes			[zone visible] owner, nom, types et quantités des vaisseaux qui la compose
+Sondes			[zone visible] owner, nom, zone ?
+
+MARQUES (routes, ...)
+Routes de l'espace :	[une zone visible]
+Routes commerciales :	[zone départ ou arrivé visible]
+
+EVENEMENTS
+départ/arrivé d'un transporteur
+rapport de combat
