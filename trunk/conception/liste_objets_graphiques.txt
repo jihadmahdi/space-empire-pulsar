@@ -8,7 +8,7 @@ Information datée : information connue d'une zone qui n'est plus actuellement v
 Univers :		taille x;y;z, Corps Célestes
 
 CORPS CELESTES
-Planètes :		nom, position x;y;z, pop. max, pop, carbone max, pop./tour,　nb slots
+Planètes :		nom, position x;y;z, pop. max, carbone max, pop./tour,　nb slots
 			[zone visible] pop, carbone, Constructions, owner
 Champs d'astéroïdes :	nom, position x;y;z, carbone max, carbone, nb slots
 			[zone visible] Constructions, owner
@@ -16,7 +16,7 @@ Nébuleuses :		nom, position x;y;z, carbone max, carbone, nb slots
 			[zone visible] Constructions, owner
 
 Vortex :		position x;y;z
-Pulsar :		[une zone visible]
+Pulsar :		[une zone visible du faisceau] on sait que la zone est sous effet pulsar sans indication de direction.
 
 CONSTRUCTIONS
 Module d'extraction :	[zone visible] nombre de modules construits, bonus de production total
@@ -37,3 +37,7 @@ Routes commerciales :	[zone départ ou arrivé visible]
 EVENEMENTS
 départ/arrivé d'un transporteur
 rapport de combat
+
+
+NOTES :
+En option de création de game, les infos visibles basiques sont configurable, on peut jouer sans infos basiques (pour l'interet de l'exploration)
