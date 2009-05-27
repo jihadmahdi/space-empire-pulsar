@@ -1,0 +1,16 @@
+Envoi de flottes sur cibles non corps-céleste (sondes, vortex, ...) :
+Lors de l'envoi, on a le choix de spécifier ou la flotte est rapatriée, par défaut le corps céleste allié (connu à l'envoi) le plus proche.
+
+Une sonde permet de rediriger une flotte, (niveau interface on donne un nouvel ordre à la flotte, romance: un message est laissé à son attention sur toute les sondes qui diffuse le nouvel ordre qu'elle prendra si elle passe dans la zone de diffusion de l'une d'entres elles).
+Romance: Pour justufier le fait que  au niveau du gameplay on n'interdit le stationnement des flottes autour des sondes, on explique que le mode hyper-space nécéssite la présence d'un corps céleste (masse conséquente) qui lui permet de s'arrêter.
+
+Pour justifier qu'on ne peut pas cuommuniquer avec les flottes en déplacement on explique que 1erement l'équipement servant a caper au sonde est trrop couteux pour être équipé en série sur les vaisseaux, de plus le déplacement hyper-space des vaisseaux empècherait son utilisation.
+
+// Idée gabarit :
+Le gros chasseur est un cuirassé qui a a son bord pleins de petit fighter cheap et qu'il peut reconstituer entre deux batailles (ce qui justifie qu'au niveaux des points de vie )on le considère en une seule unité), et que le gabarit du gros chasseur est comparable aux autres classes de même gabarit.
+
+Légitimité du boost de vitesse apporté par les Fufu quelque soit la composition de la flotte (différents gabarits):
+1) La vitesse des vaiseaux en hyper-space est indexée sur leur vitesse initiale.
+2) Pour justifier le boost des fufu quelque soit la compo, ils tractent les autres vaisseaux avec un rayon d'énergie (un gros rayon par le gros fufu, et un gros rayon commun généré par une horde de petit fufu)
+
+TODO: Es-ce que dans le cône d'un pulsar les perturbations sont dans tout le volume ou seulement sur sa périphérie (chercher sur Wiki). Si ce n'est que la périphérie alors le gouvernement pris dans un pulsar devrait pouvoir comuniquer avec les autres corps dans le cône.
