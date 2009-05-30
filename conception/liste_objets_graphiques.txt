@@ -37,7 +37,3 @@ Routes commerciales :	[zone départ ou arrivé visible]
 EVENEMENTS
 départ/arrivé d'un transporteur
 rapport de combat
-
-
-NOTES :
-En option de création de game, les infos visibles basiques sont configurable, on peut jouer sans infos basiques (pour l'interet de l'exploration)

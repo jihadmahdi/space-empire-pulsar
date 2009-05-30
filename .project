@@ -3,20 +3,16 @@
 	<name>Space-Empire-Pulsar</name>
 	<comment>@key 32303037303533312D313030302053706163652D456D706972652D50756C7361722F6178616E </comment>
 	<projects>
+		<project>ep-game-server</project>
 	</projects>
 	<buildSpec>
-		<buildCommand>
-			<name>org.maven.ide.eclipse.maven2Builder</name>
-			<arguments>
-			</arguments>
-		</buildCommand>
 		<buildCommand>
 			<name>org.eclipse.jdt.core.javabuilder</name>
 			<arguments>
 			</arguments>
 		</buildCommand>
 		<buildCommand>
-			<name>com.soyatec.additional.Builder</name>
+			<name>org.maven.ide.eclipse.maven2Builder</name>
 			<arguments>
 			</arguments>
 		</buildCommand>

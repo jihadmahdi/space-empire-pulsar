@@ -1,0 +1,4 @@
+Pour arriver décomposer correctement un panel en plusieurs zones devant pouvoir se redimensionner :
+ * Utilisation massive du BorderLayout.
+ * Sachant que les bandeaux North et South écrasent East et West, on peut passer outre en utilisant un panel parant dans lequel on n'occupe que East et Center.
+ * Penser à découper par  étape successives en occupant toujours Center et en n'occupant pas plus de 3 zones par niveau. 
