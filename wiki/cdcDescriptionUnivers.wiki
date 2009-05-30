@@ -7,6 +7,8 @@
 L'univers est un damier en 3 dimensions dont la taille est paramètrable en début de partie.
 Ce damier est découpé en zones, repérées par leurs coordonnées (x, y, z).
 Chaque zone peut être vide, occupée par un corps céleste, une flotte, ou les deux.
+Au centre de l'univers se tient le soleil, seul corps céleste à occuper plusieurs zones.
+Le soleil constitue un obstacle infranchissable, et une source d'énergie innépuisable pour les sondes. Son rayonnement délimite ainsi naturellement la porté des sondes et par là les limites de l'univers explorable.
 
 On peut déterminer la distance entre deux zones en mesurant la ligne imaginaire qui les lie par un lien direct, et cette distance permet au joueur de calculer le temps que mettront ses flottes pour faire le voyage.
 

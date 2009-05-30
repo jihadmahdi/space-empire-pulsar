@@ -43,32 +43,26 @@ Tous les joueurs hors alliance sont considéré "neutres", bien que par le biais
 ====Déplacement de flottes entre joueurs non alliés====
 Afin de ne pas ralonger le temps de jeu en demandant à chaque fois au joueur s'il souhaite "attaquer" ou "laisser en paix" les flottes étrangères qui viennent se poser sur ses corps célestes, il est nécéssaire que chaque joueur ai déjà configuré ses attitudes par défaut.
 Ainsi, il y a deux sortes de comportement à définir :
-	¤ Le comportement de ses planètes lorsqu'une flotte étrangère pacifique souhaite se poser.
-	¤ Le comportement de ses propres flottes lorsqu'elles sont posées pacifiquement sur un corps céleste étrangé et que celui-ci est attaqué.
+	¤ La politique interrieure qui défini le comportement de ses planètes lorsqu'une flotte étrangère pacifique souhaite se poser.
+	¤ La politique de conquète qui défini le comportement de ses propres flottes lorsqu'elles sont mêlées à un conflit multi-partites.
 	
 =====Comportement des planètes face aux nouvelles flottes étrangères=====
 Le premier comportement peut être modifié à tout moment et est défini entre le joueur courant et chaque joueur non allié suivant les statuts :
 	¤ Hostile (par défaut) : Les flottes de ce joueur sont attaquées a vue même si elles viennent pacifiquement.
 	¤ Neutre : Les flottes ont l'autorisation de se poser si elle viennent pacifiquement.
-	
-=====Comportement de chaque flotte en stationnement sur un corps céleste étranger, en cas d'attaque=====
-Le second comportement est défini pour chaque flotte du joueur et perdure même si celle-ci change de corps céleste, il ne faut donc pas oublier de le mettre à jour manuellement lorsqu'on déplace la flotte :
-	¤ Amical : Les flottes rejoignent les forces de la planète si celle-ci est attaquée, sauf si l'assaillant est lui même un allié du joueur.
-	¤ Fuir (par défaut) : Les flottes fuient le combat et vont sur le corps céleste allié le plus proche.
-	¤ Hostile : Les flottes rejoignent les forces de l'assaillant (quelqu'il soit), et en cas de victoire sont automatiquement autorisée à ce poser.
 
-NOTE: Si deux flottes (ou plusieurs) d'un même joueur sont posée sur une planète étrangère avec un comportement contradictoire (Amical/Hostile), en cas d'attaques elles adaoptent automatiquement la Fuite.
+=====Comportement des flottes en conflit=====
+Le second comportement est défini entre le joueur courant et chaque joueur non allié suivant les status :
+	¤ Neutre (par défaut) : La flotte évitera d'attaquer les unités du joueur correspondant à moins que ceux-ci ne fassent feu.
+	¤ Hostile : La flotte attaquera les unités du joueur correspondant dans tout les cas.
 
 =====Flottes en stationnement: Passer à l'attaque !=====
 A tout moment, le joueur peut donner ordre aux flottes stationnées pacifiquement d'attaquer. Toutes les flottes du joueur présente dans la zone sont alors automatiquement mobilisées. L'attaque se fait en fin de tour.
 
 =====Flottes étrangères en stationnement: S'en débarasser !=====
-A tout moment, le joueur peut donner ordre aux forces de son corps céleste d'abattre les flottes étrangèes en stationnement. Il choisi alors le ou les joueur(s) cible(s), et toutes ses/leurs flottes en stationnement sont automatiquement attaquées. L'attaque se fait en fin de tour.
-	¤ Si tous les joueurs attaqués sont alliés entre eux, ils forment un block et se battent.
-	¤ Sinon, les joueurs ayant au moins une flotte en comportement Hostile voient toutes leur flottes, ainsi que celles de leurs alliés prendre part au combat.
-	¤ Les flottes restantes des joueurs attaqués fuient.
-	¤ Les flottes restantes des joueurs non attaqués agissent selon leur comportement : fuient (Fuir) ou rejoignent le corps céleste (Amical) sans toutefois entrainer leurs alliés si ceux-ci n'ont pas mis le même comportement.
-
+A tout moment, le joueur peut donner ordre aux forces de son corps céleste d'abattre les flottes étrangèes en stationnement.
+Il doit définir sa politique intérieure de sorte à déclarer ennemie au moins l'une des forces présente, puis l'attaquer.
+Le conflit se résoud d'abord suivant la polituque intérieure du corps céleste attaquant, puis les politiques de conquètes des forces étrangères en présence.
 S'il perds, le corps céleste reviens à l'une des alliance victorieuse, tirée au hasard selon la proportion de chaque joueur restant.
 
 ===Pacte d'alliance===

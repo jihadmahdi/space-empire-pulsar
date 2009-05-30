@@ -44,32 +44,46 @@ La planète où est établi le module gouvernemental reçoi un bonus de producti
 Les comptoirs intergaliactique permettent d'acheminer les ressources entre les planètes.
 Ainsi, les nébuleuse et champs d'astéroïdes qui ne peuvent produire de vaisseaux ont tout intéret à disposer d'au moins un comptoir pour pouvoir acheminer leurs ressources vers les planètes qui sont plus pauvres en carbone.
 Les comptoirs ont deux fonctions pricipales : La construction de routes de l'espace, et les échanges commerciaux.
+
 ===Routes de l'espace===
 Les comptoirs permettent de construire des routes de l'espace, moyennant un prix qui dépend de la distance à couvrir (500資/Z).
 Une route se fait d'un comptoir à un autre (ceux-ci ne pouvant servir que pour une route à la fois).
 Les routes de l'espace permettent à tout voyageur qui l'emprunte de substituer la vitesse de la route à sa propre vitesse, si celle-ci est inférieure. Celle-ci est très avantageuse pour la pluspart des vaisseaux.
 Note: La vitesse des routes doit être telle que les Chasseurs soient toujours plus rapides même hors des routes.
 
+====Cas spéciaux====
+Si l'un des deux comptoir est détruit, la route est détruite. Les flottes qui seraient en train  de l'utiliser reprennent leur vitesse normale.
+Si trois planètes sont alignées, on doit construire la route de l'espace étape par étape. Ex: A, B, et C alignées avec B entre A et C, il est impossible de construire une route directe entre A et C.
+
 ===Echanges commerciaux===
 Les comptoirs permettent également de procéder à des transferts réguliers de ressource carbone entre comptoirs.
-Le voyage est assuré par un transporteur qui à sa propre vitesse achemine la quantité de carbone définie par le joueur (dans les limites disponibles au moment du départ).
+Le voyage est assuré par un transporteur qui à sa propre vitesse achemine la quantité de carbone définie par le joueur (dans les limites disponibles au moment du départ, et d'un seuil maximum transportable en un trajet).
 L'envoi prend le temps d'un allé simple, la planète destination encaisse le carbone reçu et le transporteur repart sur sa planète d'origine.
 Il met autant de temps pour y rentrer, puis repart automatiquement s'il a une commande en attente.
 Le joueur peut modifier la "commande" à tout moment, mais celle-ci n'est prise en compte que lorsque le transporteur est disponible.
+
+====Cas spéciaux====
+Lorsqu'un transporteur arrive sur un corps céleste ennemi (avec ou sans comptoir) : La cargaison est pillée et la route commerciale effacée (le joueur peut recréer une nouvelle route commerciale sans attendre) 
+Si le comptoir de destination est détruit après que le transporteur soit lancé : A l'arrivée le transporteur fait demi-tour avec la cargaison.
+Si le comptoir de départ est détruit après que le transporteur soit lancé : Le transporteur stoppe ses activités.
 
 Les routes de l'espace et les échanges de ressource sont dissociés et peuvent concerner des destinations différentes.
 
 ==Canon à pulsar==
 50000人/100000資/2 slots détruits
-Les canon à pulsar sont des batiments coûteux qui ont une utilisation unique.
-Chaque canon à pulsar coûte en plus de son prix en 人 et 資 un sacrifice de 2 slots de construction qui sont définitivement perdus.
-Un usage massif de canon à pulsar sur un corps céleste peut donc réduire son nombre de slots à 0, ce qui le rend pratiquement inexploitable.
-
-Un canon à pulsar permet d'effectuer un seul tir :
-Le joueur doit choisir le corps céleste ciblé, et peut ajuster la zone d'effet en paramètrant l'angle de décalage de l'axe magnétique du pulsar (et le sens).
-Un pulsar artificiel est tiré en ligne droite vers la cible choisie, lorsqu'il atteind sa cible, la zone d'effet forme un cône dont le centre est la trajectoire de tir, et dont l'angle est celui paramétré lors du tir.
-Quelque soit l'angle de décalage choisi, le volume d'effet est constant, ainsi plus l'angle est faible, plus le cône est long.
-La durée d'effet du pulsar est aléatoire mais dépend fortement de la distance de tir, ainsi il se peut si l'on tire de trop loin que l'effet ne dure pas plus d'un tour.
+Les canons à pulsar sont des bâtiments coûteux qui ont une utilisation unique.
+Chaque canon à pulsar coûte en plus de son prix en 人 et 資 un sacrifice d'au minimum 1 slot de construction définitivement perdu.
+Le joueur à cependant le choix de sacrifier davantage de slots (jusqu'au maximum du corps céleste occupé) pour améliorer l'effet du pulsar qui sera produit.
+Pour chaque slot consacré à la plateforme de lancement du missile à pulsar, celui-ci gagne en vitesse de lancement, et sa puissance d'effet est directement lié à sa puissance d'impact sur le soleil.
+Lors du tir, le joueur choisi une direction à partir du soleil, et peux influer pour distribuer la puissance entre volume et temps.
+Concrètement, il fait bouger un curseur sur un slider noté à gauche "volume", et à droite "temps". Le centre représente une distrbution optimale avec 50% volume et 50% temps. Le joueur peux cependant déséquilibrer la jauge pour obtenir plus de temps (mais il perds d'avantage de % de volume qu'il ne gagne de % de temps) ou l'inverse.
+{{{
+[v		|		|		|		t]
+				50%		25%z;62,5%t				
+}}}
+Le slider permet au joueur de paramétrer une balance de bonus/malus entre le volume et le temps. L'optimisation se situe toujours à l'équilibre (100%), tandis que si l'on fait pencher de l'un ou l'autre des côté, on paie le double du bonus que l'on gagne d'un côté en malus de l'autre.
+Ex: Si l'on sacrifie 25% du volume, on gagne un bonus de 12,5% de temps.
+Les pourentage de bonus/malus sont appliqué à des plages fixes plus ou moins importante suivant le nombre de slots sacrifiés à l'installation de la plateforme de tir.
 
 ===L'effet "pulsar"===
 L'effet pulsar, comme le décrit l'astrophysicien 松山正則 (//Masanori Matsuyama//) se présente sous la forme de perturbations du champs magnétique, qui entrainnent l'incapacité à toute communication à travers l'espace (suivant les technologies connues à ce jour).

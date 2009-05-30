@@ -15,6 +15,7 @@ Artillerie -> Destroyers
 Destroyers -> Chasseurs
 }}
 Outre ces avantages en combat, chaque classe dispose d'une capacité hors-combat, qui lui donne un attrait stratégique plus ou moins important suivant le style de jeu du joueur.
+Les classes ont un score de spécialisation exprimé en pourcentage et qui se confond avec le score d'armure de la classe.
 
 ===Chasseurs===
 Les chasseurs sont des vaisseaux rapides mais peu résistants, spécialisés dans la destruction des vaisseaux d'artillerie.
@@ -39,8 +40,7 @@ Cependant ils sont les cibles de choix de l'artillerie ennemi, seule capable de 
 	Les destroyers peuvent se mettre en position "défense" sur un corps céleste.
 	Ils bénéficient alors d'un bonus (bonus à l'attaque, en réalité) si le corps céleste est attaqué.
 	Le joueur doit mettre lui même les unités en mode "défense".
-	Lorsque le joueur souhaite remobiliser ses destroyers, ceux-ci prennent un tour à ce redéployer avant d'être disponibles.
-	Si la flotte comprend d'autres vaisseaux que les destroyers, ceux-ci sont également mobilisés.
+	Lorsque le joueur souhaite remobiliser ses destroyers, ceux-ci prennent un tour à ce redéployer avant d'être disponibles.	
 	
 	<math>Bonus~Attaque~des~Destroyers~fortifiés = Destroyers_Attaque * k * Destroyers_Armure</math>
 	k étant un facteur de réglage, soit k = 1
@@ -55,7 +55,7 @@ Cependant ils sont eux même tributaire du nombre de destroyer allié qui les pr
 	Le missile met un certain temps à arriver sur sa cible, et a un certain pourcentage de chance de faire mouche.
 	Le temps de refroidissement du canon est proportionnel à la distance de tir, ainsi une artillerie doit attendre autant de temps avant de pouvoir procéder à un nouveau tir.
 	
-	<math>Chance~de~toucher = k * Artillerie_Défense</math>
+	<math>Chance~de~toucher = k * Artillerie_Défense * Artillerie_Armure</math>
 	k étant un facteur de réglage, il est tel que la flotte la plus énorme ne devrait pas avoir une chance de toucher suppérieure à 50%.
 	
 	La chance de toucher est amoindrie par l'éventuelle présence de module de défense sur le corps céleste:
@@ -64,7 +64,7 @@ Cependant ils sont eux même tributaire du nombre de destroyer allié qui les pr
 	Si le missile fait mouche, un batiement choisi au hasard est détruit sur le corps céleste cible (le module gouvernemental étant toujours le dernier batiment détruit).
 	Dans tous les cas, les caractéristiques et ressources du corps céleste visé sont entammé par le bombardement, suivant sa puissance :
 		
-	<math>Puissance~missile = {k prime} * Artillerie_Défense</math>
+	<math>Puissance~missile = {k prime} * Artillerie_Défense * Artillerie_Armure</math>
 	
 	Le missile entame les caractéristiques de base du corps céleste avec la répartition suivante (a, b, c et d étant les constantes servant à "régler" le comportement du missile):
 	
@@ -93,30 +93,40 @@ k=60
 Voici la liste des différents vaisseaux :
 
 ===Sonde (900人/300資)===
-La sonde est un petit vaisseau d'exploration.
+La sonde est un petit vaisseau d'exploration composé d'un module de voyage et d'un module de communication lequel est largué du premier lorsque la zone destination est atteinte.
 Exempt de tout dispositif d'attaque, il permet en revanche de scanner les zones voisines dans la limite de sa porté (3Z).
-Il peut être envoyé sur toute zone vide ou planète alliée et y demeurer.
-A son lancement, une zone (vide ou planète) est choisie comme destination, dès qu'elle l'atteind, elle s'y installe et ne pourra plus en bouger.
+Elle peut être envoyé sur toute zone vide ou corps céleste et y demeurer, la limite de porté étant définie par la porté de rayonnement du soleil, rayonnement nécéssaire à l'autonomie de la sonde (module communication).
+A son lancement, une zone est choisie comme destination, dès que la sonde l'atteind, elle s'y installe et ne pourra plus en bouger.
 La sonde permet de voir les déplacements des flottes se trouvant a proximité (le bout de trajet, sous forme de segment, avec des informations sur la flotte aperçue).
-Cependant si une flotte ennemie vient à occuper la zone où se trouve la sonde, celle-ci est automatiquement détruite, celà peut arriver par hasard si la sonde se trouve sur le chemin d'une flotte, où si la sonde a été repérée par une sonde ennemie.
-Les sondes fonctionne à l'énergie solaire, elles ne peuvent donc s'éloigner de celui-ci que dans une certaine limite.
+note: Une flotte qui croiserait une sonde sur sa trajectoire peut en dénoncer la présence à son arrivée, mais ne peux pas la détruire car l'attaque est impossible en hyper-space.
+note: Une sonde déployée sur la zone d'un corps céleste étranger peut à tout moment se faire détruire par celui-ci dès lors qu'il possède une flotte ou un module de défense.
 {{
 	Attaque: 0
 	Defense: 1
 	Vitesse: 1.5 Z/T
 }}
 
+===Missiles anti-sonde (0人/200資)===
+Les missiles anti-sondes cont comme leur nom l'indique des missiles entièrement automatisés et dédié à la destruction des sondes.
+chaque missile est lancé avec pour cible une sonde localisée qu'il détruiera à son arrivée.
+Dans le cas où la sonde n'est déjà plus présente à l'arrivé du missile, celui-ci s'auto-détruit.
+Dans le cas où le missile cible une sonde présente dans la même zone qu'un corps céleste, le missile est détruit avant de pouvoir atteindre la sonde (à condition que le corps céleste dispose d'unitées de défense, vaisseau ou module de défense).
+{{
+	Attaque: 1
+	Defense: 1
+	Vitesse: 3Z/T
+}}
+
 ===Vaisseau gouvernemental (200人/200資)===
 Le vaisseau gouvernemental ne peut être produit que sur la planète disposant du module gouvernemental et sert à transporter le gouvernement (en fuite, par exemple).
 C'est un vaisseau particulièrement rapide, équipé d'armes légères en cas d'imprévu (on préfèrera cependant généralement lui adjoindre une flotte complète).
-Le vaisseau gouvernemental ne peut se déplacer qu'une fois, et sa destination est obligatoirement une planète.
-Lorsque le vaisseau gouvernemental est en déplacement, toute communication est impossible pour le joueur, c'est à dire qu'il ne peut plus donner d'ordre a ses planètes et flottes, il est contraint de passer ses tours jusqu'a ce que son gouvernement arrive à destination.
+Lorsque le vaisseau gouvernemental est en déplacement, toute communication est impossible pour le joueur, c'est à dire qu'il ne peut plus donner d'ordre a ses planètes et flottes, il est contraint de passer ses tours jusqu'à ce que son gouvernement arrive à se poser.
+Le joueur récupère la communication dès que le vaisseau est à l'arrêt. Cependant, si le corps sur lequel est posé le gouvernement est sous effet pulsar, seul ce corps est sous contrôle.
 {{
 	Attaque: A DEFINIR
 	Defense: A DEFINIR
 	Vitesse: 2.5 Z/T
 }}
-Lorsque le vaisseau gouvernemental est en déplacement, le joueur perds tout contrôle le temps du voyage.
 
 ===Vaisseaux léger (A DEFINIR人/A DEFINIR資)===
 Les vaisseaux léger de chaque classes partagent les mêmes caractéristiques de base.

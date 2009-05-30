@@ -1,8 +1,12 @@
 #summary Index : Cahier des charges : Règles du jeu : Combats
 
 =Combats=
-Les combats opposent la pluspart du temps une flotte aux forces en présence sur un corps céleste.
-Dans ce cas, il est nécéssaire de représenter la "flotte" équivalente aux forces disponibles sur le corps céleste.
+Les combats peuvent opposer plusieurs factions aux intérêts divergeants.
+Chaque faction sait lorsque la bataille s'engage qui sont ses ennemis.
+Suivant que le combat engage une flotte en territoire étranger ou bien un corps céleste en position de défenseur on se réfèrera respectivement au tableau de politique de conquète ou à celui de politique intérieure.
+Ces deux tableaux définissent à l'égard de chaque joueur non allié l'attitude à adopter : neutre ou hostile.
+Ainsi, on est capable de déterminer dans le chaos de la bataille quelles sont les factions hostiles entre elles et quelles sont les factions susceptible de stopper le combat ensemble.
+C'est une résolution du combat apellée "multipartite" qui permet de résoudre en une seule fois le combat en ne laissant au final que des factions non hostiles entre elles.
 
 ==Flotte équivalente==
 La flotte équivalente est le regroupement de toutes les forces disponibles sur la planète en une même flotte, celà comprend :

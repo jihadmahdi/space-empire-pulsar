@@ -8,22 +8,22 @@ En d'autres termes, le gouvernement représente le joueur.
 
 Concrètement, le gouvernement peut prendre deux formes, une seule pouvant exister à la fois et en un seul exemplaire par joueur:
 	¤ Celle de la construction "Module gouvernemental", établi sur une planète à laquelle il apporte des bonus de production de 人 et 資.
-	¤ Celle d'un "Vaisseau gouvernemental", qui n'apporte aucun bonus en stationnement, et ne peut faire qu'un seul trajet au terme duquel il établi un module gouvernemental sur la planète destination.
+	¤ Celle d'un "Vaisseau gouvernemental", qui n'apporte aucun bonus en stationnement, et qui perds toute communication lorsqu'il est en déplacement.
 	
 Le vaisseau gouvernemental ne peut être créé que sur la planète disposant du module gouvernemental.
 Lorsque le vaisseau gouvernemental est créé, le module gouvernemental est démonté.
 Le vaisseau gouvernemental peut être laissé en stationnement sur la planète, mais le joueur perds alors le bénéfice des bonus de productions que lui aurait octroyé le module gouvernemental.
-Le vaisseau gouvernemental ne peut voyager qu'a destination d'une planète (alliée, sauvage ou neutre), seul ou accompagné d'une flotte.
-Au terme de son voyage, le vaisseau gouvernemental doit absolument pouvoir se poser sur la planète destination, sinon il est détruit.
 Lorsqu'il arrive a destination, plusieurs cas de figure se présentent:
-	¤ La destination est une planète du joueur: Le vaisseau gouvernemental se pose et établi un nouveau module gouvernemental.
-	¤ La destination est une planète alliée: Le vaisseau gouvernemental se pose pacifiquement et retrouve ses capacités de communication.
+	¤ La destination est une planète du joueur: Le vaisseau gouvernemental se pose et le joueur récupère la communication.
+	¤ La destination est une planète alliée: Le vaisseau gouvernemental se pose et retrouve ses capacités de communication.
 	¤ La destination est une planète neutre, dont le comportement est "neutre": Le vaisseau gouvernemental se pose pacifiquement et retrouve ses capacités de communication, mais il est susceptible de se faire attaquer a tout moment par son hôte.
-	¤ La destination est une planète sauvage, ou neutre dont le comportement est "ennemi": Le vaisseau gouernemental est attaqué, soit il est détruit, soit il conquiert la planète.
+	¤ La destination est une planète sauvage, ou neutre dont le comportement est "ennemi": Le vaisseau gouernemental est attaqué, soit il est détruit, soit il survit et se pose sur la planète et récupère la communication.
+Le gouvernement peut rétablir un module gouvernemental lorsqu'il est en stationnement sur une planète appartenant au joueur.
 
 Durant son voyage, gouvernement est coupé du reste de l'empire (communication impossible), le joueur perds donc l'actualisation des informations de son empire, et ne peut plus passer d'ordres, il n'a pas non plus de rapport sur les éventuelles attaques subies par ses planètes ou flottes.
 Le joueur perds aussi le chat multijoueur.
 Dès que son gouvernement arrive à s'établir sur un corps céleste, il retrouve les informations à jour et le log des informations passées.
+Bien qu'il soit le centre de décision, le vaisseau gouvernemental ne peut pas changer de direction durant un trajet car comme toute autre flotte il voyage en hyper-space.
 
 ==Héros==
 Les héros sont des chefs millitaires exceptionnels, sous le commandemant desquels toute flotte arrive à accroitre son potentiel.

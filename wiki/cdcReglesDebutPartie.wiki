@@ -59,9 +59,8 @@ Le joueur peut garder le vaisseau gouvernemental en stationnement le temps de lu
 
 Une fois le vaisseau gouvernemental lancé, le joueur perds temporairement le contrôle de ses planètes et flottes (car le gouvernement perds la communication).
 Lorsque qu'il arrive sur la planète destination choisie:
-	* Soit il arrive a s'y poser et établi automatiquement un nouveau Module gouvernemental,
-	* Soit la planète est devenue hostile, un assaut planétaire est engagé à l'issue duquel le vaisseau gouvernemental aura réussi à se poser, ou aura été détruit.
-Lorsqu'il se pose et créé un nouveau Module gouvernemental, un slot est obligatoirement libéré si aucun n'est disponible.
+	* Soit il arrive a s'y poser et récupère la communication. Il peut établir un nouveau module gouvernemental s'il stationne sur une planète qui lui appartient.
+	* Soit le corps céleste est hostile, un assaut est engagé à l'issue duquel le vaisseau gouvernemental aura réussi à se poser, ou aura été détruit.
 
 ====Options====
 On doit définir le comportement de la population restante en cas d'élimination du gouvernement:
