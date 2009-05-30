@@ -19,14 +19,9 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>eplib</groupId>
-			<artifactId>machine-etats</artifactId>
-			<version>1.0</version>
-		</dependency>
-		<dependency>
-			<groupId>eplib</groupId>
-			<artifactId>client-server-rpc</artifactId>
-			<version>1.0</version>
+			<groupId>org.axan.eplib</groupId>
+			<artifactId>game-server</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.jgoodies</groupId>
@@ -264,6 +259,293 @@
 				<artifactId>maven-antrun-plugin</artifactId>
 				<executions>
 					<execution>
+						<id>clean_trace</id>
+						<phase>clean</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>###CLEAN###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>compile_trace</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>###COMPILE###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>deploy_trace</id>
+						<phase>deploy</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####DEPLOY###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>generate-resources_trace</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####GENERATE_RESOURCES###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>generate-sources_trace</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####GENERATE-SOURCES###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>install_trace</id>
+						<phase>install</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####INSTALL###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>integration-test_trace</id>
+						<phase>integration-test</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####INTEGRATION-TEST###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>package_trace</id>
+						<phase>package</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####PACKAGE###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>post-clean_trace</id>
+						<phase>post-clean</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####POST-CLEAN###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>post-integration-test_trace</id>
+						<phase>post-integration-test</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####POST-INTEGRATION-TEST###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>post-site_trace</id>
+						<phase>post-site</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####POST-SITE###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>pre-clean_trace</id>
+						<phase>pre-clean</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####PRE-CLEAN###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>pre-integration-test_trace</id>
+						<phase>pre-integration-test</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####PRE-INTEGRATION-TEST###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>pre-site_trace</id>
+						<phase>pre-site</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####PRE-SITE###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>prepare-package_trace</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####PREPARE-PACKAGE###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>process-classes_trace</id>
+						<phase>process-classes</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####PROCESS-CLASSES###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>process-resources_trace</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####PROCESS-RESOURCES###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>process-sources_trace</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####PROCESS-SOURCES###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>site_trace</id>
+						<phase>site</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####SITE###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>site-deploy_trace</id>
+						<phase>site-deploy</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####SITE-DEPLOY###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>validate_trace</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####VALIDATE###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>verify_trace</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####VERIFY###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					
+					<execution>
 						<id>movefiles</id>
 						<goals>
 							<goal>run</goal>
@@ -352,6 +634,8 @@
 									<arg value="${izpack2appOutput}" />
 								</exec>
 
+								<echo>Save buildNumber ${buildNumber}</echo>
+								<echo file="${project.build.directory}/buildNumber">${buildNumber}</echo>
 							</tasks>
 						</configuration>
 					</execution>
@@ -398,6 +682,26 @@
 								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/xref/.htaccess" />
 								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/xref-test/.htaccess" />
 
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>sed_site</id>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<phase>site</phase>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<!-- TODO : Buggé, le numéro de build est en retard par rapport au réel car build est à nouveau lancé lorsqu'on fait un site:deploy -->
+								<!-- find . -name '*.html' | xargs sed -i s/\$\{buildNumber\}/`cat ${project.build.directory}/buildNumber`/ -->
+								<echo>find . -name '*.html' | xargs sed -i s/\$\{buildNumber\}/`cat ${project.build.directory}/buildNumber`/</echo>
+								<exec executable="sh" dir="${project.build.directory}/site">
+									<arg value="-c" />
+									<!-- <arg line="'find . -name *.html | xargs sed -i s/\$\{buildNumber\}/`cat ${project.build.directory}/buildNumber`/'" /> -->
+									<arg line="&quot;find . -name '*.html' | xargs sed -i s/\$\{buildNumber\}/`cat ${project.build.directory}/buildNumber`/&quot;" />
+								</exec>
 							</tasks>
 						</configuration>
 					</execution>
