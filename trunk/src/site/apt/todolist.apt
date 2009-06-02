@@ -18,6 +18,8 @@ TODO List
 	
 ** Améliorations
 	
+	* Rendre importable la configuration de partie depuis un fichier type *.properties. Lister de façon exhaustive tout les paramètres possibles.
+	
 ** Nouvelles fonctionnalités
 
 ** Bugs

@@ -50,7 +50,7 @@
 		<projectVersionBase>0.1</projectVersionBase>
 		<projectVersionSnapshot>-SNAPSHOT</projectVersionSnapshot>
 		<projectVersion>${projectVersionBase}r${buildNumber}${projectVersionSnapshot}</projectVersion>
-		<mainClass>TODO</mainClass>
+		<mainClass>client.gui.SpaceEmpirePulsarGUI</mainClass>
 
 		<projectName>Space Empire Pulsar</projectName>
 		<description>
