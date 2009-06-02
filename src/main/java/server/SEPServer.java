@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -30,6 +31,8 @@ import org.axan.eplib.statemachine.ProxiedStateMachine.ProxiedStateMachineBadSer
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.eplib.utils.Basic;
 
+import server.model.ServerGame;
+
 import common.GameConfig;
 import common.Player;
 import common.PlayerConfig;
@@ -42,7 +45,9 @@ import common.Protocol.ServerGameCreation;
 public class SEPServer implements IServer, GameServerListener
 {
 	
-	private static final Logger log = Logger.getLogger(SEPServer.class.getCanonicalName());
+	static final Logger log = Logger.getLogger(SEPServer.class.getCanonicalName());
+	
+	private final ExecutorService threadPool;
 	
 	/**
 	 * ServerCommon protocol interface implementation.
@@ -124,7 +129,7 @@ public class SEPServer implements IServer, GameServerListener
 		@Override
 		public void sendMessage(final String msg)
 		{
-			Basic.executeNewThread(new Runnable()
+			sepServer.threadPool.execute(new Runnable()
 			{
 
 				@Override
@@ -143,7 +148,7 @@ public class SEPServer implements IServer, GameServerListener
 							catch (RpcException e)
 							{
 								log.log(Level.WARNING, "RpcException("+player.getName()+") : "+e.getMessage());
-								player.disconnect(e.getMessage());
+								player.abort(e);
 							}
 						}
 					});
@@ -165,6 +170,15 @@ public class SEPServer implements IServer, GameServerListener
 			synchronized (sepServer.gameConfig)
 			{
 				sepServer.gameConfig = gameCfg;
+				sepServer.threadPool.execute(new Runnable()
+				{
+				
+					@Override
+					public void run()
+					{
+						sepServer.refreshGameConfig();
+					}
+				});
 			}
 		}
 
@@ -174,7 +188,7 @@ public class SEPServer implements IServer, GameServerListener
 		@Override
 		public void updatePlayerConfig(final PlayerConfig playerCfg)
 		{
-			Basic.executeNewThread(new Runnable()
+			sepServer.threadPool.execute(new Runnable()
 			{
 			
 				@Override
@@ -193,6 +207,7 @@ public class SEPServer implements IServer, GameServerListener
 	private final Map<String, ServerPlayer>	players	= new HashMap<String, ServerPlayer>();
 	
 	private GameConfig gameConfig = new GameConfig();
+	private ServerGame game = null;
 
 	public SEPServer(int port, long timeOut)
 	{
@@ -214,6 +229,7 @@ public class SEPServer implements IServer, GameServerListener
 			e.printStackTrace();
 			throw new Error(e);
 		}
+		threadPool = Executors.newCachedThreadPool();
 	}
 
 	/**
@@ -292,6 +308,7 @@ public class SEPServer implements IServer, GameServerListener
 	public void terminate()
 	{
 		gameServer.terminate();
+		threadPool.shutdown();
 	}
 
 	public String getServerAdminKey()
@@ -336,6 +353,26 @@ public class SEPServer implements IServer, GameServerListener
 		}
 	}
 	
+	private void refreshGameConfig()
+	{		
+		doForEachConnectedPlayer(new DoItToOnePlayer()
+		{
+		
+			@Override
+			public void doIt(ServerPlayer player)
+			{
+				try
+				{
+					player.getClientInterface().refreshGameConfig(gameConfig);
+				}
+				catch (RpcException e)
+				{
+					log.log(Level.WARNING, "RpcException("+player.getName()+") : "+e.getMessage());
+				}
+			}
+		});
+	}
+	
 	private void refreshPlayerList()
 	{
 		final Set<Player> playerList = getPlayerList();
@@ -376,5 +413,32 @@ public class SEPServer implements IServer, GameServerListener
 				}
 			}
 		}
+	}	
+
+	/* (non-Javadoc)
+	 * @see org.axan.eplib.gameserver.server.GameServer.GameServerListener#gameRan()
+	 */
+	@Override
+	public void gameRan()
+	{
+		log.log(Level.INFO, "gameRan");
+	}
+
+	/* (non-Javadoc)
+	 * @see org.axan.eplib.gameserver.server.GameServer.GameServerListener#gamePaused()
+	 */
+	@Override
+	public void gamePaused()
+	{
+		log.log(Level.INFO, "gamePaused");
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.axan.eplib.gameserver.server.GameServer.GameServerListener#gameResumed()
+	 */
+	@Override
+	public void gameResumed()
+	{
+		log.log(Level.INFO, "gameResumed");
 	}
 }

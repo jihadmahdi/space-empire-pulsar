@@ -6,12 +6,15 @@
 package client;
 
 import java.util.Set;
+import java.util.logging.Logger;
 
 import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.clientserver.rpc.RpcServerModule.RpcServerModuleBadServiceException;
 import org.axan.eplib.gameserver.client.GameClient;
 import org.axan.eplib.gameserver.client.GameClient.GameClientAlreadyRegisteredExecutorInterfaceException;
 import org.axan.eplib.gameserver.common.IClientUser;
+import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
+import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 
 import common.GameConfig;
 import common.Player;
@@ -22,6 +25,8 @@ import common.Protocol;
  */
 public class SEPClient
 {
+	public static Logger log = Logger.getLogger(SEPClient.class.getCanonicalName());
+	
 	public static interface IUserInterface extends IClientUser
 	{
 		/* (non-Javadoc)
@@ -158,7 +163,22 @@ public class SEPClient
 	{		
 		return client.getLogin();
 	}
+	
+	public void runGame() throws ServerPrivilegeException, StateMachineNotExpectedEventException, RpcException
+	{
+		client.getServerInterface().runGame();
+	}
+	
+	public void pauseGame() throws StateMachineNotExpectedEventException, ServerPrivilegeException, RpcException
+	{
+		client.getServerInterface().pauseGame();
+	}
 
+	public void resumeGame() throws StateMachineNotExpectedEventException, ServerPrivilegeException, RpcException
+	{
+		client.getServerInterface().resumeGame();
+	}
+	
 	private Protocol.ServerGameCreation gameCreationProxy = null;
 	public Protocol.ServerGameCreation getGameCreationInterface() throws RpcException
 	{

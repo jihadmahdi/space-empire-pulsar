@@ -9,6 +9,11 @@ import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.Map;
 
+import server.model.AsteroidField;
+import server.model.Nebula;
+import server.model.Planet;
+import sun.misc.Cleaner;
+
 /**
  * Represent a game creation configuration.
  */
@@ -19,22 +24,22 @@ public class GameConfig implements Serializable
 	/** 
 	 * X dimension of the universe.
 	 */
-	private int	dimX	= 20;
+	private int	dimX;
 
 	/** 
 	 * Y dimension of the universe.
 	 */
-	private int	dimY	= 20;
+	private int	dimY;
 
 	/**
 	 * Z dimension of the universe.
 	 */
-	private int	dimZ	= 20;
+	private int	dimZ;
 
 	/**
 	 * Number of neutral celestial bodies to create.
 	 */
-	private int	neutralCelestialBodiesCount	= 0;
+	private int	neutralCelestialBodiesCount;
 
 	/**
 	 * Starting carbon resource amount on players planets.
@@ -47,31 +52,37 @@ public class GameConfig implements Serializable
 	private Map<Class<? extends CelestialBody>, Integer[]>	celestialBodiesSlotsAmount	= new Hashtable<Class<? extends CelestialBody>, Integer[]>();
 	
 	/**
+	 * Neutral celestial bodies generation, type table.
+	 * This define the chance for a neutral celestial body to be one of the different celestial body type. 
+	 */
+	private Map<Class<? extends CelestialBody>, Float> neutralCelestialBodiesGenerationTable = new Hashtable<Class<? extends CelestialBody>, Float>();
+	
+	/**
 	 * Victory rule : Alliance victory.
 	 * Whatever the victory condition, every allied winner are winners.
 	 */
-	private boolean allianceVictory = false;
+	private boolean allianceVictory;
 	
 	/**
 	 * Victory rule : Regimicide.
 	 * Enable government modules and government starship to represent the player in its empire.
 	 * If a player lose its governement he lose the game and its people fall into enemy people or neutral according to the "assimilateNeutralisedPeoples".
 	 */
-	private boolean regimicide = true;
+	private boolean regimicide;
 
 	/**
 	 * Option for the victory rule : Regimicide.
 	 * If option is on, peoples whose government is destroyed are assimilated to the empire of the player who destroyed the government.
 	 * If option if off, peoples whose government is destroyed are broke up in wild planets.
 	 */
-	private boolean assimilateNeutralisedPeoples = false;
+	private boolean assimilateNeutralisedPeoples;
 	
 	/**
 	 * Victory rule : Total conquest.
 	 * The first player who conquer all celestial bodies and destroy all enemies fleet win the game.
 	 * Note : You have to disable every other victory rules to make the most of this mode. 
 	 */
-	private boolean totalConquest = true;
+	private boolean totalConquest;
 	
 	/**
 	 * Victory rule : Economic victory.
@@ -79,20 +90,106 @@ public class GameConfig implements Serializable
 	 * [0] population goal; [1] carbon resource goal;
 	 * Null values to disable.
 	 */
-	private Integer[] economicVictory = {null, null};
+	private int[] economicVictory;
 	
 	/**
 	 * Victory rule : Time limit.
 	 * The game ends after a fixed number of turns, the player with the best score is the winner.
 	 * Null value to disable.
 	 */
-	private Integer timeLimitVictory = null;
+	private int timeLimitVictory;
+	
+	/**
+	 * Population generated on a planet per turn.
+	 * [0] min; [1] max. 
+	 */
+	private int[] populationPerTurn;
+	
+	/**
+	 * Population limit on a planet.
+	 * [0] min; [1] max.
+	 */
+	private int[] populationLimit;
 	
 	/**
 	 * Empty constructor.
+	 * Default config.
 	 */
 	public GameConfig()
 	{
+		setDimX(20);
+		setDimY(20);
+		setDimZ(20);
+		
+		setNeutralCelestialBodiesCount(5);
+		
+		setPopulationPerTurn(Planet.POPULATION_PER_TURN_MIN, Planet.POPULATION_PER_TURN_MAX);
+		setPopulationLimit(Planet.POPULATION_LIMIT_MIN, Planet.POPULATION_LIMIT_MAX);
+		
+		setCelestialBodiesStartingCarbonAmount(Planet.class, Planet.CARBON_MIN, Planet.CARBON_MAX);
+		setCelestialBodiesStartingCarbonAmount(AsteroidField.class, AsteroidField.CARBON_MIN, AsteroidField.CARBON_MAX);
+		setCelestialBodiesStartingCarbonAmount(Nebula.class, Nebula.CARBON_MIN, Nebula.CARBON_MAX);
+		
+		setCelestialBodiesSlotsAmount(Planet.class, Planet.SLOTS_MIN, Planet.SLOTS_MAX);
+		setCelestialBodiesSlotsAmount(AsteroidField.class, AsteroidField.SLOTS_MIN, AsteroidField.SLOTS_MAX);
+		setCelestialBodiesSlotsAmount(Nebula.class, Nebula.SLOTS_MIN, Nebula.SLOTS_MAX);
+		
+		setNeutralCelestialBodiesGenerationTable(Planet.class, Planet.GENERATION_RATE);
+		setNeutralCelestialBodiesGenerationTable(AsteroidField.class, AsteroidField.GENERATION_RATE);
+		setNeutralCelestialBodiesGenerationTable(Nebula.class, Nebula.GENERATION_RATE);
+		
+		setAllianceVictory(false);
+		setRegimicide(true);
+		setAssimilateNeutralisedPeoples(false);
+		setTotalConquest(true);
+		setEconomicVictory(0, 0);		
+		setTimeLimitVictory(0);
+	}
+	
+	public GameConfig(int dimX, int dimY, int dimZ, int neutralCelesialBodiesCount, int populationPerTurnMin, int populationPerTurnMax, int populationLimitMin, int populationLimitMax, Map<Class<? extends CelestialBody>, Integer[]> celestialBodiesStartingCarbonAmount, Map<Class<? extends CelestialBody>, Integer[]> celestialBodiesSlotsAmount, Map<Class<? extends CelestialBody>, Float> neutralCelestialBodiesGenerationTable, boolean allianceVictory, boolean regimicide, boolean assimilateNeutralisedPeoples, boolean totalConquest, int economicVictoryCarbon, int economicVictoryPopulation, int timeLimitVictory)
+	{
+		// TODO: call with ritgh parameters
+		
+		setDimX(dimX);
+		setDimY(dimY);
+		setDimZ(dimZ);
+		
+		setNeutralCelestialBodiesCount(neutralCelesialBodiesCount);
+		
+		setPopulationPerTurn(populationPerTurnMin, populationPerTurnMax);
+		setPopulationLimit(populationLimitMin, populationLimitMax);
+		
+		if (celestialBodiesStartingCarbonAmount != null) for(Map.Entry<Class<? extends CelestialBody>, Integer[]> e : celestialBodiesStartingCarbonAmount.entrySet())
+		{
+			if (e.getValue() == null) continue;
+			if (e.getValue().length < 2) continue;
+			if (e.getValue()[0] == null || e.getValue()[1] == null) continue;
+			
+			setCelestialBodiesStartingCarbonAmount(e.getKey(), e.getValue()[0], e.getValue()[1]);
+		}
+		
+		if (celestialBodiesSlotsAmount != null) for(Map.Entry<Class<? extends CelestialBody>, Integer[]> e : celestialBodiesSlotsAmount.entrySet())
+		{
+			if (e.getValue() == null) continue;
+			if (e.getValue().length < 2) continue;
+			if (e.getValue()[0] == null || e.getValue()[1] == null) continue;
+			
+			setCelestialBodiesSlotsAmount(e.getKey(), e.getValue()[0], e.getValue()[1]);
+		}
+		
+		if (neutralCelestialBodiesGenerationTable != null) for(Map.Entry<Class<? extends CelestialBody>, Float> e : neutralCelestialBodiesGenerationTable.entrySet())
+		{
+			if (e.getValue() == null) continue;
+			
+			setNeutralCelestialBodiesGenerationTable(e.getKey(), e.getValue());
+		}
+		
+		setAllianceVictory(allianceVictory);
+		setRegimicide(regimicide);
+		setAssimilateNeutralisedPeoples(assimilateNeutralisedPeoples);
+		setTotalConquest(totalConquest);
+		setEconomicVictory(economicVictoryPopulation, economicVictoryCarbon);		
+		setTimeLimitVictory(timeLimitVictory);		
 	}
 
 	/**
@@ -108,6 +205,7 @@ public class GameConfig implements Serializable
 	 */
 	public void setDimX(int dimX)
 	{
+		if (dimX <= 0) throw new IllegalArgumentException("dimX cannot must be greater than 0.");
 		this.dimX = dimX;
 	}
 
@@ -124,6 +222,7 @@ public class GameConfig implements Serializable
 	 */
 	public void setDimY(int dimY)
 	{
+		if (dimY <= 0) throw new IllegalArgumentException("dimY cannot must be greater than 0.");
 		this.dimY = dimY;
 	}
 
@@ -140,6 +239,7 @@ public class GameConfig implements Serializable
 	 */
 	public void setDimZ(int dimZ)
 	{
+		if (dimZ <= 0) throw new IllegalArgumentException("dimZ cannot must be greater than 0.");
 		this.dimZ = dimZ;
 	}
 
@@ -156,9 +256,48 @@ public class GameConfig implements Serializable
 	 */
 	public void setNeutralCelestialBodiesCount(int neutralCelestialBodiesCount)
 	{
+		if (neutralCelestialBodiesCount < 0) throw new IllegalArgumentException("neutralCelestialBodiesCount cannot must be greater or equal to 0.");
 		this.neutralCelestialBodiesCount = neutralCelestialBodiesCount;
 	}
+	
+	/**
+	 * @param populationPerTurnMin Minimum value for population generation on a planet.
+	 * @param populationPerTurnMax Maximum value for population generation on a planet.
+	 */
+	public void setPopulationPerTurn(int populationPerTurnMin, int populationPerTurnMax)
+	{
+		if (populationPerTurnMin < 0) throw new IllegalArgumentException("populationPerTurnMin　must be positive or null.");
+		if (populationPerTurnMax < populationPerTurnMin) throw new IllegalArgumentException("populationPerTurnMax　must be greater or equal to populationPerTurnMin.");
+		this.populationPerTurn = new int[] {populationPerTurnMin, populationPerTurnMax};
+	}
 
+	/**
+	 * @return the populationPerTurn range ([0] min; [1] max).
+	 */
+	public int[] getPopulationPerTurn()
+	{
+		return populationPerTurn;
+	}
+
+	/**
+	 * @param populationLimitMin Minimum value for population limit on a planet.
+	 * @param populationLimitMax Maximum value for population limit on a planet.
+	 */
+	public void setPopulationLimit(int populationLimitMin, int populationLimitMax)
+	{
+		if (populationLimitMin < 0) throw new IllegalArgumentException("populationLimitMin　must be positive or null.");
+		if (populationLimitMax < populationLimitMin) throw new IllegalArgumentException("populationLimitMax　must be greater or equal to populationLimitMin.");
+		this.populationLimit = new int[] {populationLimitMin, populationLimitMax};
+	}
+	
+	/**
+	 * @return the populationLimit range ([0] min; [1] max).
+	 */
+	public int[] getPopulationLimit()
+	{
+		return populationLimit;
+	}
+	
 	/**
 	 * @return the celestialBodiesStartingCarbonAmount
 	 */
@@ -172,6 +311,9 @@ public class GameConfig implements Serializable
 	 */
 	public void setCelestialBodiesStartingCarbonAmount(Class<? extends CelestialBody> celestialBodyType, int min, int max)
 	{
+		if (min <= 0) throw new IllegalArgumentException("minimum carbon amount must be positive or null.");
+		if (max <= 0) throw new IllegalArgumentException("minimum carbon amount must be positive or null.");
+		if (max < min) throw new IllegalArgumentException("minimum carbon amount must be lesser than maximum.");
 		this.celestialBodiesStartingCarbonAmount.put(celestialBodyType, new Integer[] {min, max});
 	}
 
@@ -188,9 +330,30 @@ public class GameConfig implements Serializable
 	 */
 	public void setCelestialBodiesSlotsAmount(Class<? extends CelestialBody> celestialBodyType, int min, int max)
 	{
+		if (min <= 0) throw new IllegalArgumentException("minimum slots amount must be positive or null.");
+		if (max <= 0) throw new IllegalArgumentException("minimum slots amount must be positive or null.");
+		if (max < min) throw new IllegalArgumentException("minimum slots amount must be lesser than maximum.");
 		this.celestialBodiesSlotsAmount.put(celestialBodyType, new Integer[] {min, max});
 	}
 
+	/**
+	 * @return the neutralCelestialBodiesGenerationTable
+	 */
+	public Map<Class<? extends CelestialBody>, Float> getNeutralCelestialBodiesGenerationTable()
+	{
+		return neutralCelestialBodiesGenerationTable;
+	}
+	
+	/**
+	 * @param celestialBodyType Celestial body type.
+	 * @param rate percentage to be generated (not a true percentage but a weight).
+	 */
+	public void setNeutralCelestialBodiesGenerationTable(Class<? extends CelestialBody> celestialBodyType, float rate)
+	{
+		if (rate < 0) throw new IllegalArgumentException("rate cannot be negative.");
+		this.neutralCelestialBodiesGenerationTable.put(celestialBodyType, rate);
+	}
+	
 	/**
 	 * @return the allianceVictory
 	 */
@@ -258,7 +421,7 @@ public class GameConfig implements Serializable
 	/**
 	 * @return the economicVictory
 	 */
-	public Integer[] getEconomicVictory()
+	public int[] getEconomicVictory()
 	{
 		return economicVictory;
 	}
@@ -268,7 +431,9 @@ public class GameConfig implements Serializable
 	 */
 	public void setEconomicVictory(int populationGoal, int carbonResourceGoal)
 	{
-		this.economicVictory = new Integer[] {populationGoal, carbonResourceGoal};
+		if (populationGoal < 0) throw new IllegalArgumentException("populationGoal　must be positive or null.");
+		if (carbonResourceGoal < 0) throw new IllegalArgumentException("carbonResourceGoal　must be positive or null.");
+		this.economicVictory = new int[] {populationGoal, carbonResourceGoal};
 	}
 
 	/**
@@ -284,6 +449,37 @@ public class GameConfig implements Serializable
 	 */
 	public void setTimeLimitVictory(Integer timeLimitVictory)
 	{
+		if (timeLimitVictory < 0) throw new IllegalArgumentException("timeLimitVictory　must be positive or null.");
 		this.timeLimitVictory = timeLimitVictory;
+	}
+	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString()
+	{
+		StringBuffer sb = new StringBuffer();
+		sb.append("Universe ("+dimX+";"+dimY+";"+dimZ+"); ");
+		sb.append("Neutrals "+neutralCelestialBodiesCount+"; ");
+		// TODO: Celestials carbon & slots amount
+		if (allianceVictory) sb.append("AllianceVictory; ");
+		if (regimicide)
+		{
+			sb.append("Regimicide");
+			if (assimilateNeutralisedPeoples) sb.append(" (assimilatPeoples)");
+			sb.append("; ");
+		}
+		if (totalConquest) sb.append("TotalConquest; ");
+		if (economicVictory != null && economicVictory.length >= 2 && (economicVictory[0] > 0 || economicVictory[1] > 0))
+		{
+			sb.append("EconomicVictory("+economicVictory[0]+";"+economicVictory[1]+"); ");
+		}
+		if (timeLimitVictory > 0)
+		{
+			sb.append("TimeLimitVictory("+timeLimitVictory+"); ");
+		}
+		
+		return sb.toString();
 	}
 }

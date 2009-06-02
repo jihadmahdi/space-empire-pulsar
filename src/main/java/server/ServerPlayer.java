@@ -9,6 +9,7 @@ import java.awt.Color;
 import java.awt.Image;
 import java.util.Random;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.gameserver.server.GameServer.ServerUser;
@@ -22,6 +23,8 @@ import common.Protocol;
  */
 class ServerPlayer
 {	
+	static final Logger log = SEPServer.log;
+	
 	private final String		name;
 	private PlayerConfig	config;
 	private ServerUser			serverUser;
@@ -74,10 +77,24 @@ class ServerPlayer
 		return true;
 	}
 	
-	public void disconnect(String msg)
+	public void disconnect()
 	{
 		if (serverUser == null) return;
-		serverUser.stop(msg);
+		serverUser.disconnect();
+	}
+	
+	public void abort(Throwable t)
+	{
+		String msg = String.format("Player %s abort connection : %s", getName(), (t != null && t.getMessage() != null)?t.getMessage():(t != null)?t.getClass().getName():"no reason");
+		
+		log.log(Level.WARNING, msg);
+		
+		if (log.isLoggable(Level.WARNING))
+		{
+			t.printStackTrace();
+		}
+		
+		disconnect();
 	}
 
 	private Protocol.Client	sepClientInterface	= null;

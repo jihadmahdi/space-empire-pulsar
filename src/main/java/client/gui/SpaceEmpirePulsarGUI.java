@@ -2,13 +2,22 @@ package client.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Canvas;
+import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -16,16 +25,24 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
+import java.util.Hashtable;
+import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
 import javax.swing.GroupLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 
 import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JColorChooser;
 import javax.swing.JEditorPane;
 import javax.swing.JFrame;
@@ -48,6 +65,10 @@ import javax.swing.SwingConstants;
 
 import javax.swing.WindowConstants;
 import javax.swing.border.LineBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
@@ -57,9 +78,14 @@ import javax.swing.text.html.HTMLEditorKit;
 import javax.swing.SwingUtilities;
 
 import org.axan.eplib.clientserver.rpc.RpcException;
+import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
+import org.axan.eplib.utils.Basic;
 
 import server.SEPServer;
+import server.model.AsteroidField;
+import server.model.Nebula;
+import server.model.Planet;
 
 import client.SEPClient;
 import client.gui.lib.JImagePanel;
@@ -67,6 +93,7 @@ import com.cloudgarden.layout.AnchorConstraint;
 import com.cloudgarden.layout.AnchorLayout;
 import com.jgoodies.forms.layout.FormLayout;
 
+import common.CelestialBody;
 import common.GameConfig;
 import common.Player;
 import common.PlayerConfig;
@@ -76,6 +103,10 @@ import common.PlayerConfig;
  */
 public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClient.IUserInterface
 {
+	static Logger log = SEPClient.log;
+	
+	private boolean		isAdmin	= false;
+
 	private JMenuBar	jMenuBar;
 
 	private JMenu		jFileMenu;
@@ -85,15 +116,70 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 	private JTextField	jHostGamePortTextField;
 
 	private JLabel		gameCreationConfigLabel1;
-	private JTextField gameCreationConfigEditionNeutralCelestialBodiesTextField;
-	private JLabel gameCreationConfigEditionNbNeutralCelestialBodiesLabel;
-	private JTextField gameCreationConfigEditionUniverseZSizeTextField;
-	private JTextField gameCreationConfigEditionUniverseYSizeTextField;
-	private JTextField gameCreationConfigEditionUniverseXSizeTextField;
-	private JLabel gameCreationConfigUniverseSizeLabel;
-	private JPanel gameCreationConfigEditionPanel;
-	private JLabel gameCreationPlayerConfigEditionColoredNameLabel;
-	private JPanel gameCreationPlayerConfigEditionPanel;
+
+	private JLabel		gameCreationConfigEditionNebulaLabel;
+
+	private JTextField	gameCreationConfigEditionNebulaCarbonMinTextLabel;
+
+	private JLabel		gameCreationConfigEditionNebulaSlashesLabel;
+
+	private JTextField	gameCreationConfigEditionNebulaCarbonMaxTextField;
+
+	private JTextField	gameCreationConfigEditionNebulaSlotsMinTextField;
+
+	private JCheckBox	gameCreationConfigEditionPanelVictoryTeamCheckBox;
+
+	private JLabel		gameCreationConfigEditionPanelVictoryRulesLabel;
+
+	private JTextField	gameCreationConfigEditionNebulaSlotsMaxTextField;
+
+	private JLabel		gameCreationConfigEditionAsteroidFieldLabel;
+
+	private JTextField	gameCreationConfigEditionAsteroidFieldSlotsMinTextField;
+
+	private JTextField	gameCreationConfigEditionAsteroidFieldSlotsMaxTextField;
+
+	private JTextField	gameCreationConfigEditionAsteroidFieldCarbonMaxTextField;
+
+	private JTextField	gameCreationConfigEditionAsteroidFieldCarbonMinTextField;
+
+	private JLabel		gameCreationConfigEditionSlashLabel2;
+
+	private JLabel		gameCreationConfigEditionSlashLabel;
+
+	private JTextField	gameCreationConfigEditionPlanetCarbonMinTextField;
+
+	private JTextField	gameCreationConfigEditionPlanetCarbonMaxTextField;
+
+	private JTextField	gameCreationConfigEditionPlanetSlotsMaxTextField;
+
+	private JTextField	gameCreationConfigEditionPlanetSlotsMinTextField;
+
+	private JLabel		gameCreationConfigEditionPlanetLabel;
+
+	private JLabel		gameCreationConfigEditionSlotMinLabel;
+
+	private JLabel		gameCreationConfigEditionCarbonMinLabel;
+
+	private JLabel		gameCreationConfigEditionCelestialBodyTypeLabel;
+
+	private JTextField	gameCreationConfigEditionNeutralCelestialBodiesTextField;
+
+	private JLabel		gameCreationConfigEditionNbNeutralCelestialBodiesLabel;
+
+	private JTextField	gameCreationConfigEditionUniverseZSizeTextField;
+
+	private JTextField	gameCreationConfigEditionUniverseYSizeTextField;
+
+	private JTextField	gameCreationConfigEditionUniverseXSizeTextField;
+
+	private JLabel		gameCreationConfigUniverseSizeLabel;
+
+	private JPanel		gameCreationConfigEditionPanel;
+
+	private JLabel		gameCreationPlayerConfigEditionColoredNameLabel;
+
+	private JPanel		gameCreationPlayerConfigEditionPanel;
 
 	private JTextField	gameCreationChatMessageTextField;
 
@@ -320,11 +406,11 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 			hostGameJPanel.add(getGameTimeoutJTextField());
 
 			hostGameJPanel.add(getHostGameOkJButton());
-			hostGameJPanel.add(getHostGameCancelJButton());
+			hostGameJPanel.add(getHostGameCancelJButton());		
 		}
 		return hostGameJPanel;
 	}
-
+	
 	private JButton	joinGameOkJButton	= null;
 
 	private JButton getJoinGameOkJButton()
@@ -360,6 +446,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 					}
 
 					client = new SEPClient(SpaceEmpirePulsarGUI.this, login, null, host, port, timeOut);
+					isAdmin = false;
 					client.connect();
 				}
 			});
@@ -396,6 +483,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 					server = new SEPServer(port, timeOut);
 					server.start();
 					client = new SEPClient(SpaceEmpirePulsarGUI.this, login, server.getServerAdminKey(), server.getAddress().getHostAddress(), port, timeOut);
+					isAdmin = true;
 					client.connect();
 				}
 			});
@@ -481,6 +569,27 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 	private JTextField	hostAddressJTextField	= null;
 
+	private JCheckBox	gameCreationConfigEditionPanelVictoryRegimicideCheckBox;
+
+	private JCheckBox	gameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox;
+
+	private JCheckBox	gameCreationConfigEditionPanelVictoryTotalConquestCheckBox;
+
+	private JCheckBox	gameCreationConfigEditionPanelVictoryEconomicCheckBox;
+
+	private JCheckBox	gameCreationConfigEditionPanelVictoryTimeLimitCheckBox;
+
+	private JTextField	gameCreationConfigEditionPanelVictoryEconomicCarbonTextField;
+
+	private JTextField	gameCreationConfigEditionPanelVictoryTimeLimitTextField;
+
+	private JTextField	gameCreationConfigEditionPanelVictoryEconomicPopulationTextField;
+
+	private JLabel		gameCreationConfigEditionPanelVictoryEconomicLabel;
+	private JButton gameCreationBtnsStartBtn;
+
+	private JLabel		gameCreationConfigEditionPanelVictoryTimeLimitLabel;
+
 	private JTextField getHostAddressJTextField()
 	{
 		if (hostAddressJTextField == null)
@@ -539,6 +648,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 						public void run()
 						{
 							refreshPlayerList();
+							refreshGameConfig();
 						}
 					});
 				}
@@ -546,6 +656,20 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		}
 	}
 
+	private void refreshGameConfig()
+	{
+		GameConfig gameCfg;
+		try
+		{
+			gameCfg = client.getGameCreationInterface().getGameConfig();
+			refreshGameConfig(gameCfg);
+		}
+		catch (Throwable t)
+		{
+			t.printStackTrace();
+		}		
+	}
+	
 	private JPanel createGameCreationPlayerListPlayerPanel(Player player)
 	{
 		JPanel playerPanel = new JPanel(new BorderLayout());
@@ -636,7 +760,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		if (gameCreationConfigScrollPane == null)
 		{
 			gameCreationConfigScrollPane = new JScrollPane();
-			gameCreationConfigScrollPane.setPreferredSize(new java.awt.Dimension(585, 200));
+			gameCreationConfigScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 			gameCreationConfigScrollPane.setViewportView(getGameCreationConfigPanel());
 		}
 		return gameCreationConfigScrollPane;
@@ -651,26 +775,26 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 			gameCreationChatScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 			gameCreationChatScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 			gameCreationChatScrollPane.setViewportView(getGameCreationChatEditorPane());
-			
+
 			gameCreationChatScrollPane.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener()
 			{
-			
+
 				@Override
 				public void adjustmentValueChanged(AdjustmentEvent e)
-				{																		
-					if (!e.getValueIsAdjusting())
+				{
+					if ( !e.getValueIsAdjusting())
 					{
-						JScrollBar vBar = gameCreationChatScrollPane.getVerticalScrollBar();						
+						JScrollBar vBar = gameCreationChatScrollPane.getVerticalScrollBar();
 						int newVal = (vBar.getMinimum() + (vBar.getMaximum() - vBar.getMinimum()) * 1);
-					
+
 						if (vBar.getValue() >= (vBar.getMaximum() - vBar.getVisibleAmount() - 30))
-						{						
-							vBar.setValue(newVal);						
+						{
+							vBar.setValue(newVal);
 							getGameCreationPanel().updateUI();
 						}
 					}
 				}
-			});			
+			});
 		}
 		return gameCreationChatScrollPane;
 	}
@@ -705,9 +829,11 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		{
 			gameCreationConfigPanel = new JPanel();
 			BorderLayout jGameCreationConfigPanelLayout = new BorderLayout();
-			gameCreationConfigPanel.setLayout(jGameCreationConfigPanelLayout);
+			gameCreationConfigPanel.setLayout(jGameCreationConfigPanelLayout);			
 			gameCreationConfigPanel.add(getGameCreationConfigLabel1(), BorderLayout.NORTH);
 			gameCreationConfigPanel.add(getGameCreationConfigEditionPanel(), BorderLayout.CENTER);
+			gameCreationConfigPanel.setMinimumSize(new java.awt.Dimension(500, getGameCreationConfigEditionPanelVictoryTimeLimitTextField().getY()+getGameCreationConfigEditionPanelVictoryTimeLimitTextField().getHeight()+30));
+			gameCreationConfigPanel.setPreferredSize(gameCreationConfigPanel.getMinimumSize());
 		}
 		return gameCreationConfigPanel;
 	}
@@ -769,7 +895,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
-		
+
 			@Override
 			public void run()
 			{
@@ -781,14 +907,14 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 						getGameCreationPlayerConfigEditionColoredNameLabel().setBackground(null);
 						getGameCreationPlayerConfigEditionColoredNameLabel().setForeground(player.getConfig().getColor());
 					}
-					
+
 					getJGameCreationPlayerListPanel().add(createGameCreationPlayerListPlayerPanel(player));
 				}
 
 				getJGameCreationPlayerListPanel().setVisible(false);
 				getJGameCreationPlayerListPanel().setVisible(true);
 			}
-		});				
+		});
 	}
 
 	private JPanel getGameCreationEastPanel()
@@ -823,9 +949,10 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		if (gameCreationBtnsPanel == null)
 		{
 			gameCreationBtnsPanel = new JPanel();
-			BorderLayout gameCreationBtnsPanelLayout = new BorderLayout();
+			FlowLayout gameCreationBtnsPanelLayout = new FlowLayout();
 			gameCreationBtnsPanel.setLayout(gameCreationBtnsPanelLayout);
 			gameCreationBtnsPanel.setPreferredSize(new java.awt.Dimension(10, 30));
+			if (isAdmin) gameCreationBtnsPanel.add(getGameCreationBtnsStartBtn());
 		}
 		return gameCreationBtnsPanel;
 	}
@@ -912,15 +1039,15 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
-		
+
 			@Override
 			public void run()
 			{
 				displayGameCreationPanel();
-									
+
 				String htmlText = "<br><font color='#" + getHTMLColor(fromPlayer.getConfig().getColor()) + "'>" + fromPlayer.getName() + "</font> : " + msg + "</br>";
 				HTMLDocument doc = ((HTMLDocument) getGameCreationChatEditorPane().getDocument());
-				
+
 				try
 				{
 					doc.insertBeforeEnd(doc.getDefaultRootElement(), htmlText);
@@ -934,9 +1061,9 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 					e.printStackTrace();
 				}
 			}
-		});		
+		});
 	}
-	
+
 	private static String getHTMLColor(Color c)
 	{
 		return String.format("%02X%02X%02X", c.getRed(), c.getGreen(), c.getBlue());
@@ -1001,9 +1128,11 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		}
 		return gameCreationChatMessageTextField;
 	}
-	
-	private JPanel getGameCreationPlayerConfigEditionPanel() {
-		if(gameCreationPlayerConfigEditionPanel == null) {
+
+	private JPanel getGameCreationPlayerConfigEditionPanel()
+	{
+		if (gameCreationPlayerConfigEditionPanel == null)
+		{
 			gameCreationPlayerConfigEditionPanel = new JPanel();
 			BorderLayout gameCreationPlayerConfigEditionPanelLayout = new BorderLayout();
 			gameCreationPlayerConfigEditionPanel.setLayout(gameCreationPlayerConfigEditionPanelLayout);
@@ -1011,18 +1140,22 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		}
 		return gameCreationPlayerConfigEditionPanel;
 	}
-	
-	private JLabel getGameCreationPlayerConfigEditionColoredNameLabel() {
-		if(gameCreationPlayerConfigEditionColoredNameLabel == null) {
+
+	private JLabel getGameCreationPlayerConfigEditionColoredNameLabel()
+	{
+		if (gameCreationPlayerConfigEditionColoredNameLabel == null)
+		{
 			gameCreationPlayerConfigEditionColoredNameLabel = new JLabel();
 			gameCreationPlayerConfigEditionColoredNameLabel.setText(client.getLogin());
-			gameCreationPlayerConfigEditionColoredNameLabel.setFont(new java.awt.Font("AlArabiya",1,18));
+			gameCreationPlayerConfigEditionColoredNameLabel.setFont(new java.awt.Font("AlArabiya", 1, 18));
 			gameCreationPlayerConfigEditionColoredNameLabel.setSize(198, 20);
 			gameCreationPlayerConfigEditionColoredNameLabel.setPreferredSize(new java.awt.Dimension(0, 20));
 			gameCreationPlayerConfigEditionColoredNameLabel.setHorizontalAlignment(SwingConstants.CENTER);
 			gameCreationPlayerConfigEditionColoredNameLabel.setHorizontalTextPosition(SwingConstants.CENTER);
-			gameCreationPlayerConfigEditionColoredNameLabel.addMouseListener(new MouseAdapter() {
-				public void mouseClicked(MouseEvent evt) {
+			gameCreationPlayerConfigEditionColoredNameLabel.addMouseListener(new MouseAdapter()
+			{
+				public void mouseClicked(MouseEvent evt)
+				{
 					Color newColor = JColorChooser.showDialog(null, "Choose your color", gameCreationPlayerConfigEditionColoredNameLabel.getForeground());
 					if (newColor != null)
 					{
@@ -1034,7 +1167,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		}
 		return gameCreationPlayerConfigEditionColoredNameLabel;
 	}
-	
+
 	private void updatePlayerConfig()
 	{
 		PlayerConfig config = new PlayerConfig(getGameCreationPlayerConfigEditionColoredNameLabel().getBackground(), null, null);
@@ -1045,20 +1178,201 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		catch (Exception e)
 		{
 			e.printStackTrace();
-		}		
+		}
 	}
 
-	/* (non-Javadoc)
+	private Boolean	isGameConfigCurrentlyRefreshed	= false;
+	
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see client.SEPClient.IUserInterface#refreshGameConfig(common.GameConfig)
 	 */
 	@Override
-	public void refreshGameConfig(GameConfig gameCfg)
+	public void refreshGameConfig(final GameConfig gameCfg)
 	{
-		// TODO : afficher
+		SwingUtilities.invokeLater(new Runnable()
+		{
+
+			@Override
+			public void run()
+			{
+				synchronized (isGameConfigCurrentlyRefreshed)
+				{
+					log.log(Level.INFO, "Update GameConfig: "+gameCfg);
+					
+					isGameConfigCurrentlyRefreshed = true;
+					
+					///
+					
+					getGameCreationConfigEditionUniverseXSizeTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionUniverseXSizeTextField().setText(String.valueOf(gameCfg.getDimX()));
+
+					getGameCreationConfigEditionUniverseYSizeTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionUniverseYSizeTextField().setText(String.valueOf(gameCfg.getDimY()));
+
+					getGameCreationConfigEditionUniverseZSizeTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionUniverseZSizeTextField().setText(String.valueOf(gameCfg.getDimZ()));
+
+					///
+					
+					getGameCreationConfigEditionNeutralCelestialBodiesTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionNeutralCelestialBodiesTextField().setText(String.valueOf(gameCfg.getNeutralCelestialBodiesCount()));
+
+					getGameCreationConfigEditionPlanetPopulationPerTurnMinTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionPlanetPopulationPerTurnMaxTextField().setEditable(isAdmin);
+					int[] populationPerTurn = gameCfg.getPopulationPerTurn();
+					if (populationPerTurn.length == 2)
+					{
+						getGameCreationConfigEditionPlanetPopulationPerTurnMinTextField().setText(String.valueOf(populationPerTurn[0]));
+						getGameCreationConfigEditionPlanetPopulationPerTurnMaxTextField().setText(String.valueOf(populationPerTurn[1]));
+					}
+					
+					getGameCreationConfigEditionPlanetPopulationLimitMinTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionPlanetPopulationLimitMaxTextField().setEditable(isAdmin);
+					int[] populationLimit = gameCfg.getPopulationLimit();
+					if (populationLimit.length == 2)
+					{
+						getGameCreationConfigEditionPlanetPopulationLimitMinTextField().setText(String.valueOf(populationLimit[0]));
+						getGameCreationConfigEditionPlanetPopulationLimitMaxTextField().setText(String.valueOf(populationLimit[1]));
+					}
+					
+					///
+					
+					getGameCreationConfigEditionPlanetSlotsMinTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionPlanetSlotsMaxTextField().setEditable(isAdmin);
+					Integer[] planetSlotsRange = gameCfg.getCelestialBodiesSlotsAmount().get(Planet.class);
+					if (planetSlotsRange != null && planetSlotsRange.length == 2)
+					{
+						getGameCreationConfigEditionPlanetSlotsMinTextField().setText(String.valueOf(planetSlotsRange[0]));
+						getGameCreationConfigEditionPlanetSlotsMaxTextField().setText(String.valueOf(planetSlotsRange[1]));
+					}
+					
+					getGameCreationConfigEditionAsteroidFieldSlotsMinTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionAsteroidFieldSlotsMaxTextField().setEditable(isAdmin);
+					Integer[] asteroidFieldSlotsRange = gameCfg.getCelestialBodiesSlotsAmount().get(AsteroidField.class);
+					if (asteroidFieldSlotsRange != null && asteroidFieldSlotsRange.length == 2)
+					{
+						getGameCreationConfigEditionAsteroidFieldSlotsMinTextField().setText(String.valueOf(asteroidFieldSlotsRange[0]));
+						getGameCreationConfigEditionAsteroidFieldSlotsMaxTextField().setText(String.valueOf(asteroidFieldSlotsRange[1]));
+					}
+					
+					getGameCreationConfigEditionNebulaSlotsMinTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionNebulaSlotsMaxTextField().setEditable(isAdmin);
+					Integer[] nebulaSlotsRange = gameCfg.getCelestialBodiesSlotsAmount().get(Nebula.class);
+					if (nebulaSlotsRange != null && nebulaSlotsRange.length == 2)
+					{
+						getGameCreationConfigEditionNebulaSlotsMinTextField().setText(String.valueOf(nebulaSlotsRange[0]));
+						getGameCreationConfigEditionNebulaSlotsMaxTextField().setText(String.valueOf(nebulaSlotsRange[1]));
+					}
+					
+					///
+					
+					getGameCreationConfigEditionPlanetCarbonMinTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionPlanetCarbonMaxTextField().setEditable(isAdmin);
+					Integer[] planetCarbonRange = gameCfg.getCelestialBodiesStartingCarbonAmount().get(Planet.class);
+					if (planetCarbonRange != null && planetCarbonRange.length == 2)
+					{
+						getGameCreationConfigEditionPlanetCarbonMinTextField().setText(String.valueOf(planetCarbonRange[0]));
+						getGameCreationConfigEditionPlanetCarbonMaxTextField().setText(String.valueOf(planetCarbonRange[1]));
+					}
+					
+					getGameCreationConfigEditionAsteroidFieldCarbonMinTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionAsteroidFieldCarbonMaxTextField().setEditable(isAdmin);
+					Integer[] asteroidFieldCarbonRange = gameCfg.getCelestialBodiesStartingCarbonAmount().get(AsteroidField.class);
+					if (asteroidFieldCarbonRange != null && asteroidFieldCarbonRange.length == 2)
+					{
+						getGameCreationConfigEditionAsteroidFieldCarbonMinTextField().setText(String.valueOf(asteroidFieldCarbonRange[0]));
+						getGameCreationConfigEditionAsteroidFieldCarbonMaxTextField().setText(String.valueOf(asteroidFieldCarbonRange[1]));
+					}
+					
+					getGameCreationConfigEditionNebulaCarbonMinTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionNebulaCarbonMaxTextField().setEditable(isAdmin);
+					Integer[] nebulaCarbonRange = gameCfg.getCelestialBodiesStartingCarbonAmount().get(Nebula.class);
+					if (nebulaCarbonRange != null && nebulaCarbonRange.length == 2)
+					{
+						getGameCreationConfigEditionNebulaCarbonMinTextField().setText(String.valueOf(nebulaCarbonRange[0]));
+						getGameCreationConfigEditionNebulaCarbonMaxTextField().setText(String.valueOf(nebulaCarbonRange[1]));
+					}
+					
+					///
+					
+					getGameCreationConfigEditionPlanetNeutralGenTextField().setEditable(isAdmin);
+					Float planetNeutralGenRate = gameCfg.getNeutralCelestialBodiesGenerationTable().get(Planet.class);
+					if (planetNeutralGenRate != null)
+					{
+						getGameCreationConfigEditionPlanetNeutralGenTextField().setText(String.valueOf(planetNeutralGenRate));
+					}
+					
+					getGameCreationConfigEditionAsteroidFieldNeutralGenTextField().setEditable(isAdmin);
+					Float asteroidNeutralGenRate = gameCfg.getNeutralCelestialBodiesGenerationTable().get(AsteroidField.class);
+					if (asteroidNeutralGenRate != null)
+					{
+						getGameCreationConfigEditionAsteroidFieldNeutralGenTextField().setText(String.valueOf(asteroidNeutralGenRate));
+					}
+					
+					getGameCreationConfigEditionNebulaNeutralGenTextField().setEditable(isAdmin);
+					Float nebulaNeutralGenRate = gameCfg.getNeutralCelestialBodiesGenerationTable().get(Nebula.class);
+					if (nebulaNeutralGenRate != null)
+					{
+						getGameCreationConfigEditionNebulaNeutralGenTextField().setText(String.valueOf(nebulaNeutralGenRate));
+					}
+					
+					///
+					
+					getGameCreationConfigEditionPanelVictoryTeamCheckBox().setEnabled(isAdmin);
+					getGameCreationConfigEditionPanelVictoryTeamCheckBox().setSelected(gameCfg.isAllianceVictory());
+
+					getGameCreationConfigEditionPanelVictoryRegimicideCheckBox().setEnabled(isAdmin);
+					getGameCreationConfigEditionPanelVictoryRegimicideCheckBox().setSelected(gameCfg.isRegimicide());
+
+					getGameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox().setEnabled(isAdmin);
+					getGameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox().setSelected(gameCfg.isAssimilateNeutralisedPeoples());
+
+					getGameCreationConfigEditionPanelVictoryTotalConquestCheckBox().setEnabled(isAdmin);
+					getGameCreationConfigEditionPanelVictoryTotalConquestCheckBox().setSelected(gameCfg.isTotalConquest());
+
+					getGameCreationConfigEditionPanelVictoryEconomicCheckBox().setEnabled(false);
+					getGameCreationConfigEditionPanelVictoryEconomicCarbonTextField().setEnabled(isAdmin);
+					getGameCreationConfigEditionPanelVictoryEconomicPopulationTextField().setEnabled(isAdmin);
+
+					boolean economicVictoryEnabled = false;
+
+					if (gameCfg.getEconomicVictory() != null && gameCfg.getEconomicVictory().length > 0)
+					{
+						if (gameCfg.getEconomicVictory()[0] > 0)
+						{
+							economicVictoryEnabled = true;
+							getGameCreationConfigEditionPanelVictoryEconomicPopulationTextField().setText(String.valueOf(gameCfg.getEconomicVictory()[0]));
+						}
+
+						if (gameCfg.getEconomicVictory()[1] > 0)
+						{
+							economicVictoryEnabled = true;
+							getGameCreationConfigEditionPanelVictoryEconomicCarbonTextField().setText(String.valueOf(gameCfg.getEconomicVictory()[1]));
+						}
+					}
+					getGameCreationConfigEditionPanelVictoryEconomicCheckBox().setSelected(economicVictoryEnabled);
+
+					getGameCreationConfigEditionPanelVictoryTimeLimitCheckBox().setEnabled(false);
+					getGameCreationConfigEditionPanelVictoryTimeLimitTextField().setEnabled(isAdmin);
+					getGameCreationConfigEditionPanelVictoryTimeLimitCheckBox().setSelected(false);
+
+					if (gameCfg.getTimeLimitVictory() != null && gameCfg.getTimeLimitVictory() > 0)
+					{
+						getGameCreationConfigEditionPanelVictoryTimeLimitCheckBox().setSelected(true);
+						getGameCreationConfigEditionPanelVictoryTimeLimitTextField().setText(String.valueOf(gameCfg.getTimeLimitVictory()));
+					}
+					isGameConfigCurrentlyRefreshed = false;
+				}
+			}
+		});
 	}
-	
-	private JPanel getGameCreationConfigEditionPanel() {
-		if(gameCreationConfigEditionPanel == null) {
+
+	private JPanel getGameCreationConfigEditionPanel()
+	{
+		if (gameCreationConfigEditionPanel == null)
+		{
 			gameCreationConfigEditionPanel = new JPanel();
 			gameCreationConfigEditionPanel.setLayout(null);
 			gameCreationConfigEditionPanel.add(getGameCreationConfigUniverseSizeLabel());
@@ -1067,62 +1381,888 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionUniverseZSizeTextField());
 			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionNbNeutralCelestialBodiesLabel());
 			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionNeutralCelestialBodiesTextField());
+			
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetStatsLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetStatsMinMaxLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetPopulationPerTurnLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetPopulationPerTurnSlashesLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetPopulationPerTurnMinTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetPopulationPerTurnMaxTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetPopulationLimitLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetPopulationLimitSlashesLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetPopulationLimitMinTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetPopulationLimitMaxTextField());			
+			
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionCelestialBodyTypeLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionCarbonMinLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionSlotMinLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionNeutralGenLabel());			
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetSlotsMinTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetSlotsMaxTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetCarbonMaxTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetCarbonMinTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetNeutralGenTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionSlashLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionSlashLabel2());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionAsteroidFieldCarbonMinTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionAsteroidFieldCarbonMaxTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionAsteroidFieldSlotsMaxTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionAsteroidFieldSlotsMinTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionAsteroidFieldNeutralGenTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionAsteroidFieldLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionNebulaSlotsMaxTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionNebulaSlotsMinTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionNebulaCarbonMaxTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionNebulaSlashesLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionNebulaCarbonMinTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionNebulaNeutralGenTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionNebulaLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPanelVictoryRulesLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPanelVictoryTeamCheckBox());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPanelVictoryRegimicideCheckBox());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPanelVictoryTotalConquestCheckBox());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPanelVictoryEconomicCheckBox());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPanelVictoryEconomicLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPanelVictoryEconomicCarbonTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPanelVictoryEconomicPopulationTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPanelVictoryTimeLimitCheckBox());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPanelVictoryTimeLimitLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPanelVictoryTimeLimitTextField());
 		}
 		return gameCreationConfigEditionPanel;
 	}
-	
-	private JLabel getGameCreationConfigUniverseSizeLabel() {
-		if(gameCreationConfigUniverseSizeLabel == null) {
+
+	private JLabel getGameCreationConfigUniverseSizeLabel()
+	{
+		if (gameCreationConfigUniverseSizeLabel == null)
+		{
 			gameCreationConfigUniverseSizeLabel = new JLabel();
 			gameCreationConfigUniverseSizeLabel.setText("Universe size :         x        x");
 			gameCreationConfigUniverseSizeLabel.setBounds(0, 0, 279, 20);
 		}
 		return gameCreationConfigUniverseSizeLabel;
 	}
-	
-	private JTextField getGameCreationConfigEditionUniverseXSizeTextField() {
-		if(gameCreationConfigEditionUniverseXSizeTextField == null) {
+
+	private FocusListener	gameCreationConfigEditionFocusListener;
+
+	private JLabel	gameCreationConfigEditionPlanetStatsLabel;
+
+	private JLabel	gameCreationConfigEditionPlanetStatsMinMaxLabel;
+
+	private JLabel	gameCreationConfigEditionPlanetPopulationPerTurnLabel;
+
+	private JTextField	gameCreationConfigEditionPlanetPopulationPerTurnMinTextField;
+
+	private JTextField	gameCreationConfigEditionPlanetPopulationPerTurnMaxTextField;
+
+	private JLabel	gameCreationConfigEditionPlanetPopulationLimitLabel;
+
+	private JTextField	gameCreationConfigEditionPlanetPopulationLimitMinTextField;
+
+	private JTextField	gameCreationConfigEditionPlanetPopulationLimitMaxTextField;
+
+	private JLabel	gameCreationConfigEditionPlanetPopulationPerTurnSlashesLabel;
+
+	private JLabel	gameCreationConfigEditionPlanetPopulationLimitSlashesLabel;
+
+	private JTextField	gameCreationConfigEditionNebulaNeutralGenTextField;
+
+	private JTextField	gameCreationConfigEditionAsteroidFieldNeutralGenTextField;
+
+	private JTextField	gameCreationConfigEditionPlanetNeutralGenTextField;
+
+	private JLabel	gameCreationConfigEditionNeutralGenLabel;
+
+	private FocusListener getGameCreationConfigEditionFocusListener()
+	{
+		if (gameCreationConfigEditionFocusListener == null)
+		{
+			gameCreationConfigEditionFocusListener = new FocusListener()
+			{
+
+				@Override
+				public void focusLost(FocusEvent e)
+				{
+					if (isGameConfigCurrentlyRefreshed) return;
+					
+					int dimX, dimY, dimZ, neutralCelestialBodiesCount, economicVictoryCarbon, economicVictoryPopulation, timeLimitVictory;
+					int planetSlotsMin, planetSlotsMax, asteroidSlotsMin, asteroidSlotsMax, nebulaSlotsMin, nebulaSlotsMax;
+					int planetCarbonMin, planetCarbonMax, asteroidCarbonMin, asteroidCarbonMax, nebulaCarbonMin, nebulaCarbonMax;
+					
+					try
+					{
+						dimX = Integer.valueOf(getGameCreationConfigEditionUniverseXSizeTextField().getText());
+						dimY = Integer.valueOf(getGameCreationConfigEditionUniverseYSizeTextField().getText());
+						dimZ = Integer.valueOf(getGameCreationConfigEditionUniverseZSizeTextField().getText());
+
+						neutralCelestialBodiesCount = Integer.valueOf(getGameCreationConfigEditionNeutralCelestialBodiesTextField().getText());
+
+						///
+						
+						Map<Class<? extends CelestialBody>, Integer[]> slotsAmount = new Hashtable<Class<? extends CelestialBody>, Integer[]>();
+						
+						planetSlotsMin = Integer.valueOf(getGameCreationConfigEditionPlanetSlotsMinTextField().getText());
+						planetSlotsMax = Integer.valueOf(getGameCreationConfigEditionPlanetSlotsMaxTextField().getText());
+						slotsAmount.put(Planet.class, new Integer[] {planetSlotsMin, planetSlotsMax});
+						
+						asteroidSlotsMin = Integer.valueOf(getGameCreationConfigEditionAsteroidFieldSlotsMinTextField().getText());
+						asteroidSlotsMax = Integer.valueOf(getGameCreationConfigEditionAsteroidFieldSlotsMaxTextField().getText());
+						slotsAmount.put(AsteroidField.class, new Integer[] {asteroidSlotsMin, asteroidSlotsMax});
+						
+						nebulaSlotsMin = Integer.valueOf(getGameCreationConfigEditionNebulaSlotsMinTextField().getText());
+						nebulaSlotsMax = Integer.valueOf(getGameCreationConfigEditionNebulaSlotsMaxTextField().getText());
+						slotsAmount.put(Nebula.class, new Integer[] {nebulaSlotsMin, nebulaSlotsMax});
+						
+						///
+						
+						Map<Class<? extends CelestialBody>, Integer[]> carbonAmount = new Hashtable<Class<? extends CelestialBody>, Integer[]>();
+						
+						planetCarbonMin = Integer.valueOf(getGameCreationConfigEditionPlanetCarbonMinTextField().getText());
+						planetCarbonMax = Integer.valueOf(getGameCreationConfigEditionPlanetCarbonMaxTextField().getText());
+						carbonAmount.put(Planet.class, new Integer[] {planetCarbonMin, planetCarbonMax});
+						
+						asteroidCarbonMin = Integer.valueOf(getGameCreationConfigEditionAsteroidFieldCarbonMinTextField().getText());
+						asteroidCarbonMax = Integer.valueOf(getGameCreationConfigEditionAsteroidFieldCarbonMaxTextField().getText());
+						carbonAmount.put(AsteroidField.class, new Integer[] {asteroidCarbonMin, asteroidCarbonMax});
+						
+						nebulaCarbonMin = Integer.valueOf(getGameCreationConfigEditionNebulaCarbonMinTextField().getText());
+						nebulaCarbonMax = Integer.valueOf(getGameCreationConfigEditionNebulaCarbonMaxTextField().getText());
+						carbonAmount.put(Nebula.class, new Integer[] {nebulaCarbonMin, nebulaCarbonMax});
+						
+						///
+						
+						float planetNeutralGenerationRate, asteroidNeutralGenerationRate, nebulaNeutralGenerationRate;
+						
+						Map<Class<? extends CelestialBody>, Float> neutralGenerationRates = new Hashtable<Class<? extends CelestialBody>, Float>();
+						
+						planetNeutralGenerationRate = Float.valueOf(getGameCreationConfigEditionPlanetNeutralGenTextField().getText());
+						neutralGenerationRates.put(Planet.class, planetNeutralGenerationRate);
+						
+						asteroidNeutralGenerationRate = Float.valueOf(getGameCreationConfigEditionAsteroidFieldNeutralGenTextField().getText());
+						neutralGenerationRates.put(Planet.class, asteroidNeutralGenerationRate);
+						
+						nebulaNeutralGenerationRate = Float.valueOf(getGameCreationConfigEditionNebulaNeutralGenTextField().getText());
+						neutralGenerationRates.put(Planet.class, nebulaNeutralGenerationRate);
+						
+						///
+
+						economicVictoryCarbon = Integer.valueOf(getGameCreationConfigEditionPanelVictoryEconomicCarbonTextField().getText());
+						economicVictoryPopulation = Integer.valueOf(getGameCreationConfigEditionPanelVictoryEconomicPopulationTextField().getText());
+
+						timeLimitVictory = Integer.valueOf(getGameCreationConfigEditionPanelVictoryTimeLimitTextField().getText());
+
+						///
+						
+						int populationPerTurnMin, populationPerTurnMax, populationLimitMin, populationLimitMax;
+						
+						populationPerTurnMin = Integer.valueOf(getGameCreationConfigEditionPlanetPopulationPerTurnMinTextField().getText());
+						populationPerTurnMax = Integer.valueOf(getGameCreationConfigEditionPlanetPopulationPerTurnMaxTextField().getText());
+						
+						populationLimitMin = Integer.valueOf(getGameCreationConfigEditionPlanetPopulationLimitMinTextField().getText());
+						populationLimitMax = Integer.valueOf(getGameCreationConfigEditionPlanetPopulationLimitMaxTextField().getText());												
+						
+						GameConfig gameCfg = new GameConfig(dimX, dimY, dimZ, neutralCelestialBodiesCount, populationPerTurnMin, populationPerTurnMax, populationLimitMin, populationLimitMax, carbonAmount, slotsAmount, neutralGenerationRates, getGameCreationConfigEditionPanelVictoryTeamCheckBox().isSelected(), getGameCreationConfigEditionPanelVictoryRegimicideCheckBox().isSelected(), getGameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox().isSelected(), getGameCreationConfigEditionPanelVictoryTotalConquestCheckBox().isSelected(), economicVictoryCarbon, economicVictoryPopulation, timeLimitVictory);
+						
+						log.log(Level.INFO, "Try to update gameConfig : "+gameCfg);
+						
+						client.getGameCreationInterface().updateGameConfig(gameCfg);
+					}
+					catch (ServerPrivilegeException ex1)
+					{
+						JOptionPane.showMessageDialog(null, ex1.getMessage(), "Server Privilege Error", JOptionPane.ERROR_MESSAGE);
+						return;
+					}
+					catch (Exception ex)
+					{
+						try
+						{
+							refreshGameConfig();
+						}
+						catch (Exception e1)
+						{
+							e1.printStackTrace();
+						}
+						return;
+					}
+				}
+
+				@Override
+				public void focusGained(FocusEvent e)
+				{
+
+				}
+			};
+		}
+		return gameCreationConfigEditionFocusListener;
+	}
+
+	private JTextField getGameCreationConfigEditionUniverseXSizeTextField()
+	{
+		if (gameCreationConfigEditionUniverseXSizeTextField == null)
+		{
 			gameCreationConfigEditionUniverseXSizeTextField = new JTextField();
-			gameCreationConfigEditionUniverseXSizeTextField.setText("20");
-			gameCreationConfigEditionUniverseXSizeTextField.setBounds(100, 0, 26, 20);
+			gameCreationConfigEditionUniverseXSizeTextField.setText("0");
+			gameCreationConfigEditionUniverseXSizeTextField.setBounds(getGameCreationConfigUniverseSizeLabel().getX()+100, getGameCreationConfigUniverseSizeLabel().getY(), 26, 20);
+			gameCreationConfigEditionUniverseXSizeTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
 		}
 		return gameCreationConfigEditionUniverseXSizeTextField;
 	}
-	
-	private JTextField getGameCreationConfigEditionUniverseYSizeTextField() {
-		if(gameCreationConfigEditionUniverseYSizeTextField == null) {
+
+	private JTextField getGameCreationConfigEditionUniverseYSizeTextField()
+	{
+		if (gameCreationConfigEditionUniverseYSizeTextField == null)
+		{
 			gameCreationConfigEditionUniverseYSizeTextField = new JTextField();
-			gameCreationConfigEditionUniverseYSizeTextField.setText("20");
-			gameCreationConfigEditionUniverseYSizeTextField.setBounds(140, 0, 26, 20);
+			gameCreationConfigEditionUniverseYSizeTextField.setText("0");
+			gameCreationConfigEditionUniverseYSizeTextField.setBounds(getGameCreationConfigUniverseSizeLabel().getX()+140, getGameCreationConfigUniverseSizeLabel().getY(), 26, 20);
+			gameCreationConfigEditionUniverseYSizeTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
 		}
 		return gameCreationConfigEditionUniverseYSizeTextField;
 	}
-	
-	private JTextField getGameCreationConfigEditionUniverseZSizeTextField() {
-		if(gameCreationConfigEditionUniverseZSizeTextField == null) {
+
+	private JTextField getGameCreationConfigEditionUniverseZSizeTextField()
+	{
+		if (gameCreationConfigEditionUniverseZSizeTextField == null)
+		{
 			gameCreationConfigEditionUniverseZSizeTextField = new JTextField();
-			gameCreationConfigEditionUniverseZSizeTextField.setText("20");
-			gameCreationConfigEditionUniverseZSizeTextField.setBounds(178, 0, 26, 20);
+			gameCreationConfigEditionUniverseZSizeTextField.setText("0");
+			gameCreationConfigEditionUniverseZSizeTextField.setBounds(getGameCreationConfigUniverseSizeLabel().getX()+178, getGameCreationConfigUniverseSizeLabel().getY(), 26, 20);
+			gameCreationConfigEditionUniverseZSizeTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
 		}
 		return gameCreationConfigEditionUniverseZSizeTextField;
 	}
-	
-	private JLabel getGameCreationConfigEditionNbNeutralCelestialBodiesLabel() {
-		if(gameCreationConfigEditionNbNeutralCelestialBodiesLabel == null) {
+
+	private JLabel getGameCreationConfigEditionNbNeutralCelestialBodiesLabel()
+	{
+		if (gameCreationConfigEditionNbNeutralCelestialBodiesLabel == null)
+		{
 			gameCreationConfigEditionNbNeutralCelestialBodiesLabel = new JLabel();
 			gameCreationConfigEditionNbNeutralCelestialBodiesLabel.setText("Neutral celestial bodies :");
-			gameCreationConfigEditionNbNeutralCelestialBodiesLabel.setBounds(279, 0, 157, 20);
+			gameCreationConfigEditionNbNeutralCelestialBodiesLabel.setBounds(getGameCreationConfigUniverseSizeLabel().getX()+279, getGameCreationConfigUniverseSizeLabel().getY(), 157, 20);
 		}
 		return gameCreationConfigEditionNbNeutralCelestialBodiesLabel;
 	}
-	
-	private JTextField getGameCreationConfigEditionNeutralCelestialBodiesTextField() {
-		if(gameCreationConfigEditionNeutralCelestialBodiesTextField == null) {
+
+	private JTextField getGameCreationConfigEditionNeutralCelestialBodiesTextField()
+	{
+		if (gameCreationConfigEditionNeutralCelestialBodiesTextField == null)
+		{
 			gameCreationConfigEditionNeutralCelestialBodiesTextField = new JTextField();
-			gameCreationConfigEditionNeutralCelestialBodiesTextField.setText("3");
-			gameCreationConfigEditionNeutralCelestialBodiesTextField.setBounds(440, 0, 26, 20);
+			gameCreationConfigEditionNeutralCelestialBodiesTextField.setText("0");
+			gameCreationConfigEditionNeutralCelestialBodiesTextField.setBounds(getGameCreationConfigUniverseSizeLabel().getX()+440, getGameCreationConfigUniverseSizeLabel().getY(), 26, 20);
+			gameCreationConfigEditionNeutralCelestialBodiesTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
 		}
 		return gameCreationConfigEditionNeutralCelestialBodiesTextField;
 	}
 
+	private JLabel getGameCreationConfigEditionPlanetStatsLabel()
+	{
+		if (gameCreationConfigEditionPlanetStatsLabel == null)
+		{
+			gameCreationConfigEditionPlanetStatsLabel = new JLabel();
+			gameCreationConfigEditionPlanetStatsLabel.setText("Planet stats");
+			gameCreationConfigEditionPlanetStatsLabel.setBounds(0, 26, 100, 20);
+		}		
+		return gameCreationConfigEditionPlanetStatsLabel;
+	}
+	
+	private JLabel getGameCreationConfigEditionPlanetStatsMinMaxLabel()
+	{
+		if (gameCreationConfigEditionPlanetStatsMinMaxLabel == null)
+		{
+			gameCreationConfigEditionPlanetStatsMinMaxLabel = new JLabel();
+			gameCreationConfigEditionPlanetStatsMinMaxLabel.setText("min / max");
+			gameCreationConfigEditionPlanetStatsMinMaxLabel.setBounds(getGameCreationConfigEditionPlanetStatsLabel().getX()+248, getGameCreationConfigEditionPlanetStatsLabel().getY(), 100, 20);
+		}		
+		return gameCreationConfigEditionPlanetStatsMinMaxLabel;
+	}
+	
+	private JLabel getGameCreationConfigEditionPlanetPopulationPerTurnLabel()
+	{
+		if (gameCreationConfigEditionPlanetPopulationPerTurnLabel == null)
+		{
+			gameCreationConfigEditionPlanetPopulationPerTurnLabel = new JLabel();
+			gameCreationConfigEditionPlanetPopulationPerTurnLabel.setText("Population per turn");
+			gameCreationConfigEditionPlanetPopulationPerTurnLabel.setBounds(getGameCreationConfigEditionPlanetStatsLabel().getX()+50, getGameCreationConfigEditionPlanetStatsLabel().getY()+26, 200, 20);
+		}		
+		return gameCreationConfigEditionPlanetPopulationPerTurnLabel;
+	}
+	
+	private JLabel getGameCreationConfigEditionPlanetPopulationPerTurnSlashesLabel()
+	{
+		if (gameCreationConfigEditionPlanetPopulationPerTurnSlashesLabel == null)
+		{
+			gameCreationConfigEditionPlanetPopulationPerTurnSlashesLabel = new JLabel();
+			gameCreationConfigEditionPlanetPopulationPerTurnSlashesLabel.setText("/");
+			gameCreationConfigEditionPlanetPopulationPerTurnSlashesLabel.setBounds(getGameCreationConfigEditionPlanetStatsLabel().getX()+274, getGameCreationConfigEditionPlanetStatsLabel().getY()+26, 20, 20);
+		}		
+		return gameCreationConfigEditionPlanetPopulationPerTurnSlashesLabel;
+	}
+	
+	private JTextField getGameCreationConfigEditionPlanetPopulationPerTurnMinTextField()
+	{
+		if (gameCreationConfigEditionPlanetPopulationPerTurnMinTextField == null)
+		{
+			gameCreationConfigEditionPlanetPopulationPerTurnMinTextField = new JTextField();
+			gameCreationConfigEditionPlanetPopulationPerTurnMinTextField.setText("0");
+			gameCreationConfigEditionPlanetPopulationPerTurnMinTextField.setBounds(getGameCreationConfigEditionPlanetStatsLabel().getX()+200, getGameCreationConfigEditionPlanetStatsLabel().getY()+26, 70, 20);
+			gameCreationConfigEditionPlanetPopulationPerTurnMinTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionPlanetPopulationPerTurnMinTextField;
+	}
+	
+	private JTextField getGameCreationConfigEditionPlanetPopulationPerTurnMaxTextField()
+	{
+		if (gameCreationConfigEditionPlanetPopulationPerTurnMaxTextField == null)
+		{
+			gameCreationConfigEditionPlanetPopulationPerTurnMaxTextField = new JTextField();
+			gameCreationConfigEditionPlanetPopulationPerTurnMaxTextField.setText("0");
+			gameCreationConfigEditionPlanetPopulationPerTurnMaxTextField.setBounds(getGameCreationConfigEditionPlanetStatsLabel().getX()+282, getGameCreationConfigEditionPlanetStatsLabel().getY()+26, 70, 20);
+			gameCreationConfigEditionPlanetPopulationPerTurnMaxTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionPlanetPopulationPerTurnMaxTextField;
+	}
+	
+	private JLabel getGameCreationConfigEditionPlanetPopulationLimitLabel()
+	{
+		if (gameCreationConfigEditionPlanetPopulationLimitLabel == null)
+		{
+			gameCreationConfigEditionPlanetPopulationLimitLabel = new JLabel();
+			gameCreationConfigEditionPlanetPopulationLimitLabel.setText("Population limit");
+			gameCreationConfigEditionPlanetPopulationLimitLabel.setBounds(getGameCreationConfigEditionPlanetStatsLabel().getX()+50, getGameCreationConfigEditionPlanetStatsLabel().getY()+52, 150, 20);
+		}		
+		return gameCreationConfigEditionPlanetPopulationLimitLabel;
+	}
+	
+	private JLabel getGameCreationConfigEditionPlanetPopulationLimitSlashesLabel()
+	{
+		if (gameCreationConfigEditionPlanetPopulationLimitSlashesLabel == null)
+		{
+			gameCreationConfigEditionPlanetPopulationLimitSlashesLabel = new JLabel();
+			gameCreationConfigEditionPlanetPopulationLimitSlashesLabel.setText("/");
+			gameCreationConfigEditionPlanetPopulationLimitSlashesLabel.setBounds(getGameCreationConfigEditionPlanetStatsLabel().getX()+274, getGameCreationConfigEditionPlanetStatsLabel().getY()+52, 20, 20);
+		}		
+		return gameCreationConfigEditionPlanetPopulationLimitSlashesLabel;
+	}
+	
+	private JTextField getGameCreationConfigEditionPlanetPopulationLimitMinTextField()
+	{
+		if (gameCreationConfigEditionPlanetPopulationLimitMinTextField == null)
+		{
+			gameCreationConfigEditionPlanetPopulationLimitMinTextField = new JTextField();
+			gameCreationConfigEditionPlanetPopulationLimitMinTextField.setText("0");
+			gameCreationConfigEditionPlanetPopulationLimitMinTextField.setBounds(getGameCreationConfigEditionPlanetStatsLabel().getX()+200, getGameCreationConfigEditionPlanetStatsLabel().getY()+52, 70, 20);
+			gameCreationConfigEditionPlanetPopulationLimitMinTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionPlanetPopulationLimitMinTextField;
+	}
+	
+	private JTextField getGameCreationConfigEditionPlanetPopulationLimitMaxTextField()
+	{
+		if (gameCreationConfigEditionPlanetPopulationLimitMaxTextField == null)
+		{
+			gameCreationConfigEditionPlanetPopulationLimitMaxTextField = new JTextField();
+			gameCreationConfigEditionPlanetPopulationLimitMaxTextField.setText("0");
+			gameCreationConfigEditionPlanetPopulationLimitMaxTextField.setBounds(getGameCreationConfigEditionPlanetStatsLabel().getX()+282, getGameCreationConfigEditionPlanetStatsLabel().getY()+52, 70, 20);
+			gameCreationConfigEditionPlanetPopulationLimitMaxTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionPlanetPopulationLimitMaxTextField;
+	}
+	
+	private JLabel getGameCreationConfigEditionCelestialBodyTypeLabel()
+	{
+		if (gameCreationConfigEditionCelestialBodyTypeLabel == null)
+		{
+			gameCreationConfigEditionCelestialBodyTypeLabel = new JLabel();
+			gameCreationConfigEditionCelestialBodyTypeLabel.setText("Celestial body");
+			gameCreationConfigEditionCelestialBodyTypeLabel.setBounds(0, getGameCreationConfigEditionPlanetPopulationLimitLabel().getY()+getGameCreationConfigEditionPlanetPopulationLimitLabel().getHeight()+5, 89, 20);
+		}
+		return gameCreationConfigEditionCelestialBodyTypeLabel;
+	}
+
+	private JLabel getGameCreationConfigEditionCarbonMinLabel()
+	{
+		if (gameCreationConfigEditionCarbonMinLabel == null)
+		{
+			gameCreationConfigEditionCarbonMinLabel = new JLabel();
+			gameCreationConfigEditionCarbonMinLabel.setText("Carbon min / max");
+			gameCreationConfigEditionCarbonMinLabel.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+210, getGameCreationConfigEditionCelestialBodyTypeLabel().getY(), 130, 20);
+		}
+		return gameCreationConfigEditionCarbonMinLabel;
+	}
+
+	private JLabel getGameCreationConfigEditionSlotMinLabel()
+	{
+		if (gameCreationConfigEditionSlotMinLabel == null)
+		{
+			gameCreationConfigEditionSlotMinLabel = new JLabel();
+			gameCreationConfigEditionSlotMinLabel.setText("Slots min / max");
+			gameCreationConfigEditionSlotMinLabel.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+350, getGameCreationConfigEditionCelestialBodyTypeLabel().getY(), 100, 20);
+		}
+		return gameCreationConfigEditionSlotMinLabel;
+	}
+	
+	private JLabel getGameCreationConfigEditionNeutralGenLabel()
+	{
+		if (gameCreationConfigEditionNeutralGenLabel == null)
+		{
+			gameCreationConfigEditionNeutralGenLabel = new JLabel();
+			gameCreationConfigEditionNeutralGenLabel.setText("Neutral %");
+			gameCreationConfigEditionNeutralGenLabel.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+455, getGameCreationConfigEditionCelestialBodyTypeLabel().getY(), 100, 20);
+		}
+		return gameCreationConfigEditionNeutralGenLabel;
+	}
+
+	private JLabel getGameCreationConfigEditionPlanetLabel()
+	{
+		if (gameCreationConfigEditionPlanetLabel == null)
+		{
+			gameCreationConfigEditionPlanetLabel = new JLabel();
+			gameCreationConfigEditionPlanetLabel.setText("planet");
+			gameCreationConfigEditionPlanetLabel.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+50, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+26, 204, 20);
+		}
+		return gameCreationConfigEditionPlanetLabel;
+	}
+
+	private JTextField getGameCreationConfigEditionPlanetSlotsMinTextField()
+	{
+		if (gameCreationConfigEditionPlanetSlotsMinTextField == null)
+		{
+			gameCreationConfigEditionPlanetSlotsMinTextField = new JTextField();
+			gameCreationConfigEditionPlanetSlotsMinTextField.setText("0");
+			gameCreationConfigEditionPlanetSlotsMinTextField.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+392, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+26, 18, 20);
+			gameCreationConfigEditionPlanetSlotsMinTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionPlanetSlotsMinTextField;
+	}
+
+	private JTextField getGameCreationConfigEditionPlanetSlotsMaxTextField()
+	{
+		if (gameCreationConfigEditionPlanetSlotsMaxTextField == null)
+		{
+			gameCreationConfigEditionPlanetSlotsMaxTextField = new JTextField();
+			gameCreationConfigEditionPlanetSlotsMaxTextField.setText("0");
+			gameCreationConfigEditionPlanetSlotsMaxTextField.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+422, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+26, 18, 20);
+			gameCreationConfigEditionPlanetSlotsMaxTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionPlanetSlotsMaxTextField;
+	}
+
+	private JTextField getGameCreationConfigEditionPlanetCarbonMaxTextField()
+	{
+		if (gameCreationConfigEditionPlanetCarbonMaxTextField == null)
+		{
+			gameCreationConfigEditionPlanetCarbonMaxTextField = new JTextField();
+			gameCreationConfigEditionPlanetCarbonMaxTextField.setText("0");
+			gameCreationConfigEditionPlanetCarbonMaxTextField.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+295, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+26, 70, 20);
+			gameCreationConfigEditionPlanetCarbonMaxTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionPlanetCarbonMaxTextField;
+	}
+
+	private JTextField getGameCreationConfigEditionPlanetCarbonMinTextField()
+	{
+		if (gameCreationConfigEditionPlanetCarbonMinTextField == null)
+		{
+			gameCreationConfigEditionPlanetCarbonMinTextField = new JTextField();
+			gameCreationConfigEditionPlanetCarbonMinTextField.setText("0");
+			gameCreationConfigEditionPlanetCarbonMinTextField.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+213, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+26, 70, 20);
+			gameCreationConfigEditionPlanetCarbonMinTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionPlanetCarbonMinTextField;
+	}
+	
+	private JTextField getGameCreationConfigEditionPlanetNeutralGenTextField()
+	{
+		if (gameCreationConfigEditionPlanetNeutralGenTextField == null)
+		{
+			gameCreationConfigEditionPlanetNeutralGenTextField = new JTextField();
+			gameCreationConfigEditionPlanetNeutralGenTextField.setText("0");
+			gameCreationConfigEditionPlanetNeutralGenTextField.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+462, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+26, 26, 20);
+			gameCreationConfigEditionPlanetNeutralGenTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionPlanetNeutralGenTextField;
+	}
+
+	private JLabel getGameCreationConfigEditionSlashLabel()
+	{
+		if (gameCreationConfigEditionSlashLabel == null)
+		{
+			gameCreationConfigEditionSlashLabel = new JLabel();
+			gameCreationConfigEditionSlashLabel.setText("/                              /");
+			gameCreationConfigEditionSlashLabel.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+287, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+26, 161, 17);
+		}
+		return gameCreationConfigEditionSlashLabel;
+	}
+
+	private JLabel getGameCreationConfigEditionSlashLabel2()
+	{
+		if (gameCreationConfigEditionSlashLabel2 == null)
+		{
+			gameCreationConfigEditionSlashLabel2 = new JLabel();
+			gameCreationConfigEditionSlashLabel2.setText("/                              /");
+			gameCreationConfigEditionSlashLabel2.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+287, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+48, 166, 17);
+		}
+		return gameCreationConfigEditionSlashLabel2;
+	}
+
+	private JTextField getGameCreationConfigEditionAsteroidFieldCarbonMinTextField()
+	{
+		if (gameCreationConfigEditionAsteroidFieldCarbonMinTextField == null)
+		{
+			gameCreationConfigEditionAsteroidFieldCarbonMinTextField = new JTextField();
+			gameCreationConfigEditionAsteroidFieldCarbonMinTextField.setText("0");
+			gameCreationConfigEditionAsteroidFieldCarbonMinTextField.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+213, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+48, 70, 20);
+			gameCreationConfigEditionAsteroidFieldCarbonMinTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionAsteroidFieldCarbonMinTextField;
+	}
+
+	private JTextField getGameCreationConfigEditionAsteroidFieldCarbonMaxTextField()
+	{
+		if (gameCreationConfigEditionAsteroidFieldCarbonMaxTextField == null)
+		{
+			gameCreationConfigEditionAsteroidFieldCarbonMaxTextField = new JTextField();
+			gameCreationConfigEditionAsteroidFieldCarbonMaxTextField.setText("0");
+			gameCreationConfigEditionAsteroidFieldCarbonMaxTextField.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+295, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+48, 70, 20);
+			gameCreationConfigEditionAsteroidFieldCarbonMaxTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionAsteroidFieldCarbonMaxTextField;
+	}
+
+	private JTextField getGameCreationConfigEditionAsteroidFieldSlotsMaxTextField()
+	{
+		if (gameCreationConfigEditionAsteroidFieldSlotsMaxTextField == null)
+		{
+			gameCreationConfigEditionAsteroidFieldSlotsMaxTextField = new JTextField();
+			gameCreationConfigEditionAsteroidFieldSlotsMaxTextField.setText("0");
+			gameCreationConfigEditionAsteroidFieldSlotsMaxTextField.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+422, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+48, 18, 20);
+			gameCreationConfigEditionAsteroidFieldSlotsMaxTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionAsteroidFieldSlotsMaxTextField;
+	}
+
+	private JTextField getGameCreationConfigEditionAsteroidFieldSlotsMinTextField()
+	{
+		if (gameCreationConfigEditionAsteroidFieldSlotsMinTextField == null)
+		{
+			gameCreationConfigEditionAsteroidFieldSlotsMinTextField = new JTextField();
+			gameCreationConfigEditionAsteroidFieldSlotsMinTextField.setText("0");
+			gameCreationConfigEditionAsteroidFieldSlotsMinTextField.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+392, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+48, 18, 20);
+			gameCreationConfigEditionAsteroidFieldSlotsMinTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionAsteroidFieldSlotsMinTextField;
+	}
+
+	private JTextField getGameCreationConfigEditionAsteroidFieldNeutralGenTextField()
+	{
+		if (gameCreationConfigEditionAsteroidFieldNeutralGenTextField == null)
+		{
+			gameCreationConfigEditionAsteroidFieldNeutralGenTextField = new JTextField();
+			gameCreationConfigEditionAsteroidFieldNeutralGenTextField.setText("0");
+			gameCreationConfigEditionAsteroidFieldNeutralGenTextField.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+462, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+48, 26, 20);
+			gameCreationConfigEditionAsteroidFieldNeutralGenTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionAsteroidFieldNeutralGenTextField;
+	}
+	
+	private JLabel getGameCreationConfigEditionAsteroidFieldLabel()
+	{
+		if (gameCreationConfigEditionAsteroidFieldLabel == null)
+		{
+			gameCreationConfigEditionAsteroidFieldLabel = new JLabel();
+			gameCreationConfigEditionAsteroidFieldLabel.setText("asteroid field");
+			gameCreationConfigEditionAsteroidFieldLabel.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+50, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+48, 204, 20);
+		}
+		return gameCreationConfigEditionAsteroidFieldLabel;
+	}
+
+	private JTextField getGameCreationConfigEditionNebulaSlotsMaxTextField()
+	{
+		if (gameCreationConfigEditionNebulaSlotsMaxTextField == null)
+		{
+			gameCreationConfigEditionNebulaSlotsMaxTextField = new JTextField();
+			gameCreationConfigEditionNebulaSlotsMaxTextField.setText("0");
+			gameCreationConfigEditionNebulaSlotsMaxTextField.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+422, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+70, 18, 20);
+			gameCreationConfigEditionNebulaSlotsMaxTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionNebulaSlotsMaxTextField;
+	}
+
+	private JTextField getGameCreationConfigEditionNebulaSlotsMinTextField()
+	{
+		if (gameCreationConfigEditionNebulaSlotsMinTextField == null)
+		{
+			gameCreationConfigEditionNebulaSlotsMinTextField = new JTextField();
+			gameCreationConfigEditionNebulaSlotsMinTextField.setText("0");
+			gameCreationConfigEditionNebulaSlotsMinTextField.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+392, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+70, 18, 20);
+			gameCreationConfigEditionNebulaSlotsMinTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionNebulaSlotsMinTextField;
+	}
+
+	private JTextField getGameCreationConfigEditionNebulaCarbonMaxTextField()
+	{
+		if (gameCreationConfigEditionNebulaCarbonMaxTextField == null)
+		{
+			gameCreationConfigEditionNebulaCarbonMaxTextField = new JTextField();
+			gameCreationConfigEditionNebulaCarbonMaxTextField.setText("0");
+			gameCreationConfigEditionNebulaCarbonMaxTextField.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+295, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+70, 70, 20);
+			gameCreationConfigEditionNebulaCarbonMaxTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionNebulaCarbonMaxTextField;
+	}
+
+	private JTextField getGameCreationConfigEditionNebulaNeutralGenTextField()
+	{
+		if (gameCreationConfigEditionNebulaNeutralGenTextField == null)
+		{
+			gameCreationConfigEditionNebulaNeutralGenTextField = new JTextField();
+			gameCreationConfigEditionNebulaNeutralGenTextField.setText("0");
+			gameCreationConfigEditionNebulaNeutralGenTextField.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+462, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+70, 26, 20);
+			gameCreationConfigEditionNebulaNeutralGenTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionNebulaNeutralGenTextField;
+	}
+	
+	private JLabel getGameCreationConfigEditionNebulaSlashesLabel()
+	{
+		if (gameCreationConfigEditionNebulaSlashesLabel == null)
+		{
+			gameCreationConfigEditionNebulaSlashesLabel = new JLabel();
+			gameCreationConfigEditionNebulaSlashesLabel.setText("/                              /");
+			gameCreationConfigEditionNebulaSlashesLabel.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+287, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+70, 161, 17);
+		}
+		return gameCreationConfigEditionNebulaSlashesLabel;
+	}
+
+	private JTextField getGameCreationConfigEditionNebulaCarbonMinTextField()
+	{
+		if (gameCreationConfigEditionNebulaCarbonMinTextLabel == null)
+		{
+			gameCreationConfigEditionNebulaCarbonMinTextLabel = new JTextField();
+			gameCreationConfigEditionNebulaCarbonMinTextLabel.setText("0");
+			gameCreationConfigEditionNebulaCarbonMinTextLabel.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+213, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+70, 70, 20);
+			gameCreationConfigEditionNebulaCarbonMinTextLabel.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionNebulaCarbonMinTextLabel;
+	}
+
+	private JLabel getGameCreationConfigEditionNebulaLabel()
+	{
+		if (gameCreationConfigEditionNebulaLabel == null)
+		{
+			gameCreationConfigEditionNebulaLabel = new JLabel();
+			gameCreationConfigEditionNebulaLabel.setText("nebula");
+			gameCreationConfigEditionNebulaLabel.setBounds(getGameCreationConfigEditionCelestialBodyTypeLabel().getX()+50, getGameCreationConfigEditionCelestialBodyTypeLabel().getY()+70, 200, 20);
+		}
+		return gameCreationConfigEditionNebulaLabel;
+	}
+
+	private JLabel getGameCreationConfigEditionPanelVictoryRulesLabel()
+	{
+		if (gameCreationConfigEditionPanelVictoryRulesLabel == null)
+		{
+			gameCreationConfigEditionPanelVictoryRulesLabel = new JLabel();
+			gameCreationConfigEditionPanelVictoryRulesLabel.setText("Victory Rules");
+			gameCreationConfigEditionPanelVictoryRulesLabel.setBounds(0, getGameCreationConfigEditionNebulaLabel().getY()+getGameCreationConfigEditionNebulaLabel().getHeight()+5, 200, 20);
+		}
+		return gameCreationConfigEditionPanelVictoryRulesLabel;
+	}
+
+	private JCheckBox getGameCreationConfigEditionPanelVictoryTeamCheckBox()
+	{
+		if (gameCreationConfigEditionPanelVictoryTeamCheckBox == null)
+		{
+			gameCreationConfigEditionPanelVictoryTeamCheckBox = new JCheckBox();
+			gameCreationConfigEditionPanelVictoryTeamCheckBox.setText("Allied victory");
+			gameCreationConfigEditionPanelVictoryTeamCheckBox.setBounds(getGameCreationConfigEditionPanelVictoryRulesLabel().getX()+50, getGameCreationConfigEditionPanelVictoryRulesLabel().getY()+20, 200, 20);
+			
+			gameCreationConfigEditionPanelVictoryTeamCheckBox.addItemListener(new ItemListener()
+			{
+			
+				@Override
+				public void itemStateChanged(ItemEvent e)
+				{
+					getGameCreationConfigEditionFocusListener().focusLost(new FocusEvent(gameCreationConfigEditionPanelVictoryTeamCheckBox, e.getID()));
+				}
+			});
+		}
+		return gameCreationConfigEditionPanelVictoryTeamCheckBox;
+	}
+
+	private JCheckBox getGameCreationConfigEditionPanelVictoryRegimicideCheckBox()
+	{
+		if (gameCreationConfigEditionPanelVictoryRegimicideCheckBox == null)
+		{
+			gameCreationConfigEditionPanelVictoryRegimicideCheckBox = new JCheckBox();
+			gameCreationConfigEditionPanelVictoryRegimicideCheckBox.setText("Regimicide");
+			gameCreationConfigEditionPanelVictoryRegimicideCheckBox.setBounds(getGameCreationConfigEditionPanelVictoryRulesLabel().getX()+50, getGameCreationConfigEditionPanelVictoryRulesLabel().getY()+40, 200, 20);
+			gameCreationConfigEditionPanelVictoryRegimicideCheckBox.addItemListener(new ItemListener()
+			{
+			
+				@Override
+				public void itemStateChanged(ItemEvent e)
+				{
+					getGameCreationConfigEditionFocusListener().focusLost(new FocusEvent(gameCreationConfigEditionPanelVictoryRegimicideCheckBox, e.getID()));
+				}
+			});
+		}
+		return gameCreationConfigEditionPanelVictoryRegimicideCheckBox;
+	}
+
+	private JCheckBox getGameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox()
+	{
+		if (gameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox == null)
+		{
+			gameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox = new JCheckBox();
+			gameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox.setText("Assimilate peoples");
+			gameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox.setBounds(getGameCreationConfigEditionPanelVictoryRulesLabel().getX()+100, getGameCreationConfigEditionPanelVictoryRulesLabel().getY()+60, 200, 20);
+			gameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox.addItemListener(new ItemListener()
+			{
+			
+				@Override
+				public void itemStateChanged(ItemEvent e)
+				{
+					getGameCreationConfigEditionFocusListener().focusLost(new FocusEvent(gameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox, e.getID()));
+				}
+			});
+		}
+		return gameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox;
+	}
+
+	private JCheckBox getGameCreationConfigEditionPanelVictoryTotalConquestCheckBox()
+	{
+		if (gameCreationConfigEditionPanelVictoryTotalConquestCheckBox == null)
+		{
+			gameCreationConfigEditionPanelVictoryTotalConquestCheckBox = new JCheckBox();
+			gameCreationConfigEditionPanelVictoryTotalConquestCheckBox.setText("Total conquest");
+			gameCreationConfigEditionPanelVictoryTotalConquestCheckBox.setBounds(getGameCreationConfigEditionPanelVictoryRulesLabel().getX()+50, getGameCreationConfigEditionPanelVictoryRulesLabel().getY()+80, 200, 20);
+			gameCreationConfigEditionPanelVictoryTotalConquestCheckBox.addItemListener(new ItemListener()
+			{
+			
+				@Override
+				public void itemStateChanged(ItemEvent e)
+				{
+					getGameCreationConfigEditionFocusListener().focusLost(new FocusEvent(gameCreationConfigEditionPanelVictoryTotalConquestCheckBox, e.getID()));
+				}
+			});
+		}
+		return gameCreationConfigEditionPanelVictoryTotalConquestCheckBox;
+	}
+
+	private JCheckBox getGameCreationConfigEditionPanelVictoryEconomicCheckBox()
+	{
+		if (gameCreationConfigEditionPanelVictoryEconomicCheckBox == null)
+		{
+			gameCreationConfigEditionPanelVictoryEconomicCheckBox = new JCheckBox();
+			gameCreationConfigEditionPanelVictoryEconomicCheckBox.setText("Economic");
+			gameCreationConfigEditionPanelVictoryEconomicCheckBox.setBounds(getGameCreationConfigEditionPanelVictoryRulesLabel().getX()+50, getGameCreationConfigEditionPanelVictoryRulesLabel().getY()+100, 100, 20);
+		}
+		return gameCreationConfigEditionPanelVictoryEconomicCheckBox;
+	}
+
+	private JLabel getGameCreationConfigEditionPanelVictoryEconomicLabel()
+	{
+		if (gameCreationConfigEditionPanelVictoryEconomicLabel == null)
+		{
+			gameCreationConfigEditionPanelVictoryEconomicLabel = new JLabel();
+			gameCreationConfigEditionPanelVictoryEconomicLabel.setText("Carbon                          Population");
+			gameCreationConfigEditionPanelVictoryEconomicLabel.setBounds(getGameCreationConfigEditionPanelVictoryRulesLabel().getX()+150, getGameCreationConfigEditionPanelVictoryRulesLabel().getY()+100, 300, 20);
+		}
+
+		return gameCreationConfigEditionPanelVictoryEconomicLabel;
+	}
+
+	private JTextField getGameCreationConfigEditionPanelVictoryEconomicCarbonTextField()
+	{
+		if (gameCreationConfigEditionPanelVictoryEconomicCarbonTextField == null)
+		{
+			gameCreationConfigEditionPanelVictoryEconomicCarbonTextField = new JTextField();
+			gameCreationConfigEditionPanelVictoryEconomicCarbonTextField.setText("0");
+			gameCreationConfigEditionPanelVictoryEconomicCarbonTextField.setBounds(getGameCreationConfigEditionPanelVictoryRulesLabel().getX()+200, getGameCreationConfigEditionPanelVictoryRulesLabel().getY()+100, 70, 20);
+			gameCreationConfigEditionPanelVictoryEconomicCarbonTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionPanelVictoryEconomicCarbonTextField;
+	}
+
+	private JTextField getGameCreationConfigEditionPanelVictoryEconomicPopulationTextField()
+	{
+		if (gameCreationConfigEditionPanelVictoryEconomicPopulationTextField == null)
+		{
+			gameCreationConfigEditionPanelVictoryEconomicPopulationTextField = new JTextField();
+			gameCreationConfigEditionPanelVictoryEconomicPopulationTextField.setText("0");
+			gameCreationConfigEditionPanelVictoryEconomicPopulationTextField.setBounds(getGameCreationConfigEditionPanelVictoryRulesLabel().getX()+380, getGameCreationConfigEditionPanelVictoryRulesLabel().getY()+100, 70, 20);
+			gameCreationConfigEditionPanelVictoryEconomicPopulationTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionPanelVictoryEconomicPopulationTextField;
+	}
+
+	private JCheckBox getGameCreationConfigEditionPanelVictoryTimeLimitCheckBox()
+	{
+		if (gameCreationConfigEditionPanelVictoryTimeLimitCheckBox == null)
+		{
+			gameCreationConfigEditionPanelVictoryTimeLimitCheckBox = new JCheckBox();
+			gameCreationConfigEditionPanelVictoryTimeLimitCheckBox.setText("Time limit");
+			gameCreationConfigEditionPanelVictoryTimeLimitCheckBox.setBounds(getGameCreationConfigEditionPanelVictoryRulesLabel().getX()+50, getGameCreationConfigEditionPanelVictoryRulesLabel().getY()+120, 100, 20);
+		}
+		return gameCreationConfigEditionPanelVictoryTimeLimitCheckBox;
+	}
+
+	private JLabel getGameCreationConfigEditionPanelVictoryTimeLimitLabel()
+	{
+		if (gameCreationConfigEditionPanelVictoryTimeLimitLabel == null)
+		{
+			gameCreationConfigEditionPanelVictoryTimeLimitLabel = new JLabel();
+			gameCreationConfigEditionPanelVictoryTimeLimitLabel.setText("turns");
+			gameCreationConfigEditionPanelVictoryTimeLimitLabel.setBounds(getGameCreationConfigEditionPanelVictoryRulesLabel().getX()+180, getGameCreationConfigEditionPanelVictoryRulesLabel().getY()+120, 100, 20);
+		}
+		return gameCreationConfigEditionPanelVictoryTimeLimitLabel;
+	}
+
+	private JTextField getGameCreationConfigEditionPanelVictoryTimeLimitTextField()
+	{
+		if (gameCreationConfigEditionPanelVictoryTimeLimitTextField == null)
+		{
+			gameCreationConfigEditionPanelVictoryTimeLimitTextField = new JTextField();
+			gameCreationConfigEditionPanelVictoryTimeLimitTextField.setText("0");
+			gameCreationConfigEditionPanelVictoryTimeLimitTextField.setBounds(getGameCreationConfigEditionPanelVictoryRulesLabel().getX()+150, getGameCreationConfigEditionPanelVictoryRulesLabel().getY()+120, 26, 20);
+			gameCreationConfigEditionPanelVictoryTimeLimitTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionPanelVictoryTimeLimitTextField;
+	}
+	
+	private JButton getGameCreationBtnsStartBtn() {
+		if(gameCreationBtnsStartBtn == null) {
+			gameCreationBtnsStartBtn = new JButton();
+			gameCreationBtnsStartBtn.setText("Start");
+			gameCreationBtnsStartBtn.setPreferredSize(new java.awt.Dimension(100, 25));
+			gameCreationBtnsStartBtn.setHorizontalTextPosition(SwingConstants.CENTER);
+			gameCreationBtnsStartBtn.addActionListener(new ActionListener()
+			{
+			
+				@Override
+				public void actionPerformed(ActionEvent e)
+				{
+					try
+					{
+						client.runGame();
+					}
+					catch (ServerPrivilegeException e1)
+					{
+						JOptionPane.showConfirmDialog(null, "You are not authorised to run the game.", "Server Privilege Error", JOptionPane.OK_OPTION, JOptionPane.ERROR_MESSAGE);
+						return;
+					}
+					catch (Exception e1)
+					{
+						e1.printStackTrace();
+						return;
+					}					
+				}
+			});
+		}
+		return gameCreationBtnsStartBtn;
+	}
 }

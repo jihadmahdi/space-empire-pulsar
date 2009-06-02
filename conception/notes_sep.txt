@@ -7,7 +7,7 @@ En option de création de game, les infos visibles basiques sont configurable, o
 
 ====
 
-// Thèorie Pulsar 27.05.09 :
+/OK/ Thèorie Pulsar 27.05.09 :
 L'effet pulsar est produit sur le soleil, par l'envoi d'un missile depuis le corps céleste producteur.
 Le joueur peut consacrer autant de slots qu'il le souhaite (sauf 1, il doit toujours rester 1 slot constructible) a l'installation de la plateforme de tir du missile.
 En effet, l'efficacité du pulsar est directement lié à sa puissance (vitesse) d'impact sur le soleil, ainsi plus la plateforme de tir est étendue, plus le missile est tiré à grande vitesse.
