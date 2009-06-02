@@ -74,6 +74,14 @@ public interface Protocol
 	 */
 	public static interface ServerRunningGame extends ServerCommon
 	{
+
+		/**
+		 * Return the current game turn information for this player.
+		 * @return GameTurnInfos current game turn information for this player.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		PlayerGameBoard getGameBoard() throws RpcException, StateMachineNotExpectedEventException;
 		
 	}
 	

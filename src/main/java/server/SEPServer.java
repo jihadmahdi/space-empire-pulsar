@@ -34,21 +34,24 @@ import org.axan.eplib.utils.Basic;
 import server.model.ServerGame;
 
 import common.GameConfig;
+import common.PlayerGameBoard;
 import common.Player;
 import common.PlayerConfig;
 import common.Protocol;
 import common.Protocol.ServerGameCreation;
+import common.Protocol.ServerPausedGame;
+import common.Protocol.ServerRunningGame;
 
 /**
  * TODO
  */
 public class SEPServer implements IServer, GameServerListener
 {
-	
-	static final Logger log = Logger.getLogger(SEPServer.class.getCanonicalName());
-	
-	private final ExecutorService threadPool;
-	
+
+	public static final Logger		log	= Logger.getLogger(SEPServer.class.getCanonicalName());
+
+	private final ExecutorService	threadPool;
+
 	/**
 	 * ServerCommon protocol interface implementation.
 	 */
@@ -69,14 +72,14 @@ public class SEPServer implements IServer, GameServerListener
 		public SEPCommon(SEPServer server, ServerUser user)
 		{
 			this.sepServer = server;
-			this.user = user;			
+			this.user = user;
 		}
-		
+
 		protected Player getPlayer()
 		{
-			return sepServer.players.get(user.getLogin()).getPlayer();			
+			return sepServer.players.get(user.getLogin()).getPlayer();
 		}
-		
+
 		protected ServerPlayer getServerPlayer()
 		{
 			return sepServer.players.get(user.getLogin());
@@ -93,7 +96,9 @@ public class SEPServer implements IServer, GameServerListener
 			return sepServer.getPlayerList();
 		}
 
-		/* (non-Javadoc)
+		/*
+		 * (non-Javadoc)
+		 * 
 		 * @see common.Protocol.ServerCommon#getGameConfig()
 		 */
 		@Override
@@ -123,7 +128,9 @@ public class SEPServer implements IServer, GameServerListener
 			super(server, user);
 		}
 
-		/* (non-Javadoc)
+		/*
+		 * (non-Javadoc)
+		 * 
 		 * @see common.Protocol.ServerGameCreation#sendMessage(java.lang.String)
 		 */
 		@Override
@@ -137,7 +144,7 @@ public class SEPServer implements IServer, GameServerListener
 				{
 					sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
 					{
-					
+
 						@Override
 						public void doIt(ServerPlayer player)
 						{
@@ -147,32 +154,34 @@ public class SEPServer implements IServer, GameServerListener
 							}
 							catch (RpcException e)
 							{
-								log.log(Level.WARNING, "RpcException("+player.getName()+") : "+e.getMessage());
+								log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
 								player.abort(e);
 							}
 						}
 					});
 				}
-			});			
+			});
 		}
 
-		/* (non-Javadoc)
+		/*
+		 * (non-Javadoc)
+		 * 
 		 * @see common.Protocol.ServerGameCreation#updateGameConfig(common.GameConfig)
 		 */
 		@Override
 		public void updateGameConfig(GameConfig gameCfg) throws ServerPrivilegeException
 		{
-			if (!user.isAdmin())
+			if ( !user.isAdmin())
 			{
 				throw new ServerPrivilegeException("Only admin can update game config.");
 			}
-			
+
 			synchronized (sepServer.gameConfig)
 			{
 				sepServer.gameConfig = gameCfg;
 				sepServer.threadPool.execute(new Runnable()
 				{
-				
+
 					@Override
 					public void run()
 					{
@@ -182,7 +191,9 @@ public class SEPServer implements IServer, GameServerListener
 			}
 		}
 
-		/* (non-Javadoc)
+		/*
+		 * (non-Javadoc)
+		 * 
 		 * @see common.Protocol.ServerGameCreation#updatePlayerConfig(common.PlayerConfig)
 		 */
 		@Override
@@ -190,7 +201,7 @@ public class SEPServer implements IServer, GameServerListener
 		{
 			sepServer.threadPool.execute(new Runnable()
 			{
-			
+
 				@Override
 				public void run()
 				{
@@ -199,15 +210,61 @@ public class SEPServer implements IServer, GameServerListener
 				}
 			});
 		}
-		
+
+	}
+
+	private static class SEPRunningGame extends SEPCommon implements Protocol.ServerRunningGame
+	{
+
+		/**
+		 * Full constructor.
+		 * 
+		 * @param server
+		 *            Current server.
+		 * @param user
+		 *            Current user.
+		 */
+		public SEPRunningGame(SEPServer server, ServerUser user)
+		{
+			super(server, user);
+		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see common.Protocol.ServerRunningGame#getGameTurn()
+		 */
+		@Override
+		public PlayerGameBoard getGameBoard() throws RpcException, StateMachineNotExpectedEventException
+		{
+			return sepServer.getCurrentGame().getGameBoard(user.getLogin());
+		}
+
+	}
+
+	private static class SEPPausedGame extends SEPCommon implements Protocol.ServerPausedGame
+	{
+		/**
+		 * Full constructor.
+		 * 
+		 * @param server
+		 *            Current server.
+		 * @param user
+		 *            Current user.
+		 */
+		public SEPPausedGame(SEPServer server, ServerUser user)
+		{
+			super(server, user);
+		}
 	}
 
 	private final GameServer				gameServer;
 
-	private final Map<String, ServerPlayer>	players	= new HashMap<String, ServerPlayer>();
-	
-	private GameConfig gameConfig = new GameConfig();
-	private ServerGame game = null;
+	private final Map<String, ServerPlayer>	players		= new HashMap<String, ServerPlayer>();
+
+	private GameConfig						gameConfig	= new GameConfig();
+
+	private ServerGame						game		= null;
 
 	public SEPServer(int port, long timeOut)
 	{
@@ -221,6 +278,26 @@ public class SEPServer implements IServer, GameServerListener
 				public ServerGameCreation create(ServerUser user)
 				{
 					return new SEPGameCreation(SEPServer.this, user);
+				}
+			});
+
+			gameServer.registerRunningGameCommandExecutorFactory(Protocol.ServerRunningGame.class, new ExecutorFactory<Protocol.ServerRunningGame>()
+			{
+
+				@Override
+				public ServerRunningGame create(ServerUser user)
+				{
+					return new SEPRunningGame(SEPServer.this, user);
+				}
+			});
+
+			gameServer.registerPausedGameCommandExecutorFactory(Protocol.ServerPausedGame.class, new ExecutorFactory<Protocol.ServerPausedGame>()
+			{
+
+				@Override
+				public ServerPausedGame create(ServerUser user)
+				{
+					return new SEPPausedGame(SEPServer.this, user);
 				}
 			});
 		}
@@ -253,6 +330,18 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		return result;
+	}
+
+	private ServerGame getCurrentGame()
+	{
+		synchronized (this)
+		{
+			if (game == null)
+			{
+				game = new ServerGame(getPlayerList(), gameConfig);
+			}
+		}
+		return game;
 	}
 
 	/*
@@ -352,12 +441,12 @@ public class SEPServer implements IServer, GameServerListener
 			refreshPlayerList();
 		}
 	}
-	
+
 	private void refreshGameConfig()
-	{		
+	{
 		doForEachConnectedPlayer(new DoItToOnePlayer()
 		{
-		
+
 			@Override
 			public void doIt(ServerPlayer player)
 			{
@@ -367,19 +456,19 @@ public class SEPServer implements IServer, GameServerListener
 				}
 				catch (RpcException e)
 				{
-					log.log(Level.WARNING, "RpcException("+player.getName()+") : "+e.getMessage());
+					log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
 				}
 			}
 		});
 	}
-	
+
 	private void refreshPlayerList()
 	{
 		final Set<Player> playerList = getPlayerList();
-		
+
 		doForEachConnectedPlayer(new DoItToOnePlayer()
 		{
-		
+
 			@Override
 			public void doIt(ServerPlayer player)
 			{
@@ -389,22 +478,22 @@ public class SEPServer implements IServer, GameServerListener
 				}
 				catch (RpcException e)
 				{
-					log.log(Level.WARNING, "RpcException("+player.getName()+") : "+e.getMessage());
+					log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
 				}
 			}
 		});
 	}
-	
+
 	private static interface DoItToOnePlayer
 	{
 		void doIt(ServerPlayer player);
 	}
-	
+
 	private void doForEachConnectedPlayer(DoItToOnePlayer doIt)
 	{
 		synchronized (players)
 		{
-			for(String login : players.keySet())
+			for (String login : players.keySet())
 			{
 				ServerPlayer player = players.get(login);
 				if (player != null && player.isConnected())
@@ -413,18 +502,31 @@ public class SEPServer implements IServer, GameServerListener
 				}
 			}
 		}
-	}	
+	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.axan.eplib.gameserver.server.GameServer.GameServerListener#gameRan()
 	 */
 	@Override
 	public void gameRan()
 	{
 		log.log(Level.INFO, "gameRan");
+		threadPool.execute(new Runnable()
+		{
+		
+			@Override
+			public void run()
+			{
+				getCurrentGame();		
+			}
+		});
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.axan.eplib.gameserver.server.GameServer.GameServerListener#gamePaused()
 	 */
 	@Override
@@ -432,8 +534,10 @@ public class SEPServer implements IServer, GameServerListener
 	{
 		log.log(Level.INFO, "gamePaused");
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.axan.eplib.gameserver.server.GameServer.GameServerListener#gameResumed()
 	 */
 	@Override

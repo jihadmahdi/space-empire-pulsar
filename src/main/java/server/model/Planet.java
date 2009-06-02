@@ -5,6 +5,8 @@
  */
 package server.model;
 
+import java.util.Random;
+
 import common.CelestialBody;
 import common.GameConfig;
 import common.Player;
@@ -15,6 +17,8 @@ import common.CelestialBody.CelestialBodyBuildException;
  */
 public class Planet extends CelestialBody
 {
+	private static final Random random = new Random();
+	
 	public static final int	CARBON_MIN				= 50*1000;
 
 	public static final int	CARBON_MAX				= 100*1000;
@@ -81,6 +85,21 @@ public class Planet extends CelestialBody
 		
 		return planet;
 	}
+	
+	/**
+	 * Neutral planet generation.
+	 * @param gameCfg
+	 */
+	public Planet(GameConfig gameConfig)
+	{
+		super(gameConfig);
+		
+		int[] populationPerTurnRange = gameConfig.getPopulationPerTurn();
+		this.populationPerTurn = random.nextInt(populationPerTurnRange[1] - populationPerTurnRange[0]) + populationPerTurnRange[0];
+		
+		int[] populationLimitRange = gameConfig.getPopulationLimit();
+		this.populationLimit = random.nextInt(populationLimitRange[1] - populationLimitRange[0]) + populationLimitRange[0];
+	}
 
 	/**
 	 * Full constructor.
@@ -90,7 +109,7 @@ public class Planet extends CelestialBody
 	 * @param populationPerTurn
 	 * @param maxPopulation
 	 */
-	public Planet(int carbonStock, int slots, Player owner, int populationPerTurn, int populationLimit)
+	private Planet(int carbonStock, int slots, Player owner, int populationPerTurn, int populationLimit)
 	{
 		super(carbonStock, slots, owner);
 		this.populationPerTurn = populationPerTurn;
