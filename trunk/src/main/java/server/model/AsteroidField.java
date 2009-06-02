@@ -6,6 +6,7 @@
 package server.model;
 
 import common.CelestialBody;
+import common.GameConfig;
 import common.Player;
 
 /**
@@ -13,16 +14,21 @@ import common.Player;
  */
 public class AsteroidField extends CelestialBody
 {
-	public static final int CARBON_MIN = 60*1000;
-	
-	public static final int CARBON_MAX = 300*1000;
-	
-	public static final int SLOTS_MIN = 3;
-	
-	public static final int SLOTS_MAX = 6;
+	public static final int		CARBON_MIN		= 60 * 1000;
 
-	public static final float GENERATION_RATE = (float) 0.50;
-	
+	public static final int		CARBON_MAX		= 300 * 1000;
+
+	public static final int		SLOTS_MIN		= 3;
+
+	public static final int		SLOTS_MAX		= 6;
+
+	public static final float	GENERATION_RATE	= (float) 0.50;
+
+	public AsteroidField(GameConfig gameConfig)
+	{
+		super(gameConfig);
+	}
+
 	/**
 	 * Full constructor.
 	 */
@@ -30,8 +36,10 @@ public class AsteroidField extends CelestialBody
 	{
 		super(carbonStock, slots, owner);
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see common.CelestialBody#canBuild(server.model.Building)
 	 */
 	@Override

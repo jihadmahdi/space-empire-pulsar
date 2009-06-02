@@ -6,6 +6,7 @@
 package server.model;
 
 import common.CelestialBody;
+import common.GameConfig;
 import common.Player;
 
 /**
@@ -22,6 +23,11 @@ public class Nebula extends CelestialBody
 	public static final int SLOTS_MAX = 4;
 	
 	public static final float GENERATION_RATE = (float) 0.20;
+	
+	public Nebula(GameConfig gameConfig)
+	{
+		super(gameConfig);
+	}
 	
 	/**
 	 * Full constructor.

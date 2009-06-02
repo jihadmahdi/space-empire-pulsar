@@ -190,4 +190,16 @@ public class SEPClient
 		}
 		return gameCreationProxy;
 	}
+
+	private Protocol.ServerRunningGame runningGameProxy = null;
+	public Protocol.ServerRunningGame getRunningGameInterface() throws RpcException
+	{
+		if (!isConnected()) throw new IllegalStateException("Not connected.");
+		
+		if (runningGameProxy == null)
+		{
+			runningGameProxy = client.getCustomServerInterface(Protocol.ServerRunningGame.class);			
+		}
+		return runningGameProxy;
+	}
 }

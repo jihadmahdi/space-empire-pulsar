@@ -6,28 +6,38 @@
 package server.model;
 
 import java.lang.reflect.Constructor;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.Stack;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.axan.eplib.utils.Basic;
 
+import server.SEPServer;
 import server.model.Area.AreaIllegalDefinitionException;
 
 import common.CelestialBody;
 import common.GameConfig;
+import common.PlayerGameBoard;
 import common.Player;
 
 /**
- * 
+ * Represent a running game at a specific turn.
+ * It also provide previous turns archives.
  */
 public class ServerGame
 {
+	private static final Logger log = SEPServer.log;
+	
 	private static final Random rnd = new Random();
 	
 	private final Area[][][] universe;
 	private final int[] sunLocation; // Sun center location : [0] x; [1] y; [2] z. Sun is always fill 9 area.
 	
 	private final Set<Player> players;
+	private final Stack<ServerGameTurn> turns;
 	
 	/**
 	 * Full new game constructor.
@@ -37,6 +47,7 @@ public class ServerGame
 	public ServerGame(Set<Player> players, GameConfig gameConfig)
 	{
 		this.players = players;
+		this.turns = new Stack<ServerGameTurn>();
 		
 		// Create a blank universe.
 		universe = new Area[gameConfig.getDimX()][gameConfig.getDimY()][gameConfig.getDimZ()];
@@ -104,6 +115,16 @@ public class ServerGame
 				throw new Error(e);
 			}						
 		}				
+	}
+
+	/**
+	 * @param playerLogin
+	 */
+	public PlayerGameBoard getGameBoard(String playerLogin)
+	{
+		// TODO
+		log.log(Level.INFO, "getGameBoard("+playerLogin+")");
+		return null;
 	}
 
 }
