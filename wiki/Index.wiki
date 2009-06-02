@@ -6,7 +6,7 @@ Il devrait être implémenté en JAVA, ce qui le rend multiplateforme.
 
 ==Status==
 ||Rédaction du cahier des charges||80%||
-||Spécification et conception||A VENIR||
+||Spécification et conception||Développement en cours||
 
 ==Version PDF==
 Le site entier est disponible au format PDF, le fichier est mis à jour automatiquement tous les soirs.

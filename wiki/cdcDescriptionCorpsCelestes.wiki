@@ -32,9 +32,10 @@ Les planètes sauvages disposent d'une armée de défense fixé à la générati
 	人 par tour: [2500-7500]
 	人 max: [50K-150K]
 	資 max: [50K-100K]
-	Nb. slots: [6-15]
+	Nb. slots: [4-10]
 }}
 Constructions autorisées:	Exploitation de ressources, Usine de vaisseaux, Module de défense, Module gouvernemental, Comptoir, Canon à pulsar.
+En tant que corps célestes neutres, les planètes ont 30% de chance d'être générées.
 
 ===Champ d'astéroïde===
 Les champs d'astéroïdes sont des lieux impropre à la vie, mais propice à la construction de batiments millitaires, et riche en carbonne.
@@ -43,9 +44,10 @@ Ainsi il est possible de construire la pluspart des batiments, sauf ceux dont la
 	人 par tour: 0
 	人 max: 0
 	資 max: [60K-300K]
-	Nb. slots: [4-8]
+	Nb. slots: [3-6]
 }}
 Constructions autorisées:	Exploitation de ressources, ~~Usine de vaisseaux~~, Module de défense, ~~Module gouvernemental~~, Comptoir, ~~Canon à pulsar~~.
+En tant que corps célestes neutres, les champs d'astéroïdes ont 50% de chance d'être générés.
 
 ===Nébuleuse===
 La nébuleuse est un corps celeste formé de gaz et de poussières.
@@ -54,6 +56,7 @@ Sa structure mouvante ne permet pas l'accueuil de construction de batiments autr
 	人 par tour: 0
 	人 max: 0
 	資 max: [100K-500K]
-	Nb. slots: [3-6]
+	Nb. slots: [2-4]
 }}
 Constructions autorisées:	Exploitation de ressources,~~Usine de vaisseau~~, ~~Module de défense~~, ~~Module gouvernemental~~, Comptoir, ~~Canon à pulsar~~.
+en tant que corps célestes neutres, les nébuleuses ont 20% de chance d'être générées.
