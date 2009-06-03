@@ -7,16 +7,18 @@ Information datée : information connue d'une zone qui n'est plus actuellement v
 
 Univers :		taille x;y;z, Corps Célestes
 
-CORPS CELESTES
-Planètes :		nom, position x;y;z, pop. max, carbone max, pop./tour,　nb slots
-			[zone visible] pop, carbone, Constructions, owner
-Champs d'astéroïdes :	nom, position x;y;z, carbone max, carbone, nb slots
-			[zone visible] Constructions, owner
-Nébuleuses :		nom, position x;y;z, carbone max, carbone, nb slots
-			[zone visible] Constructions, owner
+CORPS CELESTES	nom, position x;y;z, carbone max, nb slots
+				[zone visible] carbone, Constructions, owner
+Planètes :		pop. max, pop./tour
+			[zone visible] pop
+Champs d'astéroïdes :
+Nébuleuses :
 
+// Un vortex est un corps céleste (bien que temporaire) car il ne peut pas occuper la même zone qu'un autre corps céleste (et il peut d'ailleurs être une destination).
 Vortex :		position x;y;z
-Pulsar :		[une zone visible du faisceau] on sait que la zone est sous effet pulsar sans indication de direction.
+
+PHENOMENES :
+Pulsar :		[owner] marqueur de la zone estimée du pulsar (pulsar moyen + bonus/malus de tir)
 
 CONSTRUCTIONS
 Module d'extraction :	[zone visible] nombre de modules construits, bonus de production total
@@ -24,7 +26,9 @@ Module d'extraction :	[zone visible] nombre de modules construits, bonus de prod
 Usine de vaisseaux :	[zone visible] types et quantités des vaisseaux en attente dans l'usine
 Module de défense :	[zone visible] nombre de modules construits, bonus de défense total
 Module gouvernemental :	[zone visible] -
-Comptoir :		[zone visible] nombre de comptoir construits, Routes de l'espace, commandes
+Plateforme de lancement de missile pulsar : [zone visible] nombre de slots alloués, état (tiré/non-tiré), bonus de puissance total
+											[owner] prix du suivant
+Comptoir :		[zone visible] nombre de comptoir construits, Routes de l'espace, routes commerciales (+commande en attente)
 
 UNITES
 Flottes			[zone visible] owner, nom, types et quantités des vaisseaux qui la compose
@@ -32,8 +36,39 @@ Sondes			[zone visible] owner, nom, zone ?
 
 MARQUES (routes, ...)
 Routes de l'espace :	[une zone visible]
-Routes commerciales :	[zone départ ou arrivé visible]
+Pulsar : 				[une zone visible du faisceau] on sait que la zone est sous effet pulsar sans indication de direction.
+Unité aperçue en déplacement : [zone visible]
 
 EVENEMENTS
 départ/arrivé d'un transporteur
 rapport de combat
+
+=====
+
+Interface : zones à afficher
+
+Sélection corps céleste: Zone Détails corps céleste sélectionné
+	Action construire : Zone Choix construction
+	Sélection module d'extraction : Zone détails production du corps céleste (nb de module d'extraction, bonus courant, prix de l'upgrade, bonus suivant)
+	Sélection usine vaisseaux : Zone Détails usine de vaisseaux (types et nombres de vaisseaux disponibles, boutons construire, flottes consitués, bouton assigner vaisseaux à flotte)			
+	Sélection module de défense : Zone détails défense du corps céleste (nb de module de défense, bonus courant, prix de l'upgrade, bonus suivant)
+	Sélection module gouvernemental : Zone détails joueur (nom, couleur, portrait, symbole, raccourci Menu diplomatique, raccourci construire vaisseau gouvernemental)
+	Sélection plateforme lancement pulsar : Zone détails plateforme lancement pulsar (nb de slots alloués, bonus courant, prix de l'upgrade, bonus suivant)
+		Action tirer : Zone détails tir pulsar (slider d'allocation du bonus de puisance, choix cible, prévisualisation dans le moteur de rendu)
+	Sélection comptoir de l'espace : Zone détails comptoir (route de l'espace: boutons construire/détruire,
+		Action construire route de l'espace : Zone détails construction route de l'espace (choix destination, affichage du coût)
+		Action modifier commande commerce : Zone détails commande
+
+Selection flotte : Zone Détails flotte sélectionnée
+	Action déplacer : Zone Détails mouvement flotte (aller/attaquer, retard/synchro, choix étape, liste étapes)
+
+Sélection sonde : Zone Détails sonde
+	Action lancer : Zone saisie/sélection coordonnées destination
+
+Menu liste flottes : Liste des flottes sélectionnables
+Menu liste corps célestes : Liste des corps célestes sélectionnables
+Menu diplomatie : Zone détails politiques diplomatiques (intérrieure et étrangère)
+
+Menu chat : Zone chat + choix canal (tous/alliés/ennemis/private)
+
+Barre de raccourcis (corps célestes, flottes)

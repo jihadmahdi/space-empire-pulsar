@@ -8,7 +8,7 @@ package server.model;
 /**
  * Represent a player move for a specific game board.
  */
-public class PlayerGameMove
+class PlayerGameMove
 {
 
 }

@@ -5,43 +5,32 @@
  */
 package server.model;
 
-import common.CelestialBody;
 import common.GameConfig;
 import common.Player;
 
 /**
  * Represent a Nebula.
  */
-public class Nebula extends CelestialBody
-{
-	public static final int CARBON_MIN = 100*1000;
-	
-	public static final int CARBON_MAX = 500*1000;
-	
-	public static final int SLOTS_MIN = 2;
-	
-	public static final int SLOTS_MAX = 4;
-	
-	public static final float GENERATION_RATE = (float) 0.20;
-	
-	public Nebula(GameConfig gameConfig)
+class Nebula extends ProductiveCelestialBody
+{	
+	public Nebula(String name, GameConfig gameConfig)
 	{
-		super(gameConfig);
+		super(name, gameConfig, common.Nebula.class);
 	}
 	
 	/**
 	 * Full constructor.
 	 */
-	public Nebula(int carbonStock, int slots, Player owner)
+	public Nebula(String name, int carbonStock, int slots, Player owner)
 	{
-		super(carbonStock, slots, owner);
+		super(name, carbonStock, slots, owner);
 	}
 
 	/* (non-Javadoc)
 	 * @see common.CelestialBody#canBuild(server.model.Building)
 	 */
 	@Override
-	public boolean canBuild(Building building)
+	public boolean canBuild(IBuilding building)
 	{
 		// TODO Auto-generated method stub
 		return false;

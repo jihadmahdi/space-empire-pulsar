@@ -5,12 +5,9 @@
  */
 package server.model;
 
-import common.CelestialBody;
+import java.util.Set;
 
-/**
- * This class represent an area located in the universe.
- */
-public class Area
+class Area
 {
 	public static class AreaIllegalDefinitionException extends Exception
 	{
@@ -28,7 +25,10 @@ public class Area
 	}
 	
 	private boolean isSun;
-	private CelestialBody celestialBody;
+	
+	private ICelestialBody celestialBody;
+	private Set<Unit> units;
+	
 	
 	/**
 	 * Sun flag is set to true if this area is filled with the sun.
@@ -58,7 +58,7 @@ public class Area
 	 * @param celestialBody Celestial body to put in this area.
 	 * @throws AreaIllegalDefinitionException On illegal setCelestialBody attempt (ie: if current area is in the sun).
 	 */
-	public void setCelestialBody(CelestialBody celestialBody) throws AreaIllegalDefinitionException
+	public void setCelestialBody(ICelestialBody celestialBody) throws AreaIllegalDefinitionException
 	{
 		if (isSun) throw new AreaIllegalDefinitionException("Cannot set a celestialBody in area filled with sun.");
 		this.celestialBody = celestialBody;

@@ -8,7 +8,16 @@ package server.model;
 /**
  * 
  */
-public class DefenseModule extends Building
+class DefenseModule implements IBuilding
 {
-
+	// Variables
+	private int nbBuild;
+	
+	/**
+	 * Full constructor. 
+	 */
+	public DefenseModule(int nbBuild)
+	{
+		this.nbBuild = nbBuild;
+	}
 }

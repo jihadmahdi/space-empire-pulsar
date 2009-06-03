@@ -8,7 +8,7 @@ package server.model;
 /**
  * This abstract class represent a building on a celestial body.
  */
-public abstract class Building
+interface IBuilding
 {
 
 }

@@ -8,7 +8,18 @@ package server.model;
 /**
  * 
  */
-public class PulsarLauchingPad extends Building
+class PulsarLauchingPad implements IBuilding
 {
-
+	// Variables
+	private int nbBuild;
+	private int nbFired;
+	
+	/**
+	 * Full constructor. 
+	 */
+	public PulsarLauchingPad(int nbBuild, int nbFired)
+	{
+		this.nbBuild = nbBuild;
+		this.nbFired = nbFired;
+	}
 }
