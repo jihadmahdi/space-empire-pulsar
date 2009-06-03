@@ -8,7 +8,7 @@ package server.model;
 /**
  * 
  */
-public class StarshipPlant extends Building
+class StarshipPlant implements IBuilding
 {
-
+	// TODO
 }

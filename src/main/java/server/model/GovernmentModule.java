@@ -10,15 +10,7 @@ import common.Player;
 /**
  * This is a government module build on a celestial body.
  */
-public class GovernmentModule extends Building
+class GovernmentModule implements IBuilding
 {
-	private final Player owner;
-	
-	/**
-	 * Full constructor 
-	 */
-	public GovernmentModule(Player owner)
-	{
-		this.owner = owner;
-	}
+
 }

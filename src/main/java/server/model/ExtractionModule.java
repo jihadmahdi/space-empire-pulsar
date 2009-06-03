@@ -8,7 +8,16 @@ package server.model;
 /**
  * 
  */
-public class ExtractionModule extends Building
+class ExtractionModule implements IBuilding
 {
-
+	// Variables
+	private int nbBuild;
+	
+	/**
+	 * Full constructor.
+	 */
+	public ExtractionModule(int nbBuild)
+	{
+		this.nbBuild = nbBuild;
+	}
 }

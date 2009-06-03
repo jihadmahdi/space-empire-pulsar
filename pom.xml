@@ -52,7 +52,7 @@
 		<projectVersion>${projectVersionBase}r${buildNumber}${projectVersionSnapshot}</projectVersion>
 		<mainClass>client.gui.SpaceEmpirePulsarGUI</mainClass>
 
-		<projectName>Space Empire Pulsar</projectName>
+		<projectName>Space-Empire-Pulsar</projectName>
 		<description>
 			Space Empire Pulsar est un jeu de stratégie tour par tour, multijoueur, inspiré de Konquest avec de nouvelles règles et une vue en 3D.
 		</description>
@@ -628,7 +628,7 @@
 								</exec>
 
 								<echo>Execution de izpack2app : ${izpack2appInput} => ${izpack2appOutput}</echo>
-								<exec executable="python" dir="${izpack2appDirectory}">
+								<exec executable="python" dir="${izpack2appDirectory}" output="${tmp}/izpack2app.std" error="${tmp}/izpack2app.err">
 									<arg value="${izpack2appDirectory}/izpack2app.py" />
 									<arg value="${izpack2appInput}" />
 									<arg value="${izpack2appOutput}" />

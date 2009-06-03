@@ -7,39 +7,24 @@ package server.model;
 
 import java.util.Random;
 
-import common.CelestialBody;
+import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
+
 import common.GameConfig;
 import common.Player;
-import common.CelestialBody.CelestialBodyBuildException;
 
 /**
  * This class represent a planet in the universe.
  */
-public class Planet extends CelestialBody
+class Planet extends ProductiveCelestialBody
 {
 	private static final Random random = new Random();
 	
-	public static final int	CARBON_MIN				= 50*1000;
-
-	public static final int	CARBON_MAX				= 100*1000;
-	
-	public static final int SLOTS_MIN = 4;
-	
-	public static final int SLOTS_MAX = 10;
-
-	public static final int	POPULATION_LIMIT_MIN			= 50*1000;
-
-	public static final int	POPULATION_LIMIT_MAX			= 150*1000;
-
-	public static final int	POPULATION_PER_TURN_MIN	= 2500;
-
-	public static final int	POPULATION_PER_TURN_MAX	= 7500;
-
-	public static final float GENERATION_RATE = (float) 0.30;
-	
-	private final int		populationPerTurn;
-
+	// Constants
 	private final int		populationLimit;
+	private final int		populationPerTurn;
+	
+	// Variables
+	private int population;
 
 	/**
 	 * Creation a new starting planet for the given player and game configuration.
@@ -50,14 +35,14 @@ public class Planet extends CelestialBody
 	 *            Game config.
 	 * @return Planet new starting planet.
 	 */
-	public static Planet newStartingPlanet(Player player, GameConfig gameConfig)
+	public static Planet newStartingPlanet(String name, Player player, GameConfig gameConfig)
 	{
 		// Fix carbon amount to the mean value.
-		Integer[] carbonAmount = gameConfig.getCelestialBodiesStartingCarbonAmount().get(Planet.class);
+		Integer[] carbonAmount = gameConfig.getCelestialBodiesStartingCarbonAmount().get(common.Planet.class);
 		int carbonStock = (carbonAmount[1] - carbonAmount[0]) / 2 + carbonAmount[0];
 
 		// Fix slots amount to the mean value.
-		Integer[] slotsAmount = gameConfig.getCelestialBodiesSlotsAmount().get(Planet.class);
+		Integer[] slotsAmount = gameConfig.getCelestialBodiesSlotsAmount().get(common.Planet.class);
 		int slots = (slotsAmount[1] - slotsAmount[0]) / 2 + slotsAmount[0];
 		if (slots <= 0) slots = 1;
 
@@ -67,12 +52,12 @@ public class Planet extends CelestialBody
 		int[] populationLimitRange = gameConfig.getPopulationLimit();
 		int populationLimit = (populationLimitRange[1] - populationLimitRange[0])/2 + populationLimitRange[0];
 		
-		Planet planet = new Planet(carbonStock, slots, player, populationPerTurn, populationLimit);
+		Planet planet = new Planet(name, carbonStock, slots, player, populationPerTurn, populationLimit);
 		
 		// If victory rule "Regimicide" is on, starting planet has a pre-built government module.
 		if (gameConfig.isRegimicide())
 		{
-			GovernmentModule gov = new GovernmentModule(player);
+			GovernmentModule gov = new GovernmentModule();
 			try
 			{
 				planet.build(gov);
@@ -90,9 +75,9 @@ public class Planet extends CelestialBody
 	 * Neutral planet generation.
 	 * @param gameCfg
 	 */
-	public Planet(GameConfig gameConfig)
+	public Planet(String name, GameConfig gameConfig)
 	{
-		super(gameConfig);
+		super(name, gameConfig, common.Planet.class);
 		
 		int[] populationPerTurnRange = gameConfig.getPopulationPerTurn();
 		this.populationPerTurn = random.nextInt(populationPerTurnRange[1] - populationPerTurnRange[0]) + populationPerTurnRange[0];
@@ -109,18 +94,18 @@ public class Planet extends CelestialBody
 	 * @param populationPerTurn
 	 * @param maxPopulation
 	 */
-	private Planet(int carbonStock, int slots, Player owner, int populationPerTurn, int populationLimit)
+	private Planet(String name, int carbonStock, int slots, Player owner, int populationPerTurn, int populationLimit)
 	{
-		super(carbonStock, slots, owner);
+		super(name, carbonStock, slots, owner);
 		this.populationPerTurn = populationPerTurn;
-		this.populationLimit = populationLimit;
+		this.populationLimit = populationLimit;		
 	}
 
 	/* (non-Javadoc)
-	 * @see common.CelestialBody#canBuild(server.model.Building)
+	 * @see server.model.ProductiveCelestialBody#canBuild(IBuilding)
 	 */
 	@Override
-	public boolean canBuild(Building building)
+	public boolean canBuild(IBuilding building)
 	{
 		if (ExtractionModule.class.isInstance(building))
 		{
@@ -154,4 +139,5 @@ public class Planet extends CelestialBody
 		
 		return false;
 	}
+
 }

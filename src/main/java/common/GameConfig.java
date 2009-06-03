@@ -9,11 +9,6 @@ import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.Map;
 
-import server.model.AsteroidField;
-import server.model.Nebula;
-import server.model.Planet;
-import sun.misc.Cleaner;
-
 /**
  * Represent a game creation configuration.
  */
@@ -44,18 +39,18 @@ public class GameConfig implements Serializable
 	/**
 	 * Starting carbon resource amount on players planets.
 	 */
-	private Map<Class<? extends CelestialBody>, Integer[]>	celestialBodiesStartingCarbonAmount	= new Hashtable<Class<? extends CelestialBody>, Integer[]>();
+	private Map<Class<? extends ICelestialBody>, Integer[]>	celestialBodiesStartingCarbonAmount	= new Hashtable<Class<? extends ICelestialBody>, Integer[]>();
 
 	/**
 	 * Number of slots on celestial bodies.
 	 */
-	private Map<Class<? extends CelestialBody>, Integer[]>	celestialBodiesSlotsAmount	= new Hashtable<Class<? extends CelestialBody>, Integer[]>();
+	private Map<Class<? extends ICelestialBody>, Integer[]>	celestialBodiesSlotsAmount	= new Hashtable<Class<? extends ICelestialBody>, Integer[]>();
 	
 	/**
 	 * Neutral celestial bodies generation, type table.
 	 * This define the chance for a neutral celestial body to be one of the different celestial body type. 
 	 */
-	private Map<Class<? extends CelestialBody>, Float> neutralCelestialBodiesGenerationTable = new Hashtable<Class<? extends CelestialBody>, Float>();
+	private Map<Class<? extends ICelestialBody>, Float> neutralCelestialBodiesGenerationTable = new Hashtable<Class<? extends ICelestialBody>, Float>();
 	
 	/**
 	 * Victory rule : Alliance victory.
@@ -146,7 +141,7 @@ public class GameConfig implements Serializable
 		setTimeLimitVictory(0);
 	}
 	
-	public GameConfig(int dimX, int dimY, int dimZ, int neutralCelesialBodiesCount, int populationPerTurnMin, int populationPerTurnMax, int populationLimitMin, int populationLimitMax, Map<Class<? extends CelestialBody>, Integer[]> celestialBodiesStartingCarbonAmount, Map<Class<? extends CelestialBody>, Integer[]> celestialBodiesSlotsAmount, Map<Class<? extends CelestialBody>, Float> neutralCelestialBodiesGenerationTable, boolean allianceVictory, boolean regimicide, boolean assimilateNeutralisedPeoples, boolean totalConquest, int economicVictoryCarbon, int economicVictoryPopulation, int timeLimitVictory)
+	public GameConfig(int dimX, int dimY, int dimZ, int neutralCelesialBodiesCount, int populationPerTurnMin, int populationPerTurnMax, int populationLimitMin, int populationLimitMax, Map<Class<? extends ICelestialBody>, Integer[]> celestialBodiesStartingCarbonAmount, Map<Class<? extends ICelestialBody>, Integer[]> celestialBodiesSlotsAmount, Map<Class<? extends ICelestialBody>, Float> neutralCelestialBodiesGenerationTable, boolean allianceVictory, boolean regimicide, boolean assimilateNeutralisedPeoples, boolean totalConquest, int economicVictoryCarbon, int economicVictoryPopulation, int timeLimitVictory)
 	{
 		// TODO: call with ritgh parameters
 		
@@ -159,7 +154,7 @@ public class GameConfig implements Serializable
 		setPopulationPerTurn(populationPerTurnMin, populationPerTurnMax);
 		setPopulationLimit(populationLimitMin, populationLimitMax);
 		
-		if (celestialBodiesStartingCarbonAmount != null) for(Map.Entry<Class<? extends CelestialBody>, Integer[]> e : celestialBodiesStartingCarbonAmount.entrySet())
+		if (celestialBodiesStartingCarbonAmount != null) for(Map.Entry<Class<? extends ICelestialBody>, Integer[]> e : celestialBodiesStartingCarbonAmount.entrySet())
 		{
 			if (e.getValue() == null) continue;
 			if (e.getValue().length < 2) continue;
@@ -168,7 +163,7 @@ public class GameConfig implements Serializable
 			setCelestialBodiesStartingCarbonAmount(e.getKey(), e.getValue()[0], e.getValue()[1]);
 		}
 		
-		if (celestialBodiesSlotsAmount != null) for(Map.Entry<Class<? extends CelestialBody>, Integer[]> e : celestialBodiesSlotsAmount.entrySet())
+		if (celestialBodiesSlotsAmount != null) for(Map.Entry<Class<? extends ICelestialBody>, Integer[]> e : celestialBodiesSlotsAmount.entrySet())
 		{
 			if (e.getValue() == null) continue;
 			if (e.getValue().length < 2) continue;
@@ -177,7 +172,7 @@ public class GameConfig implements Serializable
 			setCelestialBodiesSlotsAmount(e.getKey(), e.getValue()[0], e.getValue()[1]);
 		}
 		
-		if (neutralCelestialBodiesGenerationTable != null) for(Map.Entry<Class<? extends CelestialBody>, Float> e : neutralCelestialBodiesGenerationTable.entrySet())
+		if (neutralCelestialBodiesGenerationTable != null) for(Map.Entry<Class<? extends ICelestialBody>, Float> e : neutralCelestialBodiesGenerationTable.entrySet())
 		{
 			if (e.getValue() == null) continue;
 			
@@ -205,7 +200,7 @@ public class GameConfig implements Serializable
 	 */
 	public void setDimX(int dimX)
 	{
-		if (dimX <= 0) throw new IllegalArgumentException("dimX cannot must be greater than 0.");
+		if (dimX < 5) throw new IllegalArgumentException("dimX cannot must be greater than 5.");
 		this.dimX = dimX;
 	}
 
@@ -222,7 +217,7 @@ public class GameConfig implements Serializable
 	 */
 	public void setDimY(int dimY)
 	{
-		if (dimY <= 0) throw new IllegalArgumentException("dimY cannot must be greater than 0.");
+		if (dimY < 5) throw new IllegalArgumentException("dimY cannot must be greater than 5.");
 		this.dimY = dimY;
 	}
 
@@ -239,7 +234,7 @@ public class GameConfig implements Serializable
 	 */
 	public void setDimZ(int dimZ)
 	{
-		if (dimZ <= 0) throw new IllegalArgumentException("dimZ cannot must be greater than 0.");
+		if (dimZ < 5) throw new IllegalArgumentException("dimZ cannot must be greater than 5.");
 		this.dimZ = dimZ;
 	}
 
@@ -301,7 +296,7 @@ public class GameConfig implements Serializable
 	/**
 	 * @return the celestialBodiesStartingCarbonAmount
 	 */
-	public Map<Class<? extends CelestialBody>, Integer[]> getCelestialBodiesStartingCarbonAmount()
+	public Map<Class<? extends ICelestialBody>, Integer[]> getCelestialBodiesStartingCarbonAmount()
 	{
 		return celestialBodiesStartingCarbonAmount;
 	}
@@ -309,7 +304,7 @@ public class GameConfig implements Serializable
 	/**
 	 * @param celestialBodiesStartingCarbonAmount the celestialBodiesStartingCarbonAmount to set
 	 */
-	public void setCelestialBodiesStartingCarbonAmount(Class<? extends CelestialBody> celestialBodyType, int min, int max)
+	public void setCelestialBodiesStartingCarbonAmount(Class<? extends ICelestialBody> celestialBodyType, int min, int max)
 	{
 		if (min <= 0) throw new IllegalArgumentException("minimum carbon amount must be positive or null.");
 		if (max <= 0) throw new IllegalArgumentException("minimum carbon amount must be positive or null.");
@@ -320,7 +315,7 @@ public class GameConfig implements Serializable
 	/**
 	 * @return the celestialBodiesSlotsAmount
 	 */
-	public Map<Class<? extends CelestialBody>, Integer[]> getCelestialBodiesSlotsAmount()
+	public Map<Class<? extends ICelestialBody>, Integer[]> getCelestialBodiesSlotsAmount()
 	{
 		return celestialBodiesSlotsAmount;
 	}
@@ -328,7 +323,7 @@ public class GameConfig implements Serializable
 	/**
 	 * @param celestialBodiesSlotsAmount the qtSlotsCorpsCelestes to set
 	 */
-	public void setCelestialBodiesSlotsAmount(Class<? extends CelestialBody> celestialBodyType, int min, int max)
+	public void setCelestialBodiesSlotsAmount(Class<? extends ICelestialBody> celestialBodyType, int min, int max)
 	{
 		if (min <= 0) throw new IllegalArgumentException("minimum slots amount must be positive or null.");
 		if (max <= 0) throw new IllegalArgumentException("minimum slots amount must be positive or null.");
@@ -339,7 +334,7 @@ public class GameConfig implements Serializable
 	/**
 	 * @return the neutralCelestialBodiesGenerationTable
 	 */
-	public Map<Class<? extends CelestialBody>, Float> getNeutralCelestialBodiesGenerationTable()
+	public Map<Class<? extends ICelestialBody>, Float> getNeutralCelestialBodiesGenerationTable()
 	{
 		return neutralCelestialBodiesGenerationTable;
 	}
@@ -348,7 +343,7 @@ public class GameConfig implements Serializable
 	 * @param celestialBodyType Celestial body type.
 	 * @param rate percentage to be generated (not a true percentage but a weight).
 	 */
-	public void setNeutralCelestialBodiesGenerationTable(Class<? extends CelestialBody> celestialBodyType, float rate)
+	public void setNeutralCelestialBodiesGenerationTable(Class<? extends ICelestialBody> celestialBodyType, float rate)
 	{
 		if (rate < 0) throw new IllegalArgumentException("rate cannot be negative.");
 		this.neutralCelestialBodiesGenerationTable.put(celestialBodyType, rate);

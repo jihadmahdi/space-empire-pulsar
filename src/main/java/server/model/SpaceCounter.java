@@ -5,10 +5,22 @@
  */
 package server.model;
 
+import java.util.Set;
+
 /**
  * 
  */
-public class SpaceCounter extends Building
+class SpaceCounter implements IBuilding
 {
-
+	// Variables
+	private int nbBuild;	
+	
+	/**
+	 * Full constructor.
+	 */
+	public SpaceCounter(int nbBuild)
+	{
+		this.nbBuild = nbBuild;
+		// TODO
+	}
 }

@@ -14,7 +14,7 @@ import common.Player;
  * Represent a server game turn.
  * It keep track of all players moves and moves resolution.
  */
-public class ServerGameTurn
+class ServerGameTurn
 {
 	private Map<Player, PlayerGameMove> moves;
 }
