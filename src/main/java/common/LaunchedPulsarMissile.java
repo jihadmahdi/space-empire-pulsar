@@ -5,11 +5,15 @@
  */
 package common;
 
+import java.io.Serializable;
+
 /**
  * Represent a launched pulsar missile.
  */
-public class LaunchedPulsarMissile extends Unit
+public class LaunchedPulsarMissile extends Unit implements Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+	
 	/**
 	 * Full constructor. 
 	 */

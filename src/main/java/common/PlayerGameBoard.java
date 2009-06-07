@@ -5,12 +5,16 @@
  */
 package common;
 
+import java.io.Serializable;
+
 /**
  * Represent the game board at a specific turn for a specific player.
  * It provide informations about the universe and the last turn resolution.
  */
-public class PlayerGameBoard
+public class PlayerGameBoard implements Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+	
 	/** 3 dimensional array of universe area. */
 	private final Area[][][] universe;
 	
@@ -26,5 +30,29 @@ public class PlayerGameBoard
 	{
 		this.universe = universe;
 		this.sunLocation = sunLocation;
+	}
+	
+	public int getDimX()
+	{
+		return universe.length;
+	}
+	
+	public int getDimY()
+	{
+		return universe[0].length;
+	}
+	
+	public int getDimZ()
+	{
+		return universe[0][0].length;
+	}
+	
+	public Area getArea(int x, int y, int z)
+	{
+		if (universe[x][y][z] == null)
+		{
+			universe[x][y][z] = new Area();
+		}
+		return universe[x][y][z];
 	}
 }

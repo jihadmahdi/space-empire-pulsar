@@ -5,6 +5,10 @@ NOTES A METTRE A JOUR :
 // Creation de partie :
 En option de création de game, les infos visibles basiques sont configurable, on peut jouer sans infos basiques (pour l'interet de l'exploration)
 
+// Génération de l'univers : corps célestes joignables entre eux ?
+Pour éviter que des joueurs soient injoignables entre eux, à la génération de l'univers on fait en sorte que toute les planètes de départ des joueurs soient joignables entre elles.
+
+
 ====
 
 /OK/ Thèorie Pulsar 27.05.09 :

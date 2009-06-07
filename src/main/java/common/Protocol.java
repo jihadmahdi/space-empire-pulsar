@@ -83,6 +83,14 @@ public interface Protocol
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
 		PlayerGameBoard getGameBoard() throws RpcException, StateMachineNotExpectedEventException;
+
+		/**
+		 * Send a message to the RunningGame Chat.
+		 * @param msg Message.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void sendMessage(String msg) throws RpcException, StateMachineNotExpectedEventException;
 		
 	}
 	
@@ -121,6 +129,14 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 */
 		void receiveGameCreationMessage(Player fromPlayer, String msg) throws RpcException;
+
+		/**
+		 * Server broadcast running game message from another player.
+		 * @param fromPlayer Sender player. 
+		 * @param msg Message.
+		 * @throws RpcException On connection error.
+		 */
+		void receiveRunningGameMessage(Player fromPlayer, String msg) throws RpcException;
 		
 	}
 }

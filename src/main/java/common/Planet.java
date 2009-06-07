@@ -5,13 +5,16 @@
  */
 package common;
 
+import java.io.Serializable;
 import java.util.Set;
 
 /**
  * 
  */
-public class Planet extends ProductiveCelestialBody
+public class Planet extends ProductiveCelestialBody implements Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+	
 	public static final int	CARBON_MIN				= 50*1000;
 
 	public static final int	CARBON_MAX				= 100*1000;
@@ -46,5 +49,32 @@ public class Planet extends ProductiveCelestialBody
 		this.populationLimit = populationLimit;
 		this.populationPerTurn = populationPerTurn;
 		this.population = population;
+	}
+
+	/**
+	 * @return population.
+	 */
+	public int getPopulation()
+	{
+		return population;
+	}
+
+	public int getPopulationLimit()
+	{
+		return populationLimit;
+	}
+
+	public int getPopulationPerTurn()
+	{
+		return populationPerTurn;
+	}	
+
+	/* (non-Javadoc)
+	 * @see common.ProductiveCelestialBody#canBuildType(java.lang.Class)
+	 */
+	@Override
+	public boolean canBuildType(Class<? extends IBuilding> buildingType)
+	{
+		return true;
 	}
 }

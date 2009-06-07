@@ -5,21 +5,27 @@
  */
 package common;
 
+import java.io.Serializable;
+
 /**
  * Represet a vortex.
  */
-public class Vortex implements ICelestialBody
+public class Vortex implements ICelestialBody, Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+	
 	private final boolean isVisible;	
-	private final int lastObservation; 
+	private final int lastObservation;
+	private final String name;
 
 	/**
 	 * Full constructor.
 	 */
-	public Vortex(boolean isVisible, int lastObservation)
+	public Vortex(boolean isVisible, int lastObservation, String name)
 	{
 		this.isVisible = isVisible;
 		this.lastObservation = lastObservation;
+		this.name = name;
 	}
 	
 	/* (non-Javadoc)
@@ -40,4 +46,12 @@ public class Vortex implements ICelestialBody
 		return isVisible;
 	}
 
+	/* (non-Javadoc)
+	 * @see common.ICelestialBody#getName()
+	 */
+	@Override
+	public String getName()
+	{
+		return name;
+	}
 }

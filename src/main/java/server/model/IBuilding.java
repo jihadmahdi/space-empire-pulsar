@@ -11,4 +11,10 @@ package server.model;
 interface IBuilding
 {
 
+	/**
+	 * @param playerLogin
+	 * @return
+	 */
+	common.IBuilding getPlayerView(int date, String playerLogin);
+
 }

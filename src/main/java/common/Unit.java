@@ -5,11 +5,15 @@
  */
 package common;
 
+import java.io.Serializable;
+
 /**
  * Represent a unit (fleet, probe, ...)
  */
-public abstract class Unit implements IObservable, IMobile
-{
+public abstract class Unit implements IObservable, IMobile, Serializable
+{	
+	private static final long	serialVersionUID	= 1L;
+	
 	private final boolean isVisible;	
 	private final int lastObservation;
 	
@@ -53,6 +57,16 @@ public abstract class Unit implements IObservable, IMobile
 		return isVisible;
 	}
 
+	public String getName()
+	{
+		return name;
+	}
+	
+	public Player getOwner()
+	{
+		return owner;
+	}
+	
 	/* (non-Javadoc)
 	 * @see common.Mobile#getCurrentEstimatedLocation()
 	 */
@@ -78,5 +92,28 @@ public abstract class Unit implements IObservable, IMobile
 	public int[] getSourceLocation()
 	{
 		return sourceLocation;
+	}
+	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString()
+	{
+		StringBuffer sb = new StringBuffer();
+		
+		if (owner != null) sb.append("["+owner.getName()+"] ");
+		sb.append(name);
+		
+		if (sourceLocation != null && destinationLocation != null)
+		{
+			sb.append(", moving from ["+sourceLocation[0]+";"+sourceLocation[1]+";"+sourceLocation[2]+"] to ["+destinationLocation[0]+";"+destinationLocation[1]+";"+destinationLocation[2]+"]");
+		}
+		if (currentEstimatedLocation != null)
+		{
+			sb.append(", current "+(isVisible?"":"estimated ")+"location : ["+currentEstimatedLocation[0]+";"+currentEstimatedLocation[1]+";"+currentEstimatedLocation[2]+"]");
+		}				
+		
+		return sb.toString();
 	}
 }

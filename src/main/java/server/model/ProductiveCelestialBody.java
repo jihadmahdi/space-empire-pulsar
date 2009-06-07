@@ -6,6 +6,8 @@
 package server.model;
 
 import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -22,14 +24,20 @@ abstract class ProductiveCelestialBody implements ICelestialBody
 	protected static final Random random = new Random();
 	
 	// Constants
-	protected final String name;
-	protected final int carbonStock;
-	protected final int slots;
+	private final String name;
+	private final int carbonStock;
+	private final int slots;
 	
 	// Variables
-	protected int carbon;
-	protected Player owner;
-	protected final Set<IBuilding> buildings;
+	private int carbon;
+	private Player owner;
+	private final Set<IBuilding> buildings;
+	
+	// Views
+	private PlayerDatedView<Integer> playersLastObservation = new PlayerDatedView<Integer>();
+	private PlayerDatedView<Integer> playersCarbonView = new PlayerDatedView<Integer>();
+	private PlayerDatedView<Player> playersOwnerView = new PlayerDatedView<Player>();
+	private PlayerDatedView<HashSet<common.IBuilding>> playersBuildingsView = new PlayerDatedView<HashSet<common.IBuilding>>();
 	
 	public static class CelestialBodyBuildException extends Exception
 	{
@@ -103,6 +111,72 @@ abstract class ProductiveCelestialBody implements ICelestialBody
 	public Player getOwner()
 	{
 		return owner;
+	}
+	
+	protected Player getOwnerView(int date, String playerLogin, boolean isVisible)
+	{
+		if (isVisible)
+		{
+			playersOwnerView.updateView(playerLogin, owner, date);
+		}
+		
+		return playersOwnerView.getLastValue(playerLogin, null);
+	}
+	
+	protected int getLastObservation(int date, String playerLogin, boolean isVisible)
+	{
+		if (isVisible)
+		{
+			playersLastObservation.updateView(playerLogin, date, date);
+		}
+		
+		return playersLastObservation.getLastValue(playerLogin, -1);
+	}
+	
+	public String getName()
+	{
+		return name;
+	}
+
+	public int getCarbonStock()
+	{
+		return carbonStock;
+	}
+	
+	protected int getCarbonView(int date, String playerLogin, boolean isVisible)
+	{
+		if (isVisible)
+		{
+			playersCarbonView.updateView(playerLogin, carbon, date);
+		}
+		
+		return playersCarbonView.getLastValue(playerLogin, -1);
+	}
+	
+	public int getSlots()
+	{
+		return slots;
+	}
+	
+	protected Set<common.IBuilding> getBuildingsView(int date, String playerLogin, boolean isVisible)
+	{
+		HashSet<common.IBuilding> buildingsView;
+		
+		if (isVisible)
+		{
+			buildingsView = new HashSet<common.IBuilding>();
+			for(IBuilding b : buildings)
+			{
+				buildingsView.add(b.getPlayerView(date, playerLogin));
+			}
+			playersBuildingsView.updateView(playerLogin, buildingsView, date);
+		}
+		else
+		{
+			buildingsView = playersBuildingsView.getLastValue(playerLogin, null);
+		}		
+		
+		return buildingsView;
 	}
 	
 	abstract public boolean canBuild(IBuilding building);

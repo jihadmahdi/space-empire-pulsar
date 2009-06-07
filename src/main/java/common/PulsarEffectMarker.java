@@ -5,11 +5,15 @@
  */
 package common;
 
+import java.io.Serializable;
+
 /**
  * 
  */
-public class PulsarEffectMarker implements IMarker
+public class PulsarEffectMarker implements IMarker, Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+	
 	private final int creationDate;
 	private final boolean isVisible;
 	

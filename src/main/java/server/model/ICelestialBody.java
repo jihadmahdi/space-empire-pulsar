@@ -14,4 +14,12 @@ interface ICelestialBody
 {
 	/** Get this celestial body owner (null if neutral). */
 	Player getOwner();
+
+	/**
+	 * @param date
+	 * @param playerLogin
+	 * @param isVisible
+	 * @return
+	 */
+	common.ICelestialBody getPlayerView(int date, String playerLogin, boolean isVisible);
 }
