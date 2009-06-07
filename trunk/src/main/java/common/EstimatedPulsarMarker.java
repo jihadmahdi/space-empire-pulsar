@@ -5,12 +5,16 @@
  */
 package common;
 
+import java.io.Serializable;
+
 /**
  * Represent a pulsar estimated effect marker.
  * This marker is only for owner (and softcore allied).
  */
-public class EstimatedPulsarMarker implements IMarker
+public class EstimatedPulsarMarker implements IMarker, Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+	
 	// Only if owner (estimation)
 	private final int creationDate;
 	private final boolean isVisible;

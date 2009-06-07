@@ -240,6 +240,40 @@ public class SEPServer implements IServer, GameServerListener
 			return sepServer.getCurrentGame().getGameBoard(user.getLogin());
 		}
 
+		/* (non-Javadoc)
+		 * @see common.Protocol.ServerRunningGame#sendMessage(java.lang.String)
+		 */
+		@Override
+		public void sendMessage(final String msg) throws RpcException, StateMachineNotExpectedEventException
+		{
+			sepServer.threadPool.execute(new Runnable()
+			{
+
+				@Override
+				public void run()
+				{
+					// TODO : Filter running game message according to pulsar effect.
+					sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
+					{
+
+						@Override
+						public void doIt(ServerPlayer player)
+						{
+							try
+							{
+								player.getClientInterface().receiveRunningGameMessage(getPlayer(), msg);
+							}
+							catch (RpcException e)
+							{
+								log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
+								player.abort(e);
+							}
+						}
+					});
+				}
+			});
+		}
+
 	}
 
 	private static class SEPPausedGame extends SEPCommon implements Protocol.ServerPausedGame

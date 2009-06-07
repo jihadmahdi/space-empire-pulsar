@@ -5,11 +5,15 @@
  */
 package common;
 
+import java.io.Serializable;
+
 /**
  * Represent a space road.
  */
-public class SpaceRoad implements IMarker
+public class SpaceRoad implements IMarker, Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+	
 	private final int creationDate;
 	private final boolean isVisible;
 	
@@ -46,5 +50,14 @@ public class SpaceRoad implements IMarker
 	public boolean isVisible()
 	{
 		return isVisible;
+	}
+	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString()
+	{
+		return "["+pointALocation[0]+";"+pointALocation[1]+";"+pointALocation[2]+"] to ["+pointBLocation[0]+";"+pointBLocation[1]+";"+pointBLocation[2]+"] at speed "+speed;
 	}
 }

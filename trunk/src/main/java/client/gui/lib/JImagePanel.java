@@ -89,7 +89,7 @@ public class JImagePanel extends JPanel
 		setX(0);
 		setY(0);
 		setImage((Image) null);
-		setAutoSize(false);
+		setAutoSize(false);				
 	}
 
 	/**

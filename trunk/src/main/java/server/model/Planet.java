@@ -5,7 +5,9 @@
  */
 package server.model;
 
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 
@@ -25,6 +27,9 @@ class Planet extends ProductiveCelestialBody
 	
 	// Variables
 	private int population;
+	
+	// Views
+	PlayerDatedView<Integer> playersPopulationView = new PlayerDatedView<Integer>();
 
 	/**
 	 * Creation a new starting planet for the given player and game configuration.
@@ -138,6 +143,21 @@ class Planet extends ProductiveCelestialBody
 		// TODO: Implement other building types.
 		
 		return false;
+	}
+
+	/* (non-Javadoc)
+	 * @see server.model.ICelestialBody#getPlayerView(int, java.lang.String, boolean)
+	 */
+	@Override
+	public common.Planet getPlayerView(int date, String playerLogin, boolean isVisible)
+	{		
+		if (isVisible)
+		{
+			// Updates
+			playersPopulationView.updateView(playerLogin, population, date);			
+		}
+		
+		return new common.Planet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getCarbonStock(), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerView(date, playerLogin, isVisible), populationLimit, populationPerTurn, playersPopulationView.getLastValue(playerLogin, -1));
 	}
 
 }

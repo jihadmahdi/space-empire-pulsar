@@ -13,4 +13,13 @@ import common.Player;
 class GovernmentModule implements IBuilding
 {
 
+	/* (non-Javadoc)
+	 * @see server.model.IBuilding#getPlayerView(java.lang.String)
+	 */
+	@Override
+	public common.GovernmentModule getPlayerView(int date, String playerLogin)
+	{
+		return new common.GovernmentModule();
+	}
+
 }

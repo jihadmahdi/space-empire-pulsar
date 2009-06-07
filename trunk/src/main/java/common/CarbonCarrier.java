@@ -5,11 +5,15 @@
  */
 package common;
 
+import java.io.Serializable;
+
 /**
  * Represent a carbon carrier
  */
-public class CarbonCarrier extends Unit
+public class CarbonCarrier extends Unit implements Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+	
 	/**
 	 * 
 	 */

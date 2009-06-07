@@ -5,11 +5,18 @@
  */
 package common;
 
+import java.io.Serializable;
+
 /**
  * Represent all pulsar lauching pad build on a ceslestial body (including already fired ones).
  */
-public class PulsarLauchingPad implements IBuilding
+public class PulsarLauchingPad implements IBuilding, Serializable
 {
+	public static final int PRICE_POPULATION = 50000;
+	public static final int PRICE_CARBON = 100000;
+	
+	private static final long	serialVersionUID	= 1L;
+	
 	// Only if visible
 	private final int nbBuild;
 	private final int nbFired;
@@ -28,4 +35,27 @@ public class PulsarLauchingPad implements IBuilding
 		this.totalBonus = totalBonus;
 		this.nextBuildCost = nextBuildCost;
 	}
+
+	/* (non-Javadoc)
+	 * @see common.IBuilding#getBuildSlotsCount()
+	 */
+	@Override
+	public int getBuildSlotsCount()
+	{
+		return nbBuild;
+	}
+	
+	public int getUnusedCount()
+	{
+		return nbBuild - nbFired;
+	}
+	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString()
+	{
+		return (nbBuild-nbFired)+" pulsar launching pads ready to fire with a power bonus of "+totalBonus+", "+nbFired+" already used.\n"+((nextBuildCost<0)?"Can't build more":"Next build cost "+nextBuildCost);
+	}		
 }

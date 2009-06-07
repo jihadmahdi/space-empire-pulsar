@@ -74,6 +74,14 @@ public class SEPClient
 		 * @param gameCfg New game config.
 		 */
 		void refreshGameConfig(GameConfig gameCfg);
+
+		/**
+		 * New RunningGame message received from another player.
+		 * Must return fast.
+		 * @param fromPlayer
+		 * @param msg
+		 */
+		void receiveRunningGameMessage(Player fromPlayer, String msg);
 	}
 	
 	private static class SEPClientProtocol implements Protocol.Client
@@ -114,6 +122,15 @@ public class SEPClient
 		public void refreshGameConfig(GameConfig gameCfg)
 		{
 			client.ui.refreshGameConfig(gameCfg);
+		}
+
+		/* (non-Javadoc)
+		 * @see common.Protocol.Client#receiveRunningGameMessage(common.Player, java.lang.String)
+		 */
+		@Override
+		public void receiveRunningGameMessage(Player fromPlayer, String msg) throws RpcException
+		{
+			client.ui.receiveRunningGameMessage(fromPlayer, msg);
 		}
 		
 	}

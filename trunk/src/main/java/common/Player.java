@@ -46,4 +46,13 @@ public class Player implements Serializable
 	{
 		return config;
 	}
+
+	/**
+	 * @param playerLogin
+	 * @return
+	 */
+	public boolean isNamed(String playerLogin)
+	{
+		return name.compareTo(playerLogin) == 0;
+	}
 }

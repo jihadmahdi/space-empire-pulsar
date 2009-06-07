@@ -4,16 +4,21 @@ import java.awt.BorderLayout;
 import java.awt.Canvas;
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.ItemEvent;
@@ -31,7 +36,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
+import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -47,6 +54,7 @@ import javax.swing.JColorChooser;
 import javax.swing.JEditorPane;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -87,164 +95,171 @@ import org.axan.eplib.utils.Basic;
 import server.SEPServer;
 
 import client.SEPClient;
+import client.gui.lib.GUIUtils;
 import client.gui.lib.JImagePanel;
 import com.jgoodies.forms.layout.FormLayout;
 
+import common.Area;
 import common.AsteroidField;
 import common.GameConfig;
+import common.IBuilding;
 import common.ICelestialBody;
 import common.Nebula;
 import common.Planet;
 import common.PlayerGameBoard;
 import common.Player;
 import common.PlayerConfig;
+import common.ProductiveCelestialBody;
+import common.Unit;
 
 /**
  * This code was edited or generated using CloudGarden's Jigloo SWT/Swing GUI Builder, which is free for non-commercial use. If Jigloo is being used commercially (ie, by a corporation, company or business for any purpose whatever) then you should purchase a license for each developer using Jigloo. Please visit www.cloudgarden.com for details. Use of Jigloo implies acceptance of these licensing terms. A COMMERCIAL LICENSE HAS NOT BEEN PURCHASED FOR THIS MACHINE, SO JIGLOO OR THIS CODE CANNOT BE USED LEGALLY FOR ANY CORPORATE OR COMMERCIAL PURPOSE.
  */
 public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClient.IUserInterface
 {
-	static Logger		log		= SEPClient.log;
+	static Logger				log			= SEPClient.log;
 
-	private boolean		isAdmin	= false;
+	public static final String	IMG_PATH	= "resources/client/gui/img/".replace('/', File.separatorChar);
 
-	private JMenuBar	jMenuBar;
+	private boolean				isAdmin		= false;
 
-	private JMenu		jFileMenu;
+	private JMenuBar			jMenuBar;
 
-	private JTextField	jHostGameTimeoutTextField;
+	private JMenu				jFileMenu;
 
-	private JTextField	jHostGamePortTextField;
+	private JTextField			jHostGameTimeoutTextField;
 
-	private JLabel		gameCreationConfigLabel1;
+	private JTextField			jHostGamePortTextField;
 
-	private JLabel		gameCreationConfigEditionNebulaLabel;
+	private JLabel				gameCreationConfigLabel1;
 
-	private JTextField	gameCreationConfigEditionNebulaCarbonMinTextLabel;
+	private JLabel				gameCreationConfigEditionNebulaLabel;
 
-	private JLabel		gameCreationConfigEditionNebulaSlashesLabel;
+	private JTextField			gameCreationConfigEditionNebulaCarbonMinTextLabel;
 
-	private JTextField	gameCreationConfigEditionNebulaCarbonMaxTextField;
+	private JLabel				gameCreationConfigEditionNebulaSlashesLabel;
 
-	private JTextField	gameCreationConfigEditionNebulaSlotsMinTextField;
+	private JTextField			gameCreationConfigEditionNebulaCarbonMaxTextField;
 
-	private JCheckBox	gameCreationConfigEditionPanelVictoryTeamCheckBox;
+	private JTextField			gameCreationConfigEditionNebulaSlotsMinTextField;
 
-	private JLabel		gameCreationConfigEditionPanelVictoryRulesLabel;
+	private JCheckBox			gameCreationConfigEditionPanelVictoryTeamCheckBox;
 
-	private JTextField	gameCreationConfigEditionNebulaSlotsMaxTextField;
+	private JLabel				gameCreationConfigEditionPanelVictoryRulesLabel;
 
-	private JLabel		gameCreationConfigEditionAsteroidFieldLabel;
+	private JTextField			gameCreationConfigEditionNebulaSlotsMaxTextField;
 
-	private JTextField	gameCreationConfigEditionAsteroidFieldSlotsMinTextField;
+	private JLabel				gameCreationConfigEditionAsteroidFieldLabel;
 
-	private JTextField	gameCreationConfigEditionAsteroidFieldSlotsMaxTextField;
+	private JTextField			gameCreationConfigEditionAsteroidFieldSlotsMinTextField;
 
-	private JTextField	gameCreationConfigEditionAsteroidFieldCarbonMaxTextField;
+	private JTextField			gameCreationConfigEditionAsteroidFieldSlotsMaxTextField;
 
-	private JTextField	gameCreationConfigEditionAsteroidFieldCarbonMinTextField;
+	private JTextField			gameCreationConfigEditionAsteroidFieldCarbonMaxTextField;
 
-	private JLabel		gameCreationConfigEditionSlashLabel2;
+	private JTextField			gameCreationConfigEditionAsteroidFieldCarbonMinTextField;
 
-	private JLabel		gameCreationConfigEditionSlashLabel;
+	private JLabel				gameCreationConfigEditionSlashLabel2;
 
-	private JTextField	gameCreationConfigEditionPlanetCarbonMinTextField;
+	private JLabel				gameCreationConfigEditionSlashLabel;
 
-	private JTextField	gameCreationConfigEditionPlanetCarbonMaxTextField;
+	private JTextField			gameCreationConfigEditionPlanetCarbonMinTextField;
 
-	private JTextField	gameCreationConfigEditionPlanetSlotsMaxTextField;
+	private JTextField			gameCreationConfigEditionPlanetCarbonMaxTextField;
 
-	private JTextField	gameCreationConfigEditionPlanetSlotsMinTextField;
+	private JTextField			gameCreationConfigEditionPlanetSlotsMaxTextField;
 
-	private JLabel		gameCreationConfigEditionPlanetLabel;
+	private JTextField			gameCreationConfigEditionPlanetSlotsMinTextField;
 
-	private JLabel		gameCreationConfigEditionSlotMinLabel;
+	private JLabel				gameCreationConfigEditionPlanetLabel;
 
-	private JLabel		gameCreationConfigEditionCarbonMinLabel;
+	private JLabel				gameCreationConfigEditionSlotMinLabel;
 
-	private JLabel		gameCreationConfigEditionCelestialBodyTypeLabel;
+	private JLabel				gameCreationConfigEditionCarbonMinLabel;
 
-	private JTextField	gameCreationConfigEditionNeutralCelestialBodiesTextField;
+	private JLabel				gameCreationConfigEditionCelestialBodyTypeLabel;
 
-	private JLabel		gameCreationConfigEditionNbNeutralCelestialBodiesLabel;
+	private JTextField			gameCreationConfigEditionNeutralCelestialBodiesTextField;
 
-	private JTextField	gameCreationConfigEditionUniverseZSizeTextField;
+	private JLabel				gameCreationConfigEditionNbNeutralCelestialBodiesLabel;
 
-	private JTextField	gameCreationConfigEditionUniverseYSizeTextField;
+	private JTextField			gameCreationConfigEditionUniverseZSizeTextField;
 
-	private JTextField	gameCreationConfigEditionUniverseXSizeTextField;
+	private JTextField			gameCreationConfigEditionUniverseYSizeTextField;
 
-	private JLabel		gameCreationConfigUniverseSizeLabel;
+	private JTextField			gameCreationConfigEditionUniverseXSizeTextField;
 
-	private JPanel		gameCreationConfigEditionPanel;
+	private JLabel				gameCreationConfigUniverseSizeLabel;
 
-	private JLabel		gameCreationPlayerConfigEditionColoredNameLabel;
+	private JPanel				gameCreationConfigEditionPanel;
 
-	private JPanel		gameCreationPlayerConfigEditionPanel;
+	private JLabel				gameCreationPlayerConfigEditionColoredNameLabel;
 
-	private JTextField	gameCreationChatMessageTextField;
+	private JPanel				gameCreationPlayerConfigEditionPanel;
 
-	private JEditorPane	gameCreationChatEditorPane;
+	private JTextField			gameCreationChatMessageTextField;
 
-	private JLabel		gameCreationChatLabel;
+	private JEditorPane			gameCreationChatEditorPane;
 
-	private JPanel		gameCreationChatPanel;
+	private JLabel				gameCreationChatLabel;
 
-	private JPanel		gameCreationWestPanel;
+	private JPanel				gameCreationChatPanel;
 
-	private JLabel		gameCreationPlayerConfigLabel;
+	private JPanel				gameCreationWestPanel;
 
-	private JPanel		gameCreationPlayerConfigPanel;
+	private JLabel				gameCreationPlayerConfigLabel;
 
-	private JLabel		gameCreationPlayerListLabel;
+	private JPanel				gameCreationPlayerConfigPanel;
 
-	private JPanel		gameCreationPlayerListPanel;
+	private JLabel				gameCreationPlayerListLabel;
 
-	private JPanel		gameCreationBtnsPanel;
+	private JPanel				gameCreationPlayerListPanel;
 
-	private JPanel		gameCreationWestSouthPanel;
+	private JPanel				gameCreationBtnsPanel;
 
-	private JPanel		gameCreationEastPanel;
+	private JPanel				gameCreationWestSouthPanel;
 
-	private JLabel		jHostGameTimeoutLabel;
+	private JPanel				gameCreationEastPanel;
 
-	private JLabel		jHostGamePortLabel;
+	private JLabel				jHostGameTimeoutLabel;
 
-	private JButton		jHostGameOKButton;
+	private JLabel				jHostGamePortLabel;
 
-	private JImagePanel	jMainPanel;
+	private JButton				jHostGameOKButton;
 
-	private JMenuItem	jQuitMenuItem;
+	private JImagePanel			jMainPanel;
 
-	private JSeparator	jFileMenuSeparator;
+	private JMenuItem			jQuitMenuItem;
 
-	private JPanel		gameCreationPanel;
+	private JSeparator			jFileMenuSeparator;
 
-	private JTextField	jNameTextField;
+	private JPanel				gameCreationPanel;
 
-	private JLabel		jLoginLabel;
+	private JTextField			jNameTextField;
 
-	private JButton		jHostGameCANCELButton;
+	private JLabel				jLoginLabel;
 
-	private JMenuItem	jJoinMenuItem;
+	private JButton				jHostGameCANCELButton;
 
-	private JMenuItem	jHostMenuItem;
+	private JMenuItem			jJoinMenuItem;
 
-	private SEPServer	server;
+	private JMenuItem			jHostMenuItem;
 
-	private SEPClient	client;
+	private SEPServer			server;
 
-	private Box			jGameCreationPlayerListPanel;
+	private SEPClient			client;
 
-	private JPanel		gameCreationConfigPanel;
+	private Box					jGameCreationPlayerListPanel;
 
-	private JScrollPane	gameCreationPlayerListScrollPane;
+	private JPanel				gameCreationConfigPanel;
 
-	private JScrollPane	gameCreationPlayerConfigScrollPane;
+	private JScrollPane			gameCreationPlayerListScrollPane;
 
-	private JScrollPane	gameCreationChatScrollPane;
+	private JScrollPane			gameCreationPlayerConfigScrollPane;
 
-	private JScrollPane	gameCreationConfigScrollPane;
+	private JScrollPane			gameCreationChatScrollPane;
+
+	private JScrollPane			gameCreationConfigScrollPane;
 
 	/**
 	 * Auto-generated main method to display this JFrame
@@ -285,7 +300,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 			{
 				// "resources" + File.separator + NeutronGUI.class.getPackage().getName().replace('.', File.separatorChar) + File.separator + "img" + File.separator;
 				jMainPanel = new JImagePanel();
-				jMainPanel.setImage("resources/client/gui/img/".replace('/', File.separatorChar) + "logo.png");
+				jMainPanel.setImage(IMG_PATH + "logo.png");
 				jMainPanel.setAutoSize(true);
 				BorderLayout jMainPanelLayout = new BorderLayout();
 				setContentPane(jMainPanel);
@@ -658,13 +673,14 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		}
 	}
 
+	private PlayerGameBoard	currentGameBoard;
+
 	private void refreshGameBoard()
 	{
-		PlayerGameBoard gameBoard;
 		try
 		{
-			gameBoard = client.getRunningGameInterface().getGameBoard();
-			refreshGameBoard(gameBoard);
+			currentGameBoard = client.getRunningGameInterface().getGameBoard();
+			refreshGameBoard(currentGameBoard);
 		}
 		catch (Throwable t)
 		{
@@ -691,7 +707,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 			t.printStackTrace();
 			return;
 		}
-		
+
 		refreshGameConfig(gameCfg);
 	}
 
@@ -743,6 +759,20 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		System.out.println("GUI: onGamePaused");
 	}
 
+	private void displayRunningGamePanel()
+	{
+		try
+		{
+			setContentPane(getRunningGamePanel());
+			getRunningGamePanel().setVisible(false);
+			getRunningGamePanel().setVisible(true);
+		}
+		catch (Throwable t)
+		{
+			t.printStackTrace();
+		}
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -760,9 +790,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 				public void run()
 				{
 					System.out.println("GUI: onGameRan");
-					setContentPane(getRunningGamePanel());
-					getRunningGamePanel().setVisible(false);
-					getRunningGamePanel().setVisible(true);
+					displayRunningGamePanel();
 
 					SwingUtilities.invokeLater(new Runnable()
 					{
@@ -770,7 +798,14 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 						@Override
 						public void run()
 						{
-							refreshGameBoard();
+							try
+							{
+								refreshGameBoard();
+							}
+							catch (Throwable t)
+							{
+								t.printStackTrace();
+							}
 						}
 					});
 				}
@@ -952,6 +987,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 				{
 					if (player.getName().compareTo(client.getLogin()) == 0)
 					{
+						currentPlayer = player;
 						getGameCreationPlayerConfigEditionColoredNameLabel().setBackground(null);
 						getGameCreationPlayerConfigEditionColoredNameLabel().setForeground(player.getConfig().getColor());
 					}
@@ -965,6 +1001,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		});
 	}
 
+	private Player currentPlayer;
+	
 	private JPanel getGameCreationEastPanel()
 	{
 		if (gameCreationEastPanel == null)
@@ -1093,7 +1131,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 			{
 				displayGameCreationPanel();
 
-				String htmlText = "<br><font color='#" + getHTMLColor(fromPlayer.getConfig().getColor()) + "'>" + fromPlayer.getName() + "</font> : " + msg + "</br>";
+				String htmlText = "<br><font color='#" + GUIUtils.getHTMLColor(fromPlayer.getConfig().getColor()) + "'>" + fromPlayer.getName() + "</font> : " + msg + "</br>";
 				HTMLDocument doc = ((HTMLDocument) getGameCreationChatEditorPane().getDocument());
 
 				try
@@ -1110,12 +1148,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 				}
 			}
 		});
-	}
-
-	private static String getHTMLColor(Color c)
-	{
-		return String.format("%02X%02X%02X", c.getRed(), c.getGreen(), c.getBlue());
-	}
+	}	
 
 	private JPanel getGameCreationChatPanel()
 	{
@@ -1233,7 +1266,9 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 	private void refreshGameBoard(PlayerGameBoard gameBoard)
 	{
+		currentGameBoard = gameBoard;
 		log.log(Level.INFO, "GUI : refreshGameBoard : " + ((gameBoard == null) ? "not implemented" : gameBoard.toString()));
+		getRunningGamePanel().refreshGameBoard(gameBoard);
 	}
 
 	/*
@@ -1266,6 +1301,9 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 					getGameCreationConfigEditionUniverseZSizeTextField().setEditable(isAdmin);
 					getGameCreationConfigEditionUniverseZSizeTextField().setText(String.valueOf(gameCfg.getDimZ()));
+
+					getGameCreationConfigEditionSunRadiusTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionSunRadiusTextField().setText(String.valueOf(gameCfg.getSunRadius()));
 
 					// /
 
@@ -1373,6 +1411,11 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 					// /
 
+					getGameCreationConfigEditionUnitsProbeScopeTextField().setEnabled(isAdmin);
+					getGameCreationConfigEditionUnitsProbeScopeTextField().setText(String.valueOf(gameCfg.getProbeScope()));
+
+					// /
+
 					getGameCreationConfigEditionPanelVictoryTeamCheckBox().setEnabled(isAdmin);
 					getGameCreationConfigEditionPanelVictoryTeamCheckBox().setSelected(gameCfg.isAllianceVictory());
 
@@ -1396,13 +1439,13 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 						getGameCreationConfigEditionPanelVictoryEconomicPopulationTextField().setText(String.valueOf(gameCfg.getEconomicVictory()[0]));
 						if (gameCfg.getEconomicVictory()[0] > 0)
 						{
-							economicVictoryEnabled = true;							
+							economicVictoryEnabled = true;
 						}
 
 						getGameCreationConfigEditionPanelVictoryEconomicCarbonTextField().setText(String.valueOf(gameCfg.getEconomicVictory()[1]));
 						if (gameCfg.getEconomicVictory()[1] > 0)
 						{
-							economicVictoryEnabled = true;							
+							economicVictoryEnabled = true;
 						}
 					}
 					getGameCreationConfigEditionPanelVictoryEconomicCheckBox().setSelected(economicVictoryEnabled);
@@ -1434,6 +1477,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionUniverseZSizeTextField());
 			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionNbNeutralCelestialBodiesLabel());
 			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionNeutralCelestialBodiesTextField());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionSunRadiusLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionSunRadiusTextField());
 
 			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetStatsLabel());
 			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPlanetStatsMinMaxLabel());
@@ -1471,6 +1516,11 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionNebulaCarbonMinTextField());
 			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionNebulaNeutralGenTextField());
 			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionNebulaLabel());
+
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionUnitsConfigLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionUnitsProbeScopeLabel());
+			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionUnitsProbeScopeTextField());
+
 			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPanelVictoryRulesLabel());
 			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPanelVictoryTeamCheckBox());
 			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPanelVictoryRegimicideCheckBox());
@@ -1485,17 +1535,6 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 			gameCreationConfigEditionPanel.add(getGameCreationConfigEditionPanelVictoryTimeLimitTextField());
 		}
 		return gameCreationConfigEditionPanel;
-	}
-
-	private JLabel getGameCreationConfigUniverseSizeLabel()
-	{
-		if (gameCreationConfigUniverseSizeLabel == null)
-		{
-			gameCreationConfigUniverseSizeLabel = new JLabel();
-			gameCreationConfigUniverseSizeLabel.setText("Universe size :         x        x");
-			gameCreationConfigUniverseSizeLabel.setBounds(0, 0, 279, 20);
-		}
-		return gameCreationConfigUniverseSizeLabel;
 	}
 
 	private FocusListener	gameCreationConfigEditionFocusListener;
@@ -1519,19 +1558,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 	private JLabel			gameCreationConfigEditionPlanetPopulationPerTurnSlashesLabel;
 
 	private JLabel			gameCreationConfigEditionPlanetPopulationLimitSlashesLabel;
-	private JPanel runningGameUniverseRenderingPanel;
-	private JPanel runningGameActionPanel;
-	private JPanel runningGameChatPanel;
-	private JTabbedPane runningGameTabbedPanel;
-	private JLabel runningGameShortcutBarLabel;
-	private JLabel runningGameFleetDetailsLabel;
-	private JPanel runningGameFleetDetails;
-	private JLabel runningGameCelestialBodyDetailsLabel;
-	private JPanel runningGameCelestialBodyDetails;
-	private JPanel runningGameCenterPanel;
-	private JPanel runningGameSouthPanel;
-	private JPanel runningGameEastPanel;
-	private JPanel runningGamePanel;
+
+	private RunningGamePanel	runningGamePanel;
 
 	private JTextField		gameCreationConfigEditionNebulaNeutralGenTextField;
 
@@ -1540,6 +1568,16 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 	private JTextField		gameCreationConfigEditionPlanetNeutralGenTextField;
 
 	private JLabel			gameCreationConfigEditionNeutralGenLabel;
+
+	private JLabel			gameCreationConfigEditionSunRadiusLabel;
+
+	private JTextField		gameCreationConfigEditionSunRadiusTextField;
+
+	private JLabel			gameCreationConfigEditionUnitsConfigLabel;
+
+	private JLabel			gameCreationConfigEditionUnitsProbeScopeLabel;
+
+	private JTextField		gameCreationConfigEditionUnitsProbeScopeTextField;
 
 	private FocusListener getGameCreationConfigEditionFocusListener()
 	{
@@ -1551,11 +1589,13 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 				@Override
 				public void focusLost(FocusEvent e)
 				{
-					if (isGameConfigCurrentlyRefreshed) return;
+					if (getContentPane() != getGameCreationPanel()) return;
+					if (isGameConfigCurrentlyRefreshed) return;										
 
 					int dimX, dimY, dimZ, neutralCelestialBodiesCount, economicVictoryCarbon, economicVictoryPopulation, timeLimitVictory;
 					int planetSlotsMin, planetSlotsMax, asteroidSlotsMin, asteroidSlotsMax, nebulaSlotsMin, nebulaSlotsMax;
 					int planetCarbonMin, planetCarbonMax, asteroidCarbonMin, asteroidCarbonMax, nebulaCarbonMin, nebulaCarbonMax;
+					int sunRadius, probeScope;
 
 					try
 					{
@@ -1564,6 +1604,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 						dimZ = Integer.valueOf(getGameCreationConfigEditionUniverseZSizeTextField().getText());
 
 						neutralCelestialBodiesCount = Integer.valueOf(getGameCreationConfigEditionNeutralCelestialBodiesTextField().getText());
+
+						sunRadius = Integer.valueOf(getGameCreationConfigEditionSunRadiusTextField().getText());
 
 						// /
 
@@ -1621,6 +1663,10 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 						// /
 
+						probeScope = Integer.valueOf(getGameCreationConfigEditionUnitsProbeScopeTextField().getText());
+
+						// /
+
 						int populationPerTurnMin, populationPerTurnMax, populationLimitMin, populationLimitMax;
 
 						populationPerTurnMin = Integer.valueOf(getGameCreationConfigEditionPlanetPopulationPerTurnMinTextField().getText());
@@ -1629,15 +1675,21 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 						populationLimitMin = Integer.valueOf(getGameCreationConfigEditionPlanetPopulationLimitMinTextField().getText());
 						populationLimitMax = Integer.valueOf(getGameCreationConfigEditionPlanetPopulationLimitMaxTextField().getText());
 
-						GameConfig gameCfg = new GameConfig(dimX, dimY, dimZ, neutralCelestialBodiesCount, populationPerTurnMin, populationPerTurnMax, populationLimitMin, populationLimitMax, carbonAmount, slotsAmount, neutralGenerationRates, getGameCreationConfigEditionPanelVictoryTeamCheckBox().isSelected(), getGameCreationConfigEditionPanelVictoryRegimicideCheckBox().isSelected(), getGameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox().isSelected(), getGameCreationConfigEditionPanelVictoryTotalConquestCheckBox().isSelected(), economicVictoryCarbon, economicVictoryPopulation, timeLimitVictory);
+						GameConfig gameCfg = new GameConfig(dimX, dimY, dimZ, neutralCelestialBodiesCount, populationPerTurnMin, populationPerTurnMax, populationLimitMin, populationLimitMax, carbonAmount, slotsAmount, neutralGenerationRates, getGameCreationConfigEditionPanelVictoryTeamCheckBox().isSelected(), getGameCreationConfigEditionPanelVictoryRegimicideCheckBox().isSelected(), getGameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox().isSelected(), getGameCreationConfigEditionPanelVictoryTotalConquestCheckBox().isSelected(), economicVictoryCarbon, economicVictoryPopulation, timeLimitVictory, probeScope, sunRadius);
 
 						log.log(Level.INFO, "Try to update gameConfig : " + gameCfg);
 
 						client.getGameCreationInterface().updateGameConfig(gameCfg);
 					}
-					catch (ServerPrivilegeException ex1)
+					catch (ServerPrivilegeException spe)
 					{
-						JOptionPane.showMessageDialog(null, ex1.getMessage(), "Server Privilege Error", JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(null, spe.getMessage(), "Server Privilege Error", JOptionPane.ERROR_MESSAGE);
+						return;
+					}
+					catch (IllegalArgumentException iae)
+					{
+						JOptionPane.showMessageDialog(null, iae.getMessage(), "GameConfig error", JOptionPane.ERROR_MESSAGE);
+						refreshGameConfig();
 						return;
 					}
 					catch (Exception ex)
@@ -1655,6 +1707,18 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 			};
 		}
 		return gameCreationConfigEditionFocusListener;
+	}
+
+	// Universe config area start
+	private JLabel getGameCreationConfigUniverseSizeLabel()
+	{
+		if (gameCreationConfigUniverseSizeLabel == null)
+		{
+			gameCreationConfigUniverseSizeLabel = new JLabel();
+			gameCreationConfigUniverseSizeLabel.setText("Universe size :         x        x");
+			gameCreationConfigUniverseSizeLabel.setBounds(0, 0, 279, 20);
+		}
+		return gameCreationConfigUniverseSizeLabel;
 	}
 
 	private JTextField getGameCreationConfigEditionUniverseXSizeTextField()
@@ -1716,13 +1780,38 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		return gameCreationConfigEditionNeutralCelestialBodiesTextField;
 	}
 
+	private JLabel getGameCreationConfigEditionSunRadiusLabel()
+	{
+		if (gameCreationConfigEditionSunRadiusLabel == null)
+		{
+			gameCreationConfigEditionSunRadiusLabel = new JLabel();
+			gameCreationConfigEditionSunRadiusLabel.setText("Sun radius :");
+			gameCreationConfigEditionSunRadiusLabel.setBounds(getGameCreationConfigUniverseSizeLabel().getX(), getGameCreationConfigUniverseSizeLabel().getY() + 26, 100, 20);
+			gameCreationConfigEditionSunRadiusLabel.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionSunRadiusLabel;
+	}
+
+	private JTextField getGameCreationConfigEditionSunRadiusTextField()
+	{
+		if (gameCreationConfigEditionSunRadiusTextField == null)
+		{
+			gameCreationConfigEditionSunRadiusTextField = new JTextField();
+			gameCreationConfigEditionSunRadiusTextField.setText("1");
+			gameCreationConfigEditionSunRadiusTextField.setBounds(getGameCreationConfigUniverseSizeLabel().getX() + 100, getGameCreationConfigUniverseSizeLabel().getY() + 26, 26, 20);
+			gameCreationConfigEditionSunRadiusTextField.addFocusListener(getGameCreationConfigEditionFocusListener());
+		}
+		return gameCreationConfigEditionSunRadiusTextField;
+	}
+
+	// Planet config area start (linked to Universe config area end)
 	private JLabel getGameCreationConfigEditionPlanetStatsLabel()
 	{
 		if (gameCreationConfigEditionPlanetStatsLabel == null)
 		{
 			gameCreationConfigEditionPlanetStatsLabel = new JLabel();
 			gameCreationConfigEditionPlanetStatsLabel.setText("Planet stats");
-			gameCreationConfigEditionPlanetStatsLabel.setBounds(0, 26, 100, 20);
+			gameCreationConfigEditionPlanetStatsLabel.setBounds(0, getGameCreationConfigEditionSunRadiusLabel().getY() + getGameCreationConfigEditionSunRadiusLabel().getHeight() + 5, 100, 20);
 		}
 		return gameCreationConfigEditionPlanetStatsLabel;
 	}
@@ -1830,6 +1919,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		return gameCreationConfigEditionPlanetPopulationLimitMaxTextField;
 	}
 
+	// Celestial bodies config area start (linked to Planet config area end)
 	private JLabel getGameCreationConfigEditionCelestialBodyTypeLabel()
 	{
 		if (gameCreationConfigEditionCelestialBodyTypeLabel == null)
@@ -2120,13 +2210,48 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		return gameCreationConfigEditionNebulaLabel;
 	}
 
+	// Units config area start (linked to Celestial bodies config area end)
+	private JLabel getGameCreationConfigEditionUnitsConfigLabel()
+	{
+		if (gameCreationConfigEditionUnitsConfigLabel == null)
+		{
+			gameCreationConfigEditionUnitsConfigLabel = new JLabel();
+			gameCreationConfigEditionUnitsConfigLabel.setText("Units specific configuration :");
+			gameCreationConfigEditionUnitsConfigLabel.setBounds(0, getGameCreationConfigEditionNebulaLabel().getY() + getGameCreationConfigEditionNebulaLabel().getHeight() + 5, 200, 20);
+		}
+		return gameCreationConfigEditionUnitsConfigLabel;
+	}
+
+	private JLabel getGameCreationConfigEditionUnitsProbeScopeLabel()
+	{
+		if (gameCreationConfigEditionUnitsProbeScopeLabel == null)
+		{
+			gameCreationConfigEditionUnitsProbeScopeLabel = new JLabel();
+			gameCreationConfigEditionUnitsProbeScopeLabel.setText("Probe scope :");
+			gameCreationConfigEditionUnitsProbeScopeLabel.setBounds(getGameCreationConfigEditionUnitsConfigLabel().getX() + 50, getGameCreationConfigEditionUnitsConfigLabel().getY() + 26, 100, 20);
+		}
+		return gameCreationConfigEditionUnitsProbeScopeLabel;
+	}
+
+	private JTextField getGameCreationConfigEditionUnitsProbeScopeTextField()
+	{
+		if (gameCreationConfigEditionUnitsProbeScopeTextField == null)
+		{
+			gameCreationConfigEditionUnitsProbeScopeTextField = new JTextField();
+			gameCreationConfigEditionUnitsProbeScopeTextField.setText("0");
+			gameCreationConfigEditionUnitsProbeScopeTextField.setBounds(getGameCreationConfigEditionUnitsProbeScopeLabel().getX() + 100, getGameCreationConfigEditionUnitsProbeScopeLabel().getY(), 50, 20);
+		}
+		return gameCreationConfigEditionUnitsProbeScopeTextField;
+	}
+
+	// Victory rules config area start (linked to Units bodies config area end)
 	private JLabel getGameCreationConfigEditionPanelVictoryRulesLabel()
 	{
 		if (gameCreationConfigEditionPanelVictoryRulesLabel == null)
 		{
 			gameCreationConfigEditionPanelVictoryRulesLabel = new JLabel();
 			gameCreationConfigEditionPanelVictoryRulesLabel.setText("Victory Rules");
-			gameCreationConfigEditionPanelVictoryRulesLabel.setBounds(0, getGameCreationConfigEditionNebulaLabel().getY() + getGameCreationConfigEditionNebulaLabel().getHeight() + 5, 200, 20);
+			gameCreationConfigEditionPanelVictoryRulesLabel.setBounds(0, getGameCreationConfigEditionUnitsProbeScopeLabel().getY() + getGameCreationConfigEditionUnitsProbeScopeLabel().getHeight() + 5, 200, 20);
 		}
 		return gameCreationConfigEditionPanelVictoryRulesLabel;
 	}
@@ -2326,153 +2451,31 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		}
 		return gameCreationBtnsStartBtn;
 	}
-	
-	private JPanel getRunningGamePanel() {
-		if(runningGamePanel == null) {
-			runningGamePanel = new JPanel();
-			BorderLayout jPanel1Layout = new BorderLayout();
-			runningGamePanel.setLayout(jPanel1Layout);
-			runningGamePanel.setPreferredSize(new java.awt.Dimension(800, 575));
-			runningGamePanel.add(getRunningGameEastPanel(), BorderLayout.EAST);
-			runningGamePanel.add(getRunningGameSouthPanel(), BorderLayout.SOUTH);
-			runningGamePanel.add(getRunningGameCenterPanel(), BorderLayout.CENTER);
+
+	private RunningGamePanel getRunningGamePanel()
+	{
+		if (runningGamePanel == null)
+		{
+			runningGamePanel = new RunningGamePanel(currentPlayer, client);
 		}
 		return runningGamePanel;
 	}
-	
-	private JPanel getRunningGameEastPanel() {
-		if(runningGameEastPanel == null) {
-			runningGameEastPanel = new JPanel();
-			BorderLayout runningGameEastPanelLayout = new BorderLayout();
-			runningGameEastPanel.setLayout(runningGameEastPanelLayout);
-			runningGameEastPanel.add(getRunningGameCelestialBodyDetails(), BorderLayout.NORTH);
-			runningGameEastPanel.add(getRunningGameFleetDetails(), BorderLayout.SOUTH);
-		}
-		return runningGameEastPanel;
-	}
-	
-	private JPanel getRunningGameSouthPanel() {
-		if(runningGameSouthPanel == null) {
-			runningGameSouthPanel = new JPanel();
-			FlowLayout runningGameSouthPanelLayout = new FlowLayout();
-			runningGameSouthPanelLayout.setAlignment(FlowLayout.LEFT);
-			runningGameSouthPanelLayout.setVgap(1);
-			runningGameSouthPanel.setLayout(runningGameSouthPanelLayout);
-			runningGameSouthPanel.setPreferredSize(new java.awt.Dimension(10, 20));
-			runningGameSouthPanel.setBorder(new LineBorder(new java.awt.Color(0,0,0), 1, false));
-			runningGameSouthPanel.add(getRunningGameShortcutBarLabel());
-		}
-		return runningGameSouthPanel;
-	}
-	
-	private JPanel getRunningGameCenterPanel() {
-		if(runningGameCenterPanel == null) {
-			runningGameCenterPanel = new JPanel();
-			BorderLayout runningGameCenterPanelLayout = new BorderLayout();
-			runningGameCenterPanel.setLayout(runningGameCenterPanelLayout);
-			runningGameCenterPanel.add(getRunningGameTabbedPanel(), BorderLayout.SOUTH);
-			runningGameCenterPanel.add(getRunningGameUniverseRenderingPanel(), BorderLayout.CENTER);
-		}
-		return runningGameCenterPanel;
-	}
-	
-	private JPanel getRunningGameCelestialBodyDetails() {
-		if(runningGameCelestialBodyDetails == null) {
-			runningGameCelestialBodyDetails = new JPanel();
-			BorderLayout runningGameCelestialBodyDetailsLayout = new BorderLayout();
-			runningGameCelestialBodyDetails.setLayout(runningGameCelestialBodyDetailsLayout);			
-			runningGameCelestialBodyDetails.setPreferredSize(new java.awt.Dimension(150, 250));
-			runningGameCelestialBodyDetails.setBorder(new LineBorder(new java.awt.Color(0,0,0), 1, false));
-			runningGameCelestialBodyDetails.add(getRunningGameCelestialBodyDetailsLabel(), BorderLayout.NORTH);
-		}
-		return runningGameCelestialBodyDetails;
-	}
-	
-	private JLabel getRunningGameCelestialBodyDetailsLabel() {
-		if(runningGameCelestialBodyDetailsLabel == null) {
-			runningGameCelestialBodyDetailsLabel = new JLabel();
-			runningGameCelestialBodyDetailsLabel.setText("Celestial body details");
-			runningGameCelestialBodyDetailsLabel.setHorizontalAlignment(SwingConstants.CENTER);
-			runningGameCelestialBodyDetailsLabel.setHorizontalTextPosition(SwingConstants.CENTER);
-			runningGameCelestialBodyDetailsLabel.setVerticalAlignment(SwingConstants.TOP);
-			runningGameCelestialBodyDetailsLabel.setVerticalTextPosition(SwingConstants.TOP);
-		}
-		return runningGameCelestialBodyDetailsLabel;
-	}
-	
-	private JPanel getRunningGameFleetDetails() {
-		if(runningGameFleetDetails == null) {
-			runningGameFleetDetails = new JPanel();
-			BorderLayout runningGameFleetDetailsLayout = new BorderLayout();
-			runningGameFleetDetails.setLayout(runningGameFleetDetailsLayout);
-			runningGameFleetDetails.setPreferredSize(new java.awt.Dimension(150, 300));
-			runningGameFleetDetails.setBorder(new LineBorder(new java.awt.Color(0,0,0), 1, false));
-			runningGameFleetDetails.add(getRunningGameFleetDetailsLabel(), BorderLayout.NORTH);
-		}
-		return runningGameFleetDetails;
-	}
-	
-	private JLabel getRunningGameFleetDetailsLabel() {
-		if(runningGameFleetDetailsLabel == null) {
-			runningGameFleetDetailsLabel = new JLabel();
-			runningGameFleetDetailsLabel.setText("Fleet details");
-			runningGameFleetDetailsLabel.setHorizontalAlignment(SwingConstants.CENTER);
-			runningGameFleetDetailsLabel.setHorizontalTextPosition(SwingConstants.CENTER);
-			runningGameFleetDetailsLabel.setVerticalAlignment(SwingConstants.TOP);
-			runningGameFleetDetailsLabel.setVerticalTextPosition(SwingConstants.TOP);
-		}
-		return runningGameFleetDetailsLabel;
-	}
-	
-	private JLabel getRunningGameShortcutBarLabel() {
-		if(runningGameShortcutBarLabel == null) {
-			runningGameShortcutBarLabel = new JLabel();
-			runningGameShortcutBarLabel.setText("Shortcut Bar");
-			runningGameShortcutBarLabel.setHorizontalAlignment(SwingConstants.LEFT);
-			runningGameShortcutBarLabel.setHorizontalTextPosition(SwingConstants.LEFT);
-			runningGameShortcutBarLabel.setVerticalAlignment(SwingConstants.TOP);
-			runningGameShortcutBarLabel.setVerticalTextPosition(SwingConstants.TOP);
-		}
-		return runningGameShortcutBarLabel;
-	}
-	
-	private JTabbedPane getRunningGameTabbedPanel() {
-		if(runningGameTabbedPanel == null) {
-			runningGameTabbedPanel = new JTabbedPane();
-			runningGameTabbedPanel.setPreferredSize(new java.awt.Dimension(4, 200));
-			runningGameTabbedPanel.setBorder(new LineBorder(new java.awt.Color(0,0,0), 1, false));
-			runningGameTabbedPanel.addTab("Chat panel", null, getRunningGameChatPanel(), null);
-			runningGameTabbedPanel.addTab("Action", null, getRunningGameActionPanel(), null);
-		}
-		return runningGameTabbedPanel;
-	}
-	
-	private JPanel getRunningGameChatPanel() {
-		if(runningGameChatPanel == null) {
-			runningGameChatPanel = new JPanel();
-			BorderLayout runningGameChatPanelLayout = new BorderLayout();
-			runningGameChatPanel.setLayout(runningGameChatPanelLayout);
-		}
-		return runningGameChatPanel;
-	}
-	
-	private JPanel getRunningGameActionPanel() {
-		if(runningGameActionPanel == null) {
-			runningGameActionPanel = new JPanel();
-			BorderLayout runningGameActionPanelLayout = new BorderLayout();
-			runningGameActionPanel.setLayout(runningGameActionPanelLayout);
-		}
-		return runningGameActionPanel;
-	}
-	
-	private JPanel getRunningGameUniverseRenderingPanel() {
-		if(runningGameUniverseRenderingPanel == null) {
-			runningGameUniverseRenderingPanel = new JPanel();
-			BorderLayout runningGameUniverseRenderingPanelLayout = new BorderLayout();
-			runningGameUniverseRenderingPanel.setLayout(runningGameUniverseRenderingPanelLayout);
-			runningGameUniverseRenderingPanel.setBorder(new LineBorder(new java.awt.Color(0,0,0), 1, false));
-		}
-		return runningGameUniverseRenderingPanel;
-	}
 
+	/* (non-Javadoc)
+	 * @see client.SEPClient.IUserInterface#receiveRunningGameMessage(common.Player, java.lang.String)
+	 */
+	@Override
+	public void receiveRunningGameMessage(final Player fromPlayer, final String msg)
+	{
+		SwingUtilities.invokeLater(new Runnable()
+		{
+
+			@Override
+			public void run()
+			{
+				displayRunningGamePanel();
+				getRunningGamePanel().receiveRunningGameMessage(fromPlayer, msg);
+			}
+		});
+	}
 }

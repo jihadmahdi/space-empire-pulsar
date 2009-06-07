@@ -5,6 +5,8 @@
  */
 package common;
 
+import java.io.Serializable;
+
 /**
  * Represent a marker from a specific player point of view.
  * A marker is something used to notice the player about a specific event, but player is free to ignore and delete it.

@@ -5,11 +5,15 @@
  */
 package common;
 
+import java.io.Serializable;
+
 /**
  * Represent an anti-probe missile.
  */
-public class AntiProbeMissile extends Unit
+public class AntiProbeMissile extends Unit implements Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+	
 	private final boolean fired;
 	
 	/**

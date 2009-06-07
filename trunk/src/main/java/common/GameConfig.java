@@ -13,28 +13,30 @@ import java.util.Map;
  * Represent a game creation configuration.
  */
 public class GameConfig implements Serializable
-{
+{		
 	private static final long	serialVersionUID	= 1L;
 
+	public static final int UNIVERSE_DIM = 20;
 	/** 
 	 * X dimension of the universe.
 	 */
-	private int	dimX;
+	private int	dimX = UNIVERSE_DIM;
 
 	/** 
 	 * Y dimension of the universe.
 	 */
-	private int	dimY;
+	private int	dimY = UNIVERSE_DIM;
 
 	/**
 	 * Z dimension of the universe.
 	 */
-	private int	dimZ;
+	private int	dimZ = UNIVERSE_DIM;
 
+	public static final int NEUTRAL_CELESTIAL_BODIES = 5;
 	/**
 	 * Number of neutral celestial bodies to create.
 	 */
-	private int	neutralCelestialBodiesCount;
+	private int	neutralCelestialBodiesCount = NEUTRAL_CELESTIAL_BODIES;
 
 	/**
 	 * Starting carbon resource amount on players planets.
@@ -52,59 +54,77 @@ public class GameConfig implements Serializable
 	 */
 	private Map<Class<? extends ICelestialBody>, Float> neutralCelestialBodiesGenerationTable = new Hashtable<Class<? extends ICelestialBody>, Float>();
 	
+	public static final boolean ALLIANCE_VICTORY = false;
 	/**
 	 * Victory rule : Alliance victory.
 	 * Whatever the victory condition, every allied winner are winners.
 	 */
-	private boolean allianceVictory;
+	private boolean allianceVictory = ALLIANCE_VICTORY;
 	
+	public static final boolean REGIMICIDE = true;
 	/**
 	 * Victory rule : Regimicide.
 	 * Enable government modules and government starship to represent the player in its empire.
 	 * If a player lose its governement he lose the game and its people fall into enemy people or neutral according to the "assimilateNeutralisedPeoples".
 	 */
-	private boolean regimicide;
+	private boolean regimicide = REGIMICIDE;
 
+	public static final boolean ASSIMILATE_NEUTRALISED_PEOPLES = false;
 	/**
 	 * Option for the victory rule : Regimicide.
 	 * If option is on, peoples whose government is destroyed are assimilated to the empire of the player who destroyed the government.
 	 * If option if off, peoples whose government is destroyed are broke up in wild planets.
 	 */
-	private boolean assimilateNeutralisedPeoples;
+	private boolean assimilateNeutralisedPeoples = ASSIMILATE_NEUTRALISED_PEOPLES;
 	
+	public static final boolean TOTAL_CONQUEST = true;
 	/**
 	 * Victory rule : Total conquest.
 	 * The first player who conquer all celestial bodies and destroy all enemies fleet win the game.
 	 * Note : You have to disable every other victory rules to make the most of this mode. 
 	 */
-	private boolean totalConquest;
+	private boolean totalConquest = TOTAL_CONQUEST;
 	
+	public static final int ECONOMIC_VICTORY_POPULATION = 0;
+	public static final int ECONOMIC_VICTORY_CARBON = 0;
 	/**
 	 * Victory rule : Economic victory.
 	 * The first player who reach the carbon resource and population goals win the game.
 	 * [0] population goal; [1] carbon resource goal;
 	 * Null values to disable.
 	 */
-	private int[] economicVictory;
+	private int[] economicVictory = new int[]{ECONOMIC_VICTORY_POPULATION, ECONOMIC_VICTORY_CARBON};
 	
+	public static final int TIME_LIMIT_VICTORY = 0;
 	/**
 	 * Victory rule : Time limit.
 	 * The game ends after a fixed number of turns, the player with the best score is the winner.
 	 * Null value to disable.
 	 */
-	private int timeLimitVictory;
+	private int timeLimitVictory = TIME_LIMIT_VICTORY;
 	
 	/**
 	 * Population generated on a planet per turn.
 	 * [0] min; [1] max. 
 	 */
-	private int[] populationPerTurn;
+	private int[] populationPerTurn = new int[] {common.Planet.POPULATION_PER_TURN_MIN, common.Planet.POPULATION_PER_TURN_MAX};
 	
 	/**
 	 * Population limit on a planet.
 	 * [0] min; [1] max.
 	 */
-	private int[] populationLimit;
+	private int[] populationLimit = new int[] {common.Planet.POPULATION_LIMIT_MIN, common.Planet.POPULATION_LIMIT_MAX};
+	
+	/**
+	 * Deployed probe detection scope.
+	 */
+	private int probeScope = common.Probe.PROBE_SCORE;
+	
+	public static final int SUN_RADIUS = 1;
+	/**
+	 * Sun radius (0: sun volume is 1; 1: sun volume is 9; 2: sun volume is 125; n: sun volume is (2n+1)^3 );
+	 */
+	private int sunRadius = SUN_RADIUS;
 	
 	/**
 	 * Empty constructor.
@@ -112,11 +132,11 @@ public class GameConfig implements Serializable
 	 */
 	public GameConfig()
 	{
-		setDimX(20);
-		setDimY(20);
-		setDimZ(20);
+		setDimX(UNIVERSE_DIM);
+		setDimY(UNIVERSE_DIM);
+		setDimZ(UNIVERSE_DIM);
 		
-		setNeutralCelestialBodiesCount(5);
+		setNeutralCelestialBodiesCount(NEUTRAL_CELESTIAL_BODIES);
 		
 		setPopulationPerTurn(Planet.POPULATION_PER_TURN_MIN, Planet.POPULATION_PER_TURN_MAX);
 		setPopulationLimit(Planet.POPULATION_LIMIT_MIN, Planet.POPULATION_LIMIT_MAX);
@@ -133,17 +153,20 @@ public class GameConfig implements Serializable
 		setNeutralCelestialBodiesGenerationTable(AsteroidField.class, AsteroidField.GENERATION_RATE);
 		setNeutralCelestialBodiesGenerationTable(Nebula.class, Nebula.GENERATION_RATE);
 		
-		setAllianceVictory(false);
-		setRegimicide(true);
-		setAssimilateNeutralisedPeoples(false);
-		setTotalConquest(true);
-		setEconomicVictory(0, 0);		
-		setTimeLimitVictory(0);
+		setAllianceVictory(ALLIANCE_VICTORY);
+		setRegimicide(REGIMICIDE);
+		setAssimilateNeutralisedPeoples(ASSIMILATE_NEUTRALISED_PEOPLES);
+		setTotalConquest(TOTAL_CONQUEST);
+		setEconomicVictory(ECONOMIC_VICTORY_POPULATION, ECONOMIC_VICTORY_CARBON);		
+		setTimeLimitVictory(TIME_LIMIT_VICTORY);
+		
+		setProbeScope(Probe.PROBE_SCORE);
+		setSunRadius(SUN_RADIUS);
 	}
 	
-	public GameConfig(int dimX, int dimY, int dimZ, int neutralCelesialBodiesCount, int populationPerTurnMin, int populationPerTurnMax, int populationLimitMin, int populationLimitMax, Map<Class<? extends ICelestialBody>, Integer[]> celestialBodiesStartingCarbonAmount, Map<Class<? extends ICelestialBody>, Integer[]> celestialBodiesSlotsAmount, Map<Class<? extends ICelestialBody>, Float> neutralCelestialBodiesGenerationTable, boolean allianceVictory, boolean regimicide, boolean assimilateNeutralisedPeoples, boolean totalConquest, int economicVictoryCarbon, int economicVictoryPopulation, int timeLimitVictory)
+	public GameConfig(int dimX, int dimY, int dimZ, int neutralCelesialBodiesCount, int populationPerTurnMin, int populationPerTurnMax, int populationLimitMin, int populationLimitMax, Map<Class<? extends ICelestialBody>, Integer[]> celestialBodiesStartingCarbonAmount, Map<Class<? extends ICelestialBody>, Integer[]> celestialBodiesSlotsAmount, Map<Class<? extends ICelestialBody>, Float> neutralCelestialBodiesGenerationTable, boolean allianceVictory, boolean regimicide, boolean assimilateNeutralisedPeoples, boolean totalConquest, int economicVictoryCarbon, int economicVictoryPopulation, int timeLimitVictory, int probeScope, int sunRadius)
 	{
-		// TODO: call with ritgh parameters
+		// TODO: call with right parameters
 		
 		setDimX(dimX);
 		setDimY(dimY);
@@ -184,7 +207,10 @@ public class GameConfig implements Serializable
 		setAssimilateNeutralisedPeoples(assimilateNeutralisedPeoples);
 		setTotalConquest(totalConquest);
 		setEconomicVictory(economicVictoryPopulation, economicVictoryCarbon);		
-		setTimeLimitVictory(timeLimitVictory);		
+		setTimeLimitVictory(timeLimitVictory);
+		
+		setProbeScope(probeScope);
+		setSunRadius(sunRadius);
 	}
 
 	/**
@@ -200,10 +226,47 @@ public class GameConfig implements Serializable
 	 */
 	public void setDimX(int dimX)
 	{
-		if (dimX < 5) throw new IllegalArgumentException("dimX cannot must be greater than 5.");
+		if (dimX <= 0) throw new IllegalArgumentException("dimX must be greater than 0.");
+		universeVolumeCheck(dimX, getDimY(), getDimZ(), getSunRadius(), getNeutralCelestialBodiesCount());
 		this.dimX = dimX;
 	}
 
+	private void universeVolumeCheck(int dimX, int dimY, int dimZ, int sunRadius, int neutralCelestialBodiesCount)
+	{		
+		if (getSunVolume(dimX, dimY, dimZ, sunRadius) >= (getUniverseVolume(dimX, dimY, dimZ) - neutralCelestialBodiesCount))
+		{
+			throw new IllegalArgumentException("Universe must be strictly bigger than sun and have enough free space for neutral celestial bodies.");
+		}
+	}
+	
+	public int getFreeAreaCount()
+	{
+		return getUniverseVolume(getDimX(), getDimY(), getDimZ()) - getNeutralCelestialBodiesCount() - getSunVolume(getDimX(), getDimY(), getDimZ(), getSunRadius());
+	}
+	
+	static private int getUniverseVolume(int dimX, int dimY, int dimZ)
+	{
+		return dimX*dimY*dimZ;
+	}
+	
+	static private int getSunVolume(int dimX, int dimY, int dimZ, int sunRadius)
+	{
+		int[] origin = new int[]{0, 0, 0};
+		int volume = 0;
+		
+		for(int x = -Math.min(dimX-1, sunRadius); x <= Math.min(dimX-1, sunRadius); ++x)
+		for(int y = -Math.min(dimY-1, sunRadius); y <= Math.min(dimY-1, sunRadius); ++y)
+		for(int z = -Math.min(dimZ-1, sunRadius); z <= Math.min(dimZ-1, sunRadius); ++z)
+		{
+			if (SEPUtils.getDistance(new int[]{x, y, z}, origin) <= sunRadius)
+			{
+				++volume;
+			}
+		}
+		
+		return volume;
+	}
+	
 	/**
 	 * @return the dimY
 	 */
@@ -217,7 +280,8 @@ public class GameConfig implements Serializable
 	 */
 	public void setDimY(int dimY)
 	{
-		if (dimY < 5) throw new IllegalArgumentException("dimY cannot must be greater than 5.");
+		if (dimY <= 0) throw new IllegalArgumentException("dimY must be greater than 0.");
+		universeVolumeCheck(getDimX(), dimY, getDimZ(), getSunRadius(), getNeutralCelestialBodiesCount());
 		this.dimY = dimY;
 	}
 
@@ -234,7 +298,8 @@ public class GameConfig implements Serializable
 	 */
 	public void setDimZ(int dimZ)
 	{
-		if (dimZ < 5) throw new IllegalArgumentException("dimZ cannot must be greater than 5.");
+		if (dimZ <= 0) throw new IllegalArgumentException("dimZ must be greater than 0.");
+		universeVolumeCheck(getDimX(), getDimY(), dimZ, getSunRadius(), getNeutralCelestialBodiesCount());
 		this.dimZ = dimZ;
 	}
 
@@ -252,6 +317,7 @@ public class GameConfig implements Serializable
 	public void setNeutralCelestialBodiesCount(int neutralCelestialBodiesCount)
 	{
 		if (neutralCelestialBodiesCount < 0) throw new IllegalArgumentException("neutralCelestialBodiesCount cannot must be greater or equal to 0.");
+		universeVolumeCheck(getDimX(), getDimY(), getDimZ(), getSunRadius(), neutralCelestialBodiesCount);
 		this.neutralCelestialBodiesCount = neutralCelestialBodiesCount;
 	}
 	
@@ -446,6 +512,29 @@ public class GameConfig implements Serializable
 	{
 		if (timeLimitVictory < 0) throw new IllegalArgumentException("timeLimitVictory　must be positive or null.");
 		this.timeLimitVictory = timeLimitVictory;
+	}
+	
+	public int getProbeScope()
+	{
+		return probeScope;
+	}
+	
+	public void setProbeScope(int probeScope)
+	{
+		if (probeScope < 0) throw new IllegalArgumentException("Probe scope cannot be negative.");
+		this.probeScope = probeScope;
+	}
+	
+	public int getSunRadius()
+	{
+		return sunRadius;
+	}
+	
+	public void setSunRadius(int sunRadius)
+	{
+		if (sunRadius < 0) throw new IllegalArgumentException("Sun radius cannot be negative.");		
+		this.sunRadius = sunRadius;
+		universeVolumeCheck(getDimX(), getDimY(), getDimZ(), sunRadius, getNeutralCelestialBodiesCount());
 	}
 	
 	/* (non-Javadoc)

@@ -5,6 +5,11 @@
  */
 package server.model;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Map;
 import java.util.Set;
 
 class Area
@@ -24,11 +29,19 @@ class Area
 		
 	}
 	
-	private boolean isSun;
-	
+	// Constants
+	private boolean isSun;	
 	private ICelestialBody celestialBody;
-	private Set<Unit> units;
 	
+	// Variables
+	private final Set<Unit> units = new HashSet<Unit>();
+	
+	// Views
+	private final PlayerDatedView<Integer> playersLastObservation = new PlayerDatedView<Integer>();
+	private final PlayerDatedView<HashSet<common.Unit>> playersUnitsView = new PlayerDatedView<HashSet<common.Unit>>();
+	
+	// Markers
+	private final Map<String, Set<common.IMarker>> playersMarkers = new Hashtable<String, Set<common.IMarker>>();
 	
 	/**
 	 * Sun flag is set to true if this area is filled with the sun.
@@ -63,4 +76,64 @@ class Area
 		if (isSun) throw new AreaIllegalDefinitionException("Cannot set a celestialBody in area filled with sun.");
 		this.celestialBody = celestialBody;
 	}
+
+	/**
+	 * @return ICelestialBody celestialBody
+	 */
+	public ICelestialBody getCelestialBody()
+	{
+		return celestialBody;
+	}
+	
+	/**
+	 * Return true if at least one of the given units is located in this area.
+	 * @param testedUnits Set of units to test.
+	 * @return true if at least one of the given units is located in this area, false if none.
+	 */
+	public boolean containsOneOf(Set<Unit> testedUnits)
+	{
+		Set<Unit> clone = new HashSet<Unit>(units);
+		clone.retainAll(testedUnits);
+		return !clone.isEmpty();		
+	}
+
+	/**
+	 * @return unmodifiable set of units located in this area.
+	 */
+	public Set<Unit> getUnits()
+	{
+		return Collections.unmodifiableSet(units);
+	}
+
+	/**
+	 * @param playerLogin
+	 * @param isVisible
+	 * @return
+	 */
+	public common.Area getPlayerView(int date, String playerLogin, boolean isVisible)
+	{		
+		HashSet<common.Unit> unitsView;
+		if (isVisible)
+		{
+			// Updates
+			playersLastObservation.updateView(playerLogin, date, date);
+			
+			unitsView = new HashSet<common.Unit>();
+			for(Unit u : units)
+			{
+				unitsView.add(u.getPlayerView(date, playerLogin, isVisible));
+			}
+			playersUnitsView.updateView(playerLogin, unitsView, date);
+		}
+		else
+		{
+			unitsView = playersUnitsView.getLastValue(playerLogin, null);
+		}
+	
+		int lastObservation = playersLastObservation.getLastValue(playerLogin, -1);
+		common.ICelestialBody celestialBodyView = (celestialBody == null)?null:celestialBody.getPlayerView(date, playerLogin, isVisible);		
+		
+		return new common.Area(isVisible, lastObservation, isSun, celestialBodyView, unitsView, playersMarkers.get(playerLogin));
+	}
+	
 }
