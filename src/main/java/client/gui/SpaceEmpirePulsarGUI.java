@@ -260,6 +260,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 	private JScrollPane			gameCreationChatScrollPane;
 
 	private JScrollPane			gameCreationConfigScrollPane;
+	
+	private UniverseRenderer	universeRenderer;
 
 	/**
 	 * Auto-generated main method to display this JFrame
@@ -275,6 +277,13 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 				inst.setVisible(true);
 			}
 		});
+	}
+	
+	public SpaceEmpirePulsarGUI(UniverseRenderer universeRenderer)
+	{
+		super();
+		this.universeRenderer = universeRenderer;
+		initGUI();
 	}
 
 	public SpaceEmpirePulsarGUI()
@@ -2456,7 +2465,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 	{
 		if (runningGamePanel == null)
 		{
-			runningGamePanel = new RunningGamePanel(currentPlayer, client);
+			runningGamePanel = new RunningGamePanel(currentPlayer, client, universeRenderer);
 		}
 		return runningGamePanel;
 	}

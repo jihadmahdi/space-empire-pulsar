@@ -348,4 +348,9 @@ public class UniversePanel extends javax.swing.JPanel implements UniverseRendere
 	{
 		this.listener = listener;
 	}
+
+	@Override
+	public JPanel getPanel() {
+		return this;
+	}
 }

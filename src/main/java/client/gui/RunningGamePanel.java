@@ -94,17 +94,18 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 	private RunningGamePanel()
 	{
-		this(null, null);
+		this(null, null, null);
 	}
 
 	private final Player	player;
 	private final SEPClient client;
 
-	public RunningGamePanel(Player player, SEPClient client)
+	public RunningGamePanel(Player player, SEPClient client, UniverseRenderer universeRenderer)
 	{
 		super();
 		this.player = player;
 		this.client = client;
+		this.universeRenderer = universeRenderer;
 		initGUI();
 	}
 
@@ -481,10 +482,16 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	{
 		if (universePanel == null)
 		{
-			UniversePanel universeRendererPanel = new UniversePanel();			
-			universeRenderer = universeRendererPanel;
-			universePanel = universeRendererPanel;
-			universeRenderer.setListener(this);
+			if (universeRenderer == null)
+			{ 			
+				universeRenderer = new UniversePanel();;
+				universePanel = universeRenderer.getPanel();
+				universeRenderer.setListener(this);
+			}
+			else
+			{
+				return universeRenderer.getPanel();
+			}
 		}
 		return universePanel;
 	}
