@@ -5,6 +5,8 @@
  */
 package client.gui;
 
+import javax.swing.JPanel;
+
 import common.PlayerGameBoard;
 
 /**
@@ -19,4 +21,5 @@ public interface UniverseRenderer
 
 	void setListener(UniverseRendererListener listener);
 	void refreshGameBoard(PlayerGameBoard gameBoard);
+	JPanel getPanel();
 }
