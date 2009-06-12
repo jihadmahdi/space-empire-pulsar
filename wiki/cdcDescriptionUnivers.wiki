@@ -49,3 +49,9 @@ Les phénomènes astraux sont des évènements dont la probabilité reste mysté
 	
 	cf. le "Canon à pulsar" dans la liste des [cdcDescriptionConstructions|Constructions].
 	
+==Notes sur l'algorithme de génération==
+Afin de répondre au besoin de gameplay tel que défini dans le présent cahier des charges, c'est à dire :
+	¤ Voyages en mode hyper-espace possibles uniquement en lignes droites.
+	¤ Présence du soleil au centre de l'univers (qui viens rendre certaines trajectoires impossibles, car évidemment on ne peut pas passer à travers le soleil).
+Il est décidé que les planètes de départ de tous les joueurs seront générées telles qu'elles soient toutes joignables entre elles.
+Il en découle que si certains corps célestes pourront se trouver en position de n'être joignable que par la planète de départ de l'un des joueurs, ceux-ci resteront néanmoins potentiellement joignables pour tous dans la mesure où chacun est libre d'utiliser la force brute ou diplomatique.
