@@ -179,5 +179,10 @@ abstract class ProductiveCelestialBody implements ICelestialBody
 		return buildingsView;
 	}
 	
+	public void setCarbon(int carbon)
+	{
+		this.carbon = carbon;
+	}
+	
 	abstract public boolean canBuild(IBuilding building);
 }

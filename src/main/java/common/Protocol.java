@@ -92,6 +92,72 @@ public interface Protocol
 		 */
 		void sendMessage(String msg) throws RpcException, StateMachineNotExpectedEventException;
 		
+		/**
+		 * Test if building type can be build on selected celestial body.
+		 * @param ceslestialBodyName Name of the celestial body where to build.
+		 * @param buildingType Building type.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void canBuild(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Order construction of a new building on the given celestial body.
+		 * @param ceslestialBodyName Name of the celestial body where to build.
+		 * @param buildingType Building type.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void build(String ceslestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Test if selected building can be demolished.
+		 * @param ceslestialBodyName Name of the celestial body the building is build on. 
+		 * @param buildingType Building type to demolish.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void canDemolish(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Order demolition of a building on the given celestial body.
+		 * @param ceslestialBodyName Name of the celestial body the building is build on.
+		 * @param buildingType Building type.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void demolish(String ceslestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Test if starship can be made on the selected planet
+		 * @param planetName
+		 */
+		void canMakeStarship(String planetName);
+		
+		/**
+		 * Make given starships on the given planet.
+		 * @param planetName Planet where is the starship plant.
+		 * @param starshipType Startship type to make.
+		 * @param quantity Quantity to make.
+		 */
+		void makeStarship(String planetName, Class<? extends IStarship> starshipType, int quantity);
+		
+		can
+		// constituer flotte(corps céleste, constitution vaisseaux, nom nouvelle flotte)
+		
+		/**
+		 * Order to embark the government (from government module) on a government starship.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void embarkGovernment() throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Order to settle the government (from government starship) in the planet the government starship is currently landed.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void settleGovernment() throws RpcException, StateMachineNotExpectedEventException;
 	}
 	
 	/**

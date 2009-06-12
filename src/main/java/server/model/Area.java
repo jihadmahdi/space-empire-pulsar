@@ -52,6 +52,11 @@ class Area
 		this.isSun = isSun;
 	}
 	
+	public boolean isSun()
+	{
+		return isSun;
+	}
+	
 	/**
 	 * Return true if this area is empty, false otherwise.
 	 * @return true if this area is empty, false otherwise.
