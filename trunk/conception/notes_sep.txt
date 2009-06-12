@@ -8,6 +8,10 @@ En option de création de game, les infos visibles basiques sont configurable, o
 // Génération de l'univers : corps célestes joignables entre eux ?
 Pour éviter que des joueurs soient injoignables entre eux, à la génération de l'univers on fait en sorte que toute les planètes de départ des joueurs soient joignables entre elles.
 
+// Déplacement multi-étapes
+Utilité du choix "s'arrêter sur toutes les étapes / ne pas s'arrêter" ?
+L'option "s'arrêter sur toutes les étapes" devrait être retenu par défaut, sans choix possible (inutile d'aller si loin).
+On considèrerait donc que le voyage en multi-étape fait perdre un peu de temps à chaque arrêt (négligeable), mais le joueur est averti lorsqu'une de ces flottes arrive sur un checkpoint (ou averti de l'absence de communication si celle-ci s'est faite abatre ou est entré sous effet pulsar) et peut la dérouter s'il a la communication (à défault elle repart pour l'étape suivante).
 
 ====
 

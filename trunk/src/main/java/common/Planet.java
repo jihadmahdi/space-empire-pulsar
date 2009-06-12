@@ -32,6 +32,10 @@ public class Planet extends ProductiveCelestialBody implements Serializable
 	public static final int	POPULATION_PER_TURN_MAX	= 7500;
 
 	public static final float GENERATION_RATE = (float) 0.30;
+
+	public static final int PLAYERS_STARTING_CARBON = 2*1000;
+
+	public static final int PLAYERS_STARTING_POPULATION = 50*1000;
 	
 	// Constants
 	private final int populationLimit;
@@ -76,5 +80,28 @@ public class Planet extends ProductiveCelestialBody implements Serializable
 	public boolean canBuildType(Class<? extends IBuilding> buildingType)
 	{
 		return true;
+	}
+	
+	@Override
+	public String toString() {
+		StringBuffer sb = new StringBuffer();
+
+		sb.append((getOwner() == null) ? "" : "[" + getOwner().getName() + "] ");
+		sb.append(getName() + " (" + getClass().getSimpleName() + ")\n");
+		sb.append("  Population : " + population + " / " + populationLimit+ "\n");
+		sb.append("  Pop. per turn : "+populationPerTurn + "\n");
+		sb.append("  Carbon : " + getCarbon() + " / " + getCarbonStock() + "\n");
+		sb.append("  Slots : " + getBuildSlotsCount() + " / " + getSlots() + "\n");
+		if (getBuildings() != null)
+		{
+			sb.append("  Buildings :\n");
+
+			for (IBuilding b : getBuildings())
+			{
+				sb.append("    " + b.getClass().getSimpleName() + " : " + b.getBuildSlotsCount() + "\n");
+			}
+		}
+
+		return sb.toString();
 	}
 }

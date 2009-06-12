@@ -59,6 +59,9 @@ class Planet extends ProductiveCelestialBody
 		
 		Planet planet = new Planet(name, carbonStock, slots, player, populationPerTurn, populationLimit);
 		
+		planet.setCarbon(gameConfig.getPlayersPlanetsStartingCarbonResources());
+		planet.population = gameConfig.getPlayersPlanetsStartingPopulation();
+		
 		// If victory rule "Regimicide" is on, starting planet has a pre-built government module.
 		if (gameConfig.isRegimicide())
 		{

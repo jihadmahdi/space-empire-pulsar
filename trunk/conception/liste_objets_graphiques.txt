@@ -45,6 +45,30 @@ rapport de combat
 
 =====
 
+commandes serveur
+* La GUI cliente eut demander au server pour chaque commande si celle-ci est possible ou pas afin de griser les boutons ou masquer l'access des commandes impossibles.
+* L'état de possibilité d'une commande pouvant changer dans un même tour suivant les commandes précédement envisagées, le client doit prendre l'initiative de se rafraichir après chaque commande.
+
+construire bâtiment (corps céleste, type construction)
+détruire bâtiment(corps céleste, type construction)
+fabriquer vaisseau (corps céleste, type vaisseau, nombre)
+constituer flotte(corps céleste, constitution vaisseaux, nom nouvelle flotte)
+démanteler flotte(flotte)
+embarquer gouvernement()
+installer module gouvernemental()
+tirer missile pulsar(corps céleste, répartition bonus puissance)
+construire route de l'espace(corps céleste origine, corps céleste destination)
+détruire route de l'espace(route de l'espace)
+modifier commmande carbone(corps céleste origine, corps céleste destination, montant)
+déplacer flotte(aller/attaquer, retard/synchro, étapes)
+lancer sonde(zone destination)
+chasser flottes ennemis(corps céleste)
+changer politique interrieure(politique interrieure)
+changer politique de conquète(politique conquète)
+envoyer message (tous/alliés/ennemis/Player)
+
+=====
+
 Interface : zones à afficher
 
 Sélection corps céleste: Zone Détails corps céleste sélectionné
@@ -69,6 +93,6 @@ Menu liste flottes : Liste des flottes sélectionnables
 Menu liste corps célestes : Liste des corps célestes sélectionnables
 Menu diplomatie : Zone détails politiques diplomatiques (intérrieure et étrangère)
 
-Menu chat : Zone chat + choix canal (tous/alliés/ennemis/private)
+Menu chat : Zone chat + choix canal (tous/alliés/ennemis/private) + checkbox filtres (cf. Dofus), verticalFlowLayout + WrapLabel
 
 Barre de raccourcis (corps célestes, flottes)

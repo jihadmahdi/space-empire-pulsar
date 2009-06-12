@@ -76,19 +76,43 @@ public class ServerGame
 		}						
 
 		// Add the players starting planets.
+		Set<int[]> playersPlanetLocations = new HashSet<int[]>();
+		
 		for (Player player : players)
 		{
 			// Found a location to pop the planet.
 			int[] planetLocation;
+			boolean locationOk;
 			do
 			{
+				locationOk = false;
 				planetLocation = new int[] {rnd.nextInt(config.getDimX()), rnd.nextInt(config.getDimY()), rnd.nextInt(config.getDimZ())};
-			} while ( universe[planetLocation[0]][planetLocation[1]][planetLocation[2]] != null && !universe[planetLocation[0]][planetLocation[1]][planetLocation[2]].isEmpty());
+				
+				if (universe[planetLocation[0]][planetLocation[1]][planetLocation[2]] != null && !universe[planetLocation[0]][planetLocation[1]][planetLocation[2]].isEmpty()) continue;
+				
+				locationOk = true;
+				for(int[] l : playersPlanetLocations)
+				{
+					Stack<int[]> path = SEPUtils.getAllPathLoc(planetLocation[0], planetLocation[1], planetLocation[2], l[0], l[1], l[2]);
+					for(int[] pl : path)
+					{
+						Area a = universe[pl[0]][pl[1]][pl[2]];
+						if (a != null && a.isSun())
+						{
+							locationOk = false;
+							break;
+						}
+					}
+					
+					if (!locationOk) break;
+				}
+			} while (!locationOk);
 
 			Planet planet = Planet.newStartingPlanet(generateCelestialBodyName(), player, config);
 			try
 			{
 				getArea(planetLocation).setCelestialBody(planet);
+				playersPlanetLocations.add(planetLocation);
 			}
 			catch (AreaIllegalDefinitionException e)
 			{

@@ -10,6 +10,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.LayoutManager;
 import java.awt.Rectangle;
 import java.awt.ScrollPane;
 import java.awt.Scrollbar;
@@ -40,6 +41,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 import javax.swing.JFrame;
 import javax.swing.border.LineBorder;
@@ -48,9 +50,13 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.html.HTMLDocument;
 
+import org.axan.eplib.clientserver.rpc.RpcException;
+import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
+
 import client.SEPClient;
 import client.gui.UniverseRenderer.UniverseRendererListener;
 import client.gui.lib.GUIUtils;
+import client.gui.lib.JImagePanel;
 import client.gui.lib.SingleRowFlowLayout;
 import client.gui.lib.WrappedJLabel;
 
@@ -252,8 +258,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			BorderLayout runningGameChatPanelLayout = new BorderLayout();
 			runningGameChatPanel.setLayout(runningGameChatPanelLayout);
 			runningGameChatPanel.add(getRunningGameChatTextField(), BorderLayout.SOUTH);
-			runningGameChatPanel.add(getRunningGaeChatPlayerListPanel(), BorderLayout.EAST);
 			runningGameChatPanel.add(getRunningGameChatScrollPane(), BorderLayout.CENTER);
+			runningGameChatPanel.add(getRunningGameChatPlayerListScrollPane(), BorderLayout.EAST);
 		}
 		return runningGameChatPanel;
 	}
@@ -438,12 +444,13 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	}
 
 	private JPanel		runningGameCelestialBodyDetailsBuildingDetailsPanel;
+	private JScrollPane runningGameChatPlayerListScrollPane;
 
 	private JEditorPane		runningGameChatContentEditorPane;
 
 	private JScrollPane	runningGameChatScrollPane;
 
-	private JPanel		runningGaeChatPlayerListPanel;
+	private JPanel		runningGameChatPlayerListPanel;
 
 	private JTextField	runningGameChatTextField;
 
@@ -590,7 +597,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (celestialBody == null) return;
 		if ( !ProductiveCelestialBody.class.isInstance(celestialBody)) return;
 
-		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
+		final ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
 
 		Set<IBuilding> buildings = productiveCelestialBody.getBuildings();
 		IBuilding selectedBuildings = null;
@@ -660,7 +667,20 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						@Override
 						public void actionPerformed(ActionEvent e)
 						{
-							// TODO
+							try
+							{
+								client.getRunningGameInterface().build(productiveCelestialBody.getName(), DefenseModule.class);
+							}
+							catch(StateMachineNotExpectedEventException e1)
+							{
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+							catch(RpcException e1)
+							{
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
 						}
 					});
 					buildBtnsPanel.add(buildBtn);
@@ -669,15 +689,28 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				if (nbBuild > 0)
 				{
 					JButton destroyBtn = new JButton();
-					destroyBtn.setText("Destroy");
-					destroyBtn.setToolTipText("Destroy 1 defense module to free one slot.");
+					destroyBtn.setText("Demolish");
+					destroyBtn.setToolTipText("Demolish 1 defense module to free one slot.");
 					destroyBtn.addActionListener(new ActionListener()
 					{
 
 						@Override
 						public void actionPerformed(ActionEvent e)
 						{
-							// TODO
+							try
+							{
+								client.getRunningGameInterface().demolish(productiveCelestialBody.getName(), DefenseModule.class);
+							}
+							catch(StateMachineNotExpectedEventException e1)
+							{
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+							catch(RpcException e1)
+							{
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
 						}
 					});
 					buildBtnsPanel.add(destroyBtn);
@@ -718,7 +751,20 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						@Override
 						public void actionPerformed(ActionEvent e)
 						{
-							// TODO
+							try
+							{
+								client.getRunningGameInterface().build(productiveCelestialBody.getName(), ExtractionModule.class);
+							}
+							catch(StateMachineNotExpectedEventException e1)
+							{
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+							catch(RpcException e1)
+							{
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
 						}
 					});
 					buildBtnsPanel.add(buildBtn);
@@ -727,15 +773,28 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				if (nbBuild > 0)
 				{
 					JButton destroyBtn = new JButton();
-					destroyBtn.setText("Destroy");
-					destroyBtn.setToolTipText("Destroy 1 extraction module to free one slot.");
+					destroyBtn.setText("Demolish");
+					destroyBtn.setToolTipText("Demolish 1 extraction module to free one slot.");
 					destroyBtn.addActionListener(new ActionListener()
 					{
 
 						@Override
 						public void actionPerformed(ActionEvent e)
 						{
-							// TODO
+							try
+							{
+								client.getRunningGameInterface().demolish(productiveCelestialBody.getName(), ExtractionModule.class);
+							}
+							catch(StateMachineNotExpectedEventException e1)
+							{
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+							catch(RpcException e1)
+							{
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
 						}
 					});
 					buildBtnsPanel.add(destroyBtn);
@@ -764,7 +823,20 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						@Override
 						public void actionPerformed(ActionEvent e)
 						{
-							// TODO
+							try
+							{
+								client.getRunningGameInterface().embarkGovernment();
+							}
+							catch(StateMachineNotExpectedEventException e1)
+							{
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+							catch(RpcException e1)
+							{
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
 						}
 					});
 					btnsPanel.add(buildBtn);
@@ -793,7 +865,20 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 									@Override
 									public void actionPerformed(ActionEvent e)
 									{
-										// TODO
+										try
+										{
+											client.getRunningGameInterface().settleGovernment();
+										}
+										catch(StateMachineNotExpectedEventException e1)
+										{
+											// TODO Auto-generated catch block
+											e1.printStackTrace();
+										}
+										catch(RpcException e1)
+										{
+											// TODO Auto-generated catch block
+											e1.printStackTrace();
+										}
 									}
 								});
 								btnsPanel.add(buildBtn);
@@ -836,7 +921,20 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					@Override
 					public void actionPerformed(ActionEvent e)
 					{
-						// TODO
+						try
+						{
+							client.getRunningGameInterface().build(productiveCelestialBody.getName(), PulsarLauchingPad.class);
+						}
+						catch(StateMachineNotExpectedEventException e1)
+						{
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						catch(RpcException e1)
+						{
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
 					}
 				});
 				btnsPanel.add(buildBtn);
@@ -851,7 +949,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					@Override
 					public void actionPerformed(ActionEvent e)
 					{
-						// TODO
+						// TODO (display pulsar launching panel)
 					}
 				});
 				btnsPanel.add(fireBtn);
@@ -888,7 +986,20 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						@Override
 						public void actionPerformed(ActionEvent e)
 						{
-							// TODO
+							try
+							{
+								client.getRunningGameInterface().demolish(productiveCelestialBody.getName(), SpaceCounter.class);
+							}
+							catch(StateMachineNotExpectedEventException e1)
+							{
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+							catch(RpcException e1)
+							{
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
 						}
 					});
 					buildBtnsPanel.add(buildBtn);
@@ -897,15 +1008,15 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				if (nbBuild > 0)
 				{
 					JButton destroyBtn = new JButton();
-					destroyBtn.setText("Destroy");
-					destroyBtn.setToolTipText("Destroy 1 space counter (and associated road) to free one slot.");
+					destroyBtn.setText("Demolish");
+					destroyBtn.setToolTipText("Demolish 1 space counter (and associated road) to free one slot.");
 					destroyBtn.addActionListener(new ActionListener()
 					{
 
 						@Override
 						public void actionPerformed(ActionEvent e)
 						{
-							// TODO
+							// TODO (panel to choose which space counter / space road to demolish)
 						}
 					});
 					buildBtnsPanel.add(destroyBtn);
@@ -944,7 +1055,20 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						@Override
 						public void actionPerformed(ActionEvent e)
 						{
-							// TODO
+							try
+							{
+								client.getRunningGameInterface().build(productiveCelestialBody.getName(), StarshipPlant.class);
+							}
+							catch(StateMachineNotExpectedEventException e1)
+							{
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+							catch(RpcException e1)
+							{
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
 						}
 					});
 
@@ -953,15 +1077,28 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				else
 				{
 					JButton destroyBtn = new JButton();
-					destroyBtn.setText("Destroy");
-					destroyBtn.setToolTipText("Destroy starship plant to free one slot.");
+					destroyBtn.setText("Demolish");
+					destroyBtn.setToolTipText("Demolish starship plant to free one slot.");
 					destroyBtn.addActionListener(new ActionListener()
 					{
 
 						@Override
 						public void actionPerformed(ActionEvent e)
 						{
-							// TODO
+							try
+							{
+								client.getRunningGameInterface().demolish(productiveCelestialBody.getName(), StarshipPlant.class);
+							}
+							catch(StateMachineNotExpectedEventException e1)
+							{
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
+							catch(RpcException e1)
+							{
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
 						}
 					});
 					btnsPanel.add(destroyBtn);
@@ -978,6 +1115,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	{
 		currentGameBoard = gameBoard;
 		getUniverseRenderer().refreshGameBoard(gameBoard);
+		refreshPlayerList();
 	}
 
 	private JLabel getRunningGameCelestialBodyDetailsBuildingDetailsContentLabel()
@@ -1015,14 +1153,15 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return runningGameChatTextField;
 	}
 
-	private JPanel getRunningGaeChatPlayerListPanel()
+	private JPanel getRunningGameChatPlayerListPanel()
 	{
-		if (runningGaeChatPlayerListPanel == null)
+		if (runningGameChatPlayerListPanel == null)
 		{
-			runningGaeChatPlayerListPanel = new JPanel();
-			runningGaeChatPlayerListPanel.setPreferredSize(new java.awt.Dimension(100, 10));
+			runningGameChatPlayerListPanel = new JPanel();
+			LayoutManager layout = new SingleRowFlowLayout();
+			runningGameChatPlayerListPanel.setLayout(layout);			
 		}
-		return runningGaeChatPlayerListPanel;
+		return runningGameChatPlayerListPanel;
 	}
 
 	private JScrollPane getRunningGameChatScrollPane()
@@ -1090,5 +1229,58 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		{
 			e.printStackTrace();
 		}
+	}
+	
+	private void refreshPlayerList()
+	{
+		SwingUtilities.invokeLater(new Runnable()
+		{
+		
+			@Override
+			public void run()
+			{
+				Set<Player> players;
+				try
+				{
+					players = client.getRunningGameInterface().getPlayerList();
+					refreshPlayerList(players);
+				}
+				catch (StateMachineNotExpectedEventException e)
+				{
+					e.printStackTrace();
+				}
+				catch (RpcException e)
+				{
+					e.printStackTrace();
+				}				
+			}
+		});
+	}
+	
+	public void refreshPlayerList(Set<Player> players)
+	{
+		System.out.println("RunningGamePanel refreshPlayerList : "+players);
+		getRunningGameChatPlayerListPanel().removeAll();
+		for(Player p : players)
+		{
+			JPanel panel = new JPanel(new BorderLayout());
+			panel.add(new JImagePanel(p.getConfig().getPortrait()), BorderLayout.WEST);
+			panel.add(new JImagePanel(p.getConfig().getSymbol()), BorderLayout.EAST);
+			JLabel name = new JLabel(p.getName());
+			name.setForeground(p.getConfig().getColor());
+			panel.add(name, BorderLayout.CENTER);
+			
+			getRunningGameChatPlayerListPanel().add(panel);
+		}
+		
+		updateUI();
+	}
+	
+	private JScrollPane getRunningGameChatPlayerListScrollPane() {
+		if(runningGameChatPlayerListScrollPane == null) {
+			runningGameChatPlayerListScrollPane = new JScrollPane();
+			runningGameChatPlayerListScrollPane.setViewportView(getRunningGameChatPlayerListPanel());
+		}
+		return runningGameChatPlayerListScrollPane;
 	}
 }
