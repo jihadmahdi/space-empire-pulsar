@@ -22,4 +22,10 @@ class GovernmentModule implements IBuilding
 		return new common.GovernmentModule();
 	}
 
+	@Override
+	public int getBuildSlotsCount()
+	{
+		return 1;
+	}
+
 }

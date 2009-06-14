@@ -82,7 +82,14 @@ import common.StarshipPlant;
 import common.Unit;
 
 /**
- * This code was edited or generated using CloudGarden's Jigloo SWT/Swing GUI Builder, which is free for non-commercial use. If Jigloo is being used commercially (ie, by a corporation, company or business for any purpose whatever) then you should purchase a license for each developer using Jigloo. Please visit www.cloudgarden.com for details. Use of Jigloo implies acceptance of these licensing terms. A COMMERCIAL LICENSE HAS NOT BEEN PURCHASED FOR THIS MACHINE, SO JIGLOO OR THIS CODE CANNOT BE USED LEGALLY FOR ANY CORPORATE OR COMMERCIAL PURPOSE.
+ * This code was edited or generated using CloudGarden's Jigloo SWT/Swing GUI
+ * Builder, which is free for non-commercial use. If Jigloo is being used
+ * commercially (ie, by a corporation, company or business for any purpose
+ * whatever) then you should purchase a license for each developer using Jigloo.
+ * Please visit www.cloudgarden.com for details. Use of Jigloo implies
+ * acceptance of these licensing terms. A COMMERCIAL LICENSE HAS NOT BEEN
+ * PURCHASED FOR THIS MACHINE, SO JIGLOO OR THIS CODE CANNOT BE USED LEGALLY FOR
+ * ANY CORPORATE OR COMMERCIAL PURPOSE.
  */
 public class RunningGamePanel extends javax.swing.JPanel implements UniverseRendererListener
 {
@@ -104,7 +111,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	}
 
 	private final Player	player;
-	private final SEPClient client;
+	private final SEPClient	client;
 
 	public RunningGamePanel(Player player, SEPClient client, UniverseRenderer universeRenderer)
 	{
@@ -127,7 +134,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			add(getRunningGameCenterPanel(), BorderLayout.CENTER);
 
 		}
-		catch (Exception e)
+		catch(Exception e)
 		{
 			e.printStackTrace();
 		}
@@ -332,14 +339,15 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		{
 			runningGameCelestialBodyDetailsPanel = new JPanel(new BorderLayout());
 			GridBagLayout runningGameCelestialBodyDetailsPanelLayout = new GridBagLayout();
-			runningGameCelestialBodyDetailsPanelLayout.rowWeights = new double[] {1.5, 1.0};
-			runningGameCelestialBodyDetailsPanelLayout.rowHeights = new int[] {7, 7};
-			runningGameCelestialBodyDetailsPanelLayout.columnWeights = new double[] {0.1};
-			runningGameCelestialBodyDetailsPanelLayout.columnWidths = new int[] {7};
+			runningGameCelestialBodyDetailsPanelLayout.rowWeights = new double[] { 1.5, 1.0 };
+			runningGameCelestialBodyDetailsPanelLayout.rowHeights = new int[] { 7, 7 };
+			runningGameCelestialBodyDetailsPanelLayout.columnWeights = new double[] { 0.1 };
+			runningGameCelestialBodyDetailsPanelLayout.columnWidths = new int[] { 7 };
 			runningGameCelestialBodyDetailsPanel.setLayout(runningGameCelestialBodyDetailsPanelLayout);
 			runningGameCelestialBodyDetailsPanel.add(getRunningGameCelestialBodyDetailsContentPanel(), new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0, GridBagConstraints.NORTH, GridBagConstraints.BOTH, new Insets(0, 0, 0, 0), 0, 0));
 			runningGameCelestialBodyDetailsPanel.add(getRunningGameCelestialBodyDetailsBuildingDetailsPanel(), new GridBagConstraints(0, 1, 1, 1, 0.0, 0.0, GridBagConstraints.CENTER, GridBagConstraints.BOTH, new Insets(1, 1, 1, 1), 0, 0));
-			runningGameCelestialBodyDetailsPanel.setMinimumSize(new Dimension(200, getRunningGameCelestialBodyDetailsContentPanel().getHeight() + getRunningGameCelestialBodyDetailsBuildingDetailsPanel().getHeight()));
+			runningGameCelestialBodyDetailsPanel.setMinimumSize(new Dimension(200, getRunningGameCelestialBodyDetailsContentPanel().getHeight()
+					+ getRunningGameCelestialBodyDetailsBuildingDetailsPanel().getHeight()));
 			runningGameCelestialBodyDetailsPanel.setPreferredSize(runningGameCelestialBodyDetailsPanel.getMinimumSize());
 		}
 		return runningGameCelestialBodyDetailsPanel;
@@ -360,7 +368,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			runningGameCelestialBodyDetailsContentPanel.add(getRunningGameCelestialBodyDetailsContentLabel());
 			runningGameCelestialBodyDetailsContentPanel.add(getRunningGameCelestialBodyDetailsBuildingsListPane());
 			runningGameCelestialBodyDetailsContentPanel.add(getRunningGameCelestialBodyDetailsUnitsListPane());
-			runningGameCelestialBodyDetailsContentPanel.setMinimumSize(new Dimension(200, getRunningGameCelestialBodyDetailsUnitsList().getBounds().y + getRunningGameCelestialBodyDetailsUnitsList().getHeight()));
+			runningGameCelestialBodyDetailsContentPanel.setMinimumSize(new Dimension(200, getRunningGameCelestialBodyDetailsUnitsList().getBounds().y
+					+ getRunningGameCelestialBodyDetailsUnitsList().getHeight()));
 			runningGameCelestialBodyDetailsContentPanel.setPreferredSize(runningGameCelestialBodyDetailsContentPanel.getMinimumSize());
 		}
 		return runningGameCelestialBodyDetailsContentPanel;
@@ -444,9 +453,9 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	}
 
 	private JPanel		runningGameCelestialBodyDetailsBuildingDetailsPanel;
-	private JScrollPane runningGameChatPlayerListScrollPane;
+	private JScrollPane	runningGameChatPlayerListScrollPane;
 
-	private JEditorPane		runningGameChatContentEditorPane;
+	private JEditorPane	runningGameChatContentEditorPane;
 
 	private JScrollPane	runningGameChatScrollPane;
 
@@ -482,16 +491,17 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return runningGameCelestialBodyDetailsBuildingSpecificDetailsPanel;
 	}
 
-	private UniverseRenderer universeRenderer;
-	private JPanel universePanel;
+	private UniverseRenderer	universeRenderer;
+	private JPanel				universePanel;
 
 	private JPanel getUniversePanel()
 	{
 		if (universePanel == null)
 		{
 			if (universeRenderer == null)
-			{ 			
-				universeRenderer = new UniversePanel();;
+			{
+				universeRenderer = new UniversePanel();
+				;
 				universePanel = universeRenderer.getPanel();
 				universeRenderer.setListener(this);
 			}
@@ -502,12 +512,12 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		}
 		return universePanel;
 	}
-	
+
 	private UniverseRenderer getUniverseRenderer()
 	{
 		if (universeRenderer == null)
 		{
-			UniversePanel universeRendererPanel = new UniversePanel();			
+			UniversePanel universeRendererPanel = new UniversePanel();
 			universeRenderer = universeRendererPanel;
 			universePanel = universeRendererPanel;
 			universeRenderer.setListener(this);
@@ -536,7 +546,9 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		String selectedAreaDisplay = currentSelectedArea.toString();
 		getRunningGameCelestialBodyDetailsContentLabel().setBackground(Color.lightGray);
-		getRunningGameCelestialBodyDetailsContentLabel().setText("<html>" + selectedAreaDisplay.substring(0, (selectedAreaDisplay.indexOf("Buildings") < 0) ? selectedAreaDisplay.length() : selectedAreaDisplay.indexOf("Buildings")).replace("\n", "<br>") + "</html>");
+		getRunningGameCelestialBodyDetailsContentLabel().setText("<html>"
+				+ selectedAreaDisplay.substring(0, (selectedAreaDisplay.indexOf("Buildings") < 0) ? selectedAreaDisplay.length() : selectedAreaDisplay.indexOf("Buildings")).replace("\n", "<br>")
+				+ "</html>");
 
 		Vector<String> buildingsList = new Vector<String>();
 		ICelestialBody celestialBody = currentSelectedArea.getCelestialBody();
@@ -547,14 +559,14 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
 			if (productiveCelestialBody.getBuildings() != null)
 			{
-				for (IBuilding b : productiveCelestialBody.getBuildings())
+				for(IBuilding b : productiveCelestialBody.getBuildings())
 				{
 					buildingsList.add(b.getClass().getSimpleName() + " (" + b.getBuildSlotsCount() + ")");
 					buildingsTypes.remove(b.getClass());
 				}
 			}
 
-			for (Class<? extends IBuilding> bt : buildingsTypes)
+			for(Class<? extends IBuilding> bt : buildingsTypes)
 			{
 				if (productiveCelestialBody.canBuildType(bt))
 				{
@@ -568,7 +580,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		Set<Unit> units = currentSelectedArea.getUnits();
 		if (units != null)
 		{
-			for (Unit u : units)
+			for(Unit u : units)
 			{
 				unitsList.add("[" + u.getOwner().getName() + "] " + u.getName());
 			}
@@ -580,6 +592,75 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		updateUI();
 
 		// TODO : Markers
+	}
+
+	private void addBuildBtns(ProductiveCelestialBody productiveCelestialBody, Class<? extends IBuilding> buildingType, int carbonCost, int nbBuild) throws StateMachineNotExpectedEventException, RpcException
+	{
+		addBuildBtns(productiveCelestialBody, buildingType, new int[] { carbonCost }, nbBuild);
+	}
+
+	private void addBuildBtns(final ProductiveCelestialBody productiveCelestialBody, final Class<? extends IBuilding> buildingType, int[] buildCosts, int nbBuild) throws StateMachineNotExpectedEventException, RpcException
+	{
+		JPanel buildBtnsPanel = new JPanel(new FlowLayout());
+
+		JButton buildBtn = new JButton();
+		String label = (nbBuild > 0) ? "Upgrade" : "Build";
+		buildBtn.setText(label);
+		buildBtn.setToolTipText(label + " " + (nbBuild + 1) + " " + buildingType.getSimpleName() + " for " + ((buildCosts[0] > 0) ? buildCosts[0] + "c" : "")
+				+ ((buildCosts.length > 1 && buildCosts[1] > 0) ? buildCosts[1] + "pop." : ""));
+		buildBtn.setEnabled(client.getRunningGameInterface().canBuild(productiveCelestialBody.getName(), buildingType));
+		buildBtn.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				try
+				{
+					client.getRunningGameInterface().build(productiveCelestialBody.getName(), buildingType);
+				}
+				catch(StateMachineNotExpectedEventException e1)
+				{
+					e1.printStackTrace();
+				}
+				catch(RpcException e1)
+				{
+					// TODO : Disconnect ?
+					e1.printStackTrace();
+				}
+			}
+		});
+		buildBtnsPanel.add(buildBtn);
+
+		JButton destroyBtn = new JButton();
+		destroyBtn.setText("Demolish");
+		destroyBtn.setToolTipText("Demolish 1 defense module to free one slot.");
+		destroyBtn.setEnabled(client.getRunningGameInterface().canDemolish(productiveCelestialBody.getName(), buildingType));
+		destroyBtn.addActionListener(new ActionListener()
+		{
+
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				try
+				{
+					client.getRunningGameInterface().demolish(productiveCelestialBody.getName(), buildingType);
+				}
+				catch(StateMachineNotExpectedEventException e1)
+				{
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				catch(RpcException e1)
+				{
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+		});
+		buildBtnsPanel.add(destroyBtn);
+
+		getRunningGameCelestialBodyDetailsBuildingSpecificDetailsPanel().add(buildBtnsPanel);
 	}
 
 	private void eraseBuildingDetails()
@@ -595,7 +676,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (currentSelectedArea == null) return;
 		ICelestialBody celestialBody = currentSelectedArea.getCelestialBody();
 		if (celestialBody == null) return;
-		if ( !ProductiveCelestialBody.class.isInstance(celestialBody)) return;
+		if (!ProductiveCelestialBody.class.isInstance(celestialBody)) return;
 
 		final ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
 
@@ -603,7 +684,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		IBuilding selectedBuildings = null;
 		Class<? extends IBuilding> selectedBuildingType = null;
 
-		if (buildings != null) for (IBuilding b : buildings)
+		if (buildings != null) for(IBuilding b : buildings)
 		{
 			if (b.getClass().getSimpleName().compareTo(buildingTypeName) == 0)
 			{
@@ -614,7 +695,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		if (selectedBuildings == null)
 		{
-			for (Class<? extends IBuilding> bt : SEPUtils.buildingTypes)
+			for(Class<? extends IBuilding> bt : SEPUtils.buildingTypes)
 			{
 				if (bt.getSimpleName().compareTo(buildingTypeName) == 0)
 				{
@@ -631,192 +712,162 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			getRunningGameCelestialBodyDetailsBuildingDetailsContentLabel().setText(selectedBuildings.toString());
 		}
 
-		// Specific panel
-		if (productiveCelestialBody.getOwner() != null && productiveCelestialBody.getOwner().isNamed(player.getName()) && (selectedBuildings != null || productiveCelestialBody.canBuildType(selectedBuildingType)))
+		try
 		{
-			if ((selectedBuildings != null && DefenseModule.class.isInstance(selectedBuildings)) || (selectedBuildingType != null && DefenseModule.class.equals(selectedBuildingType)))
+			// Specific panel
+			if (productiveCelestialBody.getOwner() != null && productiveCelestialBody.getOwner().isNamed(player.getName())
+					&& (selectedBuildings != null || productiveCelestialBody.canBuildType(selectedBuildingType)))
 			{
-				int buildCost;
-				int nbBuild;
-
-				if (selectedBuildings != null)
+				if ((selectedBuildings != null && DefenseModule.class.isInstance(selectedBuildings))
+						|| (selectedBuildingType != null && DefenseModule.class.equals(selectedBuildingType)))
 				{
-					DefenseModule defenseModule = DefenseModule.class.cast(selectedBuildings);
-					buildCost = defenseModule.getNextBuildCost();
-					nbBuild = defenseModule.getBuildSlotsCount();
-				}
-				else
-				{
-					buildCost = DefenseModule.FIRST_BUILD_COST;
-					nbBuild = 0;
-				}
+					int buildCost;
+					int nbBuild;
 
-				// Build btn
-				JPanel buildBtnsPanel = new JPanel(new FlowLayout());
-
-				if (buildCost >= 0)
-				{
-					JButton buildBtn = new JButton();
-					String label = (nbBuild > 0) ? "Upgrade" : "Build";
-					buildBtn.setText(label);
-					buildBtn.setToolTipText(label + " " + (nbBuild + 1) + " defense modules for " + buildCost + "c.");
-					buildBtn.setEnabled(productiveCelestialBody.getFreeSlotsCount() > 0 && productiveCelestialBody.getCarbon() >= buildCost);
-					buildBtn.addActionListener(new ActionListener()
+					if (selectedBuildings != null)
 					{
-
-						@Override
-						public void actionPerformed(ActionEvent e)
-						{
-							try
-							{
-								client.getRunningGameInterface().build(productiveCelestialBody.getName(), DefenseModule.class);
-							}
-							catch(StateMachineNotExpectedEventException e1)
-							{
-								// TODO Auto-generated catch block
-								e1.printStackTrace();
-							}
-							catch(RpcException e1)
-							{
-								// TODO Auto-generated catch block
-								e1.printStackTrace();
-							}
-						}
-					});
-					buildBtnsPanel.add(buildBtn);
-				}
-
-				if (nbBuild > 0)
-				{
-					JButton destroyBtn = new JButton();
-					destroyBtn.setText("Demolish");
-					destroyBtn.setToolTipText("Demolish 1 defense module to free one slot.");
-					destroyBtn.addActionListener(new ActionListener()
+						DefenseModule defenseModule = DefenseModule.class.cast(selectedBuildings);
+						buildCost = defenseModule.getNextBuildCost();
+						nbBuild = defenseModule.getBuildSlotsCount();
+					}
+					else
 					{
+						buildCost = DefenseModule.FIRST_BUILD_COST;
+						nbBuild = 0;
+					}
 
-						@Override
-						public void actionPerformed(ActionEvent e)
-						{
-							try
-							{
-								client.getRunningGameInterface().demolish(productiveCelestialBody.getName(), DefenseModule.class);
-							}
-							catch(StateMachineNotExpectedEventException e1)
-							{
-								// TODO Auto-generated catch block
-								e1.printStackTrace();
-							}
-							catch(RpcException e1)
-							{
-								// TODO Auto-generated catch block
-								e1.printStackTrace();
-							}
-						}
-					});
-					buildBtnsPanel.add(destroyBtn);
+					// Build btn
+					addBuildBtns(productiveCelestialBody, DefenseModule.class, buildCost, nbBuild);
 				}
-
-				getRunningGameCelestialBodyDetailsBuildingSpecificDetailsPanel().add(buildBtnsPanel);
-			}
-			else if ((selectedBuildings != null && ExtractionModule.class.isInstance(selectedBuildings)) || (selectedBuildingType != null && ExtractionModule.class.equals(selectedBuildingType)))
-			{
-				int buildCost;
-				int nbBuild;
-
-				if (selectedBuildings != null)
+				else if ((selectedBuildings != null && ExtractionModule.class.isInstance(selectedBuildings))
+						|| (selectedBuildingType != null && ExtractionModule.class.equals(selectedBuildingType)))
 				{
-					ExtractionModule extractionModule = ExtractionModule.class.cast(selectedBuildings);
-					buildCost = extractionModule.getNextBuildCost();
-					nbBuild = extractionModule.getBuildSlotsCount();
-				}
-				else
-				{
-					buildCost = ExtractionModule.FIRST_BUILD_COST;
-					nbBuild = 0;
-				}
+					int buildCost;
+					int nbBuild;
 
-				// Build btn
-				JPanel buildBtnsPanel = new JPanel(new FlowLayout());
-
-				if (buildCost >= 0)
-				{
-					JButton buildBtn = new JButton();
-					String label = (nbBuild > 0) ? "Upgrade" : "Build";
-					buildBtn.setText(label);
-					buildBtn.setToolTipText(label + " " + (nbBuild + 1) + " extraction modules for " + buildCost + "c.");
-					buildBtn.setEnabled(productiveCelestialBody.getFreeSlotsCount() > 0 && productiveCelestialBody.getCarbon() >= buildCost);
-					buildBtn.addActionListener(new ActionListener()
+					if (selectedBuildings != null)
 					{
-
-						@Override
-						public void actionPerformed(ActionEvent e)
-						{
-							try
-							{
-								client.getRunningGameInterface().build(productiveCelestialBody.getName(), ExtractionModule.class);
-							}
-							catch(StateMachineNotExpectedEventException e1)
-							{
-								// TODO Auto-generated catch block
-								e1.printStackTrace();
-							}
-							catch(RpcException e1)
-							{
-								// TODO Auto-generated catch block
-								e1.printStackTrace();
-							}
-						}
-					});
-					buildBtnsPanel.add(buildBtn);
-				}
-
-				if (nbBuild > 0)
-				{
-					JButton destroyBtn = new JButton();
-					destroyBtn.setText("Demolish");
-					destroyBtn.setToolTipText("Demolish 1 extraction module to free one slot.");
-					destroyBtn.addActionListener(new ActionListener()
+						ExtractionModule extractionModule = ExtractionModule.class.cast(selectedBuildings);
+						buildCost = extractionModule.getNextBuildCost();
+						nbBuild = extractionModule.getBuildSlotsCount();
+					}
+					else
 					{
+						buildCost = ExtractionModule.FIRST_BUILD_COST;
+						nbBuild = 0;
+					}
 
-						@Override
-						public void actionPerformed(ActionEvent e)
-						{
-							try
-							{
-								client.getRunningGameInterface().demolish(productiveCelestialBody.getName(), ExtractionModule.class);
-							}
-							catch(StateMachineNotExpectedEventException e1)
-							{
-								// TODO Auto-generated catch block
-								e1.printStackTrace();
-							}
-							catch(RpcException e1)
-							{
-								// TODO Auto-generated catch block
-								e1.printStackTrace();
-							}
-						}
-					});
-					buildBtnsPanel.add(destroyBtn);
+					// Build btn
+					addBuildBtns(productiveCelestialBody, ExtractionModule.class, buildCost, nbBuild);
 				}
-
-				getRunningGameCelestialBodyDetailsBuildingSpecificDetailsPanel().add(buildBtnsPanel);
-			}
-			else if ((selectedBuildings != null && GovernmentModule.class.isInstance(selectedBuildings)) || (selectedBuildingType != null && GovernmentModule.class.equals(selectedBuildingType)))
-			{
-				Planet planet = Planet.class.cast(productiveCelestialBody);
-
-				if (selectedBuildings != null)
+				else if ((selectedBuildings != null && GovernmentModule.class.isInstance(selectedBuildings))
+						|| (selectedBuildingType != null && GovernmentModule.class.equals(selectedBuildingType)))
 				{
-					GovernmentModule governmentModule = GovernmentModule.class.cast(selectedBuildings);
+					Planet planet = Planet.class.cast(productiveCelestialBody);
 
-					// Actions btn
+					if (selectedBuildings != null)
+					{
+						GovernmentModule governmentModule = GovernmentModule.class.cast(selectedBuildings);
+
+						// Actions btn
+						JPanel btnsPanel = new JPanel(new FlowLayout());
+
+						JButton buildBtn = new JButton();
+						buildBtn.setText("Embark");
+						buildBtn.setToolTipText("Embark the government on a government starship for " + GovernmentStarship.PRICE_POPULATION + "pop. and "
+								+ GovernmentStarship.PRICE_CARBON + "c.");
+						buildBtn.setEnabled(client.getRunningGameInterface().canEmbarkGovernment());
+						buildBtn.addActionListener(new ActionListener()
+						{
+
+							@Override
+							public void actionPerformed(ActionEvent e)
+							{
+								try
+								{
+									client.getRunningGameInterface().embarkGovernment();
+								}
+								catch(StateMachineNotExpectedEventException e1)
+								{
+									// TODO Auto-generated catch block
+									e1.printStackTrace();
+								}
+								catch(RpcException e1)
+								{
+									// TODO Auto-generated catch block
+									e1.printStackTrace();
+								}
+							}
+						});
+						btnsPanel.add(buildBtn);
+
+						getRunningGameCelestialBodyDetailsBuildingSpecificDetailsPanel().add(btnsPanel);
+					}
+					else
+					{
+						if (client.getRunningGameInterface().canSettleGovernment(productiveCelestialBody.getName()))
+						{
+							// Actions btn
+							JPanel btnsPanel = new JPanel(new FlowLayout());
+
+							JButton buildBtn = new JButton();
+							buildBtn.setText("Settle");
+							buildBtn.setToolTipText("Settle the government on this planet");
+							buildBtn.setEnabled(true);
+							buildBtn.addActionListener(new ActionListener()
+							{
+
+								@Override
+								public void actionPerformed(ActionEvent e)
+								{
+									try
+									{
+										client.getRunningGameInterface().settleGovernment();
+									}
+									catch(StateMachineNotExpectedEventException e1)
+									{
+										// TODO Auto-generated catch block
+										e1.printStackTrace();
+									}
+									catch(RpcException e1)
+									{
+										// TODO Auto-generated catch block
+										e1.printStackTrace();
+									}
+								}
+							});
+							btnsPanel.add(buildBtn);
+
+							getRunningGameCelestialBodyDetailsBuildingSpecificDetailsPanel().add(btnsPanel);
+						}
+					}
+				}
+				else if ((selectedBuildings != null && PulsarLauchingPad.class.isInstance(selectedBuildings))
+						|| (selectedBuildingType != null && PulsarLauchingPad.class.equals(selectedBuildingType)))
+				{
+					Planet planet = Planet.class.cast(productiveCelestialBody);
+
+					int unusedCount;
+
+					if (selectedBuildings != null)
+					{
+						PulsarLauchingPad pulsarLaunchingPad = PulsarLauchingPad.class.cast(selectedBuildings);
+						unusedCount = pulsarLaunchingPad.getUnusedCount();
+					}
+					else
+					{
+						unusedCount = 0;
+					}
+
+					// Build btn
 					JPanel btnsPanel = new JPanel(new FlowLayout());
 
 					JButton buildBtn = new JButton();
-					buildBtn.setText("Embark");
-					buildBtn.setToolTipText("Embark the government on a government starship for " + GovernmentStarship.PRICE_POPULATION + "pop. and " + GovernmentStarship.PRICE_CARBON + "c.");
-					buildBtn.setEnabled(planet.getCarbon() >= GovernmentStarship.PRICE_CARBON && planet.getPopulation() >= GovernmentStarship.PRICE_POPULATION);
+					String label = (unusedCount > 0) ? "Upgrade " + unusedCount : "Build";
+					buildBtn.setText(label);
+					buildBtn.setToolTipText(label + " pulsar launching pad for " + PulsarLauchingPad.PRICE_POPULATION + "pop. and "
+							+ PulsarLauchingPad.PRICE_CARBON + "c.");
+					buildBtn.setEnabled(client.getRunningGameInterface().canBuild(productiveCelestialBody.getName(), PulsarLauchingPad.class));
 					buildBtn.addActionListener(new ActionListener()
 					{
 
@@ -825,7 +876,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						{
 							try
 							{
-								client.getRunningGameInterface().embarkGovernment();
+								client.getRunningGameInterface().build(productiveCelestialBody.getName(), PulsarLauchingPad.class);
 							}
 							catch(StateMachineNotExpectedEventException e1)
 							{
@@ -840,274 +891,76 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						}
 					});
 					btnsPanel.add(buildBtn);
+
+					JButton fireBtn = new JButton();
+					fireBtn.setText("Fire");
+					fireBtn.setToolTipText("Get access to pulsar missile launching controls.");
+					fireBtn.setEnabled(client.getRunningGameInterface().canFirePulsarMissile(productiveCelestialBody.getName()));
+					fireBtn.addActionListener(new ActionListener()
+					{
+
+						@Override
+						public void actionPerformed(ActionEvent e)
+						{
+							// TODO (display pulsar launching panel)
+						}
+					});
+					btnsPanel.add(fireBtn);
 
 					getRunningGameCelestialBodyDetailsBuildingSpecificDetailsPanel().add(btnsPanel);
 				}
-				else
+				else if ((selectedBuildings != null && SpaceCounter.class.isInstance(selectedBuildings))
+						|| (selectedBuildingType != null && SpaceCounter.class.equals(selectedBuildingType)))
 				{
-					for (Unit u : currentSelectedArea.getUnits())
+					int buildCost = SpaceCounter.PRICE;
+					int nbBuild;
+
+					if (selectedBuildings != null)
 					{
-						if (Fleet.class.isInstance(u))
-						{
-							Fleet f = Fleet.class.cast(u);
-							if (f.getOwner().isNamed(player.getName()) && f.isGovernmentFleet())
-							{
-								// Actions btn
-								JPanel btnsPanel = new JPanel(new FlowLayout());
-
-								JButton buildBtn = new JButton();
-								buildBtn.setText("Settle");
-								buildBtn.setToolTipText("Settle the government on this planet");
-								buildBtn.setEnabled(true);
-								buildBtn.addActionListener(new ActionListener()
-								{
-
-									@Override
-									public void actionPerformed(ActionEvent e)
-									{
-										try
-										{
-											client.getRunningGameInterface().settleGovernment();
-										}
-										catch(StateMachineNotExpectedEventException e1)
-										{
-											// TODO Auto-generated catch block
-											e1.printStackTrace();
-										}
-										catch(RpcException e1)
-										{
-											// TODO Auto-generated catch block
-											e1.printStackTrace();
-										}
-									}
-								});
-								btnsPanel.add(buildBtn);
-
-								getRunningGameCelestialBodyDetailsBuildingSpecificDetailsPanel().add(btnsPanel);
-
-								break;
-							}
-						}
+						SpaceCounter spaceCounter = SpaceCounter.class.cast(selectedBuildings);
+						nbBuild = spaceCounter.getBuildSlotsCount();
 					}
-				}
-			}
-			else if ((selectedBuildings != null && PulsarLauchingPad.class.isInstance(selectedBuildings)) || (selectedBuildingType != null && PulsarLauchingPad.class.equals(selectedBuildingType)))
-			{
-				Planet planet = Planet.class.cast(productiveCelestialBody);
-
-				int unusedCount;
-
-				if (selectedBuildings != null)
-				{
-					PulsarLauchingPad pulsarLaunchingPad = PulsarLauchingPad.class.cast(selectedBuildings);
-					unusedCount = pulsarLaunchingPad.getUnusedCount();
-				}
-				else
-				{
-					unusedCount = 0;
-				}
-
-				// Build btn
-				JPanel btnsPanel = new JPanel(new FlowLayout());
-
-				JButton buildBtn = new JButton();
-				String label = (unusedCount > 0) ? "Upgrade " + unusedCount : "Build";
-				buildBtn.setText(label);
-				buildBtn.setToolTipText(label + " pulsar launching pad for " + PulsarLauchingPad.PRICE_POPULATION + "pop. and " + PulsarLauchingPad.PRICE_CARBON + "c.");
-				buildBtn.setEnabled(planet.getCarbon() >= PulsarLauchingPad.PRICE_CARBON && planet.getPopulation() >= PulsarLauchingPad.PRICE_POPULATION && planet.getFreeSlotsCount() > 0);
-				buildBtn.addActionListener(new ActionListener()
-				{
-
-					@Override
-					public void actionPerformed(ActionEvent e)
+					else
 					{
-						try
-						{
-							client.getRunningGameInterface().build(productiveCelestialBody.getName(), PulsarLauchingPad.class);
-						}
-						catch(StateMachineNotExpectedEventException e1)
-						{
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
-						}
-						catch(RpcException e1)
-						{
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
-						}
+						nbBuild = 0;
 					}
-				});
-				btnsPanel.add(buildBtn);
 
-				JButton fireBtn = new JButton();
-				fireBtn.setText("Fire");
-				fireBtn.setToolTipText("Get access to pulsar missile launching controls.");
-				fireBtn.setEnabled(unusedCount > 0);
-				fireBtn.addActionListener(new ActionListener()
+					// Build btn
+					addBuildBtns(productiveCelestialBody, SpaceCounter.class, buildCost, nbBuild);
+				}
+				else if ((selectedBuildings != null && StarshipPlant.class.isInstance(selectedBuildings))
+						|| (selectedBuildingType != null && StarshipPlant.class.equals(selectedBuildingType)))
 				{
+					Planet planet = Planet.class.cast(productiveCelestialBody);
 
-					@Override
-					public void actionPerformed(ActionEvent e)
+					int nbBuild;
+					int[] buildCosts = new int[] { StarshipPlant.PRICE_CARBON, StarshipPlant.PRICE_POPULATION };
+
+					if (selectedBuildings != null)
 					{
-						// TODO (display pulsar launching panel)
+						StarshipPlant starshipPlant = StarshipPlant.class.cast(selectedBuildings);
+						nbBuild = starshipPlant.getBuildSlotsCount();
 					}
-				});
-				btnsPanel.add(fireBtn);
+					else
+					{
+						nbBuild = 0;
+					}
 
-				getRunningGameCelestialBodyDetailsBuildingSpecificDetailsPanel().add(btnsPanel);
+					// Actions btn
+					addBuildBtns(productiveCelestialBody, StarshipPlant.class, buildCosts, nbBuild);
+					// TODO : Starship plant details + starship factory
+				}
 			}
-			else if ((selectedBuildings != null && SpaceCounter.class.isInstance(selectedBuildings)) || (selectedBuildingType != null && SpaceCounter.class.equals(selectedBuildingType)))
-			{
-				int buildCost = SpaceCounter.PRICE;
-				int nbBuild;
-
-				if (selectedBuildings != null)
-				{
-					SpaceCounter spaceCounter = SpaceCounter.class.cast(selectedBuildings);
-					nbBuild = spaceCounter.getBuildSlotsCount();
-				}
-				else
-				{
-					nbBuild = 0;
-				}
-
-				// Build btn
-				JPanel buildBtnsPanel = new JPanel(new FlowLayout());
-
-				if (buildCost >= 0)
-				{
-					JButton buildBtn = new JButton();
-					buildBtn.setText("Build");
-					buildBtn.setToolTipText("Build a new space counter for " + buildCost + "c.");
-					buildBtn.setEnabled(productiveCelestialBody.getFreeSlotsCount() > 0 && productiveCelestialBody.getCarbon() >= buildCost);
-					buildBtn.addActionListener(new ActionListener()
-					{
-
-						@Override
-						public void actionPerformed(ActionEvent e)
-						{
-							try
-							{
-								client.getRunningGameInterface().demolish(productiveCelestialBody.getName(), SpaceCounter.class);
-							}
-							catch(StateMachineNotExpectedEventException e1)
-							{
-								// TODO Auto-generated catch block
-								e1.printStackTrace();
-							}
-							catch(RpcException e1)
-							{
-								// TODO Auto-generated catch block
-								e1.printStackTrace();
-							}
-						}
-					});
-					buildBtnsPanel.add(buildBtn);
-				}
-
-				if (nbBuild > 0)
-				{
-					JButton destroyBtn = new JButton();
-					destroyBtn.setText("Demolish");
-					destroyBtn.setToolTipText("Demolish 1 space counter (and associated road) to free one slot.");
-					destroyBtn.addActionListener(new ActionListener()
-					{
-
-						@Override
-						public void actionPerformed(ActionEvent e)
-						{
-							// TODO (panel to choose which space counter / space road to demolish)
-						}
-					});
-					buildBtnsPanel.add(destroyBtn);
-				}
-
-				getRunningGameCelestialBodyDetailsBuildingSpecificDetailsPanel().add(buildBtnsPanel);
-			}
-			else if ((selectedBuildings != null && StarshipPlant.class.isInstance(selectedBuildings)) || (selectedBuildingType != null && StarshipPlant.class.equals(selectedBuildingType)))
-			{
-				Planet planet = Planet.class.cast(productiveCelestialBody);
-
-				int nbBuild;
-
-				if (selectedBuildings != null)
-				{
-					StarshipPlant starshipPlant = StarshipPlant.class.cast(selectedBuildings);
-					nbBuild = starshipPlant.getBuildSlotsCount();
-				}
-				else
-				{
-					nbBuild = 0;
-				}
-
-				// Actions btn
-				JPanel btnsPanel = new JPanel(new FlowLayout());
-
-				if (nbBuild == 0)
-				{
-					JButton buildBtn = new JButton();
-					buildBtn.setText("Build");
-					buildBtn.setToolTipText("Build a starship plant for " + StarshipPlant.PRICE_POPULATION + "pop. and " + StarshipPlant.PRICE_CARBON + "c.");
-					buildBtn.setEnabled(planet.getFreeSlotsCount() > 0 && planet.getPopulation() >= StarshipPlant.PRICE_POPULATION && planet.getCarbon() >= StarshipPlant.PRICE_CARBON);
-					buildBtn.addActionListener(new ActionListener()
-					{
-
-						@Override
-						public void actionPerformed(ActionEvent e)
-						{
-							try
-							{
-								client.getRunningGameInterface().build(productiveCelestialBody.getName(), StarshipPlant.class);
-							}
-							catch(StateMachineNotExpectedEventException e1)
-							{
-								// TODO Auto-generated catch block
-								e1.printStackTrace();
-							}
-							catch(RpcException e1)
-							{
-								// TODO Auto-generated catch block
-								e1.printStackTrace();
-							}
-						}
-					});
-
-					btnsPanel.add(buildBtn);
-				}
-				else
-				{
-					JButton destroyBtn = new JButton();
-					destroyBtn.setText("Demolish");
-					destroyBtn.setToolTipText("Demolish starship plant to free one slot.");
-					destroyBtn.addActionListener(new ActionListener()
-					{
-
-						@Override
-						public void actionPerformed(ActionEvent e)
-						{
-							try
-							{
-								client.getRunningGameInterface().demolish(productiveCelestialBody.getName(), StarshipPlant.class);
-							}
-							catch(StateMachineNotExpectedEventException e1)
-							{
-								// TODO Auto-generated catch block
-								e1.printStackTrace();
-							}
-							catch(RpcException e1)
-							{
-								// TODO Auto-generated catch block
-								e1.printStackTrace();
-							}
-						}
-					});
-					btnsPanel.add(destroyBtn);
-				}
-
-				// TODO : Starship plant details + starship factory
-
-				getRunningGameCelestialBodyDetailsBuildingSpecificDetailsPanel().add(btnsPanel);
-			}
+		}
+		catch(StateMachineNotExpectedEventException e1)
+		{
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		catch(RpcException e1)
+		{
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
 	}
 
@@ -1143,7 +996,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						client.getRunningGameInterface().sendMessage(msg);
 						runningGameChatTextField.setText("");
 					}
-					catch (Exception e)
+					catch(Exception e)
 					{
 						e.printStackTrace();
 					}
@@ -1159,7 +1012,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		{
 			runningGameChatPlayerListPanel = new JPanel();
 			LayoutManager layout = new SingleRowFlowLayout();
-			runningGameChatPlayerListPanel.setLayout(layout);			
+			runningGameChatPlayerListPanel.setLayout(layout);
 		}
 		return runningGameChatPlayerListPanel;
 	}
@@ -1168,7 +1021,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	{
 		if (runningGameChatScrollPane == null)
 		{
-			runningGameChatScrollPane = new JScrollPane();			
+			runningGameChatScrollPane = new JScrollPane();
 			runningGameChatScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 			runningGameChatScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 			runningGameChatScrollPane.setViewportView(getRunningGameChatContentEditorPane());
@@ -1179,10 +1032,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				@Override
 				public void adjustmentValueChanged(AdjustmentEvent e)
 				{
-					if ( !e.getValueIsAdjusting())
+					if (!e.getValueIsAdjusting())
 					{
 						System.out.println("runningGameChatScrollPane adjusmentValueChanged");
-						
+
 						JScrollBar vBar = runningGameChatScrollPane.getVerticalScrollBar();
 						int newVal = (vBar.getMinimum() + (vBar.getMaximum() - vBar.getMinimum()) * 1);
 
@@ -1214,28 +1067,29 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	 */
 	public void receiveRunningGameMessage(Player fromPlayer, String msg)
 	{
-		String htmlText = "<br><font color='#" + GUIUtils.getHTMLColor(fromPlayer.getConfig().getColor()) + "'>" + fromPlayer.getName() + "</font> : " + msg + "</br>";
+		String htmlText = "<br><font color='#" + GUIUtils.getHTMLColor(fromPlayer.getConfig().getColor()) + "'>" + fromPlayer.getName() + "</font> : " + msg
+				+ "</br>";
 		HTMLDocument doc = ((HTMLDocument) getRunningGameChatContentEditorPane().getDocument());
 
 		try
 		{
 			doc.insertBeforeEnd(doc.getDefaultRootElement(), htmlText);
 		}
-		catch (BadLocationException e)
+		catch(BadLocationException e)
 		{
 			e.printStackTrace();
 		}
-		catch (IOException e)
+		catch(IOException e)
 		{
 			e.printStackTrace();
 		}
 	}
-	
+
 	private void refreshPlayerList()
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
-		
+
 			@Override
 			public void run()
 			{
@@ -1245,21 +1099,21 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					players = client.getRunningGameInterface().getPlayerList();
 					refreshPlayerList(players);
 				}
-				catch (StateMachineNotExpectedEventException e)
+				catch(StateMachineNotExpectedEventException e)
 				{
 					e.printStackTrace();
 				}
-				catch (RpcException e)
+				catch(RpcException e)
 				{
 					e.printStackTrace();
-				}				
+				}
 			}
 		});
 	}
-	
+
 	public void refreshPlayerList(Set<Player> players)
 	{
-		System.out.println("RunningGamePanel refreshPlayerList : "+players);
+		System.out.println("RunningGamePanel refreshPlayerList : " + players);
 		getRunningGameChatPlayerListPanel().removeAll();
 		for(Player p : players)
 		{
@@ -1269,15 +1123,17 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			JLabel name = new JLabel(p.getName());
 			name.setForeground(p.getConfig().getColor());
 			panel.add(name, BorderLayout.CENTER);
-			
+
 			getRunningGameChatPlayerListPanel().add(panel);
 		}
-		
+
 		updateUI();
 	}
-	
-	private JScrollPane getRunningGameChatPlayerListScrollPane() {
-		if(runningGameChatPlayerListScrollPane == null) {
+
+	private JScrollPane getRunningGameChatPlayerListScrollPane()
+	{
+		if (runningGameChatPlayerListScrollPane == null)
+		{
 			runningGameChatPlayerListScrollPane = new JScrollPane();
 			runningGameChatPlayerListScrollPane.setViewportView(getRunningGameChatPlayerListPanel());
 		}

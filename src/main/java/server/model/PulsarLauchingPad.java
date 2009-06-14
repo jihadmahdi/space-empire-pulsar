@@ -43,4 +43,15 @@ class PulsarLauchingPad implements IBuilding
 	{
 		return new common.PulsarLauchingPad(nbBuild, nbFired, getTotalBonus(), getNextBuildCost());
 	}
+
+	@Override
+	public int getBuildSlotsCount()
+	{
+		return nbBuild;
+	}
+	
+	public int getUnusedCount()
+	{
+		return nbBuild - nbFired;
+	}
 }

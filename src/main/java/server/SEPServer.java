@@ -31,9 +31,13 @@ import org.axan.eplib.statemachine.ProxiedStateMachine.ProxiedStateMachineBadSer
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.eplib.utils.Basic;
 
+import server.model.GameBoard;
+import server.model.PlayerGameMove;
 import server.model.ServerGame;
 
 import common.GameConfig;
+import common.IBuilding;
+import common.IStarship;
 import common.PlayerGameBoard;
 import common.Player;
 import common.PlayerConfig;
@@ -229,15 +233,25 @@ public class SEPServer implements IServer, GameServerListener
 			super(server, user);
 		}
 
+		private GameBoard getGameBoard()
+		{
+			return sepServer.getCurrentGame().getGameBoard(user.getLogin());
+		}
+		
+		private PlayerGameMove getGameMove()
+		{
+			return sepServer.getCurrentGame().getPlayerGameMove(user.getLogin());
+		}
+		
 		/*
 		 * (non-Javadoc)
 		 * 
 		 * @see common.Protocol.ServerRunningGame#getGameTurn()
 		 */
 		@Override
-		public PlayerGameBoard getGameBoard() throws RpcException, StateMachineNotExpectedEventException
+		public PlayerGameBoard getPlayerGameBoard() throws RpcException, StateMachineNotExpectedEventException
 		{
-			return sepServer.getCurrentGame().getGameBoard(user.getLogin());
+			return getGameBoard().getPlayerGameBoard(user.getLogin());
 		}
 
 		/* (non-Javadoc)
@@ -273,6 +287,233 @@ public class SEPServer implements IServer, GameServerListener
 				}
 			});
 		}
+
+		@Override
+		public void attackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void build(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
+		{			
+			getGameMove().addCommand(new BuildCommand(celestialBodyName, buildingType));
+			//sepServer.game. build(getPlayer(), celestialBodyName, buildingType);
+		}
+
+		@Override
+		public void buildSpaceRoad(String celestialBodyNameA, String celestialBodyNameB) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void canAttackEnemiesFleet() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public boolean canBuild(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
+		{
+			return getGameBoard().canBuild(getPlayer(), celestialBodyName, buildingType);					
+		}
+
+		@Override
+		public void canBuildSpaceRoad() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void canChangeConquestPolicy() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void canChangeDomesticPolicy() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public boolean canDemolish(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
+		{
+			return getGameBoard().canDemolish(getPlayer(), celestialBodyName, buildingType);			
+		}
+
+		@Override
+		public void canDemolishSpaceRoad() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void canDismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public boolean canEmbarkGovernment() throws RpcException, StateMachineNotExpectedEventException
+		{
+			return getGameBoard().canEmbarkGovernment(getPlayer());
+		}
+		
+		@Override
+		public boolean canSettleGovernment(String planetName) throws RpcException, StateMachineNotExpectedEventException
+		{
+			return getGameBoard().canSettleGovernment(getPlayer(), planetName);
+		}
+
+		@Override
+		public boolean canFirePulsarMissile(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException
+		{
+			return getGameBoard().canFirePulsarMissile(getPlayer(), celestialBodyName);
+			
+		}
+
+		@Override
+		public void canFormFleet(String planetName) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void canLaunchProbe() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void canMakeStarship(String planetName) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void canModifyCarbonOrder() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void canMoveFleet() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void canSendMessage(String msg) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void changeConquestPolicy() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void changeDomesticPolicy() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void demolish(String ceslestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void demolishSpaceRoad(String celestialBodyNameA, String celestialBodyNameB) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void dismantleFleet(String planetName, String fleetName) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void embarkGovernment() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void firePulsarMissile(String celestialBodyName, float bonusModifier) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void formFleet(String planetName, Map<Class<? extends IStarship>, Integer> composition, String fleetName) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void launchProbe(String probeName, int[] destination) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void makeStarship(String planetName, Class<? extends IStarship> starshipType, int quantity) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void modifyCarbonOrder(String originCelestialBodyName, String destinationCelestialBodyName, int amount) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void moveFleet(String fleetName, int delay, Set<String> checkpoints) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void settleGovernment() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}		
 
 	}
 

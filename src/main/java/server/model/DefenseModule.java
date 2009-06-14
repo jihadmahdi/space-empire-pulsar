@@ -36,9 +36,15 @@ class DefenseModule implements IBuilding
 		return Float.valueOf(nbBuild)* (float) 0.25;
 	}
 	
-	private int getNextBuildCost()
+	public int getNextBuildCost()
 	{
 		// TODO : Redefine the formula
 		return (int) (1+nbBuild * 0.25) * 1000;
+	}
+
+	@Override
+	public int getBuildSlotsCount()
+	{
+		return nbBuild;
 	}
 }

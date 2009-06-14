@@ -24,4 +24,10 @@ class StarshipPlant implements IBuilding
 	{
 		return new common.StarshipPlant(Collections.unmodifiableMap(starships));
 	}
+
+	@Override
+	public int getBuildSlotsCount()
+	{
+		return 1;
+	}
 }

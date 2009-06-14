@@ -162,5 +162,19 @@ class Planet extends ProductiveCelestialBody
 		
 		return new common.Planet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getCarbonStock(), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerView(date, playerLogin, isVisible), populationLimit, populationPerTurn, playersPopulationView.getLastValue(playerLogin, -1));
 	}
+	
+	public int getPopulation()
+	{
+		return population;
+	}
 
+	public boolean isGovernmentSettled()
+	{
+		for(IBuilding b : getBuildings())
+		{
+			if (GovernmentModule.class.isInstance(b)) return true;
+		}
+		
+		return false;
+	}
 }

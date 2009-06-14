@@ -179,9 +179,34 @@ abstract class ProductiveCelestialBody implements ICelestialBody
 		return buildingsView;
 	}
 	
+	public Set<IBuilding> getBuildings()
+	{
+		return buildings;
+	}
+	
 	public void setCarbon(int carbon)
 	{
 		this.carbon = carbon;
+	}
+	
+	public int getCarbon()
+	{
+		return carbon;
+	}
+	
+	public int getBuildSlotsCount()
+	{
+		int i = 0;
+		if (buildings != null) for (IBuilding b : buildings)
+		{
+			i += b.getBuildSlotsCount();
+		}
+		return i;
+	}
+	
+	public int getFreeSlotsCount()
+	{
+		return slots - getBuildSlotsCount();
 	}
 	
 	abstract public boolean canBuild(IBuilding building);
