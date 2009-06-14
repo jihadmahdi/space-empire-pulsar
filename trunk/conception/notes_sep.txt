@@ -39,3 +39,12 @@ On rapelle que ceci répond au besoins "effet kikoo blender" + "besoin d'aliment
 // Routes de l'espace
 pourquoi les routes sont elles détruite sitôt que l'on détruit l'un ou l'autre des comptoirs ?
 Il faut voir les routes de l'espaces comme sorte de pont suspendus, malgré l'absence de gravité les deux comptoirs sont équipé d'infrastructures déployant d'énormes énergies pour maintenir la route en place.
+
+====
+
+Génèse : Un empire immense a déjà colonisé de nombreuses galaxies.
+Suite à un pĥénomène astral d'une extrème rareté, un effet pulsar naturel d'une amplitude jamais observée à ce jour, plusieurs galaxies au coeur de l'empire se trouvent simultanément coupées du reste de l'empire.
+De nombreuses galaxies colonisées voient ainsi peut à peut s'affaiblir l'influence impériale (les colons ne recevant plus ordres ni ressources). 
+Dans la galaxie X24G2 comme dans de nombreuses autres galaxies colonisés il y a peu, des colonisés reprennent leur indépendance, et des colons proclament leur propres empires, tous prêts à partir en guerre pour conquérir la galaxie sinon l'univers.
+
+Idée Intro : communiqués de presses locales (heure par heure, minute par minute) suite à ce l'on apelle [nommer la catastrophe].

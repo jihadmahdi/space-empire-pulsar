@@ -5,6 +5,7 @@
  */
 package common;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.axan.eplib.clientserver.rpc.RpcException;
@@ -82,8 +83,16 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		PlayerGameBoard getGameBoard() throws RpcException, StateMachineNotExpectedEventException;
+		PlayerGameBoard getPlayerGameBoard() throws RpcException, StateMachineNotExpectedEventException;
 
+		/**
+		 * Test if player can send a message.
+		 * @param msg
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void canSendMessage(String msg) throws RpcException, StateMachineNotExpectedEventException;
+		
 		/**
 		 * Send a message to the RunningGame Chat.
 		 * @param msg Message.
@@ -99,7 +108,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void canBuild(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException;
+		boolean canBuild(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order construction of a new building on the given celestial body.
@@ -117,7 +126,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void canDemolish(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException;
+		boolean canDemolish(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order demolition of a building on the given celestial body.
@@ -131,19 +140,62 @@ public interface Protocol
 		/**
 		 * Test if starship can be made on the selected planet
 		 * @param planetName
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void canMakeStarship(String planetName);
+		void canMakeStarship(String planetName) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Make given starships on the given planet.
 		 * @param planetName Planet where is the starship plant.
 		 * @param starshipType Startship type to make.
 		 * @param quantity Quantity to make.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void makeStarship(String planetName, Class<? extends IStarship> starshipType, int quantity);
+		void makeStarship(String planetName, Class<? extends IStarship> starshipType, int quantity) throws RpcException, StateMachineNotExpectedEventException;
 		
-		can
-		// constituer flotte(corps céleste, constitution vaisseaux, nom nouvelle flotte)
+		/**
+		 * Test if fleet can be formed on this planet (starship plant existence).
+		 * @param planetName Planet where the fleet is supposed to be formed.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void canFormFleet(String planetName) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Form a new fleet from the given starships composition.
+		 * @param planetName Planet where is the starship plant.
+		 * @param composition Starships composition (number of each starship type).
+		 * @param fleetName New fleet name.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void formFleet(String planetName, Map<Class<? extends IStarship>, Integer> composition, String fleetName) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Test if the given fleet can be dismantled.
+		 * @param fleetName
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void canDismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Dismantle the given fleet and land the starships in the starship plant.
+		 * @param planetName Planet where the fleet currently is (Fleet can only be dismantled where they're on a player planet with a starship plant).
+		 * @param fleetName Fleet name.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void dismantleFleet(String planetName, String fleetName) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Test if the government can be embarked.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		boolean canEmbarkGovernment() throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order to embark the government (from government module) on a government starship.
@@ -153,11 +205,159 @@ public interface Protocol
 		void embarkGovernment() throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
+		 * Test if the government can be settled according to the government starship current location.
+		 * @param planetName Planet where to test if government can settle.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		boolean canSettleGovernment(String planetName) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
 		 * Order to settle the government (from government starship) in the planet the government starship is currently landed.
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
 		void settleGovernment() throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Test if pulsar missile can be fired from the given celestial body.
+		 * @param celestialBodyName Celestial body to check.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		boolean canFirePulsarMissile(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Order to fire a pulsar missile from the given celestial body with the given bonus modifier.
+		 * @param celestialBodyName Celestial body where the pulsar launching pad are supposed to be.
+		 * @param bonusModifier Bonus modifier.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void firePulsarMissile(String celestialBodyName, float bonusModifier) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Test if player can build a space road.
+		 */
+		void canBuildSpaceRoad() throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Order to build a space road between the given celestial bodies.
+		 * @param celestialBodyNameA
+		 * @param celestialBodyNameB
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void buildSpaceRoad(String celestialBodyNameA, String celestialBodyNameB) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Test if player can demolish a space road.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void canDemolishSpaceRoad() throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Order to demolish a space road.
+		 * @param celestialBodyNameA
+		 * @param celestialBodyNameB
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void demolishSpaceRoad(String celestialBodyNameA, String celestialBodyNameB) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Test if player can modify a carbon order.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state. 
+		 */
+		void canModifyCarbonOrder() throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Modify/create a carbon order from two celestial bodies.
+		 * @param originCelestialBodyName
+		 * @param destinationCelestialBodyName
+		 * @param amount
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void modifyCarbonOrder(String originCelestialBodyName, String destinationCelestialBodyName, int amount) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Test if fleet can be moved.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void canMoveFleet() throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Order a fleet to move with optionnal delay and checkpoints list.
+		 * @param fleetName
+		 * @param delay
+		 * @param checkpoints
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void moveFleet(String fleetName, int delay, Set<String> checkpoints) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Test if probe can be launched.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void canLaunchProbe() throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Order to launch a probe to the specified destination.
+		 * @param probeName
+		 * @param destination
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void launchProbe(String probeName, int[] destination) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Test if player can attack enemies fleet.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void canAttackEnemiesFleet() throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Order a celestial body to attack enemies fleet.
+		 * @param celestialBodyName
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void attackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Test if player can change its domestic policy.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void canChangeDomesticPolicy() throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Change the player domestic policy.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void changeDomesticPolicy(/*TODO*/) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Test if player can change its conquest policy.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void canChangeConquestPolicy() throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Change the player conquest policy.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void changeConquestPolicy() throws RpcException, StateMachineNotExpectedEventException;				
 	}
 	
 	/**

@@ -127,4 +127,10 @@ class SpaceCounter implements IBuilding
 		
 		return new common.SpaceCounter(nbBuild, spaceRoadsSet, ordersToReceiveSet, currentSentOrderSet, nextOrdersSet);
 	}
+
+	@Override
+	public int getBuildSlotsCount()
+	{
+		return nbBuild;
+	}
 }

@@ -22,4 +22,6 @@ interface ICelestialBody
 	 * @return
 	 */
 	common.ICelestialBody getPlayerView(int date, String playerLogin, boolean isVisible);
+
+	String getName();
 }

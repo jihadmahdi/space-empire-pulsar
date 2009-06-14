@@ -36,9 +36,15 @@ class ExtractionModule implements IBuilding
 		return Float.valueOf(nbBuild)* (float) 0.25;
 	}
 	
-	private int getNextBuildCost()
+	int getNextBuildCost()
 	{
 		// TODO : Redefine the formula
 		return (int) (nbBuild * 0.25) * 1000;
+	}
+
+	@Override
+	public int getBuildSlotsCount()
+	{
+		return nbBuild;
 	}
 }

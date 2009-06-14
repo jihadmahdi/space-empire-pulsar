@@ -17,4 +17,5 @@ interface IBuilding
 	 */
 	common.IBuilding getPlayerView(int date, String playerLogin);
 
+	int getBuildSlotsCount();
 }

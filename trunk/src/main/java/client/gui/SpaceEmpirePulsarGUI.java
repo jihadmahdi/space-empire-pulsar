@@ -703,7 +703,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 	{
 		try
 		{
-			currentGameBoard = client.getRunningGameInterface().getGameBoard();
+			currentGameBoard = client.getRunningGameInterface().getPlayerGameBoard();
 			refreshGameBoard(currentGameBoard);
 		}
 		catch(Throwable t)
