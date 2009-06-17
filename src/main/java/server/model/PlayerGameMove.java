@@ -8,7 +8,13 @@ package server.model;
 import java.util.Map;
 import java.util.Stack;
 
+import client.gui.RunningGamePanel;
+
+import common.IBuilding;
+import common.Player;
 import common.PlayerGameBoard;
+import common.Protocol;
+import common.Protocol.ServerRunningGame.RunningGameCommandException;
 
 /**
  * Represent a player move for a specific game board.
@@ -17,10 +23,15 @@ public class PlayerGameMove
 {
 	private final GameBoard originalGameBoard;
 	private final Stack<GameMoveCommand>	commands = new Stack<GameMoveCommand>();
+	private GameBoard currentGameBoard;
+	private final String playerLogin;
+	private boolean isTurnEnded;
 	
-	public PlayerGameMove(GameBoard originalGameBoard)
+	public PlayerGameMove(GameBoard originalGameBoard, String playerLogin)
 	{
 		this.originalGameBoard = originalGameBoard;
+		this.playerLogin = playerLogin;
+		this.isTurnEnded = false;
 	}
 
 	public GameBoard getGameBoard()
@@ -31,7 +42,57 @@ public class PlayerGameMove
 		}
 		else
 		{
-			return commands.peek().getFinalGameBoard();
+			return currentGameBoard;
 		}
+	}
+
+	public Stack<GameMoveCommand> getCommands()
+	{
+		return commands;
+	}
+	
+	private void checkTurnIsNotEnded() throws RunningGameCommandException
+	{
+		if (isTurnEnded)
+		{
+			throw new RunningGameCommandException("Turn is already ended.");
+		}
+	}
+	
+	public void addBuildCommand(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RunningGameCommandException
+	{
+		checkTurnIsNotEnded();
+		
+		if (!getGameBoard().canBuild(playerLogin, celestialBodyName, buildingType))
+		{
+			throw new RunningGameCommandException(playerLogin+" cannot build '"+buildingType.getSimpleName()+"' on "+celestialBodyName);
+		}
+		
+		addGameMoveCommand(new BuildCommand(playerLogin, celestialBodyName, buildingType));
+	}
+	
+	private void addGameMoveCommand(GameMoveCommand command) throws RunningGameCommandException
+	{
+		checkTurnIsNotEnded();
+		
+		currentGameBoard = command.apply(getGameBoard());
+		commands.push(command);
+	}
+
+	public void resetTurn() throws RunningGameCommandException
+	{
+		checkTurnIsNotEnded();
+		
+		commands.removeAllElements();
+	}
+
+	public void endTurn()
+	{
+		isTurnEnded = true;
+	}
+
+	public boolean isTurnEnded()
+	{
+		return isTurnEnded;
 	}
 }

@@ -164,10 +164,16 @@ public class UniversePanel extends javax.swing.JPanel implements UniverseRendere
 					getUniverseViewPanel().add(getImagePanel(col-1, row-1));
 				}
 			}
+		
 		getZSlider().setMinimum(0);
-		getZSlider().setMaximum(currentGameBoard.getDimZ()-1);
-		getZSlider().setValue(currentGameBoard.getDimZ()/2);
-		changeZView(currentGameBoard.getDimZ()/2);
+		getZSlider().setMaximum(currentGameBoard.getDimZ()-1);				
+		
+		if (selectedLocation == null)
+		{
+			getZSlider().setValue(currentGameBoard.getDimZ()/2);
+		}
+		
+		changeZView(getZSlider().getValue());
 	}
 
 	
@@ -336,6 +342,7 @@ public class UniversePanel extends javax.swing.JPanel implements UniverseRendere
 					changeZView(getZSlider().getValue());
 				}
 			});
+			zSlider.setValue(-1);
 		}
 		return zSlider;
 	}

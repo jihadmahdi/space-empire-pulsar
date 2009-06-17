@@ -5,11 +5,15 @@
  */
 package server.model;
 
+import java.io.Serializable;
+
 /**
  * 
  */
-class PulsarLauchingPad implements IBuilding
+class PulsarLauchingPad implements IBuilding, Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+	
 	// Variables
 	private int nbBuild;
 	private int nbFired;
@@ -53,5 +57,10 @@ class PulsarLauchingPad implements IBuilding
 	public int getUnusedCount()
 	{
 		return nbBuild - nbFired;
+	}
+
+	public PulsarLauchingPad getUpgradedBuilding()
+	{
+		return new PulsarLauchingPad(nbBuild+1, nbFired);
 	}
 }

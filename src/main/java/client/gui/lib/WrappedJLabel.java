@@ -10,6 +10,7 @@ import java.awt.Container;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.text.BreakIterator;
+import java.util.Stack;
 
 import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
@@ -40,6 +41,34 @@ public class WrappedJLabel extends JLabel
 		Font f = this.getFont();
 		if (f == null) f = UIManager.getFont("Label.font");
 		FontMetrics fm = this.getFontMetrics(f);
+		
+		/*
+		int offset = 0;
+		StringBuffer currentLine = new StringBuffer();
+		
+		Stack<Integer> tagBegins = new Stack<Integer>();
+		int currentTagBegin;
+		int currentTagEnd;
+		
+		currentTagBegin = text.indexOf("<", offset);
+		currentTagEnd = text.indexOf(">", offset);
+		
+		// Begin tag first
+		if (currentTagBegin >= 0 && (currentTagEnd < 0 || currentTagBegin < currentTagEnd))
+		{
+			tagBegins.add(currentTagBegin);
+			offset = currentTagBegin+1;
+		}
+		else if (currentTagEnd >= 0)
+		{
+			
+		}
+		else
+		{
+			
+		}
+		*/
+		
 		
 		
 		BreakIterator boundary = BreakIterator.getWordInstance();

@@ -12,6 +12,8 @@ import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 
+import common.Protocol.ServerRunningGame.RunningGameCommandException;
+
 
 /**
  * Define the game protocol (RPC services interfaces).
@@ -76,6 +78,20 @@ public interface Protocol
 	 */
 	public static interface ServerRunningGame extends ServerCommon
 	{
+		public static class RunningGameCommandException extends Exception
+		{
+			private static final long	serialVersionUID	= 1L;
+
+			public RunningGameCommandException(Throwable t)
+			{
+				super(t);
+			}
+
+			public RunningGameCommandException(String msg)
+			{
+				super(msg);
+			}
+		}
 
 		/**
 		 * Return the current game turn information for this player.
@@ -116,8 +132,9 @@ public interface Protocol
 		 * @param buildingType Building type.
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 * @throws RunningGameCommandException If command is not expected or arguments are not corrects. 
 		 */
-		void build(String ceslestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException;
+		void build(String ceslestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
 		
 		/**
 		 * Test if selected building can be demolished.
@@ -139,11 +156,11 @@ public interface Protocol
 		
 		/**
 		 * Test if starship can be made on the selected planet
-		 * @param planetName
+		 * @param starshipToMake
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void canMakeStarship(String planetName) throws RpcException, StateMachineNotExpectedEventException;
+		boolean canMakeStarship(Map<Class<? extends IStarship>, Integer> starshipToMake) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Make given starships on the given planet.
@@ -157,11 +174,11 @@ public interface Protocol
 		
 		/**
 		 * Test if fleet can be formed on this planet (starship plant existence).
-		 * @param planetName Planet where the fleet is supposed to be formed.
+		 * @param fleetToForm Planet where the fleet is supposed to be formed.
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void canFormFleet(String planetName) throws RpcException, StateMachineNotExpectedEventException;
+		boolean canFormFleet(Map<Class<? extends IStarship>, Integer> fleetToForm) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Form a new fleet from the given starships composition.
@@ -357,7 +374,36 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void changeConquestPolicy() throws RpcException, StateMachineNotExpectedEventException;				
+		void changeConquestPolicy() throws RpcException, StateMachineNotExpectedEventException;
+
+		/**
+		 * Test if turn can be reseted (not ended yet).
+		 * @throws RpcException
+		 * @throws StateMachineNotExpectedEventException
+		 */
+		boolean canResetTurn() throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Reset current player turn (erase commands).
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 * @throws RunningGameCommandException If command is not expected or arguments are not corrects.
+		 */
+		void resetTurn() throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
+
+		/**
+		 * Test if turn can be ended (not already ended).
+		 * @throws RpcException
+		 * @throws StateMachineNotExpectedEventException
+		 */
+		boolean canEndTurn() throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Terminate the current turn.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void endTurn() throws RpcException, StateMachineNotExpectedEventException;
 	}
 	
 	/**
@@ -365,7 +411,21 @@ public interface Protocol
 	 */
 	public static interface ServerPausedGame extends ServerCommon
 	{
-		
+		/**
+		 * Return player list.
+		 * @return Set<Player> currently connected players.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		Map<Player, Boolean> getPlayerStateList() throws RpcException, StateMachineNotExpectedEventException;
+
+		/**
+		 * Send a message to the PausedGame Chat.
+		 * @param msg Message.
+		 * @throws RpcException On connection error.
+		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 */
+		void sendMessage(String msg) throws RpcException, StateMachineNotExpectedEventException;				
 	}
 	
 	/**
@@ -404,5 +464,19 @@ public interface Protocol
 		 */
 		void receiveRunningGameMessage(Player fromPlayer, String msg) throws RpcException;
 		
+		/**
+		 * Server broadcast paused game message from another player.
+		 * @param fromPlayer Sender player. 
+		 * @param msg Message.
+		 * @throws RpcException On connection error.
+		 */
+		void receivePausedGameMessage(Player fromPlayer, String msg) throws RpcException;
+		
+		/**
+		 * Server broadcast new turn gameboard.
+		 * @param gameBoard New gameboard.
+		 * @throws RpcException On connection error.
+		 */
+		void receiveNewTurnGameBoard(PlayerGameBoard gameBoard) throws RpcException;
 	}
 }

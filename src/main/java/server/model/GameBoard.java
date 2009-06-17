@@ -1,5 +1,6 @@
 package server.model;
 
+import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -13,12 +14,17 @@ import java.util.logging.Logger;
 import org.axan.eplib.utils.Basic;
 
 import common.Player;
+import common.Protocol;
+import common.Protocol.ServerRunningGame.RunningGameCommandException;
 
 import server.SEPServer;
 import server.model.Area.AreaIllegalDefinitionException;
+import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 
-public class GameBoard
+public class GameBoard implements Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+
 	private static final Logger			log	= SEPServer.log;
 
 	private static final Random			rnd	= new Random();
@@ -31,8 +37,19 @@ public class GameBoard
 
 	private final common.GameConfig			config;
 	
-	private final int date;
+	private int date;
 
+	
+	private GameBoard(Set<common.Player> players, common.GameConfig config, int date, Area[][][] universe, int[] sunLocation)
+	{
+		this.players = players;
+		this.config = config;
+		this.date = date;
+		this.universe = universe;
+		this.sunLocation = sunLocation;
+	}
+	
+	
 	/**
 	 * Full new game constructor.
 	 * 
@@ -202,7 +219,7 @@ public class GameBoard
 					}
 				}
 
-		return new common.PlayerGameBoard(playerUniverseView, sunLocation);
+		return new common.PlayerGameBoard(playerUniverseView, sunLocation, date);
 	}		
 	
 	/**
@@ -410,105 +427,7 @@ public class GameBoard
 		}
 		
 		return null;
-	}
-	
-	public boolean canBuild(common.Player player, String celestialBodyName, Class<? extends common.IBuilding> buildingType)
-	{
-		// TODO : Check if celestial body has already build something on this turn.
-		
-		ICelestialBody celestialBody = getCelestialBody(celestialBodyName);
-		if (celestialBody == null) throw new IllegalArgumentException("Celestial body '"+celestialBodyName+"' does not exist.");
-		
-		// If celestial body is not a productive one.
-		if (!ProductiveCelestialBody.class.isInstance(celestialBody)) return false;
-		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
-		
-		// If player is not the celestial body owner.
-		if (productiveCelestialBody.getOwner() == null || !productiveCelestialBody.getOwner().isNamed(player.getName())) return false;
-		
-		// If there is no more free slots.
-		if (productiveCelestialBody.getFreeSlotsCount() < 1) return false;
-		
-		// Price check & Celestial body type / building type check
-		int carbonCost = 0;
-		int populationCost = 0;
-
-		IBuilding building = getBuildingFromClientType(productiveCelestialBody, buildingType);
-		
-		if (common.DefenseModule.class.equals(buildingType))
-		{
-			if (building != null)
-			{
-				DefenseModule defenseModule = DefenseModule.class.cast(building);
-				carbonCost = defenseModule.getNextBuildCost();				
-			}
-			else
-			{
-				carbonCost = common.DefenseModule.FIRST_BUILD_COST;
-			}
-			populationCost = 0;
-		}
-		else if (common.ExtractionModule.class.equals(buildingType))
-		{
-			if (building != null)
-			{
-				ExtractionModule extractionModule = ExtractionModule.class.cast(building);
-				carbonCost = extractionModule.getNextBuildCost();				
-			}
-			else
-			{
-				carbonCost = common.ExtractionModule.FIRST_BUILD_COST;
-			}
-			populationCost = 0;
-		}
-		else if (common.GovernmentModule.class.equals(buildingType))
-		{
-			if (building != null)
-			{
-				return false;
-			}
-			else
-			{
-				if (!Planet.class.isInstance(productiveCelestialBody)) return false;
-				
-				carbonCost = 0;
-				populationCost = 0;
-			}
-		}
-		else if (common.PulsarLauchingPad.class.equals(buildingType))
-		{
-			if (!Planet.class.isInstance(productiveCelestialBody)) return false;
-			
-			carbonCost = common.PulsarLauchingPad.PRICE_CARBON;
-			populationCost = common.PulsarLauchingPad.PRICE_POPULATION;
-		}
-		else if (common.SpaceCounter.class.equals(buildingType))
-		{
-			carbonCost = common.SpaceCounter.PRICE;
-			populationCost = 0;
-		}
-		else if (common.StarshipPlant.class.equals(buildingType))
-		{
-			if (!Planet.class.isInstance(productiveCelestialBody)) return false;
-			
-			carbonCost = common.StarshipPlant.PRICE_CARBON;
-			populationCost = common.StarshipPlant.PRICE_POPULATION;
-		}
-		else
-		{
-			throw new IllegalArgumentException("Unknown building type : "+buildingType);
-		}
-		
-		if (carbonCost > productiveCelestialBody.getCarbon()) return false;
-		if (populationCost > 0)
-		{
-			if (!Planet.class.isInstance(productiveCelestialBody)) return false;
-			Planet planet = Planet.class.cast(productiveCelestialBody);
-			if (populationCost > planet.getPopulation()) return false;
-		}
-		
-		return true;
-	}
+	}	
 	
 	public boolean canDemolish(common.Player player, String celestialBodyName, Class<? extends common.IBuilding> buildingType)
 	{
@@ -608,9 +527,193 @@ public class GameBoard
 		return false;
 	}
 
-	public void build(Player player, String celestialBodyName, Class<? extends IBuilding> buildingType)
+	public void build(String playerLogin, String celestialBodyName, Class<? extends common.IBuilding> buildingType) throws CelestialBodyBuildException
 	{
-		// TODO Auto-generated method stub
+		BuildCheckResult buildCheckResult = checkBuild(playerLogin, celestialBodyName, buildingType);
+		buildCheckResult.productiveCelestialBody.updateBuilding(buildCheckResult.newBuilding);
+		buildCheckResult.productiveCelestialBody.setCarbon(buildCheckResult.productiveCelestialBody.getCarbon() - buildCheckResult.carbonCost);
 		
+		if (buildCheckResult.populationCost > 0)
+		{
+			Planet planet = Planet.class.cast(buildCheckResult.productiveCelestialBody);
+			planet.setPopulation(planet.getPopulation() - buildCheckResult.populationCost);
+		}
+		
+		buildCheckResult.productiveCelestialBody.setLastBuildDate(date);
+	}
+	
+
+	public boolean canBuild(String playerLogin, String celestialBodyName, Class<? extends common.IBuilding> buildingType)
+	{		
+		try
+		{
+			checkBuild(playerLogin, celestialBodyName, buildingType);
+		}
+		catch(Throwable t)
+		{
+			return false;
+		}
+		return true;
+	}
+	
+	private static class BuildCheckResult
+	{
+		final ProductiveCelestialBody productiveCelestialBody;
+		final IBuilding existingBuilding;
+		final IBuilding newBuilding;
+		final int carbonCost;
+		final int populationCost;
+		
+		public BuildCheckResult(ProductiveCelestialBody productiveCelestialBody, IBuilding building, int carbonCost, int populationCost, IBuilding newBuilding)
+		{
+			this.productiveCelestialBody = productiveCelestialBody;
+			this.existingBuilding = building;
+			this.carbonCost = carbonCost;
+			this.populationCost = populationCost;
+			this.newBuilding = newBuilding;
+		}		
+	}
+	
+	private BuildCheckResult checkBuild(String playerLogin, String celestialBodyName, Class<? extends common.IBuilding> buildingType) throws CelestialBodyBuildException
+	{
+		ICelestialBody celestialBody = getCelestialBody(celestialBodyName);
+		if (celestialBody == null) throw new CelestialBodyBuildException("Celestial body '"+celestialBodyName+"' does not exist.");
+		
+		// If celestial body is not a productive one.
+		if (!ProductiveCelestialBody.class.isInstance(celestialBody)) throw new CelestialBodyBuildException("Celestial body '"+celestialBodyName+"' is not a productive one.");
+		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
+		
+		// If player is not the celestial body owner.
+		if (productiveCelestialBody.getOwner() == null || !productiveCelestialBody.getOwner().isNamed(playerLogin)) throw new CelestialBodyBuildException("Player '"+playerLogin+"' is not the '"+celestialBodyName+"' celestial body owner.");
+		
+		// If this productive celestial body build was already used this turn.
+		if (productiveCelestialBody.getLastBuildDate() >= date) throw new CelestialBodyBuildException("Celestial body '"+celestialBodyName+"' already in work for this turn.");
+		
+		// If there is no more free slots.
+		if (productiveCelestialBody.getFreeSlotsCount() < 1) throw new CelestialBodyBuildException("No more free slots on celestial body '"+celestialBodyName+"'");
+		
+		// Price check & Celestial body type / building type check
+		int carbonCost = 0;
+		int populationCost = 0;
+
+		IBuilding building = getBuildingFromClientType(productiveCelestialBody, buildingType);
+		IBuilding newBuilding;
+		
+		if (common.DefenseModule.class.equals(buildingType))
+		{
+			if (building != null)
+			{
+				DefenseModule defenseModule = DefenseModule.class.cast(building);
+				carbonCost = defenseModule.getNextBuildCost();
+				newBuilding = defenseModule.getUpgradedBuilding();
+			}
+			else
+			{
+				carbonCost = common.DefenseModule.FIRST_BUILD_COST;
+				newBuilding = new DefenseModule(1);
+			}
+			populationCost = 0;
+		}
+		else if (common.ExtractionModule.class.equals(buildingType))
+		{
+			if (building != null)
+			{
+				ExtractionModule extractionModule = ExtractionModule.class.cast(building);
+				carbonCost = extractionModule.getNextBuildCost();
+				newBuilding = extractionModule.getUpgradedBuilding();
+			}
+			else
+			{
+				carbonCost = common.ExtractionModule.FIRST_BUILD_COST;
+				newBuilding = new ExtractionModule(1);
+			}
+			populationCost = 0;
+		}
+		else if (common.GovernmentModule.class.equals(buildingType))
+		{
+			if (building != null)
+			{
+				throw new CelestialBodyBuildException("Government module already built on '"+celestialBodyName+"'");
+			}
+			else
+			{
+				if (!Planet.class.isInstance(productiveCelestialBody)) throw new CelestialBodyBuildException("Government can only be build on planet, '"+celestialBodyName+"' is not a planet.");
+				
+				carbonCost = 0;
+				populationCost = 0;
+				
+				newBuilding = new GovernmentModule();
+			}
+		}
+		else if (common.PulsarLauchingPad.class.equals(buildingType))
+		{
+			if (!Planet.class.isInstance(productiveCelestialBody)) throw new CelestialBodyBuildException("PulsarLaunchingPad can only be build on planet, '"+celestialBodyName+"' is not a planet.");
+			
+			carbonCost = common.PulsarLauchingPad.PRICE_CARBON;
+			populationCost = common.PulsarLauchingPad.PRICE_POPULATION;
+			
+			if (building != null)
+			{
+				PulsarLauchingPad pulsarLaunchingPad = PulsarLauchingPad.class.cast(building);
+				newBuilding = pulsarLaunchingPad.getUpgradedBuilding();
+			}
+			else
+			{
+				newBuilding = new PulsarLauchingPad(1, 0);
+			}
+		}
+		else if (common.SpaceCounter.class.equals(buildingType))
+		{
+			carbonCost = common.SpaceCounter.PRICE;
+			populationCost = 0;
+			
+			if (building != null)
+			{
+				SpaceCounter spaceCounter = SpaceCounter.class.cast(building);
+				newBuilding = spaceCounter.getUpgradedBuilding();
+			}
+			else
+			{
+				newBuilding = new SpaceCounter(1);
+			}
+			
+		}
+		else if (common.StarshipPlant.class.equals(buildingType))
+		{
+			if (building != null)
+			{
+				throw new CelestialBodyBuildException("StarshipPlant module already built on '"+celestialBodyName+"'");
+			}
+			else
+			{
+				if (!Planet.class.isInstance(productiveCelestialBody)) throw new CelestialBodyBuildException("StarshipPlant can only be build on planet, '"+celestialBodyName+"' is not a planet.");
+			
+				carbonCost = common.StarshipPlant.PRICE_CARBON;
+				populationCost = common.StarshipPlant.PRICE_POPULATION;
+				
+				newBuilding = new StarshipPlant();
+			}
+		}
+		else
+		{
+			throw new CelestialBodyBuildException("Unknown building type : "+buildingType);
+		}
+		
+		if (carbonCost > productiveCelestialBody.getCarbon()) throw new CelestialBodyBuildException("Not enough carbon.");
+		if (populationCost > 0)
+		{
+			if (!Planet.class.isInstance(productiveCelestialBody)) throw new CelestialBodyBuildException("Only planet can afford population costs, '"+celestialBodyName+"' is not a planet.");;
+			Planet planet = Planet.class.cast(productiveCelestialBody);
+			if (populationCost > planet.getPopulation()) throw new CelestialBodyBuildException("Not enough population.");
+		}
+		
+		return new BuildCheckResult(productiveCelestialBody, building, carbonCost, populationCost, newBuilding);		
+	}
+
+
+	public void resolveCurrentTurn()
+	{
+		// TODO : Résolve mobile units movement, attacks, etc... On Current instance.
+		++date;
 	}
 }

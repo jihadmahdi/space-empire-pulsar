@@ -5,13 +5,17 @@
  */
 package server.model;
 
+import java.io.Serializable;
+
 import common.Player;
 
 /**
  * 
  */
-public class Probe extends Unit
+public class Probe extends Unit implements Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+	
 	// Constans
 	private final int scope;
 	

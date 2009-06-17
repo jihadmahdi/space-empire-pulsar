@@ -7,27 +7,12 @@ import common.PlayerGameBoard;
  */
 public abstract class GameMoveCommand
 {
-	private final GameBoard originalGameBoard;
-	protected GameBoard finalGameBoard;
+	protected String playerLogin;
 	
-	public GameMoveCommand(GameBoard originalGameBoard)
+	public GameMoveCommand(String playerLogin)
 	{
-		this.originalGameBoard = originalGameBoard;
+		this.playerLogin = playerLogin;
 	}
 
-	public PlayerGameBoard getPlayerGameBoard(String playerLogin)
-	{
-		return getFinalGameBoard().getPlayerGameBoard(playerLogin);
-	}
-	
-	public GameBoard getFinalGameBoard()
-	{
-		if (finalGameBoard == null)
-		{
-			finalGameBoard = apply();
-		}
-		return finalGameBoard;
-	}
-	
-	abstract protected GameBoard apply();
+	abstract protected GameBoard apply(GameBoard originalGameBoard);
 }

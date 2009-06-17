@@ -5,6 +5,7 @@
  */
 package server.model;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -17,8 +18,10 @@ import common.Player;
 /**
  * This class represent a planet in the universe.
  */
-class Planet extends ProductiveCelestialBody
+class Planet extends ProductiveCelestialBody implements Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+	
 	private static final Random random = new Random();
 	
 	// Constants
@@ -68,7 +71,7 @@ class Planet extends ProductiveCelestialBody
 			GovernmentModule gov = new GovernmentModule();
 			try
 			{
-				planet.build(gov);
+				planet.updateBuilding(gov);
 			}
 			catch (CelestialBodyBuildException e)
 			{
@@ -176,5 +179,10 @@ class Planet extends ProductiveCelestialBody
 		}
 		
 		return false;
+	}
+
+	public void setPopulation(int population)
+	{
+		this.population = population;
 	}
 }

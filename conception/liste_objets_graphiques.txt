@@ -85,6 +85,7 @@ changer politique de conquète(politique conquète)
 envoyer message (tous/alliés/ennemis/Player)
 
 [résolution du tour]
+récolte des ressources
 installer module gouvernemental()
 construire bâtiment (corps céleste, type construction)
 construire route de l'espace(corps céleste origine, corps céleste destination)
