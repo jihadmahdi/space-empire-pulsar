@@ -5,6 +5,7 @@
  */
 package server.model;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,10 +14,14 @@ import common.Player;
 /**
  * 
  */
-class SpaceCounter implements IBuilding
+class SpaceCounter implements IBuilding, Serializable
 {
-	static class SpaceRoad
+	private static final long	serialVersionUID	= 1L;
+	
+	static class SpaceRoad implements Serializable
 	{
+		private static final long	serialVersionUID	= 1L;
+		
 		// Constants
 		private final int creationDate;
 		private final int[] from;
@@ -37,9 +42,10 @@ class SpaceCounter implements IBuilding
 		}
 	}
 	
-	static class CarbonCarrier extends Unit
+	static class CarbonCarrier extends Unit implements Serializable
 	{
-
+		private static final long	serialVersionUID	= 1L;
+		
 		/**
 		 * @param name
 		 * @param owner
@@ -60,8 +66,10 @@ class SpaceCounter implements IBuilding
 		
 	}
 	
-	static class CarbonOrder
-	{		
+	static class CarbonOrder implements Serializable
+	{
+		private static final long	serialVersionUID	= 1L;
+		
 		private CarbonCarrier carbonCarrier;
 		private int carbonAmount;
 		
@@ -82,10 +90,10 @@ class SpaceCounter implements IBuilding
 	// Variables
 	private int nbBuild;
 	// assert Sets.size() == nbBuild
-	private final Set<SpaceRoad> spaceRoads = new HashSet<SpaceRoad>();
-	private final Set<CarbonOrder> ordersToReceive = new HashSet<CarbonOrder>();
-	private final Set<CarbonOrder> currentSentOrder = new HashSet<CarbonOrder>();
-	private final Set<CarbonOrder> nextOrders = new HashSet<CarbonOrder>();
+	private final Set<SpaceRoad> spaceRoads;
+	private final Set<CarbonOrder> ordersToReceive;
+	private final Set<CarbonOrder> currentSentOrder;
+	private final Set<CarbonOrder> nextOrders;
 	
 	/**
 	 * Full constructor.
@@ -93,6 +101,19 @@ class SpaceCounter implements IBuilding
 	public SpaceCounter(int nbBuild)
 	{
 		this.nbBuild = nbBuild;
+		this.spaceRoads = new HashSet<SpaceRoad>();
+		this.ordersToReceive = new HashSet<CarbonOrder>();
+		this.currentSentOrder = new HashSet<CarbonOrder>();
+		this.nextOrders = new HashSet<CarbonOrder>();
+	}
+	
+	private SpaceCounter(int nbBuild, Set<SpaceRoad> spaceRoads, Set<CarbonOrder> ordersToReceive, Set<CarbonOrder> currentSentOrder, Set<CarbonOrder> nextOrders)
+	{
+		this.nbBuild = nbBuild;
+		this.spaceRoads = spaceRoads;
+		this.ordersToReceive = ordersToReceive;
+		this.currentSentOrder = currentSentOrder;
+		this.nextOrders = nextOrders;
 	}
 
 	/* (non-Javadoc)
@@ -132,5 +153,10 @@ class SpaceCounter implements IBuilding
 	public int getBuildSlotsCount()
 	{
 		return nbBuild;
+	}
+
+	public SpaceCounter getUpgradedBuilding()
+	{
+		return new SpaceCounter(nbBuild+1, spaceRoads, ordersToReceive, currentSentOrder, nextOrders);
 	}
 }

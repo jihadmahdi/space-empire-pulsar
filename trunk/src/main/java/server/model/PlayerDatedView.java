@@ -14,13 +14,19 @@ import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.Map;
 
+import org.axan.eplib.utils.Basic;
+
 /**
  * Represent an object that can have a different view for each player. And each view is dated. T must be immutable to be sure tracked object won't changed after
  */
-class PlayerDatedView<T extends Serializable>
+class PlayerDatedView<T extends Serializable> implements Serializable
 {
-	public static class DatedObject<T extends Serializable>
+	private static final long	serialVersionUID	= 1L;
+	
+	public static class DatedObject<T extends Serializable> implements Serializable
 	{
+		private static final long	serialVersionUID	= 1L;
+		
 		private final T		object;
 
 		private final int	date;
@@ -30,54 +36,14 @@ class PlayerDatedView<T extends Serializable>
 		 */
 		public DatedObject(T object, int date)
 		{
-			this.object = clone(object);
+			this.object = Basic.clone(object);
 			this.date = date;
 		}
 
 		public T getValue()
 		{
-			return clone(object);
-		}
-
-		private static final PipedInputStream	PIPE_IN	= new PipedInputStream();
-
-		private static ObjectOutputStream		OOS;
-
-		private static ObjectInputStream		OIS;
-
-		static <U extends Serializable> U clone(U object)
-		{
-			if (true) return object;
-						
-			try
-			{
-				synchronized (PIPE_IN)
-				{
-					if (OOS == null)
-					{
-						OOS = new ObjectOutputStream(new PipedOutputStream(PIPE_IN));
-					}
-					if (OIS == null)
-					{
-						OIS = new ObjectInputStream(PIPE_IN);
-					}
-				}
-				
-				OOS.writeObject(object);
-				U copy = (U) OIS.readObject();
-
-				OIS.close();
-				OOS.close();
-				PIPE_IN.close();
-
-				return copy;
-			}
-			catch (Exception e)
-			{
-				throw new Error("Cannot serialise/deserialise object from class "+object.getClass().getCanonicalName(), e);
-			}
-
-		}
+			return Basic.clone(object);
+		}				
 	}
 
 	Map<String, DatedObject<T>>	playersViews	= new Hashtable<String, DatedObject<T>>();

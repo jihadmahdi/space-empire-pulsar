@@ -42,7 +42,7 @@ public class ServerGame
 		gameBoards.push(initialGameBoard);
 		for(Player p : playerList)
 		{
-			playersCurrentMove.put(p.getName(), new PlayerGameMove(initialGameBoard));
+			playersCurrentMove.put(p.getName(), new PlayerGameMove(initialGameBoard, p.getName()));
 		}
 	}
 
@@ -54,5 +54,30 @@ public class ServerGame
 	public PlayerGameMove getPlayerGameMove(String playerLogin)
 	{
 		return playersCurrentMove.get(playerLogin);
+	}
+	
+	public void resolveCurrentTurn()
+	{
+		GameBoard currentGameBoard = gameBoards.peek();
+		
+		for(String playerLogin : playersCurrentMove.keySet())
+		{
+			PlayerGameMove playerGameMove = playersCurrentMove.get(playerLogin);
+			Stack<GameMoveCommand> playerCommands = playerGameMove.getCommands();
+			
+			for(GameMoveCommand cmd : playerCommands)
+			{
+				currentGameBoard = cmd.apply(currentGameBoard);
+			}
+		}
+		
+		currentGameBoard.resolveCurrentTurn();
+		
+		gameBoards.push(currentGameBoard);
+		
+		for(String playerLogin : playersCurrentMove.keySet())
+		{
+			playersCurrentMove.put(playerLogin, new PlayerGameMove(currentGameBoard, playerLogin));
+		}		
 	}
 }

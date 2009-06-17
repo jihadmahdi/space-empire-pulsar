@@ -5,15 +5,19 @@
  */
 package server.model;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
 
-class Area
+class Area implements Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+
 	public static class AreaIllegalDefinitionException extends Exception
 	{
 
@@ -41,7 +45,7 @@ class Area
 	private final PlayerDatedView<HashSet<common.Unit>> playersUnitsView = new PlayerDatedView<HashSet<common.Unit>>();
 	
 	// Markers
-	private final Map<String, Set<common.IMarker>> playersMarkers = new Hashtable<String, Set<common.IMarker>>();
+	private final Map<String, Set<common.IMarker>> playersMarkers = new HashMap<String, Set<common.IMarker>>();
 	
 	/**
 	 * Sun flag is set to true if this area is filled with the sun.
@@ -79,7 +83,7 @@ class Area
 	public void setCelestialBody(ICelestialBody celestialBody) throws AreaIllegalDefinitionException
 	{
 		if (isSun) throw new AreaIllegalDefinitionException("Cannot set a celestialBody in area filled with sun.");
-		this.celestialBody = celestialBody;
+		this.celestialBody = celestialBody;		
 	}
 
 	/**

@@ -5,11 +5,15 @@
  */
 package server.model;
 
+import java.io.Serializable;
+
 /**
  * 
  */
-class DefenseModule implements IBuilding
+class DefenseModule implements IBuilding, Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+	
 	// Variables
 	private int nbBuild;
 	
@@ -39,12 +43,17 @@ class DefenseModule implements IBuilding
 	public int getNextBuildCost()
 	{
 		// TODO : Redefine the formula
-		return (int) (1+nbBuild * 0.25) * 1000;
+		return (int) ((Float.valueOf(1+nbBuild) * 0.25) * 1000);
 	}
 
 	@Override
 	public int getBuildSlotsCount()
 	{
 		return nbBuild;
+	}
+	
+	public DefenseModule getUpgradedBuilding()
+	{
+		return new DefenseModule(nbBuild+1);
 	}
 }

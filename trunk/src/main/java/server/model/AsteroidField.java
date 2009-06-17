@@ -5,6 +5,8 @@
  */
 package server.model;
 
+import java.io.Serializable;
+
 import common.GameConfig;
 import common.ICelestialBody;
 import common.Player;
@@ -12,8 +14,9 @@ import common.Player;
 /**
  * This class represent an asteroid field.
  */
-class AsteroidField extends ProductiveCelestialBody
+class AsteroidField extends ProductiveCelestialBody implements Serializable
 {	
+	private static final long	serialVersionUID	= 1L;
 
 	public AsteroidField(String name, GameConfig gameConfig)
 	{

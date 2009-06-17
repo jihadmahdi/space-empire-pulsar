@@ -46,4 +46,9 @@ public class StarshipPlant implements IBuilding, Serializable
 	{
 		return "Starship plant";
 	}
+	
+	public Map<Class<? extends IStarship>, Integer> getLandedStarships()
+	{
+		return landedStarships;
+	}
 }

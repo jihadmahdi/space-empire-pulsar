@@ -5,11 +5,15 @@
  */
 package server.model;
 
+import java.io.Serializable;
+
 /**
  * 
  */
-class ExtractionModule implements IBuilding
+class ExtractionModule implements IBuilding, Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+	
 	// Variables
 	private int nbBuild;
 	
@@ -39,12 +43,17 @@ class ExtractionModule implements IBuilding
 	int getNextBuildCost()
 	{
 		// TODO : Redefine the formula
-		return (int) (nbBuild * 0.25) * 1000;
+		return (int) ((Float.valueOf(nbBuild+1) * 0.25) * 1000);
 	}
 
 	@Override
 	public int getBuildSlotsCount()
 	{
 		return nbBuild;
+	}
+	
+	public ExtractionModule getUpgradedBuilding()
+	{
+		return new ExtractionModule(nbBuild+1);
 	}
 }

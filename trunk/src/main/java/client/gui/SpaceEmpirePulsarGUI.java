@@ -667,8 +667,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 	 */
 	@Override
 	public void displayGameCreationPanel()
-	{
-		gameState = GameState.Creation;
+	{		
 		if (getContentPane() != getGameCreationPanel())
 		{
 			SwingUtilities.invokeLater(new Runnable()
@@ -677,7 +676,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 				@Override
 				public void run()
 				{
-					System.out.println("GUI: displayGameCreationPanel");
+					if (gameState == GameState.Creation) System.out.println("GUI: displayGameCreationPanel");
 					setContentPane(getGameCreationPanel());
 					getGameCreationPanel().setVisible(false);
 					getGameCreationPanel().setVisible(true);
@@ -744,6 +743,31 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		refreshGameConfig(gameCfg);
 	}
 
+	private JPanel createPausedGamePlayerListPlayerPanel(Player player, boolean isConnected)
+	{
+		JPanel playerPanel = new JPanel(new BorderLayout());
+		if (player.getConfig().getPortrait() != null)
+		{
+			JImagePanel portrait = new JImagePanel(player.getConfig().getPortrait(), 50, 60);
+			portrait.setAutoSize(false);
+			playerPanel.add(portrait, BorderLayout.WEST);
+		}
+		if (player.getConfig().getSymbol() != null)
+		{
+			JImagePanel symbol = new JImagePanel(player.getConfig().getSymbol(), 50, 60);
+			symbol.setAutoSize(false);
+			playerPanel.add(symbol, BorderLayout.EAST);
+		}
+
+		JLabel name = new JLabel(player.getName()+(isConnected?"":" (waiting)"), JLabel.CENTER);
+		name.setForeground(player.getConfig().getColor());
+		playerPanel.add(name, BorderLayout.CENTER);
+		
+		playerPanel.setBorder(isConnected?null:BorderFactory.createLineBorder(Color.red));
+
+		return playerPanel;
+	}
+	
 	private JPanel createGameCreationPlayerListPlayerPanel(Player player)
 	{
 		JPanel playerPanel = new JPanel(new BorderLayout());
@@ -771,8 +795,16 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 	{
 		try
 		{
-			Set<Player> players = client.getGameCreationInterface().getPlayerList();
-			refreshPlayerList(players);
+			if (gameState == GameState.Creation)
+			{
+				Set<Player> players = client.getGameCreationInterface().getPlayerList();
+				refreshPlayerList(players);
+			}
+			else if (gameState == GameState.Paused)
+			{
+				Map<Player, Boolean> players = client.getPausedGameInterface().getPlayerStateList();
+				refreshPausedGamePlayerList(players);
+			}
 		}
 		catch(Throwable t)
 		{
@@ -788,18 +820,26 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 	@Override
 	public void onGamePaused()
 	{
-		// TODO Auto-generated method stub
 		gameState = GameState.Paused;
 		System.out.println("GUI: onGamePaused");
+		displayPausedGamePanel();
 	}
 
+	private void displayPausedGamePanel()
+	{
+		displayGameCreationPanel();
+	}
+	
 	private void displayRunningGamePanel()
 	{
+		if (getContentPane() == getRunningGamePanel()) return;
+		
 		try
 		{
 			setContentPane(getRunningGamePanel());
 			getRunningGamePanel().setVisible(false);
 			getRunningGamePanel().setVisible(true);
+			getRunningGamePanel().refreshGameBoard();
 		}
 		catch(Throwable t)
 		{
@@ -857,8 +897,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 	public void onGameResumed()
 	{
 		gameState = GameState.Running;
-		// TODO Auto-generated method stub
 		System.out.println("GUI: onGameResumed");
+		displayRunningGamePanel();
 	}
 
 	private JPanel getGameCreationPanel()
@@ -1043,6 +1083,44 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 					case Running:
 					{
 						getRunningGamePanel().refreshPlayerList(playerList);
+						break;
+					}
+					default:
+					{
+						break;
+					}
+				}
+			}
+		});
+	}
+	
+	public void refreshPausedGamePlayerList(final Map<Player, Boolean> playerStateList)
+	{
+		SwingUtilities.invokeLater(new Runnable()
+		{
+
+			@Override
+			public void run()
+			{
+				switch(gameState)
+				{
+					case Paused:
+					{
+						getJGameCreationPlayerListPanel().removeAll();
+						for(Player player : playerStateList.keySet())
+						{
+							if (player.getName().compareTo(client.getLogin()) == 0)
+							{
+								currentPlayer = player;
+								getGameCreationPlayerConfigEditionColoredNameLabel().setBackground(null);
+								getGameCreationPlayerConfigEditionColoredNameLabel().setForeground(player.getConfig().getColor());
+							}
+
+							getJGameCreationPlayerListPanel().add(createPausedGamePlayerListPlayerPanel(player, playerStateList.get(player)));
+						}
+
+						getJGameCreationPlayerListPanel().setVisible(false);
+						getJGameCreationPlayerListPanel().setVisible(true);
 						break;
 					}
 					default:
@@ -1251,8 +1329,16 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 					if (msg.isEmpty()) return;
 					try
 					{
-						client.getGameCreationInterface().sendMessage(msg);
-						gameCreationChatMessageTextField.setText("");
+						if (gameState == GameState.Creation)
+						{
+							client.getGameCreationInterface().sendMessage(msg);
+							gameCreationChatMessageTextField.setText("");
+						}
+						else if (gameState == GameState.Paused)
+						{
+							client.getPausedGameInterface().sendMessage(msg);
+							gameCreationChatMessageTextField.setText("");
+						}							
 					}
 					catch(Exception e)
 					{
@@ -1291,6 +1377,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 			{
 				public void mouseClicked(MouseEvent evt)
 				{
+					if (gameState != GameState.Creation) return;
+					
 					Color newColor = JColorChooser.showDialog(null, "Choose your color", gameCreationPlayerConfigEditionColoredNameLabel.getForeground());
 					if (newColor != null)
 					{
@@ -1345,33 +1433,35 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 					isGameConfigCurrentlyRefreshed = true;
 
+					boolean isEditable = isAdmin && (gameState == GameState.Creation);
+					
 					// /
 
-					getGameCreationConfigEditionUniverseXSizeTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionUniverseXSizeTextField().setEditable(isEditable);
 					getGameCreationConfigEditionUniverseXSizeTextField().setText(String.valueOf(gameCfg.getDimX()));
 
-					getGameCreationConfigEditionUniverseYSizeTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionUniverseYSizeTextField().setEditable(isEditable);
 					getGameCreationConfigEditionUniverseYSizeTextField().setText(String.valueOf(gameCfg.getDimY()));
 
-					getGameCreationConfigEditionUniverseZSizeTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionUniverseZSizeTextField().setEditable(isEditable);
 					getGameCreationConfigEditionUniverseZSizeTextField().setText(String.valueOf(gameCfg.getDimZ()));
 
-					getGameCreationConfigEditionSunRadiusTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionSunRadiusTextField().setEditable(isEditable);
 					getGameCreationConfigEditionSunRadiusTextField().setText(String.valueOf(gameCfg.getSunRadius()));
 
-					getGameCreationConfigEditionPlayersStartingCarbonTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionPlayersStartingCarbonTextField().setEditable(isEditable);
 					getGameCreationConfigEditionPlayersStartingCarbonTextField().setText(String.valueOf(gameCfg.getPlayersPlanetsStartingCarbonResources()));
 
-					getGameCreationConfigEditionPlayersStartingPopulationTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionPlayersStartingPopulationTextField().setEditable(isEditable);
 					getGameCreationConfigEditionPlayersStartingPopulationTextField().setText(String.valueOf(gameCfg.getPlayersPlanetsStartingPopulation()));					
 					
 					// /
 
-					getGameCreationConfigEditionNeutralCelestialBodiesTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionNeutralCelestialBodiesTextField().setEditable(isEditable);
 					getGameCreationConfigEditionNeutralCelestialBodiesTextField().setText(String.valueOf(gameCfg.getNeutralCelestialBodiesCount()));
 
-					getGameCreationConfigEditionPlanetPopulationPerTurnMinTextField().setEditable(isAdmin);
-					getGameCreationConfigEditionPlanetPopulationPerTurnMaxTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionPlanetPopulationPerTurnMinTextField().setEditable(isEditable);
+					getGameCreationConfigEditionPlanetPopulationPerTurnMaxTextField().setEditable(isEditable);
 					int[] populationPerTurn = gameCfg.getPopulationPerTurn();
 					if (populationPerTurn.length == 2)
 					{
@@ -1379,8 +1469,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 						getGameCreationConfigEditionPlanetPopulationPerTurnMaxTextField().setText(String.valueOf(populationPerTurn[1]));
 					}
 
-					getGameCreationConfigEditionPlanetPopulationLimitMinTextField().setEditable(isAdmin);
-					getGameCreationConfigEditionPlanetPopulationLimitMaxTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionPlanetPopulationLimitMinTextField().setEditable(isEditable);
+					getGameCreationConfigEditionPlanetPopulationLimitMaxTextField().setEditable(isEditable);
 					int[] populationLimit = gameCfg.getPopulationLimit();
 					if (populationLimit.length == 2)
 					{
@@ -1390,8 +1480,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 					// /
 
-					getGameCreationConfigEditionPlanetSlotsMinTextField().setEditable(isAdmin);
-					getGameCreationConfigEditionPlanetSlotsMaxTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionPlanetSlotsMinTextField().setEditable(isEditable);
+					getGameCreationConfigEditionPlanetSlotsMaxTextField().setEditable(isEditable);
 					Integer[] planetSlotsRange = gameCfg.getCelestialBodiesSlotsAmount().get(Planet.class);
 					if (planetSlotsRange != null && planetSlotsRange.length == 2)
 					{
@@ -1399,8 +1489,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 						getGameCreationConfigEditionPlanetSlotsMaxTextField().setText(String.valueOf(planetSlotsRange[1]));
 					}
 
-					getGameCreationConfigEditionAsteroidFieldSlotsMinTextField().setEditable(isAdmin);
-					getGameCreationConfigEditionAsteroidFieldSlotsMaxTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionAsteroidFieldSlotsMinTextField().setEditable(isEditable);
+					getGameCreationConfigEditionAsteroidFieldSlotsMaxTextField().setEditable(isEditable);
 					Integer[] asteroidFieldSlotsRange = gameCfg.getCelestialBodiesSlotsAmount().get(AsteroidField.class);
 					if (asteroidFieldSlotsRange != null && asteroidFieldSlotsRange.length == 2)
 					{
@@ -1408,8 +1498,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 						getGameCreationConfigEditionAsteroidFieldSlotsMaxTextField().setText(String.valueOf(asteroidFieldSlotsRange[1]));
 					}
 
-					getGameCreationConfigEditionNebulaSlotsMinTextField().setEditable(isAdmin);
-					getGameCreationConfigEditionNebulaSlotsMaxTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionNebulaSlotsMinTextField().setEditable(isEditable);
+					getGameCreationConfigEditionNebulaSlotsMaxTextField().setEditable(isEditable);
 					Integer[] nebulaSlotsRange = gameCfg.getCelestialBodiesSlotsAmount().get(Nebula.class);
 					if (nebulaSlotsRange != null && nebulaSlotsRange.length == 2)
 					{
@@ -1419,8 +1509,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 					// /
 
-					getGameCreationConfigEditionPlanetCarbonMinTextField().setEditable(isAdmin);
-					getGameCreationConfigEditionPlanetCarbonMaxTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionPlanetCarbonMinTextField().setEditable(isEditable);
+					getGameCreationConfigEditionPlanetCarbonMaxTextField().setEditable(isEditable);
 					Integer[] planetCarbonRange = gameCfg.getCelestialBodiesStartingCarbonAmount().get(Planet.class);
 					if (planetCarbonRange != null && planetCarbonRange.length == 2)
 					{
@@ -1428,8 +1518,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 						getGameCreationConfigEditionPlanetCarbonMaxTextField().setText(String.valueOf(planetCarbonRange[1]));
 					}
 
-					getGameCreationConfigEditionAsteroidFieldCarbonMinTextField().setEditable(isAdmin);
-					getGameCreationConfigEditionAsteroidFieldCarbonMaxTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionAsteroidFieldCarbonMinTextField().setEditable(isEditable);
+					getGameCreationConfigEditionAsteroidFieldCarbonMaxTextField().setEditable(isEditable);
 					Integer[] asteroidFieldCarbonRange = gameCfg.getCelestialBodiesStartingCarbonAmount().get(AsteroidField.class);
 					if (asteroidFieldCarbonRange != null && asteroidFieldCarbonRange.length == 2)
 					{
@@ -1437,8 +1527,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 						getGameCreationConfigEditionAsteroidFieldCarbonMaxTextField().setText(String.valueOf(asteroidFieldCarbonRange[1]));
 					}
 
-					getGameCreationConfigEditionNebulaCarbonMinTextField().setEditable(isAdmin);
-					getGameCreationConfigEditionNebulaCarbonMaxTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionNebulaCarbonMinTextField().setEditable(isEditable);
+					getGameCreationConfigEditionNebulaCarbonMaxTextField().setEditable(isEditable);
 					Integer[] nebulaCarbonRange = gameCfg.getCelestialBodiesStartingCarbonAmount().get(Nebula.class);
 					if (nebulaCarbonRange != null && nebulaCarbonRange.length == 2)
 					{
@@ -1448,21 +1538,21 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 					// /
 
-					getGameCreationConfigEditionPlanetNeutralGenTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionPlanetNeutralGenTextField().setEditable(isEditable);
 					Float planetNeutralGenRate = gameCfg.getNeutralCelestialBodiesGenerationTable().get(Planet.class);
 					if (planetNeutralGenRate != null)
 					{
 						getGameCreationConfigEditionPlanetNeutralGenTextField().setText(String.valueOf(planetNeutralGenRate));
 					}
 
-					getGameCreationConfigEditionAsteroidFieldNeutralGenTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionAsteroidFieldNeutralGenTextField().setEditable(isEditable);
 					Float asteroidNeutralGenRate = gameCfg.getNeutralCelestialBodiesGenerationTable().get(AsteroidField.class);
 					if (asteroidNeutralGenRate != null)
 					{
 						getGameCreationConfigEditionAsteroidFieldNeutralGenTextField().setText(String.valueOf(asteroidNeutralGenRate));
 					}
 
-					getGameCreationConfigEditionNebulaNeutralGenTextField().setEditable(isAdmin);
+					getGameCreationConfigEditionNebulaNeutralGenTextField().setEditable(isEditable);
 					Float nebulaNeutralGenRate = gameCfg.getNeutralCelestialBodiesGenerationTable().get(Nebula.class);
 					if (nebulaNeutralGenRate != null)
 					{
@@ -1471,26 +1561,26 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 					// /
 
-					getGameCreationConfigEditionUnitsProbeScopeTextField().setEnabled(isAdmin);
+					getGameCreationConfigEditionUnitsProbeScopeTextField().setEnabled(isEditable);
 					getGameCreationConfigEditionUnitsProbeScopeTextField().setText(String.valueOf(gameCfg.getProbeScope()));
 
 					// /
 
-					getGameCreationConfigEditionPanelVictoryTeamCheckBox().setEnabled(isAdmin);
+					getGameCreationConfigEditionPanelVictoryTeamCheckBox().setEnabled(isEditable);
 					getGameCreationConfigEditionPanelVictoryTeamCheckBox().setSelected(gameCfg.isAllianceVictory());
 
-					getGameCreationConfigEditionPanelVictoryRegimicideCheckBox().setEnabled(isAdmin);
+					getGameCreationConfigEditionPanelVictoryRegimicideCheckBox().setEnabled(isEditable);
 					getGameCreationConfigEditionPanelVictoryRegimicideCheckBox().setSelected(gameCfg.isRegimicide());
 
-					getGameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox().setEnabled(isAdmin);
+					getGameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox().setEnabled(isEditable);
 					getGameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox().setSelected(gameCfg.isAssimilateNeutralisedPeoples());
 
-					getGameCreationConfigEditionPanelVictoryTotalConquestCheckBox().setEnabled(isAdmin);
+					getGameCreationConfigEditionPanelVictoryTotalConquestCheckBox().setEnabled(isEditable);
 					getGameCreationConfigEditionPanelVictoryTotalConquestCheckBox().setSelected(gameCfg.isTotalConquest());
 
 					getGameCreationConfigEditionPanelVictoryEconomicCheckBox().setEnabled(false);
-					getGameCreationConfigEditionPanelVictoryEconomicCarbonTextField().setEnabled(isAdmin);
-					getGameCreationConfigEditionPanelVictoryEconomicPopulationTextField().setEnabled(isAdmin);
+					getGameCreationConfigEditionPanelVictoryEconomicCarbonTextField().setEnabled(isEditable);
+					getGameCreationConfigEditionPanelVictoryEconomicPopulationTextField().setEnabled(isEditable);
 
 					boolean economicVictoryEnabled = false;
 
@@ -1511,7 +1601,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 					getGameCreationConfigEditionPanelVictoryEconomicCheckBox().setSelected(economicVictoryEnabled);
 
 					getGameCreationConfigEditionPanelVictoryTimeLimitCheckBox().setEnabled(false);
-					getGameCreationConfigEditionPanelVictoryTimeLimitTextField().setEnabled(isAdmin);
+					getGameCreationConfigEditionPanelVictoryTimeLimitTextField().setEnabled(isEditable);
 					getGameCreationConfigEditionPanelVictoryTimeLimitCheckBox().setSelected(false);
 
 					if (gameCfg.getTimeLimitVictory() != null && gameCfg.getTimeLimitVictory() > 0)
@@ -2610,5 +2700,26 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 				getRunningGamePanel().receiveRunningGameMessage(fromPlayer, msg);
 			}
 		});
+	}
+
+	@Override
+	public void receiveNewTurnGameBoard(final PlayerGameBoard gameBoard)
+	{
+		SwingUtilities.invokeLater(new Runnable()
+		{
+		
+			@Override
+			public void run()
+			{
+				displayRunningGamePanel();
+				getRunningGamePanel().receiveNewTurnGameBoard(gameBoard);
+			}
+		});
+	}
+
+	@Override
+	public void receivePausedGameMessage(Player fromPlayer, String msg)
+	{
+		receiveGameCreationMessage(fromPlayer, msg);
 	}
 }

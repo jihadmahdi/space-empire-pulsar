@@ -5,6 +5,7 @@
  */
 package server.model;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Map;
@@ -19,9 +20,11 @@ import common.Player;
 /**
  * Abstract class that represent a celestial body.
  */
-abstract class ProductiveCelestialBody implements ICelestialBody
+abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 {
 	protected static final Random random = new Random();
+	
+	private static final long	serialVersionUID	= 1L;
 	
 	// Constants
 	private final String name;
@@ -32,6 +35,8 @@ abstract class ProductiveCelestialBody implements ICelestialBody
 	private int carbon;
 	private Player owner;
 	private final Set<IBuilding> buildings;
+	
+	private int lastBuildDate = -1;
 	
 	// Views
 	private PlayerDatedView<Integer> playersLastObservation = new PlayerDatedView<Integer>();
@@ -82,25 +87,43 @@ abstract class ProductiveCelestialBody implements ICelestialBody
 		
 		this.owner = null;
 	}
-
-	/**
-	 * Build the given building on the current celestial body.
-	 * Check for free slot to build, abstract method canBuild(Building)id called on the final instance to check if this building can be build on this celestial body.
-	 * @param building
-	 * @throws CelestialBodyBuildException
-	 */
-	public void build(IBuilding building) throws CelestialBodyBuildException
+	
+	public int getLastBuildDate()
 	{
-		if (buildings.size() >= slots)
+		return lastBuildDate;
+	}
+	
+	public void setLastBuildDate(int date)
+	{
+		lastBuildDate = date;
+	}
+	
+	public void updateBuilding(IBuilding building) throws CelestialBodyBuildException
+	{
+		IBuilding oldBuilding = null;
+		
+		int buildSlotsCount = 0;
+		if (buildings != null) for (IBuilding b : buildings)
 		{
-			throw new CelestialBodyBuildException("No more free slot.");
+			if (b.getClass().equals(building.getClass()))
+			{
+				buildSlotsCount += building.getBuildSlotsCount();
+				oldBuilding = b;
+			}
+			else
+			{
+				buildSlotsCount += b.getBuildSlotsCount();
+			}
 		}
 		
-		if (!canBuild(building))
+		if (oldBuilding == null)
 		{
-			throw new CelestialBodyBuildException("Cannot build.");
+			buildSlotsCount += building.getBuildSlotsCount(); 
 		}
 		
+		if (buildSlotsCount > slots) throw new CelestialBodyBuildException("Not enough free slots");
+		
+		if (oldBuilding != null) buildings.remove(oldBuilding);
 		buildings.add(building);
 	}
 	

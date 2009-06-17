@@ -5,6 +5,7 @@
  */
 package server.model;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Hashtable;
 import java.util.Map;
@@ -12,8 +13,10 @@ import java.util.Map;
 /**
  * 
  */
-class StarshipPlant implements IBuilding
+class StarshipPlant implements IBuilding, Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+	
 	private final Map<Class<? extends common.IStarship>, Integer> starships = new Hashtable<Class<? extends common.IStarship>, Integer>();
 	
 	/* (non-Javadoc)

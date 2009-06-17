@@ -1,5 +1,6 @@
 package server.model;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -7,8 +8,10 @@ import common.GovernmentStarship;
 import common.IStarship;
 import common.Player;
 
-public class Fleet extends Unit
+public class Fleet extends Unit implements Serializable
 {		
+	private static final long	serialVersionUID	= 1L;
+	
 	// Variables
 	private HashMap<Class<? extends IStarship>, Integer> starships = new HashMap<Class<? extends IStarship>, Integer>();
 

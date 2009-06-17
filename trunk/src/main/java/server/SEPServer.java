@@ -31,6 +31,7 @@ import org.axan.eplib.statemachine.ProxiedStateMachine.ProxiedStateMachineBadSer
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.eplib.utils.Basic;
 
+import server.model.BuildCommand;
 import server.model.GameBoard;
 import server.model.PlayerGameMove;
 import server.model.ServerGame;
@@ -45,6 +46,7 @@ import common.Protocol;
 import common.Protocol.ServerGameCreation;
 import common.Protocol.ServerPausedGame;
 import common.Protocol.ServerRunningGame;
+import common.Protocol.ServerRunningGame.RunningGameCommandException;
 
 /**
  * TODO
@@ -79,6 +81,11 @@ public class SEPServer implements IServer, GameServerListener
 			this.user = user;
 		}
 
+		protected String getLogin()
+		{
+			return user.getLogin();
+		}
+		
 		protected Player getPlayer()
 		{
 			return sepServer.players.get(user.getLogin()).getPlayer();
@@ -156,7 +163,7 @@ public class SEPServer implements IServer, GameServerListener
 							{
 								player.getClientInterface().receiveGameCreationMessage(getPlayer(), msg);
 							}
-							catch (RpcException e)
+							catch(RpcException e)
 							{
 								log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
 								player.abort(e);
@@ -175,12 +182,12 @@ public class SEPServer implements IServer, GameServerListener
 		@Override
 		public void updateGameConfig(GameConfig gameCfg) throws ServerPrivilegeException
 		{
-			if ( !user.isAdmin())
+			if (!user.isAdmin())
 			{
 				throw new ServerPrivilegeException("Only admin can update game config.");
 			}
 
-			synchronized (sepServer.gameConfig)
+			synchronized(sepServer.gameConfig)
 			{
 				sepServer.gameConfig = gameCfg;
 				sepServer.threadPool.execute(new Runnable()
@@ -237,21 +244,28 @@ public class SEPServer implements IServer, GameServerListener
 		{
 			return sepServer.getCurrentGame().getGameBoard(user.getLogin());
 		}
-		
+
 		private PlayerGameMove getGameMove()
 		{
 			return sepServer.getCurrentGame().getPlayerGameMove(user.getLogin());
 		}
-		
+
 		/*
 		 * (non-Javadoc)
 		 * 
-		 * @see common.Protocol.ServerRunningGame#getGameTurn()
+		 * @see common.Protocol.ServerRunningGame#getPlayerGameBoard()
 		 */
 		@Override
 		public PlayerGameBoard getPlayerGameBoard() throws RpcException, StateMachineNotExpectedEventException
 		{
 			return getGameBoard().getPlayerGameBoard(user.getLogin());
+		}
+
+		@Override
+		public void canSendMessage(String msg) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+
 		}
 
 		/* (non-Javadoc)
@@ -277,7 +291,7 @@ public class SEPServer implements IServer, GameServerListener
 							{
 								player.getClientInterface().receiveRunningGameMessage(getPlayer(), msg);
 							}
-							catch (RpcException e)
+							catch(RpcException e)
 							{
 								log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
 								player.abort(e);
@@ -289,231 +303,271 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public void attackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException
+		public void canAttackEnemiesFleet() throws RpcException, StateMachineNotExpectedEventException
 		{
+			// if (getGameMove().isTurnEnded()) return false;
 			// TODO Auto-generated method stub
-			
+
 		}
 
 		@Override
-		public void build(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
-		{			
-			getGameMove().addCommand(new BuildCommand(celestialBodyName, buildingType));
-			//sepServer.game. build(getPlayer(), celestialBodyName, buildingType);
+		public void attackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public boolean canBuild(String celestialBodyName, Class<? extends common.IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
+		{
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canBuild(getLogin(), celestialBodyName, buildingType);
+		}
+
+		@Override
+		public void build(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
+		{
+			getGameMove().addBuildCommand(celestialBodyName, buildingType);
+		}
+
+		@Override
+		public void canBuildSpaceRoad() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// if (getGameMove().isTurnEnded()) return false;
+			// TODO Auto-generated method stub
+
 		}
 
 		@Override
 		public void buildSpaceRoad(String celestialBodyNameA, String celestialBodyNameB) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-			
-		}
 
-		@Override
-		public void canAttackEnemiesFleet() throws RpcException, StateMachineNotExpectedEventException
-		{
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public boolean canBuild(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
-		{
-			return getGameBoard().canBuild(getPlayer(), celestialBodyName, buildingType);					
-		}
-
-		@Override
-		public void canBuildSpaceRoad() throws RpcException, StateMachineNotExpectedEventException
-		{
-			// TODO Auto-generated method stub
-			
 		}
 
 		@Override
 		public void canChangeConquestPolicy() throws RpcException, StateMachineNotExpectedEventException
 		{
+			// if (getGameMove().isTurnEnded()) return false;
 			// TODO Auto-generated method stub
-			
-		}
 
-		@Override
-		public void canChangeDomesticPolicy() throws RpcException, StateMachineNotExpectedEventException
-		{
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public boolean canDemolish(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
-		{
-			return getGameBoard().canDemolish(getPlayer(), celestialBodyName, buildingType);			
-		}
-
-		@Override
-		public void canDemolishSpaceRoad() throws RpcException, StateMachineNotExpectedEventException
-		{
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void canDismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException
-		{
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public boolean canEmbarkGovernment() throws RpcException, StateMachineNotExpectedEventException
-		{
-			return getGameBoard().canEmbarkGovernment(getPlayer());
-		}
-		
-		@Override
-		public boolean canSettleGovernment(String planetName) throws RpcException, StateMachineNotExpectedEventException
-		{
-			return getGameBoard().canSettleGovernment(getPlayer(), planetName);
-		}
-
-		@Override
-		public boolean canFirePulsarMissile(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException
-		{
-			return getGameBoard().canFirePulsarMissile(getPlayer(), celestialBodyName);
-			
-		}
-
-		@Override
-		public void canFormFleet(String planetName) throws RpcException, StateMachineNotExpectedEventException
-		{
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void canLaunchProbe() throws RpcException, StateMachineNotExpectedEventException
-		{
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void canMakeStarship(String planetName) throws RpcException, StateMachineNotExpectedEventException
-		{
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void canModifyCarbonOrder() throws RpcException, StateMachineNotExpectedEventException
-		{
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void canMoveFleet() throws RpcException, StateMachineNotExpectedEventException
-		{
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public void canSendMessage(String msg) throws RpcException, StateMachineNotExpectedEventException
-		{
-			// TODO Auto-generated method stub
-			
 		}
 
 		@Override
 		public void changeConquestPolicy() throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-			
+
+		}
+
+		@Override
+		public void canChangeDomesticPolicy() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// if (getGameMove().isTurnEnded()) return false;
+			// TODO Auto-generated method stub
+
 		}
 
 		@Override
 		public void changeDomesticPolicy() throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-			
+
+		}
+
+		@Override
+		public boolean canDemolish(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
+		{
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canDemolish(getPlayer(), celestialBodyName, buildingType);
 		}
 
 		@Override
 		public void demolish(String ceslestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-			
+
+		}
+
+		@Override
+		public void canDemolishSpaceRoad() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// if (getGameMove().isTurnEnded()) return false;
+			// TODO Auto-generated method stub
+
 		}
 
 		@Override
 		public void demolishSpaceRoad(String celestialBodyNameA, String celestialBodyNameB) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-			
+
+		}
+
+		@Override
+		public void canDismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// if (getGameMove().isTurnEnded()) return false;
+			// TODO Auto-generated method stub
+
 		}
 
 		@Override
 		public void dismantleFleet(String planetName, String fleetName) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-			
+
+		}
+
+		@Override
+		public boolean canEmbarkGovernment() throws RpcException, StateMachineNotExpectedEventException
+		{
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canEmbarkGovernment(getPlayer());
 		}
 
 		@Override
 		public void embarkGovernment() throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-			
+
+		}
+
+		@Override
+		public boolean canFirePulsarMissile(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException
+		{
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canFirePulsarMissile(getPlayer(), celestialBodyName);
+
 		}
 
 		@Override
 		public void firePulsarMissile(String celestialBodyName, float bonusModifier) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-			
+
+		}
+
+		@Override
+		public boolean canFormFleet(Map<Class<? extends IStarship>, Integer> fleetToForm) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			return false;
 		}
 
 		@Override
 		public void formFleet(String planetName, Map<Class<? extends IStarship>, Integer> composition, String fleetName) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-			
+
+		}
+
+		@Override
+		public void canLaunchProbe() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// if (getGameMove().isTurnEnded()) return false;
+			// TODO Auto-generated method stub
+
 		}
 
 		@Override
 		public void launchProbe(String probeName, int[] destination) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-			
+
+		}
+
+		@Override
+		public boolean canMakeStarship(Map<Class<? extends IStarship>, Integer> starshipToMake) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			return false;
 		}
 
 		@Override
 		public void makeStarship(String planetName, Class<? extends IStarship> starshipType, int quantity) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-			
+
+		}
+
+		@Override
+		public void canModifyCarbonOrder() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// if (getGameMove().isTurnEnded()) return false;
+			// TODO Auto-generated method stub
+
 		}
 
 		@Override
 		public void modifyCarbonOrder(String originCelestialBodyName, String destinationCelestialBodyName, int amount) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-			
+
+		}
+
+		@Override
+		public void canMoveFleet() throws RpcException, StateMachineNotExpectedEventException
+		{
+			// if (getGameMove().isTurnEnded()) return false;
+			// TODO Auto-generated method stub
+
 		}
 
 		@Override
 		public void moveFleet(String fleetName, int delay, Set<String> checkpoints) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-			
+
+		}
+
+		@Override
+		public boolean canSettleGovernment(String planetName) throws RpcException, StateMachineNotExpectedEventException
+		{
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canSettleGovernment(getPlayer(), planetName);
 		}
 
 		@Override
 		public void settleGovernment() throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-			
+
 		}		
+		
+		@Override
+		public void endTurn() throws RpcException, StateMachineNotExpectedEventException
+		{
+			getGameMove().endTurn();
+			
+			sepServer.threadPool.execute(new Runnable()
+			{
+
+				@Override
+				public void run()
+				{
+					sepServer.checkForNextTurn();
+				}
+			});
+		}
+
+		@Override
+		public void resetTurn() throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
+		{
+			getGameMove().resetTurn();			
+		}
+
+		@Override
+		public boolean canEndTurn() throws RpcException, StateMachineNotExpectedEventException
+		{
+			return !getGameMove().isTurnEnded();
+		}
+
+		@Override
+		public boolean canResetTurn() throws RpcException, StateMachineNotExpectedEventException
+		{
+			return !getGameMove().isTurnEnded();
+		}
 
 	}
 
@@ -530,6 +584,42 @@ public class SEPServer implements IServer, GameServerListener
 		public SEPPausedGame(SEPServer server, ServerUser user)
 		{
 			super(server, user);
+		}
+
+		@Override
+		public Map<Player, Boolean> getPlayerStateList() throws RpcException, StateMachineNotExpectedEventException
+		{
+			return sepServer.getPlayerStateList();
+		}
+
+		@Override
+		public void sendMessage(final String msg) throws RpcException, StateMachineNotExpectedEventException
+		{
+			sepServer.threadPool.execute(new Runnable()
+			{
+
+				@Override
+				public void run()
+				{
+					sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
+					{
+
+						@Override
+						public void doIt(ServerPlayer player)
+						{
+							try
+							{
+								player.getClientInterface().receivePausedGameMessage(getPlayer(), msg);
+							}
+							catch(RpcException e)
+							{
+								log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
+								player.abort(e);
+							}
+						}
+					});
+				}
+			});
 		}
 	}
 
@@ -576,12 +666,69 @@ public class SEPServer implements IServer, GameServerListener
 				}
 			});
 		}
-		catch (Exception e)
+		catch(Exception e)
 		{
 			e.printStackTrace();
 			throw new Error(e);
 		}
 		threadPool = Executors.newCachedThreadPool();
+	}
+
+	public Map<Player, Boolean> getPlayerStateList()
+	{
+		Map<Player, Boolean> result = new HashMap<Player, Boolean>();
+
+		synchronized(players)
+		{
+			for(String name : players.keySet())
+			{
+				ServerPlayer player = players.get(name);
+
+				if (player != null)
+				{
+					result.put(player.getPlayer(), player.isConnected());
+				}				
+			}
+		}
+
+		return result;
+	}
+
+	private void checkForNextTurn()
+	{
+		log.log(Level.SEVERE, "Checking for next turn...");
+		
+		synchronized(players)
+		{
+			for(String name : players.keySet())
+			{
+				if (!getCurrentGame().getPlayerGameMove(name).isTurnEnded()) return;
+			}						
+		}
+		
+		// TODO : Resolve turn;
+		getCurrentGame().resolveCurrentTurn();
+		
+		refreshPlayerGameBoards();
+	}
+	
+	private void refreshPlayerGameBoards()
+	{
+		synchronized(players)
+		{
+			for(String name : players.keySet())
+			{
+				try
+				{
+					players.get(name).getClientInterface().receiveNewTurnGameBoard(getCurrentGame().getGameBoard(name).getPlayerGameBoard(name));
+				}
+				catch(RpcException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 
 	/**
@@ -591,9 +738,9 @@ public class SEPServer implements IServer, GameServerListener
 	{
 		Set<Player> result = new HashSet<Player>();
 
-		synchronized (players)
+		synchronized(players)
 		{
-			for (String name : players.keySet())
+			for(String name : players.keySet())
 			{
 				ServerPlayer player = players.get(name);
 
@@ -609,7 +756,7 @@ public class SEPServer implements IServer, GameServerListener
 
 	private ServerGame getCurrentGame()
 	{
-		synchronized (this)
+		synchronized(this)
 		{
 			if (game == null)
 			{
@@ -688,7 +835,7 @@ public class SEPServer implements IServer, GameServerListener
 	@Override
 	public void playerLoggedIn(ServerUser player)
 	{
-		synchronized (players)
+		synchronized(players)
 		{
 			if (players.containsKey(player.getLogin()))
 			{
@@ -729,7 +876,7 @@ public class SEPServer implements IServer, GameServerListener
 				{
 					player.getClientInterface().refreshGameConfig(gameConfig);
 				}
-				catch (RpcException e)
+				catch(RpcException e)
 				{
 					log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
 				}
@@ -751,7 +898,7 @@ public class SEPServer implements IServer, GameServerListener
 				{
 					player.getClientInterface().refreshPlayerList(playerList);
 				}
-				catch (RpcException e)
+				catch(RpcException e)
 				{
 					log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
 				}
@@ -766,9 +913,9 @@ public class SEPServer implements IServer, GameServerListener
 
 	private void doForEachConnectedPlayer(DoItToOnePlayer doIt)
 	{
-		synchronized (players)
+		synchronized(players)
 		{
-			for (String login : players.keySet())
+			for(String login : players.keySet())
 			{
 				ServerPlayer player = players.get(login);
 				if (player != null && player.isConnected())
@@ -790,11 +937,11 @@ public class SEPServer implements IServer, GameServerListener
 		log.log(Level.INFO, "gameRan");
 		threadPool.execute(new Runnable()
 		{
-		
+
 			@Override
 			public void run()
 			{
-				getCurrentGame();		
+				getCurrentGame();
 			}
 		});
 	}

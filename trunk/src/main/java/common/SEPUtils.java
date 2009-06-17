@@ -7,9 +7,12 @@ package common;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.Stack;
+import java.util.TreeSet;
 
 /**
  * 
@@ -77,6 +80,30 @@ public abstract class SEPUtils
 		buildingsTypesSet.add(SpaceCounter.class);
 		buildingsTypesSet.add(StarshipPlant.class);
 		buildingTypes = Collections.unmodifiableSet(buildingsTypesSet);
+	}
+	
+	public static final Set<Class<? extends IStarship>> starshipTypes;
+	
+	static
+	{
+		Set<Class<? extends IStarship>> starshipTypesSet = new TreeSet<Class<? extends IStarship>>(new Comparator<Class<? extends IStarship>>()
+		{
+			public int compare(Class<? extends IStarship> o1, Class<? extends IStarship> o2)
+			{
+				return o1.toString().compareTo(o2.toString());
+			}
+		});
+		
+		starshipTypesSet.add(LightFighter.class);
+		starshipTypesSet.add(LightDestroyer.class);
+		starshipTypesSet.add(LightArtillery.class);
+		starshipTypesSet.add(MediumFighter.class);
+		starshipTypesSet.add(MediumDestroyer.class);
+		starshipTypesSet.add(MediumArtillery.class);
+		starshipTypesSet.add(HeavyFighter.class);
+		starshipTypesSet.add(HeavyDestroyer.class);
+		starshipTypesSet.add(HeavyArtillery.class);
+		starshipTypes = Collections.unmodifiableSet(starshipTypesSet);
 	}
 	
 	public static void main(String[] args)

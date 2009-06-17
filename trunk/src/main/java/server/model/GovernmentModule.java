@@ -5,14 +5,17 @@
  */
 package server.model;
 
+import java.io.Serializable;
+
 import common.Player;
 
 /**
  * This is a government module build on a celestial body.
  */
-class GovernmentModule implements IBuilding
+class GovernmentModule implements IBuilding, Serializable
 {
-
+	private static final long	serialVersionUID	= 1L;
+	
 	/* (non-Javadoc)
 	 * @see server.model.IBuilding#getPlayerView(java.lang.String)
 	 */

@@ -5,6 +5,8 @@
  */
 package server.model;
 
+import java.io.Serializable;
+
 import common.GameConfig;
 import common.ICelestialBody;
 import common.Player;
@@ -12,8 +14,10 @@ import common.Player;
 /**
  * Represent a Nebula.
  */
-class Nebula extends ProductiveCelestialBody
+class Nebula extends ProductiveCelestialBody implements Serializable
 {	
+	private static final long	serialVersionUID	= 1L;
+
 	public Nebula(String name, GameConfig gameConfig)
 	{
 		super(name, gameConfig, common.Nebula.class);

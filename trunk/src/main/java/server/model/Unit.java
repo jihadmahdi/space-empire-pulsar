@@ -5,6 +5,7 @@
  */
 package server.model;
 
+import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.Map;
 
@@ -14,8 +15,10 @@ import common.Player;
 /**
  * 
  */
-abstract class Unit
+abstract class Unit implements Serializable
 {
+	private static final long	serialVersionUID	= 1L;
+	
 	// Constants
 	private final String					name;
 

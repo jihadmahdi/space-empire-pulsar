@@ -16,9 +16,12 @@ import org.axan.eplib.gameserver.common.IClientUser;
 import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 
+import server.SEPServer;
+
 
 import common.GameConfig;
 import common.Player;
+import common.PlayerGameBoard;
 import common.Protocol;
 
 /**
@@ -82,6 +85,20 @@ public class SEPClient
 		 * @param msg
 		 */
 		void receiveRunningGameMessage(Player fromPlayer, String msg);
+
+		/**
+		 * New turn has been sent from the server. Client must refresh the gameboard.
+		 * @param gameBoard
+		 */
+		void receiveNewTurnGameBoard(PlayerGameBoard gameBoard);
+
+		/**
+		 * New PausedGame message received from another player.
+		 * Must return fast.
+		 * @param fromPlayer
+		 * @param msg
+		 */
+		void receivePausedGameMessage(Player fromPlayer, String msg);
 	}
 	
 	private static class SEPClientProtocol implements Protocol.Client
@@ -131,6 +148,18 @@ public class SEPClient
 		public void receiveRunningGameMessage(Player fromPlayer, String msg) throws RpcException
 		{
 			client.ui.receiveRunningGameMessage(fromPlayer, msg);
+		}
+
+		@Override
+		public void receiveNewTurnGameBoard(PlayerGameBoard gameBoard) throws RpcException
+		{
+			client.ui.receiveNewTurnGameBoard(gameBoard);
+		}
+
+		@Override
+		public void receivePausedGameMessage(Player fromPlayer, String msg) throws RpcException
+		{
+			client.ui.receivePausedGameMessage(fromPlayer, msg);
 		}
 		
 	}
@@ -219,5 +248,17 @@ public class SEPClient
 			runningGameProxy = client.getCustomServerInterface(Protocol.ServerRunningGame.class);			
 		}
 		return runningGameProxy;
+	}
+
+	private Protocol.ServerPausedGame pausedGameProxy = null;
+	public Protocol.ServerPausedGame getPausedGameInterface() throws RpcException
+	{
+		if (!isConnected()) throw new IllegalStateException("Not connected.");
+		
+		if (pausedGameProxy == null)
+		{
+			pausedGameProxy = client.getCustomServerInterface(Protocol.ServerPausedGame.class);
+		}
+		return pausedGameProxy;
 	}
 }
