@@ -87,6 +87,9 @@ class SpaceCounter implements IBuilding, Serializable
 		}
 	}
 	
+	// Constants
+	private final int lastBuildDate;
+	
 	// Variables
 	private int nbBuild;
 	// assert Sets.size() == nbBuild
@@ -98,22 +101,24 @@ class SpaceCounter implements IBuilding, Serializable
 	/**
 	 * Full constructor.
 	 */
-	public SpaceCounter(int nbBuild)
+	public SpaceCounter(int lastBuildDate, int nbBuild)
 	{
 		this.nbBuild = nbBuild;
 		this.spaceRoads = new HashSet<SpaceRoad>();
 		this.ordersToReceive = new HashSet<CarbonOrder>();
 		this.currentSentOrder = new HashSet<CarbonOrder>();
 		this.nextOrders = new HashSet<CarbonOrder>();
+		this.lastBuildDate = lastBuildDate;
 	}
 	
-	private SpaceCounter(int nbBuild, Set<SpaceRoad> spaceRoads, Set<CarbonOrder> ordersToReceive, Set<CarbonOrder> currentSentOrder, Set<CarbonOrder> nextOrders)
+	private SpaceCounter(int lastBuildDate, int nbBuild, Set<SpaceRoad> spaceRoads, Set<CarbonOrder> ordersToReceive, Set<CarbonOrder> currentSentOrder, Set<CarbonOrder> nextOrders)
 	{
 		this.nbBuild = nbBuild;
 		this.spaceRoads = spaceRoads;
 		this.ordersToReceive = ordersToReceive;
 		this.currentSentOrder = currentSentOrder;
 		this.nextOrders = nextOrders;
+		this.lastBuildDate = lastBuildDate;
 	}
 
 	/* (non-Javadoc)
@@ -155,8 +160,14 @@ class SpaceCounter implements IBuilding, Serializable
 		return nbBuild;
 	}
 
-	public SpaceCounter getUpgradedBuilding()
+	public SpaceCounter getUpgradedBuilding(int lastBuildDate)
 	{
-		return new SpaceCounter(nbBuild+1, spaceRoads, ordersToReceive, currentSentOrder, nextOrders);
+		return new SpaceCounter(lastBuildDate, nbBuild+1, spaceRoads, ordersToReceive, currentSentOrder, nextOrders);
+	}
+
+	@Override
+	public int getLastBuildDate()
+	{
+		return lastBuildDate;
 	}
 }

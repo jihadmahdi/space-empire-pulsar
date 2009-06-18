@@ -14,15 +14,19 @@ class DefenseModule implements IBuilding, Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
+	// Constants
+	private final int lastBuildDate;
+	
 	// Variables
-	private int nbBuild;
+	private int nbBuild;	
 	
 	/**
 	 * Full constructor. 
 	 */
-	public DefenseModule(int nbBuild)
+	public DefenseModule(int lastBuildDate, int nbBuild)
 	{
 		this.nbBuild = nbBuild;
+		this.lastBuildDate = lastBuildDate;
 	}
 
 	/* (non-Javadoc)
@@ -52,8 +56,14 @@ class DefenseModule implements IBuilding, Serializable
 		return nbBuild;
 	}
 	
-	public DefenseModule getUpgradedBuilding()
+	public DefenseModule getUpgradedBuilding(int lastBuildDate)
 	{
-		return new DefenseModule(nbBuild+1);
+		return new DefenseModule(lastBuildDate, nbBuild+1);
+	}
+
+	@Override
+	public int getLastBuildDate()
+	{
+		return lastBuildDate;
 	}
 }

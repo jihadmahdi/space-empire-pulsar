@@ -68,7 +68,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 		// If victory rule "Regimicide" is on, starting planet has a pre-built government module.
 		if (gameConfig.isRegimicide())
 		{
-			GovernmentModule gov = new GovernmentModule();
+			GovernmentModule gov = new GovernmentModule(-1);
 			try
 			{
 				planet.updateBuilding(gov);

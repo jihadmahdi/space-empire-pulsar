@@ -14,6 +14,9 @@ class PulsarLauchingPad implements IBuilding, Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
+	// Constants
+	private final int lastBuildDate;
+	
 	// Variables
 	private int nbBuild;
 	private int nbFired;
@@ -21,10 +24,11 @@ class PulsarLauchingPad implements IBuilding, Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public PulsarLauchingPad(int nbBuild, int nbFired)
+	public PulsarLauchingPad(int lastBuildDate, int nbBuild, int nbFired)
 	{
 		this.nbBuild = nbBuild;
 		this.nbFired = nbFired;
+		this.lastBuildDate = lastBuildDate;
 	}
 
 	private float getTotalBonus()
@@ -61,6 +65,12 @@ class PulsarLauchingPad implements IBuilding, Serializable
 
 	public PulsarLauchingPad getUpgradedBuilding()
 	{
-		return new PulsarLauchingPad(nbBuild+1, nbFired);
+		return new PulsarLauchingPad(lastBuildDate, nbBuild+1, nbFired);
+	}
+
+	@Override
+	public int getLastBuildDate()
+	{
+		return lastBuildDate;
 	}
 }

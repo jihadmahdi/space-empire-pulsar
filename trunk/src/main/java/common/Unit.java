@@ -116,4 +116,11 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 		
 		return sb.toString();
 	}
+
+	private static int generatedNameCount = 0;
+	public static String generateName()
+	{
+		// TODO
+		return "TODO"+(++generatedNameCount);
+	}
 }

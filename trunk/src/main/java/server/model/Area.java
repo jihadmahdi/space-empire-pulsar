@@ -113,6 +113,11 @@ class Area implements Serializable
 	{
 		return Collections.unmodifiableSet(units);
 	}
+	
+	public void addUnit(Unit unit)
+	{
+		units.add(unit);
+	}
 
 	/**
 	 * @param playerLogin
