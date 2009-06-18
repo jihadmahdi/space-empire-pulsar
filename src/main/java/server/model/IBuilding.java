@@ -17,5 +17,15 @@ interface IBuilding
 	 */
 	common.IBuilding getPlayerView(int date, String playerLogin);
 
+	/**
+	 * Return number of slots used by current building.
+	 * @return
+	 */
 	int getBuildSlotsCount();
+	
+	/**
+	 * Return last build/upgrade date.
+	 * @return
+	 */
+	int getLastBuildDate();
 }

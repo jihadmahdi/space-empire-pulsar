@@ -447,19 +447,18 @@ public class SEPServer implements IServer, GameServerListener
 			// TODO Auto-generated method stub
 
 		}
-
+		
 		@Override
-		public boolean canFormFleet(Map<Class<? extends IStarship>, Integer> fleetToForm) throws RpcException, StateMachineNotExpectedEventException
+		public boolean canFormFleet(String planetName, String fleetName, Map<Class<? extends IStarship>, Integer> fleetToForm) throws RpcException, StateMachineNotExpectedEventException
 		{
-			// TODO Auto-generated method stub
-			return false;
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canFormFleet(getLogin(), planetName, fleetName, fleetToForm);
 		}
 
 		@Override
-		public void formFleet(String planetName, Map<Class<? extends IStarship>, Integer> composition, String fleetName) throws RpcException, StateMachineNotExpectedEventException
+		public void formFleet(String planetName, String fleetName, Map<Class<? extends IStarship>, Integer> composition) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
-			// TODO Auto-generated method stub
-
+			getGameMove().addFormFleetCommand(planetName, fleetName, composition);
 		}
 
 		@Override
@@ -478,17 +477,16 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canMakeStarship(Map<Class<? extends IStarship>, Integer> starshipToMake) throws RpcException, StateMachineNotExpectedEventException
+		public boolean canMakeStarships(String planetName, Map<Class<? extends IStarship>, Integer> starshipsToMake) throws RpcException, StateMachineNotExpectedEventException
 		{
-			// TODO Auto-generated method stub
-			return false;
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canMakeStarships(getLogin(), planetName, starshipsToMake);
 		}
 
 		@Override
-		public void makeStarship(String planetName, Class<? extends IStarship> starshipType, int quantity) throws RpcException, StateMachineNotExpectedEventException
+		public void makeStarships(String planetName, Map<Class<? extends IStarship>, Integer> starshipsToMake) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
-			// TODO Auto-generated method stub
-
+			getGameMove().addMakeStarshipsCommand(planetName, starshipsToMake);
 		}
 
 		@Override

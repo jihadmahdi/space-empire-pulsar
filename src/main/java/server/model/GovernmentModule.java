@@ -16,6 +16,14 @@ class GovernmentModule implements IBuilding, Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
+	// Constants
+	private final int buildDate;
+	
+	public GovernmentModule(int buildDate)
+	{
+		this.buildDate = buildDate;
+	}
+	
 	/* (non-Javadoc)
 	 * @see server.model.IBuilding#getPlayerView(java.lang.String)
 	 */
@@ -29,6 +37,12 @@ class GovernmentModule implements IBuilding, Serializable
 	public int getBuildSlotsCount()
 	{
 		return 1;
+	}
+
+	@Override
+	public int getLastBuildDate()
+	{
+		return buildDate;
 	}
 
 }

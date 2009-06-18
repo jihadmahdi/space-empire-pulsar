@@ -14,15 +14,19 @@ class ExtractionModule implements IBuilding, Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
+	// Constants
+	private final int lastBuildDate;
+	
 	// Variables
 	private int nbBuild;
 	
 	/**
 	 * Full constructor.
 	 */
-	public ExtractionModule(int nbBuild)
+	public ExtractionModule(int lastBuildDate, int nbBuild)
 	{
 		this.nbBuild = nbBuild;
+		this.lastBuildDate = lastBuildDate;
 	}
 	
 	/* (non-Javadoc)
@@ -52,8 +56,14 @@ class ExtractionModule implements IBuilding, Serializable
 		return nbBuild;
 	}
 	
-	public ExtractionModule getUpgradedBuilding()
+	public ExtractionModule getUpgradedBuilding(int lastBuildDate)
 	{
-		return new ExtractionModule(nbBuild+1);
+		return new ExtractionModule(lastBuildDate, nbBuild+1);
+	}
+
+	@Override
+	public int getLastBuildDate()
+	{
+		return lastBuildDate;
 	}
 }

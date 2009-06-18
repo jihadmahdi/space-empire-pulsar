@@ -97,7 +97,6 @@ import server.SEPServer;
 import client.SEPClient;
 import client.gui.lib.GUIUtils;
 import client.gui.lib.JImagePanel;
-import com.jgoodies.forms.layout.FormLayout;
 
 import common.Area;
 import common.AsteroidField;

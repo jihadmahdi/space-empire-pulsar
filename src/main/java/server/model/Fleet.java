@@ -9,20 +9,29 @@ import common.IStarship;
 import common.Player;
 
 public class Fleet extends Unit implements Serializable
-{		
-	private static final long	serialVersionUID	= 1L;
-	
+{
+	private static final long										serialVersionUID		= 1L;
+
 	// Variables
-	private HashMap<Class<? extends IStarship>, Integer> starships = new HashMap<Class<? extends IStarship>, Integer>();
+	private final HashMap<Class<? extends IStarship>, Integer>		starships;
 
 	// Views
-	PlayerDatedView<HashMap<Class<? extends IStarship>, Integer>> playersStarshipsView = new PlayerDatedView<HashMap<Class<? extends IStarship>, Integer>>();
-	
-	public Fleet(String name, Player owner)
+	PlayerDatedView<HashMap<Class<? extends IStarship>, Integer>>	playersStarshipsView	= new PlayerDatedView<HashMap<Class<? extends IStarship>, Integer>>();
+
+	public Fleet(String name, Player owner, Map<Class<? extends IStarship>, Integer> starships)
 	{
 		super(name, owner);
+		
+		if (starships != null)
+		{
+			this.starships = new HashMap<Class<? extends IStarship>, Integer>(starships);
+		}
+		else
+		{
+			this.starships = new HashMap<Class<? extends IStarship>, Integer>();
+		}
 	}
-	
+
 	@Override
 	public common.Unit getPlayerView(int date, String playerLogin, boolean isVisible)
 	{
@@ -31,7 +40,7 @@ public class Fleet extends Unit implements Serializable
 			// Updates
 			playersStarshipsView.updateView(playerLogin, starships, date);
 		}
-		
+
 		return new common.Fleet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentEstimatedLocationView(playerLogin), playersStarshipsView.getLastValue(playerLogin, null));
 	}
 
@@ -44,7 +53,7 @@ public class Fleet extends Unit implements Serializable
 				return true;
 			}
 		}
-		
+
 		return false;
 	}
 }
