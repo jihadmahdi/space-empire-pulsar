@@ -26,4 +26,12 @@ public class Probe extends Unit implements Serializable
 		super(isVisible, lastObservation, name, owner, sourceLocation, destinationLocation, currentEstimatedLocation);
 		this.deployed = deployed;
 	}
+	
+	@Override
+	public String toString()
+	{
+		StringBuffer sb = new StringBuffer(super.toString());
+		sb.append("\nStatus : "+(deployed?"deployed":"not deployed"));
+		return sb.toString();
+	}
 }

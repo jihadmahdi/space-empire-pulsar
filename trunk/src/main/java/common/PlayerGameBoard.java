@@ -63,4 +63,36 @@ public class PlayerGameBoard implements Serializable
 	{
 		return date;
 	}
+
+	public int[] getUnitLocation(String unitName)
+	{
+		for(int x = 0; x < getDimX(); ++x)
+		for(int y = 0; y < getDimY(); ++y)
+		for(int z = 0; z < getDimZ(); ++z)
+		{
+			Area area = universe[x][y][z];
+			if (area == null) continue;
+			
+			Unit unit = area.getUnit(unitName);
+			if (unit != null) return new int[]{x, y, z};			
+		}
+		
+		return null;
+	}
+	
+	public Unit getUnit(String unitName)
+	{
+		for(int x = 0; x < getDimX(); ++x)
+		for(int y = 0; y < getDimY(); ++y)
+		for(int z = 0; z < getDimZ(); ++z)
+		{
+			Area area = universe[x][y][z];
+			if (area == null) continue;
+			
+			Unit unit = area.getUnit(unitName);
+			if (unit != null) return unit;
+		}
+		
+		return null;
+	}
 }

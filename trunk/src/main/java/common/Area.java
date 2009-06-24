@@ -87,6 +87,16 @@ public class Area implements IObservable, Serializable
 		return units;
 	}
 	
+	public Unit getUnit(String unitName)
+	{
+		if(units != null) for(Unit u : units)
+		{
+			if (u.getName().compareTo(unitName) == 0) return u;
+		}
+		
+		return null;
+	}
+	
 	public Set<IMarker> getMarkers()
 	{
 		return markers;

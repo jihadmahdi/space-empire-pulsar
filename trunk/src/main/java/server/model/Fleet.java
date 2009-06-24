@@ -55,5 +55,5 @@ public class Fleet extends Unit implements Serializable
 		}
 
 		return false;
-	}
+	}		
 }

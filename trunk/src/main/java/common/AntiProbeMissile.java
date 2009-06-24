@@ -24,4 +24,12 @@ public class AntiProbeMissile extends Unit implements Serializable
 		super(isVisible, lastObservation, name, owner, sourceLocation, targetLocation, currentEstimatedLocation);
 		this.fired = fired;
 	}
+	
+	@Override
+	public String toString()
+	{
+		StringBuffer sb = new StringBuffer(super.toString());
+		sb.append("\nStatus : "+(fired?"fired":"not fired"));
+		return sb.toString();
+	}
 }
