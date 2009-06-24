@@ -100,6 +100,15 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 	{
 		return buildings;
 	}
+	
+	public <T extends IBuilding> T getBuilding(Class<T> buildingType)
+	{
+		if (buildings != null) for(IBuilding b : buildings)
+		{
+			if (buildingType.isInstance(b)) return buildingType.cast(b);
+		}
+		return null;
+	}
 
 	public Player getOwner()
 	{

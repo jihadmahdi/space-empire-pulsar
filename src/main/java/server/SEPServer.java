@@ -35,6 +35,7 @@ import server.model.BuildCommand;
 import server.model.GameBoard;
 import server.model.PlayerGameMove;
 import server.model.ServerGame;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import common.GameConfig;
 import common.IBuilding;
@@ -264,8 +265,8 @@ public class SEPServer implements IServer, GameServerListener
 		@Override
 		public void canSendMessage(String msg) throws RpcException, StateMachineNotExpectedEventException
 		{
-			// TODO Auto-generated method stub
-
+			// TODO
+			throw new NotImplementedException();
 		}
 
 		/* (non-Javadoc)
@@ -307,14 +308,14 @@ public class SEPServer implements IServer, GameServerListener
 		{
 			// if (getGameMove().isTurnEnded()) return false;
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
 		public void attackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
@@ -335,14 +336,14 @@ public class SEPServer implements IServer, GameServerListener
 		{
 			// if (getGameMove().isTurnEnded()) return false;
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
 		public void buildSpaceRoad(String celestialBodyNameA, String celestialBodyNameB) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
@@ -350,14 +351,14 @@ public class SEPServer implements IServer, GameServerListener
 		{
 			// if (getGameMove().isTurnEnded()) return false;
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
 		public void changeConquestPolicy() throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
@@ -365,14 +366,14 @@ public class SEPServer implements IServer, GameServerListener
 		{
 			// if (getGameMove().isTurnEnded()) return false;
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
 		public void changeDomesticPolicy() throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
@@ -386,7 +387,7 @@ public class SEPServer implements IServer, GameServerListener
 		public void demolish(String ceslestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
@@ -394,29 +395,29 @@ public class SEPServer implements IServer, GameServerListener
 		{
 			// if (getGameMove().isTurnEnded()) return false;
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
 		public void demolishSpaceRoad(String celestialBodyNameA, String celestialBodyNameB) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
-		public void canDismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException
+		public boolean canDismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// if (getGameMove().isTurnEnded()) return false;
 			// TODO Auto-generated method stub
-
+			return false;
 		}
 
 		@Override
-		public void dismantleFleet(String planetName, String fleetName) throws RpcException, StateMachineNotExpectedEventException
+		public void dismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
@@ -430,22 +431,21 @@ public class SEPServer implements IServer, GameServerListener
 		public void embarkGovernment() throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
 		public boolean canFirePulsarMissile(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException
 		{
 			if (getGameMove().isTurnEnded()) return false;
-			return getGameBoard().canFirePulsarMissile(getPlayer(), celestialBodyName);
-
+			return getGameBoard().canFirePulsarMissile(getPlayer(), celestialBodyName);			
 		}
 
 		@Override
 		public void firePulsarMissile(String celestialBodyName, float bonusModifier) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 		
 		@Override
@@ -466,14 +466,14 @@ public class SEPServer implements IServer, GameServerListener
 		{
 			// if (getGameMove().isTurnEnded()) return false;
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
 		public void launchProbe(String probeName, int[] destination) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
@@ -494,14 +494,14 @@ public class SEPServer implements IServer, GameServerListener
 		{
 			// if (getGameMove().isTurnEnded()) return false;
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
 		public void modifyCarbonOrder(String originCelestialBodyName, String destinationCelestialBodyName, int amount) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
@@ -509,14 +509,14 @@ public class SEPServer implements IServer, GameServerListener
 		{
 			// if (getGameMove().isTurnEnded()) return false;
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
 		public void moveFleet(String fleetName, int delay, Set<String> checkpoints) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}
 
 		@Override
@@ -530,7 +530,7 @@ public class SEPServer implements IServer, GameServerListener
 		public void settleGovernment() throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
-
+			throw new NotImplementedException();
 		}		
 		
 		@Override

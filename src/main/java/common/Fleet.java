@@ -38,4 +38,20 @@ public class Fleet extends Unit implements Serializable
 		
 		return false;
 	}
+	
+	@Override
+	public String toString()
+	{
+		StringBuffer sb = new StringBuffer(super.toString());
+		sb.append("\nFleet composition :+\n");
+		for(Map.Entry<Class<? extends IStarship>, Integer> e : starships.entrySet())
+		{
+			if (e.getValue() != null && e.getValue() > 0)
+			{
+				sb.append("\t"+e.getKey().getSimpleName()+"\t"+e.getValue()+"\n");
+			}
+		}
+		
+		return sb.toString();
+	}
 }

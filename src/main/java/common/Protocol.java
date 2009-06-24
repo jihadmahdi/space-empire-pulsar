@@ -198,16 +198,15 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void canDismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException;
+		boolean canDismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Dismantle the given fleet and land the starships in the starship plant.
-		 * @param planetName Planet where the fleet currently is (Fleet can only be dismantled where they're on a player planet with a starship plant).
-		 * @param fleetName Fleet name.
+		 * @param fleetName
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void dismantleFleet(String planetName, String fleetName) throws RpcException, StateMachineNotExpectedEventException;
+		void dismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Test if the government can be embarked.
