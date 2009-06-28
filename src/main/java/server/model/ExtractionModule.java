@@ -10,7 +10,7 @@ import java.io.Serializable;
 /**
  * 
  */
-class ExtractionModule implements IBuilding, Serializable
+class ExtractionModule extends ABuilding implements Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
@@ -19,6 +19,14 @@ class ExtractionModule implements IBuilding, Serializable
 	
 	// Variables
 	private int nbBuild;
+	
+	/**
+	 * First build constructor.
+	 */
+	public ExtractionModule(int lastBuildDate)
+	{
+		this(lastBuildDate, 1);
+	}
 	
 	/**
 	 * Full constructor.
@@ -35,19 +43,13 @@ class ExtractionModule implements IBuilding, Serializable
 	@Override
 	public common.ExtractionModule getPlayerView(int date, String playerLogin)
 	{
-		return new common.ExtractionModule(nbBuild, getTotalBonus(), getNextBuildCost());
+		return new common.ExtractionModule(nbBuild, getTotalBonus(), getUpgradeCarbonCost());
 	}
 	
 	private float getTotalBonus()
 	{
 		// TODO : Redefine the formula
 		return Float.valueOf(nbBuild)* (float) 0.25;
-	}
-	
-	int getNextBuildCost()
-	{
-		// TODO : Redefine the formula
-		return (int) ((Float.valueOf(nbBuild+1) * 0.25) * 1000);
 	}
 
 	@Override
@@ -65,5 +67,36 @@ class ExtractionModule implements IBuilding, Serializable
 	public int getLastBuildDate()
 	{
 		return lastBuildDate;
+	}
+
+	@Override
+	int getUpgradeCarbonCost()
+	{
+		// TODO : Redefine the formula
+		return (int) ((Float.valueOf(nbBuild+1) * 0.25) * 1000);
+	}
+
+	@Override
+	int getUpgradePopulationCost()
+	{
+		return 0;
+	}
+
+	@Override
+	ExtractionModule getUpgraded(int date)
+	{
+		return new ExtractionModule(date, nbBuild+1);
+	}
+	
+	@Override
+	ExtractionModule getDowngraded()
+	{
+		return new ExtractionModule(lastBuildDate, Math.max(0, nbBuild-1));
+	}
+
+	@Override
+	boolean canDowngrade()
+	{
+		return nbBuild > 0;
 	}
 }

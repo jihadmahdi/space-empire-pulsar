@@ -35,7 +35,7 @@ class Nebula extends ProductiveCelestialBody implements Serializable
 	 * @see common.CelestialBody#canBuild(server.model.Building)
 	 */
 	@Override
-	public boolean canBuild(IBuilding building)
+	public boolean canBuild(ABuilding building)
 	{
 		// TODO Auto-generated method stub
 		return false;

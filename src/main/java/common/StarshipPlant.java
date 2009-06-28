@@ -15,8 +15,8 @@ public class StarshipPlant implements IBuilding, Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
-	public static final int PRICE_POPULATION = 500;
-	public static final int PRICE_CARBON = 2000;
+	public static final int POPULATION_COST = 500;
+	public static final int CARBON_COST = 2000;
 	
 	// Only if visible
 	private final Map<Class<? extends IStarship>, Integer> landedStarships;

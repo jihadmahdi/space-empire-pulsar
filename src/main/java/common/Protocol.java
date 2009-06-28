@@ -152,7 +152,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void demolish(String ceslestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException;
+		void demolish(String ceslestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
 		
 		/**
 		 * Test if starship can be made on the selected planet
@@ -205,8 +205,9 @@ public interface Protocol
 		 * @param fleetName
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 * @throws RunningGameCommandException 
 		 */
-		void dismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException;
+		void dismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
 		
 		/**
 		 * Test if the government can be embarked.
@@ -219,8 +220,9 @@ public interface Protocol
 		 * Order to embark the government (from government module) on a government starship.
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 * @throws RunningGameCommandException 
 		 */
-		void embarkGovernment() throws RpcException, StateMachineNotExpectedEventException;
+		void embarkGovernment() throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
 		
 		/**
 		 * Test if the government can be settled according to the government starship current location.

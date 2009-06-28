@@ -6,6 +6,8 @@
 package common;
 
 import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Represent the game board at a specific turn for a specific player.
@@ -94,5 +96,24 @@ public class PlayerGameBoard implements Serializable
 		}
 		
 		return null;
+	}
+
+	public Set<ICelestialBody> getCelestialBodies()
+	{
+		Set<ICelestialBody> result = new HashSet<ICelestialBody>();
+		for(int x = 0; x < getDimX(); ++x)
+		for(int y = 0; y < getDimY(); ++y)
+		for(int z = 0; z < getDimZ(); ++z)
+		{
+			Area area = universe[x][y][z];
+			if (area == null) continue;
+			
+			if (area.getCelestialBody() != null)
+			{
+				result.add(area.getCelestialBody());
+			}
+		}
+		
+		return result;
 	}
 }

@@ -12,8 +12,8 @@ import java.io.Serializable;
  */
 public class PulsarLauchingPad implements IBuilding, Serializable
 {
-	public static final int PRICE_POPULATION = 50000;
-	public static final int PRICE_CARBON = 100000;
+	public static final int POPULATION_COST = 50000;
+	public static final int CARBON_COST = 100000;
 	
 	private static final long	serialVersionUID	= 1L;
 	

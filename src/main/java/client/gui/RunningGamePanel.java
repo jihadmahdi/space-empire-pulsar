@@ -40,11 +40,13 @@ import java.util.logging.Level;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
@@ -310,7 +312,6 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			runningGameFleetDetails.setLayout(runningGameFleetDetailsLayout);
 			runningGameFleetDetails.setPreferredSize(new Dimension(Integer.MAX_VALUE, 400));
 
-			runningGameFleetDetails.setBorder(BorderFactory.createLineBorder(Color.blue));
 			runningGameFleetDetails.add(getRunningGameFleetDetailsContent(), BorderLayout.NORTH);
 			runningGameFleetDetails.add(getRunningGameFleetDetailsSpecificDetailsPanel(), BorderLayout.CENTER);
 		}
@@ -337,12 +338,33 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		{
 			runningGameTabbedPanel = new JTabbedPane();
 			runningGameTabbedPanel.setPreferredSize(new Dimension(4, 200));
-			runningGameTabbedPanel.addTab("Chat panel", null, getRunningGameChatPanel(), null);
-			runningGameTabbedPanel.addTab("Action", null, getRunningGameActionPanel(), null);
+			runningGameTabbedPanel.addTab("Chat panel",getRunningGameChatPanel());
+			runningGameTabbedPanel.addTab("Building action", getBuildingActionPanel());
+			runningGameTabbedPanel.addTab("Fleet action", getFleetActionPanel());
 		}
 		return runningGameTabbedPanel;
 	}
 
+	private JPanel buildingActionPanel;
+	private JPanel getBuildingActionPanel()
+	{
+		if (buildingActionPanel == null)
+		{
+			buildingActionPanel = new JPanel(new BorderLayout());
+		}
+		return buildingActionPanel;
+	}
+	
+	private JPanel fleetActionPanel;
+	private JPanel getFleetActionPanel()
+	{
+		if (fleetActionPanel == null)
+		{
+			fleetActionPanel = new JPanel(new BorderLayout());
+		}
+		return fleetActionPanel;
+	}
+	
 	private JPanel	runningGameChatPanel;
 
 	private JPanel getRunningGameChatPanel()
@@ -357,19 +379,6 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			runningGameChatPanel.add(getRunningGameChatPlayerListScrollPane(), BorderLayout.EAST);
 		}
 		return runningGameChatPanel;
-	}
-
-	private JPanel	runningGameActionPanel;
-
-	private JPanel getRunningGameActionPanel()
-	{
-		if (runningGameActionPanel == null)
-		{
-			runningGameActionPanel = new JPanel();
-			BorderLayout runningGameActionPanelLayout = new BorderLayout();
-			runningGameActionPanel.setLayout(runningGameActionPanelLayout);
-		}
-		return runningGameActionPanel;
 	}
 
 	private JPanel	runningGameUniverseRenderingPanel;
@@ -418,12 +427,27 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (runningGameCelestialBodyDetailsScrollPanel == null)
 		{
 			JPanel runningGameCelestialBodyDetailsPanel = new JPanel();
-			BoxLayout runningGameCelestialBodyDetailsPanelLayout = new BoxLayout(runningGameCelestialBodyDetailsPanel, BoxLayout.Y_AXIS);
+			
+			/*
+			BoxLayout runningGameCelestialBodyDetailsPanelLayout = new BoxLayout(runningGameCelestialBodyDetailsPanel, BoxLayout.Y_AXIS);			
+			*/
+			
+			FlowLayout runningGameCelestialBodyDetailsPanelLayout = new SingleRowFlowLayout(FlowLayout.LEFT);
 			runningGameCelestialBodyDetailsPanel.setLayout(runningGameCelestialBodyDetailsPanelLayout);
 			runningGameCelestialBodyDetailsPanel.setPreferredSize(new Dimension(EAST_AREA_WIDTH, CELESTIALBODY_DETAILS_AREA_HEIGHT));
 
+			runningGameCelestialBodyDetailsPanel.add(getRunningGameCelestialBodyDetailsContentLabel());
+			runningGameCelestialBodyDetailsPanel.add(getRunningGameCelestialBodyDetailsBuildingsListScrollPane());			
+			
+			runningGameCelestialBodyDetailsPanel.add(getRunningGameCelestialBodyDetailsBuildingDetailsContentLabel());
+			runningGameCelestialBodyDetailsPanel.add(getRunningGameCelestialBodyDetailsBuildingSpecificDetailsPanel());
+			
+			runningGameCelestialBodyDetailsPanel.add(getRunningGameCelestialBodyDetailsUnitsListScrollPane());
+			
+			/*
 			runningGameCelestialBodyDetailsPanel.add(getRunningGameCelestialBodyDetailsContentPanel());
 			runningGameCelestialBodyDetailsPanel.add(getRunningGameCelestialBodyDetailsBuildingDetailsPanel());
+			*/
 
 			runningGameCelestialBodyDetailsScrollPanel = new JScrollPane(runningGameCelestialBodyDetailsPanel);
 			runningGameCelestialBodyDetailsScrollPanel.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -433,6 +457,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return runningGameCelestialBodyDetailsScrollPanel;
 	}
 
+	/*
 	private JPanel	runningGameCelestialBodyDetailsContentPanel;
 
 	private JPanel getRunningGameCelestialBodyDetailsContentPanel()
@@ -440,7 +465,6 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (runningGameCelestialBodyDetailsContentPanel == null)
 		{
 			runningGameCelestialBodyDetailsContentPanel = new JPanel();
-			//BoxLayout runningGameCelestialBodyDetailsContentPanelLayout = new BoxLayout(runningGameCelestialBodyDetailsContentPanel, BoxLayout.Y_AXIS);			
 			FlowLayout runningGameCelestialBodyDetailsContentPanelLayout = new SingleRowFlowLayout(FlowLayout.LEFT);
 
 			runningGameCelestialBodyDetailsContentPanel.setLayout(runningGameCelestialBodyDetailsContentPanelLayout);
@@ -450,6 +474,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		}
 		return runningGameCelestialBodyDetailsContentPanel;
 	}
+	*/
+
 
 	private WrappedJLabel	runningGameCelestialBodyDetailsContentLabel;
 
@@ -571,8 +597,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		}
 		return runningGameCelestialBodyDetailsUnitsListPane;
 	}
-
-	private JPanel		runningGameCelestialBodyDetailsBuildingDetailsPanel;
+	
 	private JScrollPane	runningGameChatPlayerListScrollPane;
 
 	private JEditorPane	runningGameChatContentEditorPane;
@@ -583,6 +608,9 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 	private JTextField	runningGameChatTextField;
 
+	/*
+	private JPanel		runningGameCelestialBodyDetailsBuildingDetailsPanel;
+	
 	private JPanel getRunningGameCelestialBodyDetailsBuildingDetailsPanel()
 	{
 		if (runningGameCelestialBodyDetailsBuildingDetailsPanel == null)
@@ -600,6 +628,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		}
 		return runningGameCelestialBodyDetailsBuildingDetailsPanel;
 	}
+	*/
 
 	private JPanel	runningGameCelestialBodyDetailsBuildingSpecificDetailsPanel;
 
@@ -608,6 +637,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (runningGameCelestialBodyDetailsBuildingSpecificDetailsPanel == null)
 		{
 			runningGameCelestialBodyDetailsBuildingSpecificDetailsPanel = new JPanel();
+			runningGameCelestialBodyDetailsBuildingSpecificDetailsPanel.setPreferredSize(new Dimension(EAST_AREA_COMPONENTS_MAX_WIDTH, TEXTAREA_MAX_HEIGHT));
 		}
 		return runningGameCelestialBodyDetailsBuildingSpecificDetailsPanel;
 	}
@@ -619,6 +649,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (runningGameFleetDetailsSpecificDetailsPanel == null)
 		{
 			runningGameFleetDetailsSpecificDetailsPanel = new JPanel();
+			runningGameFleetDetailsSpecificDetailsPanel.setPreferredSize(new Dimension(EAST_AREA_COMPONENTS_MAX_WIDTH, TEXTAREA_MAX_HEIGHT));
 		}
 		return runningGameFleetDetailsSpecificDetailsPanel;
 	}
@@ -694,7 +725,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			{
 				for(IBuilding b : productiveCelestialBody.getBuildings())
 				{
-					buildingsList.add(b.getClass().getSimpleName() + " (" + b.getBuildSlotsCount() + ")");
+					buildingsList.add(buildingToLabel(b));
 					buildingsTypes.remove(b.getClass());
 				}
 			}
@@ -703,7 +734,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			{
 				if (productiveCelestialBody.canBuildType(bt))
 				{
-					buildingsList.add(bt.getSimpleName() + " (none)");
+					buildingsList.add(buildingTypeToLabel(bt));
 				}
 			}
 
@@ -727,7 +758,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 			for(Unit u : units)
 			{
-				unitsList.add("[" + ((u.getOwner() != null) ? u.getOwner().getName() : "unknown") + "] " + u.getName());
+				unitsList.add(unitToLabel(u));
 			}
 
 			Object lastSelectedValue = getRunningGameCelestialBodyDetailsUnitsList().getSelectedValue();
@@ -758,6 +789,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	private void addBuildBtns(final ProductiveCelestialBody productiveCelestialBody, final Class<? extends IBuilding> buildingType, int[] buildCosts, int nbBuild) throws StateMachineNotExpectedEventException, RpcException
 	{
 		JPanel buildBtnsPanel = new JPanel(new FlowLayout());
+		buildBtnsPanel.setPreferredSize(new Dimension(EAST_AREA_COMPONENTS_MAX_WIDTH, TEXTAREA_MAX_HEIGHT));
 
 		JButton buildBtn = new JButton();
 		String label = (nbBuild > 0) ? "Upgrade" : "Build";
@@ -815,6 +847,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				{
 					e1.printStackTrace();
 				}
+				catch(RunningGameCommandException e1)
+				{
+					e1.printStackTrace();
+				}
 			}
 		});
 		buildBtnsPanel.add(destroyBtn);
@@ -824,7 +860,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 	private void eraseUnitDetails()
 	{
-		getRunningGameFleetDetails().remove(getRunningGameFleetDetailsSpecificDetailsPanel());
+		getRunningGameFleetDetailsContent().setText("");
+		getRunningGameFleetDetailsSpecificDetailsPanel().removeAll();	
 
 		updateUI();
 	}
@@ -837,10 +874,19 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			eraseUnitDetails();
 			return;
 		}
-
-		String value = obj.toString();
-		value = value.substring((value.indexOf("] ") < 0) ? value.length() : value.indexOf("] ") + 2);
-		refreshUnitDetails(value);
+		
+		refreshUnitDetails(labelToUnitName(obj.toString()));
+	}
+	
+	private static String unitToLabel(Unit unit)
+	{
+		return "[" + ((unit.getOwner() != null) ? unit.getOwner().getName() : "unknown") + "] " + unit.getName();
+	}
+	
+	private static String labelToUnitName(String label)
+	{
+		if (label == null) return null;
+		return label.substring((label.indexOf("] ") < 0) ? label.length() : label.indexOf("] ") +2);		
 	}
 
 	private static void showTodoMsg()
@@ -884,6 +930,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 				// Actions btn	
 				JPanel btnsPanel = new JPanel(new FlowLayout());
+				btnsPanel.setPreferredSize(new Dimension(EAST_AREA_COMPONENTS_MAX_WIDTH, TEXTAREA_MAX_HEIGHT));
 
 				// Dismantle fleet
 				JButton dismantleBtn = new JButton();
@@ -906,6 +953,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 							e1.printStackTrace();
 						}
 						catch(RpcException e1)
+						{
+							e1.printStackTrace();
+						}
+						catch(RunningGameCommandException e1)
 						{
 							e1.printStackTrace();
 						}
@@ -957,8 +1008,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					}
 				});
 				btnsPanel.add(moveFleet);
-
-				getRunningGameCelestialBodyDetailsBuildingSpecificDetailsPanel().add(btnsPanel);
+				
+				getRunningGameFleetDetailsSpecificDetailsPanel().add(btnsPanel);
+				
+				displayFleetActionPanel();
 			}
 			else if (AntiProbeMissile.class.isInstance(unit))
 			{
@@ -982,7 +1035,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				});
 				btnsPanel.add(fireBtn);
 				
-				getRunningGameCelestialBodyDetailsBuildingSpecificDetailsPanel().add(btnsPanel);
+				getRunningGameFleetDetailsSpecificDetailsPanel().add(btnsPanel);
 			}
 			else if (CarbonCarrier.class.isInstance(unit))
 			{
@@ -1014,7 +1067,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				});
 				btnsPanel.add(launchBtn);
 				
-				getRunningGameCelestialBodyDetailsBuildingSpecificDetailsPanel().add(btnsPanel);
+				getRunningGameFleetDetailsSpecificDetailsPanel().add(btnsPanel);
 			}
 			else
 			{
@@ -1052,9 +1105,23 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			return;
 		}
 
-		String value = obj.toString();
-		value = value.substring(0, (value.indexOf(" ") < 0) ? value.length() : value.indexOf(" "));
-		refreshBuildingDetails(value);
+		refreshBuildingDetails(labelToBuildingType(obj.toString()));
+	}
+	
+	private String buildingTypeToLabel(Class<? extends IBuilding> buildingType)
+	{
+		return buildingType.getSimpleName() + " (none)";
+	}
+	
+	private String buildingToLabel(IBuilding building)
+	{
+		return building.getClass().getSimpleName() + " (" + building.getBuildSlotsCount() + ")";
+	}
+	
+	private String labelToBuildingType(String label)
+	{
+		if (label == null) return null;
+		return label.substring(0, (label.indexOf(" ") < 0) ? label.length() : label.indexOf(" "));
 	}
 
 	private void refreshBuildingDetails(String buildingTypeName)
@@ -1120,7 +1187,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					}
 					else
 					{
-						buildCost = DefenseModule.FIRST_BUILD_COST;
+						buildCost = DefenseModule.FIRST_CARBON_COST;
 						nbBuild = 0;
 					}
 
@@ -1141,7 +1208,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					}
 					else
 					{
-						buildCost = ExtractionModule.FIRST_BUILD_COST;
+						buildCost = ExtractionModule.FIRST_CARBON_COST;
 						nbBuild = 0;
 					}
 
@@ -1182,6 +1249,11 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 								}
 								catch(RpcException e1)
 								{
+									e1.printStackTrace();
+								}
+								catch(RunningGameCommandException e1)
+								{
+									// TODO Auto-generated catch block
 									e1.printStackTrace();
 								}
 							}
@@ -1251,8 +1323,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					JButton buildBtn = new JButton();
 					String label = (unusedCount > 0) ? "Upgrade " + unusedCount : "Build";
 					buildBtn.setText(label);
-					buildBtn.setToolTipText(label + " pulsar launching pad for " + PulsarLauchingPad.PRICE_POPULATION + "pop. and "
-							+ PulsarLauchingPad.PRICE_CARBON + "c.");
+					buildBtn.setToolTipText(label + " pulsar launching pad for " + PulsarLauchingPad.POPULATION_COST+ "pop. and "
+							+ PulsarLauchingPad.CARBON_COST + "c.");
 					buildBtn.setEnabled(client.getRunningGameInterface().canBuild(productiveCelestialBody.getName(), PulsarLauchingPad.class));
 					buildBtn.addActionListener(new ActionListener()
 					{
@@ -1302,13 +1374,14 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				else if ((selectedBuildings != null && SpaceCounter.class.isInstance(selectedBuildings))
 						|| (selectedBuildingType != null && SpaceCounter.class.equals(selectedBuildingType)))
 				{
-					int buildCost = SpaceCounter.PRICE;
+					int buildCost = SpaceCounter.CARBON_COST;
 					int nbBuild;
 
 					if (selectedBuildings != null)
 					{
 						SpaceCounter spaceCounter = SpaceCounter.class.cast(selectedBuildings);
 						nbBuild = spaceCounter.getBuildSlotsCount();
+						displaySpaceCounterActionPanel();
 					}
 					else
 					{
@@ -1324,13 +1397,13 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					Planet planet = Planet.class.cast(productiveCelestialBody);
 
 					int nbBuild;
-					int[] buildCosts = new int[] { StarshipPlant.PRICE_CARBON, StarshipPlant.PRICE_POPULATION };
+					int[] buildCosts = new int[] { StarshipPlant.CARBON_COST, StarshipPlant.POPULATION_COST };
 
 					if (selectedBuildings != null)
 					{
 						StarshipPlant starshipPlant = StarshipPlant.class.cast(selectedBuildings);
 						nbBuild = starshipPlant.getBuildSlotsCount();
-						displayStarshipPlantActionPanel(currentSelectedArea, planet, selectedBuildings);
+						displayStarshipPlantActionPanel();
 					}
 					else
 					{
@@ -1356,9 +1429,12 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		}
 	}
 
-	private void refreshStarshipPlantActionPanel(Planet planet, StarshipPlant plant)
+	private void refreshStarshipPlantActionPanel()
 	{
-		getStarshipPlantWorkshopTitleLabel().setText("Available starships on " + planet.getName());
+		SelectedBuildingInfos<StarshipPlant> infos = getSelectedStarshipPlantInfos(StarshipPlant.class);
+		if (infos == null || infos.planet == null) return;
+		
+		getStarshipPlantWorkshopTitleLabel().setText("Available starships on " + infos.planet.getName());
 
 		int availableQt, toMake, toFleet;
 		int makeCarbonPrice = 0, makePopulationPrice = 0;
@@ -1369,13 +1445,13 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		for(Class<? extends IStarship> starshipType : SEPUtils.starshipTypes)
 		{
-			if (plant.getLandedStarships() == null)
+			if (infos.building.getLandedStarships() == null)
 			{
 				availableQt = 0;
 			}
 			else
 			{
-				availableQt = (plant.getLandedStarships().get(starshipType) == null) ? 0 : plant.getLandedStarships().get(starshipType);
+				availableQt = (infos.building.getLandedStarships().get(starshipType) == null) ? 0 : infos.building.getLandedStarships().get(starshipType);
 			}
 
 			toMake = Basic.intValueOf(getStarshipPlantWorkshopStarshipQtToMakeTextField(starshipType).getText(), 0);
@@ -1403,6 +1479,22 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).setText(String.valueOf(toFleet));
 
 		}
+		
+		if (infos.building.getLandedStarships() != null) for(Class<? extends IStarship> starshipType : infos.building.getLandedStarships().keySet())
+		{
+			if (!SEPUtils.starshipTypes.contains(starshipType))
+			{
+				availableQt = infos.building.getLandedStarships().get(starshipType);
+				
+				toFleet = Basic.intValueOf(getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).getText(), 0);
+
+				fleetToForm.put(starshipType, toFleet);
+
+				// Update display			
+				getStarshipPlantWorkshopStarshipQtLabel(starshipType).setText(String.format("%d (%d)", availableQt, availableQt - toFleet));
+				getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).setText(String.valueOf(toFleet));
+			}
+		}
 
 		String fleetName = getStarshipPlantNewFleetNameTextField().getText();
 		if (fleetName == null || fleetName.isEmpty())
@@ -1414,8 +1506,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		getStarshipPlantWorkshopMakeStarshipBtn().setToolTipText("Make starships for " + makeCarbonPrice + "c and " + makePopulationPrice + "pop.");
 		try
 		{
-			getStarshipPlantWorkshopMakeStarshipBtn().setEnabled(client.getRunningGameInterface().canMakeStarships(planet.getName(), starshipsToMake));
-			getStarshipPlantFormFleetBtn().setEnabled(client.getRunningGameInterface().canFormFleet(planet.getName(), fleetName, fleetToForm));
+			getStarshipPlantWorkshopMakeStarshipBtn().setEnabled(client.getRunningGameInterface().canMakeStarships(infos.planet.getName(), starshipsToMake));
+			getStarshipPlantFormFleetBtn().setEnabled(client.getRunningGameInterface().canFormFleet(infos.planet.getName(), fleetName, fleetToForm));
 		}
 		catch(RpcException e)
 		{
@@ -1430,211 +1522,33 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			updateUI();
 		}
 	}
-
-	private void displayStarshipPlantActionPanel(Area selectedArea, final Planet selectedPlanet, IBuilding selectedBuildings)
+	
+	FocusListener starshipPlantActionFocusListener;
+	FocusListener getStarshipPlantActionFocusListener()
 	{
-		StarshipPlant starshipPlant = null;
-		for(IBuilding b : selectedPlanet.getBuildings())
+		if (starshipPlantActionFocusListener == null)
 		{
-			if (StarshipPlant.class.isInstance(b))
+			starshipPlantActionFocusListener = new FocusAdapter()
 			{
-				starshipPlant = StarshipPlant.class.cast(b);
-				break;
-			}
+				@Override
+				public void focusLost(FocusEvent arg0)
+				{
+					SwingUtilities.invokeLater(new Runnable()
+					{
+
+						@Override
+						public void run()
+						{
+							refreshStarshipPlantActionPanel();
+						}
+					});
+				}
+
+			};
 		}
-
-		if (starshipPlant == null) return;
-
-		final StarshipPlant fStarshipPlant = starshipPlant;
-
-		FocusListener starshipPlantActionFocusListener = new FocusAdapter()
-		{
-			private final Planet		planet	= selectedPlanet;
-			private final StarshipPlant	plant	= fStarshipPlant;
-
-			@Override
-			public void focusLost(FocusEvent arg0)
-			{
-				SwingUtilities.invokeLater(new Runnable()
-				{
-
-					@Override
-					public void run()
-					{
-						refreshStarshipPlantActionPanel(planet, plant);
-					}
-				});
-			}
-
-		};
-
-		ActionListener starshipPlantActionMakeStarshipsBtnActionListener = new ActionListener()
-		{
-			private final Planet		planet	= selectedPlanet;
-			private final StarshipPlant	plant	= fStarshipPlant;
-
-			@Override
-			public void actionPerformed(ActionEvent e)
-			{
-				Map<Class<? extends IStarship>, Integer> starshipsToMake = new HashMap<Class<? extends IStarship>, Integer>();
-
-				for(Class<? extends IStarship> starshipType : SEPUtils.starshipTypes)
-				{
-					int toMake = Basic.intValueOf(getStarshipPlantWorkshopStarshipQtToMakeTextField(starshipType).getText(), 0);
-					if (toMake > 0) starshipsToMake.put(starshipType, toMake);
-				}
-
-				try
-				{
-					client.getRunningGameInterface().makeStarships(planet.getName(), starshipsToMake);
-
-					for(Class<? extends IStarship> starshipType : SEPUtils.starshipTypes)
-					{
-						getStarshipPlantWorkshopStarshipQtToMakeTextField(starshipType).setText("0");
-					}
-
-					refreshGameBoard();
-				}
-				catch(StateMachineNotExpectedEventException e1)
-				{
-					e1.printStackTrace();
-				}
-				catch(RpcException e1)
-				{
-					e1.printStackTrace();
-				}
-				catch(RunningGameCommandException e1)
-				{
-					e1.printStackTrace();
-				}
-			}
-		};
-
-		ActionListener starshipPlantActionFormFleetBtnActionListener = new ActionListener()
-		{
-			private final Planet		planet	= selectedPlanet;
-			private final StarshipPlant	plant	= fStarshipPlant;
-
-			@Override
-			public void actionPerformed(ActionEvent e)
-			{
-				Map<Class<? extends IStarship>, Integer> fleetToForm = new HashMap<Class<? extends IStarship>, Integer>();
-
-				for(Class<? extends IStarship> starshipType : SEPUtils.starshipTypes)
-				{
-					int fleetToFormQt = Basic.intValueOf(getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).getText(), 0);
-					if (fleetToFormQt > 0) fleetToForm.put(starshipType, fleetToFormQt);
-				}
-
-				try
-				{
-					client.getRunningGameInterface().formFleet(planet.getName(), getStarshipPlantNewFleetNameTextField().getText(), fleetToForm);
-
-					for(Class<? extends IStarship> starshipType : SEPUtils.starshipTypes)
-					{
-						getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).setText("0");
-						getStarshipPlantNewFleetNameTextField().setText(Unit.generateName());
-					}
-
-					refreshGameBoard();
-				}
-				catch(StateMachineNotExpectedEventException e1)
-				{
-					e1.printStackTrace();
-				}
-				catch(RpcException e1)
-				{
-					e1.printStackTrace();
-				}
-				catch(RunningGameCommandException e1)
-				{
-					e1.printStackTrace();
-				}
-			}
-		};
-
-		JScrollPane starshipPlantActionScrollPane = new JScrollPane();
-		JPanel starshipPlantActionPanel = new JPanel(null);
-
-		starshipPlantActionPanel.add(getStarshipPlantWorkshopTitleLabel());
-		starshipPlantActionPanel.add(getStarshipPlantWorkshopColumnLabel());
-		int y = getStarshipPlantWorkshopColumnLabel().getY() + getStarshipPlantWorkshopColumnLabel().getHeight() + 5;
-
-		for(Class<? extends IStarship> starshipType : SEPUtils.starshipTypes)
-		{
-			JLabel typeLabel = getStarshipPlantWorkshopStarshipTypeLabel(starshipType);
-			typeLabel.setBounds(0, y, 200, 20);
-			starshipPlantActionPanel.add(typeLabel);
-
-			JLabel qtLabel = getStarshipPlantWorkshopStarshipQtLabel(starshipType);
-			int qt = starshipPlant.getLandedStarships().containsKey(starshipType) ? starshipPlant.getLandedStarships().get(starshipType) : 0;
-			qtLabel.setText(qt + " (" + qt + ")");
-			qtLabel.setBounds(200, y, 100, 20);
-			starshipPlantActionPanel.add(qtLabel);
-
-			JTextField makeQt = getStarshipPlantWorkshopStarshipQtToMakeTextField(starshipType);
-			makeQt.setBounds(300, y, 40, 20);
-			for(FocusListener l : makeQt.getFocusListeners())
-				makeQt.removeFocusListener(l);
-			makeQt.addFocusListener(starshipPlantActionFocusListener);
-			starshipPlantActionPanel.add(makeQt);
-
-			JTextField fleetQt = getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType);
-			fleetQt.setBounds(400, y, 40, 20);
-			for(FocusListener l : fleetQt.getFocusListeners())
-				fleetQt.removeFocusListener(l);
-			fleetQt.addFocusListener(starshipPlantActionFocusListener);
-			starshipPlantActionPanel.add(fleetQt);
-
-			y += 25;
-		}
-
-		JButton makeStarshipBtn = getStarshipPlantWorkshopMakeStarshipBtn();
-		for(ActionListener l : makeStarshipBtn.getActionListeners())
-			makeStarshipBtn.removeActionListener(l);
-		makeStarshipBtn.addActionListener(starshipPlantActionMakeStarshipsBtnActionListener);
-		makeStarshipBtn.setBounds(275, y, 90, 20);
-		starshipPlantActionPanel.add(makeStarshipBtn);
-
-		JTextField newFleetNameTextField = getStarshipPlantNewFleetNameTextField();
-		for(FocusListener l : newFleetNameTextField.getFocusListeners())
-			newFleetNameTextField.removeFocusListener(l);
-		newFleetNameTextField.addFocusListener(starshipPlantActionFocusListener);
-		newFleetNameTextField.setBounds(375, y, 90, 20);
-		starshipPlantActionPanel.add(newFleetNameTextField);
-
-		JButton formFleetBtn = getStarshipPlantFormFleetBtn();
-		for(ActionListener l : formFleetBtn.getActionListeners())
-			formFleetBtn.removeActionListener(l);
-		formFleetBtn.addActionListener(starshipPlantActionFormFleetBtnActionListener);
-		formFleetBtn.setBounds(375, y + 20, 90, 20);
-		starshipPlantActionPanel.add(formFleetBtn);
-
-		starshipPlantActionPanel.setMinimumSize(new Dimension(500, y + 50));
-		starshipPlantActionPanel.setPreferredSize(starshipPlantActionPanel.getMinimumSize());
-
-		getRunningGameActionPanel().removeAll();
-		starshipPlantActionScrollPane.setViewportView(starshipPlantActionPanel);
-		getRunningGameActionPanel().add(starshipPlantActionScrollPane, BorderLayout.CENTER);
-
-		getRunningGameTabbedPanel().setSelectedComponent(getRunningGameActionPanel());
-
-		refreshStarshipPlantActionPanel(selectedPlanet, starshipPlant);
-
-		updateUI();
+		return starshipPlantActionFocusListener;
 	}
-
-	private JButton	starshipPlantWorkshopMakeStarshipBtn;
-
-	private JButton getStarshipPlantWorkshopMakeStarshipBtn()
-	{
-		if (starshipPlantWorkshopMakeStarshipBtn == null)
-		{
-			starshipPlantWorkshopMakeStarshipBtn = new JButton("Make");
-		}
-		return starshipPlantWorkshopMakeStarshipBtn;
-	}
-
+	
 	private JButton	starshipPlantFormFleetBtn;
 
 	private JButton getStarshipPlantFormFleetBtn()
@@ -1642,8 +1556,539 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (starshipPlantFormFleetBtn == null)
 		{
 			starshipPlantFormFleetBtn = new JButton("Form fleet");
+			starshipPlantFormFleetBtn.addActionListener(new ActionListener()
+		{
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				SelectedBuildingInfos<StarshipPlant> infos = getSelectedStarshipPlantInfos(StarshipPlant.class);
+				if (infos == null || infos.planet == null) return;
+				
+				Map<Class<? extends IStarship>, Integer> fleetToForm = new HashMap<Class<? extends IStarship>, Integer>();
+
+				for(Class<? extends IStarship> starshipType : SEPUtils.starshipTypes)
+				{
+					int fleetToFormQt = Basic.intValueOf(getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).getText(), 0);
+					if (fleetToFormQt > 0) fleetToForm.put(starshipType, fleetToFormQt);
+				}
+				
+				if (infos.building.getLandedStarships() != null) for(Class<? extends IStarship> starshipType : infos.building.getLandedStarships().keySet())
+				{
+					if (!SEPUtils.starshipTypes.contains(starshipType))
+					{
+						int fleetToFormQt = Basic.intValueOf(getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).getText(), 0);
+						if (fleetToFormQt > 0) fleetToForm.put(starshipType, fleetToFormQt);
+					}
+				}
+
+				try
+				{
+					client.getRunningGameInterface().formFleet(infos.planet.getName(), getStarshipPlantNewFleetNameTextField().getText(), fleetToForm);
+
+					for(Class<? extends IStarship> starshipType : SEPUtils.starshipTypes)
+					{
+						getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).setText("0");
+						getStarshipPlantNewFleetNameTextField().setText(Unit.generateName());
+					}
+					
+					if (infos.building.getLandedStarships() != null) for(Class<? extends IStarship> starshipType : infos.building.getLandedStarships().keySet())
+					{
+						if (!SEPUtils.starshipTypes.contains(starshipType))
+						{
+							getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).setText("0");
+							getStarshipPlantNewFleetNameTextField().setText(Unit.generateName());
+						}
+					}
+
+					refreshGameBoard();
+				}
+				catch(StateMachineNotExpectedEventException e1)
+				{
+					e1.printStackTrace();
+				}
+				catch(RpcException e1)
+				{
+					e1.printStackTrace();
+				}
+				catch(RunningGameCommandException e1)
+				{
+					e1.printStackTrace();
+				}
+			}
+		});
 		}
 		return starshipPlantFormFleetBtn;
+	}
+	
+	private JButton starshipPlantWorkshipMakeStarshipBtn;
+	private JButton getStarshipPlantWorkshopMakeStarshipBtn()
+	{
+		if (starshipPlantWorkshipMakeStarshipBtn == null)
+		{
+			starshipPlantWorkshipMakeStarshipBtn = new JButton("Make");
+			starshipPlantWorkshipMakeStarshipBtn.addActionListener(new ActionListener()
+			{
+				@Override
+				public void actionPerformed(ActionEvent e)
+				{
+					SelectedBuildingInfos<StarshipPlant> infos = getSelectedStarshipPlantInfos(StarshipPlant.class);
+					if (infos == null || infos.building == null) return;
+					
+					Map<Class<? extends IStarship>, Integer> starshipsToMake = new HashMap<Class<? extends IStarship>, Integer>();
+
+					for(Class<? extends IStarship> starshipType : SEPUtils.starshipTypes)
+					{
+						int toMake = Basic.intValueOf(getStarshipPlantWorkshopStarshipQtToMakeTextField(starshipType).getText(), 0);
+						if (toMake > 0) starshipsToMake.put(starshipType, toMake);
+					}
+
+					try
+					{
+						client.getRunningGameInterface().makeStarships(infos.planet.getName(), starshipsToMake);
+
+						for(Class<? extends IStarship> starshipType : SEPUtils.starshipTypes)
+						{
+							getStarshipPlantWorkshopStarshipQtToMakeTextField(starshipType).setText("0");
+						}
+
+						refreshGameBoard();
+					}
+					catch(StateMachineNotExpectedEventException e1)
+					{
+						e1.printStackTrace();
+					}
+					catch(RpcException e1)
+					{
+						e1.printStackTrace();
+					}
+					catch(RunningGameCommandException e1)
+					{
+						e1.printStackTrace();
+					}
+				}
+			});
+		}
+		return starshipPlantWorkshipMakeStarshipBtn;
+	}
+	
+	private static class SelectedBuildingInfos<B extends IBuilding>
+	{
+		final Planet planet;
+		final ProductiveCelestialBody productiveCelestialBody;
+		final B building;
+		
+		public SelectedBuildingInfos(ProductiveCelestialBody productiveCelestialBody, B building)
+		{
+			this.productiveCelestialBody = productiveCelestialBody;
+			if (Planet.class.isInstance(productiveCelestialBody))
+			{
+				this.planet = Planet.class.cast(productiveCelestialBody);
+			}
+			else
+			{
+				this.planet = null;
+			}
+			
+			this.building = building;
+		}
+	}
+	
+	private <B extends IBuilding> SelectedBuildingInfos<B> getSelectedStarshipPlantInfos(Class<B> buildingType)
+	{
+		ICelestialBody celestialBody = currentSelectedArea.getCelestialBody();
+		if (celestialBody == null) return null;
+		if (!ProductiveCelestialBody.class.isInstance(celestialBody)) return null;
+		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
+		
+		B building = null;
+		for(IBuilding b : productiveCelestialBody.getBuildings())
+		{
+			if (buildingType.isInstance(b))
+			{
+				building = buildingType.cast(b);
+				break;
+			}
+		}
+
+		if (building == null) return null;
+		
+		return new SelectedBuildingInfos(productiveCelestialBody, building);
+	}
+	
+	private static class SelectedUnitInfos<U extends Unit>
+	{
+		final Planet planet;
+		final ProductiveCelestialBody productiveCelestialBody;
+		final U unit;
+		
+		public SelectedUnitInfos(ProductiveCelestialBody productiveCelestialBody, U unit)
+		{
+			this.productiveCelestialBody = productiveCelestialBody;
+			if (Planet.class.isInstance(productiveCelestialBody))
+			{
+				this.planet = Planet.class.cast(productiveCelestialBody);
+			}
+			else
+			{
+				this.planet = null;
+			}
+			
+			this.unit = unit;
+		}
+	}
+	
+	private <U extends Unit> SelectedUnitInfos<U> getSelectedUnitInfos(Class<U> unitTye)
+	{
+		ICelestialBody celestialBody = currentSelectedArea.getCelestialBody();
+		if (celestialBody == null) return null;
+		if (!ProductiveCelestialBody.class.isInstance(celestialBody)) return null;
+		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
+			
+		Object selectedUnit = getRunningGameCelestialBodyDetailsUnitsList().getSelectedValue();
+		if (selectedUnit == null) return null;
+		
+		Unit unit = currentSelectedArea.getUnit(labelToUnitName(selectedUnit.toString()));
+		if (!unitTye.isInstance(unit)) return null;
+		
+		return new SelectedUnitInfos<U>(productiveCelestialBody, unitTye.cast(unit));
+	}
+	
+	private JScrollPane starshipPlantActionScrollPane;
+	private JScrollPane getStarshipPlantActionScrollPane()
+	{
+		if (starshipPlantActionScrollPane == null)
+		{
+			starshipPlantActionScrollPane = new JScrollPane();
+		}
+		return starshipPlantActionScrollPane;
+	}
+	
+	private void displaySpaceCounterActionPanel()
+	{
+		SelectedBuildingInfos<SpaceCounter> infos = getSelectedStarshipPlantInfos(SpaceCounter.class);
+		if (infos == null) return;
+		
+		JPanel spaceCounterActionPanel = new JPanel(null);
+		
+		// TODO
+		
+		// client.getRunningGameInterface().buildSpaceRoad(celestialBodyNameA, celestialBodyNameB);
+		// client.getRunningGameInterface().demolishSpaceRoad(celestialBodyNameA, celestialBodyNameB);
+		// client.getRunningGameInterface().modifyCarbonOrder(originCelestialBodyName, destinationCelestialBodyName, amount)
+		
+	}
+	
+	private void displayFleetActionPanel()
+	{
+		SelectedUnitInfos<Fleet> infos = getSelectedUnitInfos(Fleet.class);
+		if (infos == null) return;
+		
+		JPanel fleetActionPanel = new JPanel(null);
+		
+		fleetActionPanel.add(getFleetMoveDestinationLabel());
+		fleetActionPanel.add(getFleetMoveDestinationComboBox());
+		fleetActionPanel.add(getFleetMoveDelayLabel());
+		fleetActionPanel.add(getFleetMoveDelayTextField());
+		fleetActionPanel.add(getFleetMoveGoRadioBtn());
+		fleetActionPanel.add(getFleetMoveAttackRadioBtn());
+		fleetActionPanel.add(getFleetMoveDirectBtn());
+		fleetActionPanel.add(getFleetMoveAddBtn());
+		
+		fleetActionPanel.add(getFleetMoveCheckPointListScrollPane());
+		fleetActionPanel.add(getFleetMoveCheckPointDownBtn());
+		fleetActionPanel.add(getFleetMoveCheckPointRemoveBtn());
+		fleetActionPanel.add(getFleetMoveCheckPointUpBtn());
+		
+		fleetActionPanel.setMinimumSize(new Dimension(getFleetMoveCheckPointListScrollPane().getX()+getFleetMoveCheckPointListScrollPane().getWidth()+20, getFleetMoveCheckPointRemoveBtn().getY()+getFleetMoveCheckPointRemoveBtn().getHeight()+20));
+		fleetActionPanel.setPreferredSize(fleetActionPanel.getMinimumSize());
+
+		getFleetActionScrollPane().setViewportView(fleetActionPanel);
+
+		getFleetActionPanel().removeAll();
+		getFleetActionPanel().add(getFleetActionScrollPane(), BorderLayout.CENTER);
+		
+		getRunningGameTabbedPanel().setTitleAt(getRunningGameTabbedPanel().indexOfComponent(getFleetActionPanel()), "Fleet "+infos.unit.getName());
+		getRunningGameTabbedPanel().setSelectedComponent(getFleetActionPanel());
+
+		//refreshFleetActionPanel();
+
+		updateUI();
+		
+		// TODO		
+		// client.getRunningGameInterface().moveFleet(fleetName, delay, checkpoints)		
+	}
+	
+	private JScrollPane fleetActionScrollPane;
+	private JScrollPane getFleetActionScrollPane()
+	{
+		if (fleetActionScrollPane == null)
+		{
+			fleetActionScrollPane = new JScrollPane();
+		}
+		return fleetActionScrollPane;
+	}
+	
+	private JLabel fleetMoveDestinationLabel;
+	private JLabel getFleetMoveDestinationLabel()
+	{
+		if (fleetMoveDestinationLabel == null)
+		{
+			fleetMoveDestinationLabel = new JLabel("Destination");
+			fleetMoveDestinationLabel.setBounds(10, 10, 200, 20);
+		}
+		return fleetMoveDestinationLabel;
+	}
+	
+	private JComboBox fleetMoveDestinationComboBox;
+	private JComboBox getFleetMoveDestinationComboBox()
+	{
+		if (fleetMoveDestinationComboBox == null)
+		{
+			Set<ICelestialBody> celestialBodies = currentGameBoard.getCelestialBodies();
+			String[] destinationNames = new String[celestialBodies.size()];
+			int i = 0;
+			for(ICelestialBody celestialBody : celestialBodies)
+			{
+				destinationNames[i] = celestialBody.getName();
+				++i;
+			}
+			
+			fleetMoveDestinationComboBox = new JComboBox(destinationNames);
+			fleetMoveDestinationComboBox.setBounds(getFleetMoveDestinationLabel().getX(), getFleetMoveDestinationLabel().getY()+getFleetMoveDestinationLabel().getHeight()+5, getFleetMoveDestinationLabel().getWidth(), getFleetMoveDestinationLabel().getHeight());			
+		}
+		return fleetMoveDestinationComboBox;
+	}
+	
+	private JLabel fleetMoveDelayLabel;
+	private JLabel getFleetMoveDelayLabel()
+	{
+		if (fleetMoveDelayLabel == null)
+		{
+			fleetMoveDelayLabel = new JLabel("Delay");
+			fleetMoveDelayLabel.setBounds(getFleetMoveDestinationComboBox().getX(), getFleetMoveDestinationComboBox().getY()+getFleetMoveDestinationComboBox().getHeight()+5, (int) (getFleetMoveDestinationComboBox().getWidth()*0.3), getFleetMoveDestinationComboBox().getHeight());
+		}
+		return fleetMoveDelayLabel;
+	}
+	
+	private JTextField fleetMoveDelayTextField;
+	private JTextField getFleetMoveDelayTextField()
+	{
+		if (fleetMoveDelayTextField == null)
+		{
+			fleetMoveDelayTextField = new JTextField();
+			fleetMoveDelayTextField.setBounds(getFleetMoveDelayLabel().getX() + getFleetMoveDelayLabel().getWidth(), getFleetMoveDelayLabel().getY(), getFleetMoveDestinationComboBox().getWidth() - getFleetMoveDelayLabel().getWidth(), getFleetMoveDelayLabel().getHeight());
+		}
+		return fleetMoveDelayTextField;
+	}
+	
+	private JRadioButton fleetMoveGoRadioBtn;
+	private JRadioButton getFleetMoveGoRadioBtn()
+	{
+		if (fleetMoveGoRadioBtn == null)
+		{
+			fleetMoveGoRadioBtn = new JRadioButton("Go");
+			fleetMoveGoRadioBtn.setBounds(getFleetMoveDelayLabel().getX(), getFleetMoveDelayLabel().getY()+getFleetMoveDelayLabel().getHeight()+5, (getFleetMoveDestinationLabel().getWidth() / 2) - 2, getFleetMoveDestinationLabel().getHeight());
+		}
+		return fleetMoveGoRadioBtn;
+	}
+	
+	private JRadioButton fleetMoveAttackRadioBtn;
+	private JRadioButton getFleetMoveAttackRadioBtn()
+	{
+		if (fleetMoveAttackRadioBtn == null)
+		{
+			fleetMoveAttackRadioBtn = new JRadioButton("Attack");
+			fleetMoveAttackRadioBtn.setBounds(getFleetMoveGoRadioBtn().getX()+getFleetMoveGoRadioBtn().getWidth() + 4, getFleetMoveGoRadioBtn().getY(), getFleetMoveDestinationLabel().getWidth() - getFleetMoveGoRadioBtn().getWidth() - 2, getFleetMoveGoRadioBtn().getHeight());
+		}
+		return fleetMoveAttackRadioBtn;
+	}
+	
+	private JButton fleetMoveDirectBtn;
+	private JButton getFleetMoveDirectBtn()
+	{
+		if (fleetMoveDirectBtn == null)
+		{
+			fleetMoveDirectBtn = new JButton("Direct");
+			fleetMoveDirectBtn.setBounds(getFleetMoveDelayLabel().getX(), getFleetMoveAttackRadioBtn().getY()+getFleetMoveAttackRadioBtn().getHeight()+5, (getFleetMoveDestinationLabel().getWidth() / 2) - 2, getFleetMoveDestinationLabel().getHeight());		
+		}
+		
+		return fleetMoveDirectBtn;
+	}
+	
+	private JButton fleetMoveAddBtn;
+	private JButton getFleetMoveAddBtn()
+	{
+		if (fleetMoveAddBtn == null)
+		{
+			fleetMoveAddBtn = new JButton("Add");
+			fleetMoveAddBtn.setBounds(getFleetMoveDirectBtn().getX() + getFleetMoveDirectBtn().getWidth() + 4, getFleetMoveDirectBtn().getY(), getFleetMoveDestinationLabel().getWidth() - getFleetMoveDirectBtn().getWidth() - 2, getFleetMoveDirectBtn().getHeight());		
+		}
+		
+		return fleetMoveAddBtn;
+	}
+	
+	JScrollPane fleetMoveCheckPointListScrollPane;
+	private JScrollPane getFleetMoveCheckPointListScrollPane()
+	{
+		if (fleetMoveCheckPointListScrollPane == null)
+		{
+			fleetMoveCheckPointListScrollPane = new JScrollPane(getFleetMoveCheckPointList());
+			fleetMoveCheckPointListScrollPane.setPreferredSize(new Dimension(100, getFleetMoveCheckPointList().getPreferredScrollableViewportSize().height));
+			fleetMoveCheckPointListScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+			fleetMoveCheckPointListScrollPane.setBounds(getFleetMoveDestinationLabel().getX()+getFleetMoveDestinationLabel().getWidth()+30, getFleetMoveDestinationLabel().getY(), getFleetMoveDestinationLabel().getWidth(), getFleetMoveDirectBtn().getY());
+		}
+		return fleetMoveCheckPointListScrollPane;
+	}
+	
+	private JList fleetMoveCheckPointList;
+	private JList getFleetMoveCheckPointList()
+	{
+		if (fleetMoveCheckPointList == null)
+		{
+			fleetMoveCheckPointList = new JList();
+			fleetMoveCheckPointList.setVisibleRowCount(getFleetMoveDirectBtn().getY() / fleetMoveCheckPointList.getFixedCellHeight());
+			fleetMoveCheckPointList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+			fleetMoveCheckPointList.addMouseMotionListener(new MouseMotionAdapter()
+			{
+				@Override
+				public void mouseMoved(MouseEvent e)
+				{
+					int index = fleetMoveCheckPointList.locationToIndex(e.getPoint());
+					if (index < 0) return;
+
+					String label = fleetMoveCheckPointList.getModel().getElementAt(index).toString();
+					if (label == null) return;
+
+					fleetMoveCheckPointList.setToolTipText(label);
+
+					super.mouseMoved(e);
+				}
+			});
+		}
+		return fleetMoveCheckPointList;
+	}
+	
+	private JButton fleetMoveCheckPointUpBtn;
+	private JButton getFleetMoveCheckPointUpBtn()
+	{
+		if (fleetMoveCheckPointUpBtn == null)
+		{
+			fleetMoveCheckPointUpBtn = new JButton("up");
+			fleetMoveCheckPointUpBtn.setBounds(getFleetMoveCheckPointListScrollPane().getX(), getFleetMoveCheckPointListScrollPane().getY()+getFleetMoveCheckPointListScrollPane().getHeight()+5, 60, 20);
+		}
+		return fleetMoveCheckPointUpBtn;
+	}
+	
+	private JButton fleetMoveCheckPointRemoveBtn;
+	private JButton getFleetMoveCheckPointRemoveBtn()
+	{
+		if (fleetMoveCheckPointRemoveBtn == null)
+		{
+			fleetMoveCheckPointRemoveBtn = new JButton("rem");
+			fleetMoveCheckPointRemoveBtn.setBounds(getFleetMoveCheckPointListScrollPane().getX()+getFleetMoveCheckPointListScrollPane().getWidth()/2-(getFleetMoveCheckPointUpBtn().getWidth()/2), getFleetMoveCheckPointListScrollPane().getY()+getFleetMoveCheckPointListScrollPane().getHeight()+5, getFleetMoveCheckPointUpBtn().getWidth(), getFleetMoveCheckPointUpBtn().getHeight());
+		}
+		return fleetMoveCheckPointRemoveBtn;
+	}
+	
+	private JButton fleetMoveCheckPointDownBtn;
+	private JButton getFleetMoveCheckPointDownBtn()
+	{
+		if (fleetMoveCheckPointDownBtn == null)
+		{
+			fleetMoveCheckPointDownBtn = new JButton("dn");
+			fleetMoveCheckPointDownBtn.setBounds(getFleetMoveCheckPointListScrollPane().getX()+getFleetMoveCheckPointListScrollPane().getWidth()-getFleetMoveCheckPointUpBtn().getWidth(), getFleetMoveCheckPointListScrollPane().getY()+getFleetMoveCheckPointListScrollPane().getHeight()+5, getFleetMoveCheckPointUpBtn().getWidth(), getFleetMoveCheckPointUpBtn().getHeight());
+		}
+		return fleetMoveCheckPointDownBtn;
+	}
+	
+	private void displayStarshipPlantActionPanel()
+	{
+		SelectedBuildingInfos<StarshipPlant> infos = getSelectedStarshipPlantInfos(StarshipPlant.class);
+		if (infos == null || infos.planet == null) return;
+
+		JPanel starshipPlantActionPanel = new JPanel(null);
+
+		starshipPlantActionPanel.add(getStarshipPlantWorkshopTitleLabel());
+		starshipPlantActionPanel.add(getStarshipPlantWorkshopColumnLabel());
+		int y = getStarshipPlantWorkshopColumnLabel().getY() + getStarshipPlantWorkshopColumnLabel().getHeight() + 5;
+		
+		for(Class<? extends IStarship> basicStarshipType : SEPUtils.starshipTypes)
+		{
+			JLabel typeLabel = getStarshipPlantWorkshopStarshipTypeLabel(basicStarshipType);
+			typeLabel.setBounds(0, y, 200, 20);
+			starshipPlantActionPanel.add(typeLabel);
+
+			JLabel qtLabel = getStarshipPlantWorkshopStarshipQtLabel(basicStarshipType);
+			int qt = infos.building.getLandedStarships().containsKey(basicStarshipType) ? infos.building.getLandedStarships().get(basicStarshipType) : 0;
+			qtLabel.setText(qt + " (" + qt + ")");
+			qtLabel.setBounds(200, y, 100, 20);
+			starshipPlantActionPanel.add(qtLabel);
+
+			JTextField makeQt = getStarshipPlantWorkshopStarshipQtToMakeTextField(basicStarshipType);
+			makeQt.setBounds(300, y, 40, 20);
+			starshipPlantActionPanel.add(makeQt);
+
+			JTextField fleetQt = getStarshipPlantWorkshopStarshipNewFleetQtTextField(basicStarshipType);
+			fleetQt.setBounds(400, y, 40, 20);
+			starshipPlantActionPanel.add(fleetQt);
+
+			y += 25;
+		}
+			
+		if (infos.building.getLandedStarships() != null) for(Class<? extends IStarship> starshipType : infos.building.getLandedStarships().keySet())
+		{
+			if (!SEPUtils.starshipTypes.contains(starshipType))
+			{
+				JLabel typeLabel = getStarshipPlantWorkshopStarshipTypeLabel(starshipType);
+				typeLabel.setBounds(0, y, 200, 20);
+				starshipPlantActionPanel.add(typeLabel);
+
+				JLabel qtLabel = getStarshipPlantWorkshopStarshipQtLabel(starshipType);
+				int qt = infos.building.getLandedStarships().get(starshipType);
+				qtLabel.setText(qt + " (" + qt + ")");
+				qtLabel.setBounds(200, y, 100, 20);
+				starshipPlantActionPanel.add(qtLabel);
+
+				JTextField makeQt = getStarshipPlantWorkshopStarshipQtToMakeTextField(starshipType);
+				makeQt.setEnabled(false);
+				makeQt.setBounds(300, y, 40, 20);				
+				starshipPlantActionPanel.add(makeQt);
+
+				JTextField fleetQt = getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType);
+				fleetQt.setBounds(400, y, 40, 20);				
+				starshipPlantActionPanel.add(fleetQt);
+
+				y += 25;
+			}
+		}
+
+		JButton makeStarshipBtn = getStarshipPlantWorkshopMakeStarshipBtn();		
+		makeStarshipBtn.setBounds(275, y, 90, 20);
+		starshipPlantActionPanel.add(makeStarshipBtn);
+
+		JTextField newFleetNameTextField = getStarshipPlantNewFleetNameTextField();		
+		newFleetNameTextField.setBounds(375, y, 90, 20);
+		starshipPlantActionPanel.add(newFleetNameTextField);
+
+		JButton formFleetBtn = getStarshipPlantFormFleetBtn();
+		formFleetBtn.setBounds(375, y + 20, 90, 20);
+		starshipPlantActionPanel.add(formFleetBtn);
+
+		starshipPlantActionPanel.setMinimumSize(new Dimension(500, y + 50));
+		starshipPlantActionPanel.setPreferredSize(starshipPlantActionPanel.getMinimumSize());
+
+		getStarshipPlantActionScrollPane().setViewportView(starshipPlantActionPanel);
+
+		getBuildingActionPanel().removeAll();
+		getBuildingActionPanel().add(getStarshipPlantActionScrollPane(), BorderLayout.CENTER);
+		
+		getRunningGameTabbedPanel().setTitleAt(getRunningGameTabbedPanel().indexOfComponent(getBuildingActionPanel()), "Starship plant");
+		getRunningGameTabbedPanel().setSelectedComponent(getBuildingActionPanel());
+
+		refreshStarshipPlantActionPanel();
+
+		updateUI();
 	}
 
 	private JLabel	starshipPlantWorkshopTitleLabel;
@@ -1705,7 +2150,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (!starshipPlantWorkshopStarshipQtToMakeTextField.containsKey(starshipType))
 		{
 			JTextField textField = new JTextField("0");
-			starshipPlantWorkshopStarshipQtToMakeTextField.put(starshipType, textField);
+			textField.addFocusListener(getStarshipPlantActionFocusListener());
+			starshipPlantWorkshopStarshipQtToMakeTextField.put(starshipType, textField);			
 		}
 		return starshipPlantWorkshopStarshipQtToMakeTextField.get(starshipType);
 	}
@@ -1717,6 +2163,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (!starshipPlantWorkshopStarshipNewFleetQtTextField.containsKey(starshipType))
 		{
 			JTextField textField = new JTextField("0");
+			textField.addFocusListener(getStarshipPlantActionFocusListener());
 			starshipPlantWorkshopStarshipNewFleetQtTextField.put(starshipType, textField);
 		}
 		return starshipPlantWorkshopStarshipNewFleetQtTextField.get(starshipType);
@@ -1729,6 +2176,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (starshipPlantNewFleetNameTextField == null)
 		{
 			starshipPlantNewFleetNameTextField = new JTextField("fleetName");
+			starshipPlantNewFleetNameTextField.addFocusListener(getStarshipPlantActionFocusListener());
 		}
 		return starshipPlantNewFleetNameTextField;
 	}

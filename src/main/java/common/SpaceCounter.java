@@ -15,7 +15,7 @@ public class SpaceCounter implements IBuilding, Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
-	public static final int PRICE = 1000;
+	public static final int CARBON_COST = 1000;
 	
 	// Only if visible
 	private final int nbBuild;
@@ -57,7 +57,7 @@ public class SpaceCounter implements IBuilding, Serializable
 	{
 		StringBuffer sb = new StringBuffer();
 		
-		sb.append(nbBuild+" space roads build.\n");
+		sb.append(nbBuild+" space counter(s) build.\n");
 		if (spaceRoads.size() > 0)
 		{
 			sb.append("Space Roads :\n");

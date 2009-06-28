@@ -10,7 +10,7 @@ import java.io.Serializable;
 /**
  * 
  */
-class PulsarLauchingPad implements IBuilding, Serializable
+class PulsarLauchingPad extends ABuilding implements Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
@@ -20,6 +20,14 @@ class PulsarLauchingPad implements IBuilding, Serializable
 	// Variables
 	private int nbBuild;
 	private int nbFired;
+	
+	/**
+	 * First build constructor.
+	 */
+	public PulsarLauchingPad(int lastBuildDate)
+	{
+		this(lastBuildDate, 1, 0);
+	}
 	
 	/**
 	 * Full constructor. 
@@ -37,19 +45,13 @@ class PulsarLauchingPad implements IBuilding, Serializable
 		return Float.valueOf(nbBuild-nbFired)* (float) 0.25;
 	}
 	
-	private int getNextBuildCost()
-	{
-		// TODO : Redefine the formula
-		return (int) (1+nbBuild * 0.25) * 1000;
-	}
-	
 	/* (non-Javadoc)
 	 * @see server.model.IBuilding#getPlayerView(java.lang.String)
 	 */
 	@Override
 	public common.PulsarLauchingPad getPlayerView(int date, String playerLogin)
 	{
-		return new common.PulsarLauchingPad(nbBuild, nbFired, getTotalBonus(), getNextBuildCost());
+		return new common.PulsarLauchingPad(nbBuild, nbFired, getTotalBonus(), getUpgradeCarbonCost());
 	}
 
 	@Override
@@ -72,5 +74,37 @@ class PulsarLauchingPad implements IBuilding, Serializable
 	public int getLastBuildDate()
 	{
 		return lastBuildDate;
+	}
+
+	@Override
+	int getUpgradeCarbonCost()
+	{
+		// TODO : Redefine the formula
+		return (int) (1+nbBuild * 0.25) * 1000;
+	}
+
+	@Override
+	int getUpgradePopulationCost()
+	{
+		// TODO : Redefine the formula
+		return (int) (1+nbBuild * 0.25) * 1000;
+	}
+
+	@Override
+	PulsarLauchingPad getUpgraded(int date)
+	{
+		return new PulsarLauchingPad(date, nbBuild+1, nbFired);
+	}
+	
+	@Override
+	PulsarLauchingPad getDowngraded()
+	{
+		throw new Error("Cannot downgrade PulsarLaunchingPad");
+	}
+
+	@Override
+	boolean canDowngrade()
+	{
+		return false;
 	}
 }

@@ -6,6 +6,7 @@
 package server.model;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -14,7 +15,7 @@ import common.Player;
 /**
  * 
  */
-class SpaceCounter implements IBuilding, Serializable
+class SpaceCounter extends ABuilding implements Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
@@ -98,6 +99,15 @@ class SpaceCounter implements IBuilding, Serializable
 	private final Set<CarbonOrder> currentSentOrder;
 	private final Set<CarbonOrder> nextOrders;
 	
+	
+	/**
+	 * First build constructor.
+	 */
+	public SpaceCounter(int lastBuildDate)
+	{
+		this(lastBuildDate, 1);
+	}
+	
 	/**
 	 * Full constructor.
 	 */
@@ -160,14 +170,40 @@ class SpaceCounter implements IBuilding, Serializable
 		return nbBuild;
 	}
 
-	public SpaceCounter getUpgradedBuilding(int lastBuildDate)
-	{
-		return new SpaceCounter(lastBuildDate, nbBuild+1, spaceRoads, ordersToReceive, currentSentOrder, nextOrders);
-	}
-
 	@Override
 	public int getLastBuildDate()
 	{
 		return lastBuildDate;
+	}
+
+	@Override
+	int getUpgradeCarbonCost()
+	{
+		return common.SpaceCounter.CARBON_COST;
+	}
+
+	@Override
+	int getUpgradePopulationCost()
+	{
+		return 0;
+	}
+
+	@Override
+	SpaceCounter getUpgraded(int date)
+	{
+		return new SpaceCounter(date, nbBuild+1, spaceRoads, ordersToReceive, currentSentOrder, nextOrders);
+	}
+	
+	@Override
+	SpaceCounter getDowngraded()
+	{
+		if (!canDowngrade()) throw new Error("Cannot currently downgrade this SpaceCounter.");		
+		return new SpaceCounter(lastBuildDate, Math.max(0, nbBuild-1), spaceRoads, ordersToReceive, currentSentOrder, nextOrders);
+	}
+
+	@Override
+	boolean canDowngrade()
+	{
+		return spaceRoads.size() <= Math.max(0,nbBuild-1);
 	}
 }

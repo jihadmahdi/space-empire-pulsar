@@ -14,7 +14,7 @@ public class DefenseModule implements IBuilding, Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
-	public static final int FIRST_BUILD_COST = 4000;
+	public static final int FIRST_CARBON_COST = 4000;
 	
 	// Only if visible
 	private final int nbBuild;

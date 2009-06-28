@@ -118,6 +118,11 @@ class Area implements Serializable
 	{
 		units.add(unit);
 	}
+	
+	public void removeUnit(Unit unit)
+	{
+		units.remove(unit);
+	}
 
 	/**
 	 * @param playerLogin

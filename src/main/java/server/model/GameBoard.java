@@ -2,6 +2,7 @@ package server.model;
 
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Map;
@@ -14,6 +15,9 @@ import java.util.logging.Logger;
 
 import org.axan.eplib.utils.Basic;
 
+import client.gui.RunningGamePanel;
+
+import common.GovernmentStarship;
 import common.IStarship;
 import common.Player;
 import common.Protocol;
@@ -234,6 +238,33 @@ public class GameBoard implements Serializable
 	}		
 	
 	/**
+	 * Return the unit location by its name and owner.
+	 * @param playerLogin
+	 * @param unitName
+	 * @return
+	 */
+	private <U extends Unit> int[] getUnitLocation(String playerLoginFilter, Class<U> unitTypeFilter, String unitName)
+	{
+		for (int x = 0; x < config.getDimX(); ++x)
+			for (int y = 0; y < config.getDimY(); ++y)
+				for (int z = 0; z < config.getDimZ(); ++z)
+				{
+					if (universe[x][y][z] == null) continue;
+					
+					int[] location = new int[]{x, y, z};
+										
+					Set<U> currentLocationUnits = getUnits(location, unitTypeFilter, playerLoginFilter);
+					
+					for(Unit unit : currentLocationUnits)
+					{
+						if (unit.getName().compareTo(unitName) == 0) return location;
+					}
+				}
+		
+		return null;
+	}
+	
+	/**
 	 * Return the unit by its name, type, and owner.
 	 * @param <U>
 	 * @param unitType
@@ -447,9 +478,9 @@ public class GameBoard implements Serializable
 		return null;		
 	}
 	
-	private <T extends IBuilding> T getBuilding(ProductiveCelestialBody productiveCelestialBody, Class<T> buildingType)
+	private <T extends ABuilding> T getBuilding(ProductiveCelestialBody productiveCelestialBody, Class<T> buildingType)
 	{
-		for(IBuilding b : productiveCelestialBody.getBuildings())
+		for(ABuilding b : productiveCelestialBody.getBuildings())
 		{
 			if (buildingType.isInstance(b))
 			{
@@ -460,9 +491,9 @@ public class GameBoard implements Serializable
 		return null;
 	}
 	
-	private IBuilding getBuildingFromClientType(ProductiveCelestialBody productiveCelestialBody, Class<? extends common.IBuilding> clientBuildingType)
+	private ABuilding getBuildingFromClientType(ProductiveCelestialBody productiveCelestialBody, Class<? extends common.IBuilding> clientBuildingType)
 	{
-		for(IBuilding b : productiveCelestialBody.getBuildings())
+		for(ABuilding b : productiveCelestialBody.getBuildings())
 		{
 			if (b.getClass().getSimpleName().compareTo(clientBuildingType.getSimpleName()) == 0)
 			{
@@ -472,54 +503,136 @@ public class GameBoard implements Serializable
 		
 		return null;
 	}	
-	
-	public boolean canDemolish(common.Player player, String celestialBodyName, Class<? extends common.IBuilding> buildingType)
+
+    public void demolish(String playerLogin, String celestialBodyName, Class<? extends common.IBuilding> buildingType) throws RunningGameCommandException
 	{
-		ICelestialBody celestialBody = getCelestialBody(celestialBodyName);
-		if (celestialBody == null) throw new IllegalArgumentException("Celestial body '"+celestialBodyName+"' does not exist.");
-		
-		// If celestial body is not a productive one.
-		if (!ProductiveCelestialBody.class.isInstance(celestialBody)) return false;
-		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
-		
-		// If player is not the celestial body owner.
-		if (productiveCelestialBody.getOwner() == null || !productiveCelestialBody.getOwner().isNamed(player.getName())) return false;
-		
-		IBuilding building = getBuildingFromClientType(productiveCelestialBody, buildingType);
-		
-		// If no building of this type exist.
-		if (building == null) return false;
-		
-		// Building type check		
-		if (GovernmentModule.class.isInstance(building) || PulsarLauchingPad.class.isInstance(building))
+		DemolishCheckResult demolishCheckResult = checkDemolish(playerLogin, celestialBodyName, buildingType);		
+		demolishCheckResult.productiveCelestialBody.demolishBuilding(demolishCheckResult.existingBuilding);
+	}
+
+    public boolean canDemolish(String playerLogin, String celestialBodyName, Class<? extends common.IBuilding> buildingType)
+	{
+		try
+		{
+			checkDemolish(playerLogin, celestialBodyName, buildingType);
+		}
+		catch(Throwable t)
 		{
 			return false;
 		}
-		else
+		return true;
+	}
+
+	private static class DemolishCheckResult
+	{
+		final ProductiveCelestialBody productiveCelestialBody;
+		final ABuilding existingBuilding;
+
+		public DemolishCheckResult(ProductiveCelestialBody productiveCelestialBody, ABuilding building)
 		{
-			return true;
+			this.productiveCelestialBody = productiveCelestialBody;
+			this.existingBuilding = building;
 		}
 	}
 
-	public boolean canEmbarkGovernment(common.Player player)
+	public DemolishCheckResult checkDemolish(String playerLogin, String celestialBodyName, Class<? extends common.IBuilding> buildingType) throws RunningGameCommandException
 	{
-		Area area = locateGovernmentModule(player.getName());
+        ICelestialBody celestialBody = getCelestialBody(celestialBodyName);
+		if (celestialBody == null) throw new RunningGameCommandException("Celestial body '"+celestialBodyName+"' does not exist.");
+
+		// If celestial body is not a productive one.
+		if (!ProductiveCelestialBody.class.isInstance(celestialBody)) throw new RunningGameCommandException("Celestial body '"+celestialBodyName+"' is not a productive one.");
+		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
+
+		// If player is not the celestial body owner.
+		if (productiveCelestialBody.getOwner() == null || !productiveCelestialBody.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Player '"+playerLogin+"' is not the '"+celestialBodyName+"' celestial body owner.");
+
+        ABuilding building = getBuildingFromClientType(productiveCelestialBody, buildingType);
+
+		// If no building of this type exist.
+		if (building == null || building.getBuildSlotsCount() == 0) throw new RunningGameCommandException("No building type '"+buildingType.getSimpleName()+"' built yet.");
+
+		if (!building.canDowngrade()) throw new RunningGameCommandException("Cannot demolish building type '"+buildingType.getSimpleName()+"'");				
+
+		return new DemolishCheckResult(productiveCelestialBody, building);
+	}
+
+	public void embarkGovernment(String playerLogin) throws RunningGameCommandException
+	{
+		EmbarkGovernmentCheckResult embarkGovernmentCheckResult = checkEmbarkGovernment(playerLogin);		
+		embarkGovernmentCheckResult.planet.removeBuilding(GovernmentModule.class);
+		Map<Class<? extends IStarship>, Integer> starshipToMake = new HashMap<Class<? extends IStarship>, Integer>();
+		starshipToMake.put(GovernmentStarship.class, 1);
+		embarkGovernmentCheckResult.starshipPlant.makeStarships(starshipToMake);
+		embarkGovernmentCheckResult.planet.setCarbon(embarkGovernmentCheckResult.planet.getCarbon()-embarkGovernmentCheckResult.carbonCost);
+		embarkGovernmentCheckResult.planet.setPopulation(embarkGovernmentCheckResult.planet.getPopulation()-embarkGovernmentCheckResult.populationCost);
+	}
+
+    public boolean canEmbarkGovernment(String playerLogin)
+	{
+		try
+		{
+			checkEmbarkGovernment(playerLogin);
+		}
+		catch(Throwable t)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	private static class EmbarkGovernmentCheckResult
+	{
+		final Planet planet;
+		final int carbonCost;
+		final int populationCost;
+		final GovernmentModule governmentModule;
+		final StarshipPlant starshipPlant;
+
+		public EmbarkGovernmentCheckResult(Planet planet, GovernmentModule governmentModule, StarshipPlant starshipPlant, int carbonCost, int populationCost)
+		{
+			this.planet = planet;
+			this.carbonCost = carbonCost;
+			this.populationCost = populationCost;
+			this.governmentModule = governmentModule;
+			this.starshipPlant = starshipPlant;
+		}
+	}
+
+	public EmbarkGovernmentCheckResult checkEmbarkGovernment(String playerLogin) throws RunningGameCommandException
+	{
+		Area area = locateGovernmentModule(playerLogin);
 		
 		// If player has no government module.
-		if (area == null) return false;
+		if (area == null) throw new RunningGameCommandException("Cannot locate '"+playerLogin+"' government module.");
 		
 		ICelestialBody celestialBody = area.getCelestialBody();
-		if (celestialBody == null) return false; // Unexpected
-		if (!Planet.class.isInstance(celestialBody)) return false; // Unexpected
+		if (celestialBody == null) throw new RunningGameCommandException("Cannot locate '"+playerLogin+"' government module celestial body (unexpected error).");
+		if (!Planet.class.isInstance(celestialBody)) throw new RunningGameCommandException("Cannot locate '"+playerLogin+"' government module planet (unexpected error).");
 		Planet planet = Planet.class.cast(celestialBody);
+
+		// If player is not the celestial body owner.
+		if (planet.getOwner() == null || !planet.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Player '"+playerLogin+"' is not the planet owner (unexpected error).");
+		
+		GovernmentModule governmentModule = getBuilding(planet, GovernmentModule.class);
+		
+		if (governmentModule == null) throw new RunningGameCommandException("No government module on the planet '"+planet.getName()+"' (unexpected error)");
+		
+		StarshipPlant starshipPlant = getBuilding(planet, StarshipPlant.class);
+		
+		// If planet has no starshipPlant.
+		if (starshipPlant == null) throw new RunningGameCommandException("No starship plant on planet '"+planet.getName()+"'");
+		
+		// If starship has just been build this turn.
+		if (starshipPlant.getLastBuildDate() >= date) throw new RunningGameCommandException("Starship plant is still in construction.");				
 		
 		int carbonCost = common.GovernmentStarship.PRICE_CARBON;
 		int populationCost = common.GovernmentStarship.PRICE_POPULATION;
 		
-		if (carbonCost > planet.getCarbon()) return false;
-		if (populationCost > planet.getPopulation()) return false;
+		if (carbonCost > planet.getCarbon()) throw new RunningGameCommandException("Not enough carbon.");;
+		if (populationCost > planet.getPopulation()) throw new RunningGameCommandException("Not enough population.");;;
 		
-		return true;
+		return new EmbarkGovernmentCheckResult(planet, governmentModule, starshipPlant, carbonCost, populationCost);
 	}
 
 	public boolean canFirePulsarMissile(common.Player player, String celestialBodyName)
@@ -534,7 +647,7 @@ public class GameBoard implements Serializable
 		// If player is not the celestial body owner.
 		if (productiveCelestialBody.getOwner() == null || !productiveCelestialBody.getOwner().isNamed(player.getName())) return false;
 		
-		IBuilding building = getBuildingFromClientType(productiveCelestialBody, common.PulsarLauchingPad.class);
+		ABuilding building = getBuildingFromClientType(productiveCelestialBody, common.PulsarLauchingPad.class);
 		
 		// If no building of this type exist.
 		if (building == null) return false;
@@ -603,12 +716,12 @@ public class GameBoard implements Serializable
 	private static class BuildCheckResult
 	{
 		final ProductiveCelestialBody productiveCelestialBody;
-		final IBuilding existingBuilding;
-		final IBuilding newBuilding;
+		final ABuilding existingBuilding;
+		final ABuilding newBuilding;
 		final int carbonCost;
 		final int populationCost;
 		
-		public BuildCheckResult(ProductiveCelestialBody productiveCelestialBody, IBuilding building, int carbonCost, int populationCost, IBuilding newBuilding)
+		public BuildCheckResult(ProductiveCelestialBody productiveCelestialBody, ABuilding building, int carbonCost, int populationCost, ABuilding newBuilding)
 		{
 			this.productiveCelestialBody = productiveCelestialBody;
 			this.existingBuilding = building;
@@ -640,109 +753,22 @@ public class GameBoard implements Serializable
 		int carbonCost = 0;
 		int populationCost = 0;
 
-		IBuilding building = getBuildingFromClientType(productiveCelestialBody, buildingType);
-		IBuilding newBuilding;
+		ABuilding building = getBuildingFromClientType(productiveCelestialBody, buildingType);
+		ABuilding newBuilding;
 		
-		if (common.DefenseModule.class.equals(buildingType))
+		if (building != null)
 		{
-			if (building != null)
-			{
-				DefenseModule defenseModule = DefenseModule.class.cast(building);
-				carbonCost = defenseModule.getNextBuildCost();
-				newBuilding = defenseModule.getUpgradedBuilding(date);
-			}
-			else
-			{
-				carbonCost = common.DefenseModule.FIRST_BUILD_COST;
-				newBuilding = new DefenseModule(date, 1);
-			}
-			populationCost = 0;
-		}
-		else if (common.ExtractionModule.class.equals(buildingType))
-		{
-			if (building != null)
-			{
-				ExtractionModule extractionModule = ExtractionModule.class.cast(building);
-				carbonCost = extractionModule.getNextBuildCost();
-				newBuilding = extractionModule.getUpgradedBuilding(date);
-			}
-			else
-			{
-				carbonCost = common.ExtractionModule.FIRST_BUILD_COST;
-				newBuilding = new ExtractionModule(date, 1);
-			}
-			populationCost = 0;
-		}
-		else if (common.GovernmentModule.class.equals(buildingType))
-		{
-			if (building != null)
-			{
-				throw new CelestialBodyBuildException("Government module already built on '"+celestialBodyName+"'");
-			}
-			else
-			{
-				if (!Planet.class.isInstance(productiveCelestialBody)) throw new CelestialBodyBuildException("Government can only be build on planet, '"+celestialBodyName+"' is not a planet.");
-				
-				carbonCost = 0;
-				populationCost = 0;
-				
-				newBuilding = new GovernmentModule(date);
-			}
-		}
-		else if (common.PulsarLauchingPad.class.equals(buildingType))
-		{
-			if (!Planet.class.isInstance(productiveCelestialBody)) throw new CelestialBodyBuildException("PulsarLaunchingPad can only be build on planet, '"+celestialBodyName+"' is not a planet.");
-			
-			carbonCost = common.PulsarLauchingPad.PRICE_CARBON;
-			populationCost = common.PulsarLauchingPad.PRICE_POPULATION;
-			
-			if (building != null)
-			{
-				PulsarLauchingPad pulsarLaunchingPad = PulsarLauchingPad.class.cast(building);
-				newBuilding = pulsarLaunchingPad.getUpgradedBuilding();
-			}
-			else
-			{
-				newBuilding = new PulsarLauchingPad(date, 1, 0);
-			}
-		}
-		else if (common.SpaceCounter.class.equals(buildingType))
-		{
-			carbonCost = common.SpaceCounter.PRICE;
-			populationCost = 0;
-			
-			if (building != null)
-			{
-				SpaceCounter spaceCounter = SpaceCounter.class.cast(building);
-				newBuilding = spaceCounter.getUpgradedBuilding(date);
-			}
-			else
-			{
-				newBuilding = new SpaceCounter(date, 1);
-			}
-			
-		}
-		else if (common.StarshipPlant.class.equals(buildingType))
-		{
-			if (building != null)
-			{
-				throw new CelestialBodyBuildException("StarshipPlant module already built on '"+celestialBodyName+"'");
-			}
-			else
-			{
-				if (!Planet.class.isInstance(productiveCelestialBody)) throw new CelestialBodyBuildException("StarshipPlant can only be build on planet, '"+celestialBodyName+"' is not a planet.");
-			
-				carbonCost = common.StarshipPlant.PRICE_CARBON;
-				populationCost = common.StarshipPlant.PRICE_POPULATION;
-				
-				newBuilding = new StarshipPlant(date);
-			}
+			carbonCost = building.getUpgradeCarbonCost();
+			populationCost = building.getUpgradePopulationCost();
+			newBuilding = building.getUpgraded(date);
 		}
 		else
 		{
-			throw new CelestialBodyBuildException("Unknown building type : "+buildingType);
+			carbonCost = ABuilding.getFirstCarbonCost(buildingType);
+			populationCost = ABuilding.getFirstPopulationCost(buildingType);
+			newBuilding = ABuilding.getFirstBuild(buildingType, date);
 		}
-		
+						
 		if (carbonCost > productiveCelestialBody.getCarbon()) throw new CelestialBodyBuildException("Not enough carbon.");
 		if (populationCost > 0)
 		{
@@ -842,6 +868,70 @@ public class GameBoard implements Serializable
 		return new FormFleetCheckResult(area, starshipPlant, newFleet);		
 	}
 
+	public boolean canDismantleFleet(String playerLogin, String fleetName)
+	{
+		try
+		{
+			checkDismantleFleet(playerLogin, fleetName);
+		}
+		catch(Throwable t)
+		{
+			return false;
+		}
+		return true;
+	}
+	
+	public void dismantleFleet(String playerLogin, String fleetName) throws RunningGameCommandException
+	{
+		DismantleFleetCheckResult dismantleFleetCheckResult = checkDismantleFleet(playerLogin, fleetName);
+		dismantleFleetCheckResult.area.removeUnit(dismantleFleetCheckResult.fleet);
+		dismantleFleetCheckResult.starshipPlant.dismantleFleet(dismantleFleetCheckResult.fleet);
+	}
+	
+	private static class DismantleFleetCheckResult
+	{
+		final Area area;
+		final StarshipPlant starshipPlant;
+		final Fleet fleet;
+
+		public DismantleFleetCheckResult(Area area, StarshipPlant starshipPlant, Fleet fleet)
+		{
+			this.area = area;
+			this.starshipPlant = starshipPlant;
+			this.fleet = fleet;
+		}		
+	}
+	
+	private DismantleFleetCheckResult checkDismantleFleet(String playerLogin, String fleetName) throws RunningGameCommandException
+	{
+		int[] location = getUnitLocation(playerLogin, Fleet.class, fleetName);
+		Area area = universe[location[0]][location[1]][location[2]];
+		
+		if (area == null) throw new RunningGameCommandException("Fleet '"+fleetName+"' does not exist.");
+		ICelestialBody celestialBody = area.getCelestialBody();
+		
+		if (celestialBody == null) throw new RunningGameCommandException("Fleet is in travel.");
+		
+		// If celestial body is not a planet.
+		if (!Planet.class.isInstance(celestialBody)) throw new RunningGameCommandException("Fleet is not on a planet.");
+		Planet planet = Planet.class.cast(celestialBody);
+		
+		// If player is not the celestial body owner.
+		if (planet.getOwner() == null || !planet.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Fleet cannot be dismantled on a foreign planet.");
+		
+		StarshipPlant starshipPlant = getBuilding(planet, StarshipPlant.class);
+		
+		// If planet has no starshipPlant.
+		if (starshipPlant == null) throw new RunningGameCommandException("No starship plant on the planet the fleet is located.");
+		
+		// If starship has just been build this turn.
+		if (starshipPlant.getLastBuildDate() >= date) throw new RunningGameCommandException("Starship plant on the planet the fleet is located is still in construction.");
+		
+		Fleet fleet = getUnit(Fleet.class, playerLogin, fleetName);
+		if (fleet == null) throw new RunningGameCommandException("Fleet '"+fleetName+"' does not exist.");
+		
+		return new DismantleFleetCheckResult(area, starshipPlant, fleet);		
+	}
 
 	public boolean canMakeStarships(String playerLogin, String planetName, Map<Class<? extends IStarship>, Integer> starshipsToMake)
 	{
@@ -950,4 +1040,5 @@ public class GameBoard implements Serializable
 		
 		return new MakeStarshipsCheckResult(planet, carbonCost, populationCost, starshipPlant);		
 	}
+	
 }

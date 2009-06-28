@@ -6,6 +6,8 @@
 package server.model;
 
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Map;
@@ -34,7 +36,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	// Variables
 	private int carbon;
 	private Player owner;
-	private final Set<IBuilding> buildings;
+	private final Map<Class<? extends ABuilding>, ABuilding> buildings;
 	
 	private int lastBuildDate = -1;
 	
@@ -63,7 +65,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		this.carbonStock = carbonStock;
 		this.slots = slots;
 		this.owner = owner;
-		this.buildings = new HashSet<IBuilding>();
+		this.buildings = new HashMap<Class<? extends ABuilding>, ABuilding>();
 	}
 	
 	/**
@@ -83,7 +85,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		if (slots <= 0) slots = 1;
 		this.slots = slots;
 		
-		this.buildings = new HashSet<IBuilding>();
+		this.buildings = new HashMap<Class<? extends ABuilding>, ABuilding>();
 		
 		this.owner = null;
 	}
@@ -98,21 +100,22 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		lastBuildDate = date;
 	}
 	
-	public void updateBuilding(IBuilding building) throws CelestialBodyBuildException
+	public void updateBuilding(ABuilding building) throws CelestialBodyBuildException
 	{
-		IBuilding oldBuilding = null;
+		ABuilding oldBuilding = null;
 		
 		int buildSlotsCount = 0;
-		if (buildings != null) for (IBuilding b : buildings)
+		
+		if (buildings != null) for(Map.Entry<Class<? extends ABuilding>, ABuilding> e : buildings.entrySet())
 		{
-			if (b.getClass().equals(building.getClass()))
+			if (e.getKey().equals(building.getClass()))
 			{
 				buildSlotsCount += building.getBuildSlotsCount();
-				oldBuilding = b;
+				oldBuilding = e.getValue();
 			}
-			else
+			else if (e.getValue() != null)
 			{
-				buildSlotsCount += b.getBuildSlotsCount();
+				buildSlotsCount += e.getValue().getBuildSlotsCount();
 			}
 		}
 		
@@ -123,8 +126,20 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		
 		if (buildSlotsCount > slots) throw new CelestialBodyBuildException("Not enough free slots");
 		
-		if (oldBuilding != null) buildings.remove(oldBuilding);
-		buildings.add(building);
+		buildings.put(building.getClass(), building);
+	}
+	
+	public void demolishBuilding(ABuilding existingBuilding)
+	{
+		ABuilding downgradedBuilding = existingBuilding.getDowngraded();
+		if (downgradedBuilding == null)
+		{
+			buildings.remove(existingBuilding.getClass());
+		}
+		else
+		{
+			buildings.put(downgradedBuilding.getClass(), downgradedBuilding);
+		}
 	}
 	
 	/* (non-Javadoc)
@@ -188,8 +203,10 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		if (isVisible)
 		{
 			buildingsView = new HashSet<common.IBuilding>();
-			for(IBuilding b : buildings)
+			
+			for(ABuilding b : buildings.values())
 			{
+				if (b == null) continue;
 				buildingsView.add(b.getPlayerView(date, playerLogin));
 			}
 			playersBuildingsView.updateView(playerLogin, buildingsView, date);
@@ -202,9 +219,9 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		return buildingsView;
 	}
 	
-	public Set<IBuilding> getBuildings()
+	public Collection<ABuilding> getBuildings()
 	{
-		return buildings;
+		return buildings.values();
 	}
 	
 	public void setCarbon(int carbon)
@@ -220,8 +237,10 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	public int getBuildSlotsCount()
 	{
 		int i = 0;
-		if (buildings != null) for (IBuilding b : buildings)
+		if (buildings != null) for (ABuilding b : buildings.values())
 		{
+			if (b == null) continue;
+			
 			i += b.getBuildSlotsCount();
 		}
 		return i;
@@ -232,5 +251,10 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		return slots - getBuildSlotsCount();
 	}
 	
-	abstract public boolean canBuild(IBuilding building);
+	public void removeBuilding(Class<? extends ABuilding> buildingType)
+	{
+		buildings.remove(buildingType);
+	}
+	
+	abstract public boolean canBuild(ABuilding building);	
 }

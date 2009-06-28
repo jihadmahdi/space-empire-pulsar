@@ -10,7 +10,7 @@ import java.io.Serializable;
 /**
  * 
  */
-class DefenseModule implements IBuilding, Serializable
+class DefenseModule extends ABuilding implements Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
@@ -19,6 +19,14 @@ class DefenseModule implements IBuilding, Serializable
 	
 	// Variables
 	private int nbBuild;	
+	
+	/**
+	 * First build constructor
+	 */
+	public DefenseModule(int lastBuildDate)
+	{
+		this(lastBuildDate, 1); 
+	}
 	
 	/**
 	 * Full constructor. 
@@ -35,20 +43,14 @@ class DefenseModule implements IBuilding, Serializable
 	@Override
 	public common.DefenseModule getPlayerView(int date, String playerLogin)
 	{
-		return new common.DefenseModule(nbBuild, getTotalBonus(), getNextBuildCost());
+		return new common.DefenseModule(nbBuild, getTotalBonus(), getUpgradeCarbonCost());
 	}
 	
 	private float getTotalBonus()
 	{
 		// TODO : Redefine the formula
 		return Float.valueOf(nbBuild)* (float) 0.25;
-	}
-	
-	public int getNextBuildCost()
-	{
-		// TODO : Redefine the formula
-		return (int) ((Float.valueOf(1+nbBuild) * 0.25) * 1000);
-	}
+	}		
 
 	@Override
 	public int getBuildSlotsCount()
@@ -65,5 +67,35 @@ class DefenseModule implements IBuilding, Serializable
 	public int getLastBuildDate()
 	{
 		return lastBuildDate;
+	}
+
+	@Override
+	int getUpgradeCarbonCost()
+	{
+		return (int) ((Float.valueOf(1+nbBuild) * 0.25) * 1000);
+	}
+
+	@Override
+	int getUpgradePopulationCost()
+	{
+		return 0;
+	}
+
+	@Override
+	DefenseModule getUpgraded(int date)
+	{
+		return new DefenseModule(date, nbBuild+1);
+	}
+
+	@Override
+	DefenseModule getDowngraded()
+	{
+		return new DefenseModule(lastBuildDate, Math.max(0, nbBuild-1));
+	}
+
+	@Override
+	boolean canDowngrade()
+	{
+		return nbBuild > 0;
 	}
 }

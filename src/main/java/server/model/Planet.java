@@ -116,7 +116,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 	 * @see server.model.ProductiveCelestialBody#canBuild(IBuilding)
 	 */
 	@Override
-	public boolean canBuild(IBuilding building)
+	public boolean canBuild(ABuilding building)
 	{
 		if (ExtractionModule.class.isInstance(building))
 		{
@@ -173,7 +173,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 
 	public boolean isGovernmentSettled()
 	{
-		for(IBuilding b : getBuildings())
+		for(ABuilding b : getBuildings())
 		{
 			if (GovernmentModule.class.isInstance(b)) return true;
 		}
@@ -184,5 +184,5 @@ class Planet extends ProductiveCelestialBody implements Serializable
 	public void setPopulation(int population)
 	{
 		this.population = population;
-	}
+	}	
 }
