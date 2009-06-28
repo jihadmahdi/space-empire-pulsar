@@ -31,7 +31,6 @@ import org.axan.eplib.statemachine.ProxiedStateMachine.ProxiedStateMachineBadSer
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.eplib.utils.Basic;
 
-import server.model.BuildCommand;
 import server.model.GameBoard;
 import server.model.PlayerGameMove;
 import server.model.ServerGame;
@@ -59,6 +58,19 @@ public class SEPServer implements IServer, GameServerListener
 
 	private final ExecutorService	threadPool;
 
+	public static class SEPImplementationException extends Error
+	{
+		public SEPImplementationException(String msg)
+		{
+			super(msg);
+		}
+		
+		public SEPImplementationException(String msg, Throwable t)
+		{
+			super(msg, t);
+		}
+	}
+	
 	/**
 	 * ServerCommon protocol interface implementation.
 	 */
@@ -380,14 +392,13 @@ public class SEPServer implements IServer, GameServerListener
 		public boolean canDemolish(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
 		{
 			if (getGameMove().isTurnEnded()) return false;
-			return getGameBoard().canDemolish(getPlayer(), celestialBodyName, buildingType);
+			return getGameBoard().canDemolish(getLogin(), celestialBodyName, buildingType);
 		}
 
 		@Override
-		public void demolish(String ceslestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
+		public void demolish(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			getGameMove().addDemolishCommand(celestialBodyName, buildingType);
 		}
 
 		@Override
@@ -408,30 +419,27 @@ public class SEPServer implements IServer, GameServerListener
 		@Override
 		public boolean canDismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException
 		{
-			// if (getGameMove().isTurnEnded()) return false;
-			// TODO Auto-generated method stub
-			return false;
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canDismantleFleet(getLogin(), fleetName);
 		}
 
 		@Override
-		public void dismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException
+		public void dismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			getGameMove().addDismantleFleetCommand(fleetName);
 		}
 
 		@Override
 		public boolean canEmbarkGovernment() throws RpcException, StateMachineNotExpectedEventException
 		{
 			if (getGameMove().isTurnEnded()) return false;
-			return getGameBoard().canEmbarkGovernment(getPlayer());
+			return getGameBoard().canEmbarkGovernment(getLogin());
 		}
 
 		@Override
-		public void embarkGovernment() throws RpcException, StateMachineNotExpectedEventException
+		public void embarkGovernment() throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			getGameMove().addEmbarkGovernmentCommand(getLogin());
 		}
 
 		@Override

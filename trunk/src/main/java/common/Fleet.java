@@ -7,6 +7,7 @@ package common;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.Stack;
 
 /**
  * Represent a fleet.
@@ -15,15 +16,31 @@ public class Fleet extends Unit implements Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
+	public static class Move
+	{
+		private final String destinaionCelestialBodyName;
+		private final int departureDelay;
+		private final boolean isAnAttack;
+		
+		public Move(String destinationCelestialBodyName, int departureDelay, boolean isAnAttack)
+		{
+			this.destinaionCelestialBodyName = destinationCelestialBodyName;
+			this.departureDelay = departureDelay;
+			this.isAnAttack = isAnAttack;
+		}
+	}
+	
 	private final Map<Class<? extends IStarship>, Integer> starships;
+	private final Stack<Move> move;	
 	
 	/**
 	 * Full constructor. 
 	 */
-	public Fleet(boolean isVisible, int lastObservation, String name, Player owner, int[] sourceLocation, int[] destinationLocation, int[] currentEstimatedLocation, Map<Class<? extends IStarship>, Integer> starships)
+	public Fleet(boolean isVisible, int lastObservation, String name, Player owner, int[] sourceLocation, int[] destinationLocation, int[] currentEstimatedLocation, Map<Class<? extends IStarship>, Integer> starships, Stack<Move> move)
 	{
 		super(isVisible, lastObservation, name, owner, sourceLocation, destinationLocation, currentEstimatedLocation);
 		this.starships = starships;
+		this.move = move;
 	}
 	
 	public boolean isGovernmentFleet()
@@ -43,12 +60,12 @@ public class Fleet extends Unit implements Serializable
 	public String toString()
 	{
 		StringBuffer sb = new StringBuffer(super.toString());
-		sb.append("\nFleet composition :+\n");
+		sb.append("\nFleet composition :\n");
 		for(Map.Entry<Class<? extends IStarship>, Integer> e : starships.entrySet())
 		{
 			if (e.getValue() != null && e.getValue() > 0)
 			{
-				sb.append("\t"+e.getKey().getSimpleName()+"\t"+e.getValue()+"\n");
+				sb.append("  "+e.getKey().getSimpleName()+"\t"+e.getValue()+"\n");
 			}
 		}
 		

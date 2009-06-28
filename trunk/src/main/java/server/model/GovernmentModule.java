@@ -7,12 +7,15 @@ package server.model;
 
 import java.io.Serializable;
 
+import server.SEPServer;
+
 import common.Player;
+import common.Protocol;
 
 /**
  * This is a government module build on a celestial body.
  */
-class GovernmentModule implements IBuilding, Serializable
+class GovernmentModule extends ABuilding implements Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
@@ -45,4 +48,34 @@ class GovernmentModule implements IBuilding, Serializable
 		return buildDate;
 	}
 
+	@Override
+	int getUpgradeCarbonCost()
+	{
+		return 0;
+	}
+
+	@Override
+	int getUpgradePopulationCost()
+	{
+		return 0;
+	}
+
+	@Override
+	GovernmentModule getUpgraded(int date)
+	{
+		throw new Error("Cannot upgrade GovernmentModule");
+	}
+
+	@Override
+	GovernmentModule getDowngraded()
+	{
+		throw new Error("Cannot downgrade GovernmentModule");
+	}
+
+	@Override
+	boolean canDowngrade()
+	{
+		return false;
+	}
+	
 }
