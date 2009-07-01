@@ -148,6 +148,18 @@ class Area implements Serializable
 		{
 			unitsView = playersUnitsView.getLastValue(playerLogin, null);
 		}
+		
+		if (celestialBody != null && ProductiveCelestialBody.class.isInstance(celestialBody))
+		{
+			ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
+			
+			Map<String, common.Fleet> unasignedFleetsView = productiveCelestialBody.getUnasignedFleetView(date, playerLogin, isVisible);
+			
+			if (unasignedFleetsView != null) for(common.Fleet unasignedFleetView : unasignedFleetsView.values())
+			{
+				unitsView.add(unasignedFleetView);
+			}
+		}
 	
 		int lastObservation = playersLastObservation.getLastValue(playerLogin, -1);
 		common.ICelestialBody celestialBodyView = (celestialBody == null)?null:celestialBody.getPlayerView(date, playerLogin, isVisible);		

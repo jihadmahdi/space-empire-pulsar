@@ -174,6 +174,50 @@ public interface Protocol
 		void makeStarships(String planetName, Map<Class<? extends IStarship>, Integer> starshipsToMake) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
 		
 		/**
+		 * Test if probe can be made on the selected planet with given name.
+		 * @param planetName
+		 * @param probeName
+		 * @return
+		 * @throws RpcException
+		 * @throws StateMachineNotExpectedEventException
+		 * @throws RunningGameCommandException
+		 */
+		boolean canMakeProbes(String planetName, String probeName, int quantity) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Make the given quantity of probes on the given planet, named by probeName+unit_number.
+		 * @param planetName
+		 * @param probeName
+		 * @param quantity
+		 * @throws RpcException
+		 * @throws StateMachineNotExpectedEventException
+		 * @throws RunningGameCommandException
+		 */
+		void makeProbes(String planetName, String probeName, int quantity) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
+		
+		/**
+		 * Test if probe can be made on the selected planet with given name.
+		 * @param planetName
+		 * @param antiProbeMissileName
+		 * @return
+		 * @throws RpcException
+		 * @throws StateMachineNotExpectedEventException
+		 * @throws RunningGameCommandException
+		 */
+		boolean canMakeAntiProbeMissiles(String planetName, String antiProbeMissileName, int quantity) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Make the given quantity of probes on the given planet, named by probeName+unit_number.
+		 * @param planetName
+		 * @param antiProbeMissileName
+		 * @param quantity
+		 * @throws RpcException
+		 * @throws StateMachineNotExpectedEventException
+		 * @throws RunningGameCommandException
+		 */
+		void makeAntiProbeMissiles(String planetName, String antiProbeMissileName, int quantity) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
+		
+		/**
 		 * Test if fleet can be formed on this planet (starship plant existence).
 		 * @param fleetToForm Planet where the fleet is supposed to be formed.
 		 * @throws RpcException On connection error.

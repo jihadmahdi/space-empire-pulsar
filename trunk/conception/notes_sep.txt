@@ -3,7 +3,7 @@ NOTES A METTRE A JOUR :
 // On peut construire plusieurs comptoirs sur un même corps céleste, chaque comptoir autorise la construction d'une nouvelle route spaciale, chaque comptoir autorise une nouvelle route commerciale ?
 => Idée : Chaque upgrade de comptoir augmente le nombre de route spatiale qu'il est possible de construire (1 comptoir = 1 route spatial), chaque upgrade de comptoir augmente la valeur maximale de carbone qu'il est possible de transporter en même temps (le pool de véhicules de transport de carbone), on peut créer autant de route commerciale que l'on souhaite mais à chaque instant le maximum de carbon qui peut être transporté est défini par le niveau d'upgrade du comptoir d'envoi.
 
-// On peut démolir une usine de constructio de vaisseaux, qu'advient t'il des vaisseaux posés dans l'usine ?
+/Codé/ On peut démolir une usine de constructio de vaisseaux, qu'advient t'il des vaisseaux posés dans l'usine ?
 	& Ils ont détruits (impossible si l'usine contient un vaisseau gouvernemental) ? Ils forment automatiquemet une flotte ?
 	& Celà signifie que la flotte formée de tous les vaisseaux ne peux pas être ré-organisée tant qu'elle ne trouve pas une nouvelle usine sur laquelle se poser, c'est bof..
 => Idée : On devrait pouvoir réorganiser ses flottes sur n'importe quel corps céleste.

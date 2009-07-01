@@ -7,12 +7,14 @@ package server.model;
 
 import java.io.Serializable;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
 import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 
 import common.GameConfig;
+import common.IStarship;
 import common.Player;
 
 /**
@@ -163,7 +165,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 			playersPopulationView.updateView(playerLogin, population, date);			
 		}
 		
-		return new common.Planet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getCarbonStock(), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerView(date, playerLogin, isVisible), populationLimit, populationPerTurn, playersPopulationView.getLastValue(playerLogin, -1));
+		return new common.Planet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getCarbonStock(), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerView(date, playerLogin, isVisible), getUnasignedFleetComposition(playerLogin), populationLimit, populationPerTurn, playersPopulationView.getLastValue(playerLogin, -1));
 	}
 	
 	public int getPopulation()
@@ -184,5 +186,5 @@ class Planet extends ProductiveCelestialBody implements Serializable
 	public void setPopulation(int population)
 	{
 		this.population = population;
-	}	
+	}		
 }

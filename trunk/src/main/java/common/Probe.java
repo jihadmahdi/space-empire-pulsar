@@ -16,6 +16,10 @@ public class Probe extends Unit implements Serializable
 	
 	public static final int PROBE_SCORE = 3;
 	
+	public static final int PRICE_CARBON = 300;
+	
+	public static final int PRICE_POPULATION = 900;
+	
 	private final boolean deployed;
 	
 	/**
