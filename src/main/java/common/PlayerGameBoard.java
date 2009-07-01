@@ -116,4 +116,32 @@ public class PlayerGameBoard implements Serializable
 		
 		return result;
 	}
+	
+	public Set<ProductiveCelestialBody> getCelestialBodiesWithBuilding(Class<? extends IBuilding> buildingType)
+	{
+		Set<ProductiveCelestialBody> result = new HashSet<ProductiveCelestialBody>();
+		for(int x = 0; x < getDimX(); ++x)
+		for(int y = 0; y < getDimY(); ++y)
+		for(int z = 0; z < getDimZ(); ++z)
+		{
+			Area area = universe[x][y][z];
+			if (area == null) continue;
+			
+			if (area.getCelestialBody() != null)
+			{
+				if (ProductiveCelestialBody.class.isInstance(area.getCelestialBody()))
+				{
+					ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(area.getCelestialBody());
+					SpaceCounter spaceCounter = productiveCelestialBody.getBuilding(SpaceCounter.class);
+					
+					if (spaceCounter != null)
+					{
+						result.add(productiveCelestialBody);
+					}
+				}				
+			}
+		}
+		
+		return result;
+	}
 }

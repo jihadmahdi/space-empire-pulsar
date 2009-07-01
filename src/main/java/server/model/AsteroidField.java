@@ -6,9 +6,11 @@
 package server.model;
 
 import java.io.Serializable;
+import java.util.Map;
 
 import common.GameConfig;
 import common.ICelestialBody;
+import common.IStarship;
 import common.Player;
 
 /**
@@ -49,7 +51,7 @@ class AsteroidField extends ProductiveCelestialBody implements Serializable
 	@Override
 	public common.AsteroidField getPlayerView(int date, String playerLogin, boolean isVisible)
 	{
-		return new common.AsteroidField(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getCarbonStock(), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerView(date, playerLogin, isVisible));
-	}
+		return new common.AsteroidField(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getCarbonStock(), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerView(date, playerLogin, isVisible), getUnasignedFleetComposition(playerLogin));
+	}	
 
 }

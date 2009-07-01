@@ -7,6 +7,7 @@ package common;
 
 import java.io.Serializable;
 import java.util.Set;
+import java.util.Stack;
 
 /**
  * Represent all space counter build on a celestial body.
@@ -24,20 +25,25 @@ public class SpaceCounter implements IBuilding, Serializable
 	
 	private final Set<CarbonOrder> carbonToReceive;
 	
-	private final Set<CarbonOrder> nextCarbonOrder;
+	private final Stack<CarbonOrder> nextCarbonOrder;
 	
 	private final Set<CarbonOrder> currentCarbonOrder;
+	
+	private final int maxCarbonFreight;
+	private final int currentCarbonFreight;
 	
 	/**
 	 * Full constructor.
 	 */
-	public SpaceCounter(int nbBuild, Set<SpaceRoad> spaceRoads, Set<CarbonOrder> carbonToReceive, Set<CarbonOrder> currentCarbonOrder, Set<CarbonOrder> nextCarbonOrder)
+	public SpaceCounter(int nbBuild, Set<SpaceRoad> spaceRoads, Set<CarbonOrder> carbonToReceive, Set<CarbonOrder> currentCarbonOrder, Stack<CarbonOrder> nextCarbonOrder, int maxCarbonFreight, int currentCarbonFreight)
 	{
 		this.nbBuild = nbBuild;
 		this.spaceRoads = spaceRoads;
 		this.carbonToReceive = carbonToReceive;
 		this.currentCarbonOrder = currentCarbonOrder;
 		this.nextCarbonOrder = nextCarbonOrder;
+		this.currentCarbonFreight= currentCarbonFreight;
+		this.maxCarbonFreight = maxCarbonFreight;
 	}
 	
 	/* (non-Javadoc)
@@ -47,6 +53,16 @@ public class SpaceCounter implements IBuilding, Serializable
 	public int getBuildSlotsCount()
 	{
 		return nbBuild;
+	}
+	
+	public int getCurrentCarbonFreight()
+	{
+		return currentCarbonFreight;
+	}
+	
+	public int getMaxCarbonFreight()
+	{
+		return maxCarbonFreight;
 	}
 	
 	/* (non-Javadoc)

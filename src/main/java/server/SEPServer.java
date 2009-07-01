@@ -498,6 +498,32 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
+		public boolean canMakeProbes(String planetName, String probeName, int quantity) throws RpcException, StateMachineNotExpectedEventException
+		{
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canMakeProbes(getLogin(), planetName, probeName, quantity);
+		}
+		
+		@Override
+		public void makeProbes(String planetName, String probeName, int quantity) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
+		{
+			getGameMove().addMakeProbesCommand(planetName, probeName, quantity);
+		}
+		
+		@Override
+		public boolean canMakeAntiProbeMissiles(String planetName, String antiProbeMissileName, int quantity) throws RpcException, StateMachineNotExpectedEventException
+		{
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canMakeAntiProbeMissiles(getLogin(), planetName, antiProbeMissileName, quantity);
+		}
+		
+		@Override
+		public void makeAntiProbeMissiles(String planetName, String antiProbeMissileName, int quantity) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
+		{
+			getGameMove().addMakeAntiProbeMissilesCommand(planetName, antiProbeMissileName, quantity);
+		}
+		
+		@Override
 		public void canModifyCarbonOrder() throws RpcException, StateMachineNotExpectedEventException
 		{
 			// if (getGameMove().isTurnEnded()) return false;

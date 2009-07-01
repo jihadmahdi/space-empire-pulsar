@@ -6,6 +6,8 @@
 package common;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -32,11 +34,13 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 	private final Set<IBuilding>	buildings;
 
 	private final Player			owner;
+	
+	private final Map<Class<? extends IStarship>, Integer>				unasignedFleet; // For viewer point of view, not owner.
 
 	/**
 	 * Full constructor.
 	 */
-	public ProductiveCelestialBody(boolean isVisible, int lastObservation, String name, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, Player owner)
+	public ProductiveCelestialBody(boolean isVisible, int lastObservation, String name, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, Player owner, Map<Class<? extends IStarship>, Integer> unasignedFleet)
 	{
 		this.isVisible = isVisible;
 		this.lastObservation = lastObservation;
@@ -46,6 +50,14 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 		this.slots = slots;
 		this.buildings = buildings;
 		this.owner = owner;
+		if (unasignedFleet == null)
+		{
+			this.unasignedFleet = new HashMap<Class<? extends IStarship>, Integer>();
+		}
+		else
+		{
+			this.unasignedFleet = unasignedFleet;
+		}
 	}
 
 	/*
@@ -155,6 +167,11 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 	public int getFreeSlotsCount()
 	{
 		return slots - getBuildSlotsCount();
+	}
+	
+	public Map<Class<? extends IStarship>, Integer> getUnasignedStarships()
+	{
+		return unasignedFleet;
 	}
 	
 	public abstract boolean canBuildType(Class<? extends IBuilding> buildingType);

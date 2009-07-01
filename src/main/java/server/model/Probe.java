@@ -16,9 +16,6 @@ public class Probe extends Unit implements Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
-	// Constans
-	private final int scope;
-	
 	// Variables
 	private boolean deployed;
 	
@@ -28,11 +25,10 @@ public class Probe extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public Probe(String name, Player owner, boolean deployed, int scope)
+	public Probe(String name, Player owner, boolean deployed)
 	{
 		super(name, owner);
 		this.deployed = deployed;
-		this.scope = scope;
 	}
 
 	/**

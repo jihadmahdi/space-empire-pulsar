@@ -15,6 +15,7 @@ import java.util.Random;
 import java.util.Set;
 
 import common.GameConfig;
+import common.IStarship;
 import common.Player;
 
 
@@ -37,6 +38,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	private int carbon;
 	private Player owner;
 	private final Map<Class<? extends ABuilding>, ABuilding> buildings;
+	private final Map<String, Fleet> unasignedFleets;
 	
 	private int lastBuildDate = -1;
 	
@@ -45,6 +47,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	private PlayerDatedView<Integer> playersCarbonView = new PlayerDatedView<Integer>();
 	private PlayerDatedView<Player> playersOwnerView = new PlayerDatedView<Player>();
 	private PlayerDatedView<HashSet<common.IBuilding>> playersBuildingsView = new PlayerDatedView<HashSet<common.IBuilding>>();
+	private Map<String, PlayerDatedView<common.Fleet>> playersUnasignedFleetsView = new HashMap<String, PlayerDatedView<common.Fleet>>();
 	
 	public static class CelestialBodyBuildException extends Exception
 	{
@@ -66,6 +69,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		this.slots = slots;
 		this.owner = owner;
 		this.buildings = new HashMap<Class<? extends ABuilding>, ABuilding>();
+		this.unasignedFleets = new HashMap<String, Fleet>();
 	}
 	
 	/**
@@ -86,6 +90,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		this.slots = slots;
 		
 		this.buildings = new HashMap<Class<? extends ABuilding>, ABuilding>();
+		this.unasignedFleets = new HashMap<String, Fleet>();
 		
 		this.owner = null;
 	}
@@ -219,6 +224,68 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		return buildingsView;
 	}
 	
+	protected Map<String, common.Fleet> getUnasignedFleetView(int date, String playerLogin, boolean isVisible)
+	{
+		Map<String, common.Fleet> result = new HashMap<String, common.Fleet>();
+		
+		if (isVisible)
+		{
+			for(String player : unasignedFleets.keySet())
+			{
+				if (!playersUnasignedFleetsView.containsKey(player))
+				{
+					playersUnasignedFleetsView.put(player, new PlayerDatedView<common.Fleet>());
+				}
+				
+				playersUnasignedFleetsView.get(player).updateView(playerLogin, unasignedFleets.get(player).getPlayerView(date, playerLogin, isVisible), date);
+			}			
+		}
+		
+		for(String player : playersUnasignedFleetsView.keySet())
+		{
+			if (!playersUnasignedFleetsView.get(player).getLastValue(playerLogin, null).isEmpty())
+			{
+				result.put(player, playersUnasignedFleetsView.get(player).getLastValue(playerLogin, null));
+			}
+		}
+		
+		return result;
+	}
+	
+	protected Map<Class<? extends IStarship>, Integer> getUnasignedFleetComposition(String playerLogin)
+	{
+		if (!unasignedFleets.containsKey(playerLogin))
+		{
+			return null;
+		}
+		
+		return unasignedFleets.get(playerLogin).getComposition();
+	}
+	
+	public void mergeToUnasignedFleet(Player player, Map<Class<? extends IStarship>, Integer> starshipsToMake)
+	{
+		if (!unasignedFleets.containsKey(player.getName()))
+		{
+			unasignedFleets.put(player.getName(), new Fleet("Unasigned fleet", player, starshipsToMake, true));
+		}
+		else
+		{
+			unasignedFleets.get(player.getName()).merge(starshipsToMake);
+		}		
+	}	
+	
+	public void removeFromUnasignedFleet(Player player, Map<Class<? extends IStarship>, Integer> fleetToForm)
+	{
+		if (unasignedFleets.get(player.getName()) == null) throw new Error("Tried to remove starships from an empty unasigned fleet.");
+		
+		unasignedFleets.get(player.getName()).remove(fleetToForm);
+	}
+	
+	public Fleet getUnasignedFleet(String playerLogin)
+	{
+		return unasignedFleets.get(playerLogin);
+	}
+	
 	public Collection<ABuilding> getBuildings()
 	{
 		return buildings.values();
@@ -256,5 +323,5 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		buildings.remove(buildingType);
 	}
 	
-	abstract public boolean canBuild(ABuilding building);	
+	abstract public boolean canBuild(ABuilding building);		
 }

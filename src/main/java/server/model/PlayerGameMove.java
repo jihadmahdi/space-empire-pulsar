@@ -180,6 +180,68 @@ public class PlayerGameMove
 
 	}
 	
+	static class MakeProbesCommand extends GameMoveCommand
+	{
+		private final String planetName;
+		private final String probeName;
+		private final int quantity;
+		
+		public MakeProbesCommand(String playerLogin, String planetName, String probeName, int quantity)
+		{
+			super(playerLogin);
+			this.planetName = planetName;
+			this.probeName = probeName;
+			this.quantity = quantity;
+		}
+		
+		@Override
+		protected GameBoard apply(GameBoard originalGameBoard)
+		{
+			GameBoard newGameBoard = Basic.clone(originalGameBoard);
+			try
+			{
+				newGameBoard.makeProbes(playerLogin, planetName, probeName, quantity);
+			}
+			catch(RunningGameCommandException e)
+			{
+				e.printStackTrace();
+				return originalGameBoard;
+			}
+			return newGameBoard;
+		}
+	}
+	
+	static class MakeAntiProbeMissilesCommand extends GameMoveCommand
+	{
+		private final String planetName;
+		private final String antiProbeMissileName;
+		private final int quantity;
+		
+		public MakeAntiProbeMissilesCommand(String playerLogin, String planetName, String antiProbeMissileName, int quantity)
+		{
+			super(playerLogin);
+			this.planetName = planetName;
+			this.antiProbeMissileName = antiProbeMissileName;
+			this.quantity = quantity;
+		}
+		
+		@Override
+		protected GameBoard apply(GameBoard originalGameBoard)
+		{
+			GameBoard newGameBoard = Basic.clone(originalGameBoard);
+			try
+			{
+				newGameBoard.makeAntiProbeMissiles(playerLogin, planetName, antiProbeMissileName, quantity);
+			}
+			catch(RunningGameCommandException e)
+			{
+				e.printStackTrace();
+				return originalGameBoard;
+			}
+			return newGameBoard;
+		}
+	}
+	
 	static class EmbarkGovernmentCommand extends GameMoveCommand
 	{
 		public EmbarkGovernmentCommand(String playerLogin)
@@ -305,6 +367,30 @@ public class PlayerGameMove
 		addGameMoveCommand(new MakeStarshipsCommand(playerLogin, planetName, starshipsToMake));
 	}
 	
+	public void addMakeProbesCommand(String planetName, String probeName, int quantity) throws RunningGameCommandException
+	{
+		checkTurnIsNotEnded();
+		
+		if (!getGameBoard().canMakeProbes(playerLogin, planetName, probeName, quantity))
+		{
+			throw new RunningGameCommandException(playerLogin+" cannot make "+quantity+" probes named '"+probeName+"' on '"+planetName+"'");
+		}
+		
+		addGameMoveCommand(new MakeProbesCommand(playerLogin, planetName, probeName, quantity));
+	}
+	
+	public void addMakeAntiProbeMissilesCommand(String planetName, String antiProbeMissileName, int quantity) throws RunningGameCommandException
+	{
+		checkTurnIsNotEnded();
+		
+		if (!getGameBoard().canMakeAntiProbeMissiles(playerLogin, planetName, antiProbeMissileName, quantity))
+		{
+			throw new RunningGameCommandException(playerLogin+" cannot make "+quantity+" anti-probe missiles named '"+antiProbeMissileName+"' on '"+planetName+"'");
+		}
+		
+		addGameMoveCommand(new MakeAntiProbeMissilesCommand(playerLogin, planetName, antiProbeMissileName, quantity));
+	}
+	
 	public void addEmbarkGovernmentCommand(String playerLogin) throws RunningGameCommandException
 	{
 		checkTurnIsNotEnded();
@@ -340,6 +426,6 @@ public class PlayerGameMove
 	public boolean isTurnEnded()
 	{
 		return isTurnEnded;
-	}
+	}	
 			
 }

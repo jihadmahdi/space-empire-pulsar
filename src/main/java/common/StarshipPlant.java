@@ -17,16 +17,13 @@ public class StarshipPlant implements IBuilding, Serializable
 	
 	public static final int POPULATION_COST = 500;
 	public static final int CARBON_COST = 2000;
-	
-	// Only if visible
-	private final Map<Class<? extends IStarship>, Integer> landedStarships;
-	
+		
 	/**
 	 * Full constructor.
 	 */
-	public StarshipPlant(Map<Class<? extends IStarship>, Integer> landedStarships)
+	public StarshipPlant()
 	{
-		this.landedStarships = landedStarships;
+		
 	}
 	
 	/* (non-Javadoc)
@@ -45,10 +42,5 @@ public class StarshipPlant implements IBuilding, Serializable
 	public String toString()
 	{
 		return "Starship plant";
-	}
-	
-	public Map<Class<? extends IStarship>, Integer> getLandedStarships()
-	{
-		return landedStarships;
 	}
 }

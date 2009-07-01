@@ -563,7 +563,7 @@ public class GameBoard implements Serializable
 		embarkGovernmentCheckResult.planet.removeBuilding(GovernmentModule.class);
 		Map<Class<? extends IStarship>, Integer> starshipToMake = new HashMap<Class<? extends IStarship>, Integer>();
 		starshipToMake.put(GovernmentStarship.class, 1);
-		embarkGovernmentCheckResult.starshipPlant.makeStarships(starshipToMake);
+		embarkGovernmentCheckResult.planet.mergeToUnasignedFleet(getPlayer(playerLogin), starshipToMake);
 		embarkGovernmentCheckResult.planet.setCarbon(embarkGovernmentCheckResult.planet.getCarbon()-embarkGovernmentCheckResult.carbonCost);
 		embarkGovernmentCheckResult.planet.setPopulation(embarkGovernmentCheckResult.planet.getPopulation()-embarkGovernmentCheckResult.populationCost);
 	}
@@ -805,24 +805,160 @@ public class GameBoard implements Serializable
 	{
 		FormFleetCheckResult formFleetCheckResult = checkFormFleet(playerLogin, planetName, fleetName, fleetToForm);
 		formFleetCheckResult.area.addUnit(formFleetCheckResult.newFleet);
-		formFleetCheckResult.starshipPlant.removeStarships(fleetToForm);
+		formFleetCheckResult.productiveCelestialBody.removeFromUnasignedFleet(getPlayer(playerLogin), fleetToForm);
 	}
 	
 	private static class FormFleetCheckResult
 	{
 		final Area area;
-		final StarshipPlant starshipPlant;
+		final ProductiveCelestialBody productiveCelestialBody;
 		final Fleet newFleet;
 
-		public FormFleetCheckResult(Area area, StarshipPlant starshipPlant, Fleet newFleet)
+		public FormFleetCheckResult(Area area, ProductiveCelestialBody productiveCelestialBody, Fleet newFleet)
 		{
 			this.area = area;
-			this.starshipPlant = starshipPlant;
+			this.productiveCelestialBody = productiveCelestialBody;
 			this.newFleet = newFleet;
 		}		
 	}
 	
 	private FormFleetCheckResult checkFormFleet(String playerLogin, String planetName, String fleetName, Map<Class<? extends common.IStarship>, Integer> fleetToForm) throws RunningGameCommandException
+	{
+		int[] location = getCelestialBodyLocation(planetName);
+		Area area = universe[location[0]][location[1]][location[2]];
+		
+		if (area == null) throw new RunningGameCommandException("Celestial body '"+planetName+"' does not exist.");
+		ICelestialBody celestialBody = area.getCelestialBody();
+		
+		if (celestialBody == null) throw new RunningGameCommandException("Celestial body '"+planetName+"' does not exist.");
+		
+		// If celestial body is not a productive one.
+		if (!ProductiveCelestialBody.class.isInstance(celestialBody)) throw new RunningGameCommandException("Celestial body '"+planetName+"' is not a productive celestial body.");
+		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
+		
+		Fleet unasignedFleet = productiveCelestialBody.getUnasignedFleet(playerLogin);
+		if (unasignedFleet == null) throw new RunningGameCommandException("No available unasigned fleet on celestial body '"+celestialBody.getName()+"'");
+		
+		Fleet fleet = getUnit(Fleet.class, playerLogin, fleetName);
+		if (fleet != null) throw new RunningGameCommandException("Fleet named '"+fleetName+"' already exist.");
+		
+		// Starship availability check		
+		for(Entry<Class<? extends IStarship>, Integer> e : fleetToForm.entrySet())
+		{
+			if (e.getValue() <= 0) continue;
+			
+			int qt = e.getValue();
+			if (!unasignedFleet.getComposition().containsKey(e.getKey())) throw new RunningGameCommandException("Unasigned fleet does not have required starship type '"+e.getKey().getSimpleName()+"'");
+			if (unasignedFleet.getComposition().get(e.getKey()) < qt) throw new RunningGameCommandException("Unasigned flee does not have enough starship type '"+e.getKey()+"'");
+		}
+				
+		Player owner = getPlayer(playerLogin);
+		if (owner == null) throw new RunningGameCommandException("Unknown player name '"+playerLogin+"'");
+		
+		Fleet newFleet = new Fleet(fleetName, owner, fleetToForm, false);
+		
+		return new FormFleetCheckResult(area, productiveCelestialBody, newFleet);		
+	}
+
+	public boolean canDismantleFleet(String playerLogin, String fleetName)
+	{
+		try
+		{
+			checkDismantleFleet(playerLogin, fleetName);
+		}
+		catch(Throwable t)
+		{
+			return false;
+		}
+		return true;
+	}
+	
+	public void dismantleFleet(String playerLogin, String fleetName) throws RunningGameCommandException
+	{
+		DismantleFleetCheckResult dismantleFleetCheckResult = checkDismantleFleet(playerLogin, fleetName);
+		dismantleFleetCheckResult.area.removeUnit(dismantleFleetCheckResult.fleet);
+		dismantleFleetCheckResult.productiveCelestialBody.mergeToUnasignedFleet(getPlayer(playerLogin), dismantleFleetCheckResult.fleet.getComposition());
+	}
+	
+	private static class DismantleFleetCheckResult
+	{
+		final Area area;
+		final ProductiveCelestialBody productiveCelestialBody;
+		final Fleet fleet;
+
+		public DismantleFleetCheckResult(Area area, ProductiveCelestialBody productiveCelestialBody, Fleet fleet)
+		{
+			this.area = area;
+			this.productiveCelestialBody = productiveCelestialBody;
+			this.fleet = fleet;
+		}		
+	}
+	
+	private DismantleFleetCheckResult checkDismantleFleet(String playerLogin, String fleetName) throws RunningGameCommandException
+	{
+		int[] location = getUnitLocation(playerLogin, Fleet.class, fleetName);
+		Area area = universe[location[0]][location[1]][location[2]];
+		
+		if (area == null) throw new RunningGameCommandException("Fleet '"+fleetName+"' does not exist.");
+		ICelestialBody celestialBody = area.getCelestialBody();
+		
+		if (celestialBody == null) throw new RunningGameCommandException("Fleet is in travel.");
+		
+		// If celestial body is not a ProductiveCelestialBody.
+		if (!ProductiveCelestialBody.class.isInstance(celestialBody)) throw new RunningGameCommandException("Fleet is not on a ProductiveCelestialBody.");
+		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
+		
+		Fleet fleet = getUnit(Fleet.class, playerLogin, fleetName);
+		if (fleet == null) throw new RunningGameCommandException("Fleet '"+fleetName+"' does not exist.");
+		
+		return new DismantleFleetCheckResult(area, productiveCelestialBody, fleet);		
+	}
+
+	public boolean canMakeProbes(String playerLogin, String planetName, String probeName, int quantity)
+	{
+		try
+		{
+			checkMakeProbes(playerLogin, planetName, probeName, quantity);
+		}
+		catch(Throwable t)
+		{
+			return false;
+		}
+		return true;
+	}
+	
+	public void makeProbes(String playerLogin, String planetName, String probeName, int quantity) throws RunningGameCommandException
+	{
+		MakeProbesCheckResult makeProbesCheckResult = checkMakeProbes(playerLogin, planetName, probeName, quantity);
+		for(Probe p : makeProbesCheckResult.newProbes)
+		{
+			makeProbesCheckResult.area.addUnit(p);
+		}
+		makeProbesCheckResult.planet.setCarbon(makeProbesCheckResult.planet.getCarbon()-makeProbesCheckResult.carbonCost);
+		makeProbesCheckResult.planet.setPopulation(makeProbesCheckResult.planet.getPopulation()-makeProbesCheckResult.populationCost);
+	}
+	
+	private static class MakeProbesCheckResult
+	{
+		final Area area;
+		final Planet planet;
+		final int carbonCost;
+		final int populationCost;
+		final StarshipPlant starshipPlant;
+		final Set<Probe> newProbes;
+
+		public MakeProbesCheckResult(Area area, Planet planet, int carbonCost, int populationCost, StarshipPlant starshipPlant, Set<Probe> newProbes)
+		{
+			this.area = area;
+			this.planet = planet;
+			this.carbonCost = carbonCost;
+			this.populationCost = populationCost;
+			this.starshipPlant = starshipPlant;
+			this.newProbes = newProbes;
+		}
+	}
+	
+	private MakeProbesCheckResult checkMakeProbes(String playerLogin, String planetName, String probeName, int quantity) throws RunningGameCommandException
 	{
 		int[] location = getCelestialBodyLocation(planetName);
 		Area area = universe[location[0]][location[1]][location[2]];
@@ -846,33 +982,39 @@ public class GameBoard implements Serializable
 		
 		// If starship has just been build this turn.
 		if (starshipPlant.getLastBuildDate() >= date) throw new RunningGameCommandException("Starship plant is still in construction.");
-		
-		Fleet fleet = getUnit(Fleet.class, playerLogin, fleetName);
-		if (fleet != null) throw new RunningGameCommandException("Fleet named '"+fleetName+"' already exist.");
-		
-		// Starship availability check		
-		for(Entry<Class<? extends IStarship>, Integer> e : fleetToForm.entrySet())
-		{
-			if (e.getValue() <= 0) continue;
-			
-			int qt = e.getValue();
-			if (!starshipPlant.getStarships().containsKey(e.getKey())) throw new RunningGameCommandException("Starship plant does not have required starship type '"+e.getKey().getSimpleName()+"'");
-			if (starshipPlant.getStarships().get(e.getKey()) < qt) throw new RunningGameCommandException("Starship plant does not have enough starship type '"+e.getKey()+"'");
-		}
 				
+		// Price check
+		int carbonCost = common.Probe.PRICE_CARBON * quantity;
+		int populationCost = common.Probe.PRICE_POPULATION * quantity;	
+		
+		if (carbonCost == 0 && populationCost == 0) throw new RunningGameCommandException("Seems like quantity is null.");
+		if (quantity < 0) throw new RunningGameCommandException("Quantity cannot be lesser than 0.");
+		
+		if (planet.getCarbon() < carbonCost) throw new RunningGameCommandException("Not enough carbon.");
+		if (planet.getPopulation() < populationCost) throw new RunningGameCommandException("Not enough population.");				
+		
 		Player owner = getPlayer(playerLogin);
 		if (owner == null) throw new RunningGameCommandException("Unknown player name '"+playerLogin+"'");
 		
-		Fleet newFleet = new Fleet(fleetName, owner, fleetToForm);
+		if (getUnit(Probe.class, playerLogin, probeName) != null || getUnit(Probe.class, playerLogin, probeName+"1") != null)
+		{
+			throw new RunningGameCommandException("Probe serial '"+probeName+"' already exist.");
+		}
 		
-		return new FormFleetCheckResult(area, starshipPlant, newFleet);		
+		Set<Probe> newProbes = new HashSet<Probe>();
+		for(int i=0; i<quantity; ++i)
+		{
+			newProbes.add(new Probe(probeName+i, owner, false));
+		}
+		
+		return new MakeProbesCheckResult(area, planet, carbonCost, populationCost, starshipPlant, newProbes);
 	}
-
-	public boolean canDismantleFleet(String playerLogin, String fleetName)
+	
+	public boolean canMakeAntiProbeMissiles(String playerLogin, String planetName, String antiProbeMissileName, int quantity)
 	{
 		try
 		{
-			checkDismantleFleet(playerLogin, fleetName);
+			checkMakeAntiProbeMissiles(playerLogin, planetName, antiProbeMissileName, quantity);
 		}
 		catch(Throwable t)
 		{
@@ -881,58 +1023,89 @@ public class GameBoard implements Serializable
 		return true;
 	}
 	
-	public void dismantleFleet(String playerLogin, String fleetName) throws RunningGameCommandException
+	public void makeAntiProbeMissiles(String playerLogin, String planetName, String antiProbeMissileName, int quantity) throws RunningGameCommandException
 	{
-		DismantleFleetCheckResult dismantleFleetCheckResult = checkDismantleFleet(playerLogin, fleetName);
-		dismantleFleetCheckResult.area.removeUnit(dismantleFleetCheckResult.fleet);
-		dismantleFleetCheckResult.starshipPlant.dismantleFleet(dismantleFleetCheckResult.fleet);
+		MakeAntiProbeMissilesCheckResult makeAntiProbeMissilesCheckResult = checkMakeAntiProbeMissiles(playerLogin, planetName, antiProbeMissileName, quantity);
+		for(AntiProbeMissile p : makeAntiProbeMissilesCheckResult.newAntiProbeMissiles)
+		{
+			makeAntiProbeMissilesCheckResult.area.addUnit(p);
+		}
+		makeAntiProbeMissilesCheckResult.planet.setCarbon(makeAntiProbeMissilesCheckResult.planet.getCarbon()-makeAntiProbeMissilesCheckResult.carbonCost);
+		makeAntiProbeMissilesCheckResult.planet.setPopulation(makeAntiProbeMissilesCheckResult.planet.getPopulation()-makeAntiProbeMissilesCheckResult.populationCost);
 	}
 	
-	private static class DismantleFleetCheckResult
+	private static class MakeAntiProbeMissilesCheckResult
 	{
 		final Area area;
+		final Planet planet;
+		final int carbonCost;
+		final int populationCost;
 		final StarshipPlant starshipPlant;
-		final Fleet fleet;
+		final Set<AntiProbeMissile> newAntiProbeMissiles;
 
-		public DismantleFleetCheckResult(Area area, StarshipPlant starshipPlant, Fleet fleet)
+		public MakeAntiProbeMissilesCheckResult(Area area, Planet planet, int carbonCost, int populationCost, StarshipPlant starshipPlant, Set<AntiProbeMissile> newAntiProbeMissiles)
 		{
 			this.area = area;
+			this.planet = planet;
+			this.carbonCost = carbonCost;
+			this.populationCost = populationCost;
 			this.starshipPlant = starshipPlant;
-			this.fleet = fleet;
-		}		
+			this.newAntiProbeMissiles = newAntiProbeMissiles;
+		}
 	}
 	
-	private DismantleFleetCheckResult checkDismantleFleet(String playerLogin, String fleetName) throws RunningGameCommandException
+	private MakeAntiProbeMissilesCheckResult checkMakeAntiProbeMissiles(String playerLogin, String planetName, String antiProbeMissileName, int quantity) throws RunningGameCommandException
 	{
-		int[] location = getUnitLocation(playerLogin, Fleet.class, fleetName);
+		int[] location = getCelestialBodyLocation(planetName);
 		Area area = universe[location[0]][location[1]][location[2]];
 		
-		if (area == null) throw new RunningGameCommandException("Fleet '"+fleetName+"' does not exist.");
+		if (area == null) throw new RunningGameCommandException("Celestial body '"+planetName+"' does not exist.");
 		ICelestialBody celestialBody = area.getCelestialBody();
 		
-		if (celestialBody == null) throw new RunningGameCommandException("Fleet is in travel.");
+		if (celestialBody == null) throw new RunningGameCommandException("Celestial body '"+planetName+"' does not exist.");
 		
 		// If celestial body is not a planet.
-		if (!Planet.class.isInstance(celestialBody)) throw new RunningGameCommandException("Fleet is not on a planet.");
+		if (!Planet.class.isInstance(celestialBody)) throw new RunningGameCommandException("Celestial body '"+planetName+"' is not a planet.");
 		Planet planet = Planet.class.cast(celestialBody);
 		
 		// If player is not the celestial body owner.
-		if (planet.getOwner() == null || !planet.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Fleet cannot be dismantled on a foreign planet.");
+		if (planet.getOwner() == null || !planet.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Player '"+playerLogin+"' is not the '"+planetName+"' planet owner.");
 		
 		StarshipPlant starshipPlant = getBuilding(planet, StarshipPlant.class);
 		
 		// If planet has no starshipPlant.
-		if (starshipPlant == null) throw new RunningGameCommandException("No starship plant on the planet the fleet is located.");
+		if (starshipPlant == null) throw new RunningGameCommandException("No starship plant on planet '"+planetName+"'");
 		
 		// If starship has just been build this turn.
-		if (starshipPlant.getLastBuildDate() >= date) throw new RunningGameCommandException("Starship plant on the planet the fleet is located is still in construction.");
+		if (starshipPlant.getLastBuildDate() >= date) throw new RunningGameCommandException("Starship plant is still in construction.");
+				
+		// Price check
+		int carbonCost = common.AntiProbeMissile.PRICE_CARBON * quantity;
+		int populationCost = common.AntiProbeMissile.PRICE_POPULATION * quantity;	
 		
-		Fleet fleet = getUnit(Fleet.class, playerLogin, fleetName);
-		if (fleet == null) throw new RunningGameCommandException("Fleet '"+fleetName+"' does not exist.");
+		if (carbonCost == 0 && populationCost == 0) throw new RunningGameCommandException("Seems like quantity is null.");
+		if (quantity < 0) throw new RunningGameCommandException("Quantity cannot be lesser than 0.");
 		
-		return new DismantleFleetCheckResult(area, starshipPlant, fleet);		
+		if (planet.getCarbon() < carbonCost) throw new RunningGameCommandException("Not enough carbon.");
+		if (planet.getPopulation() < populationCost) throw new RunningGameCommandException("Not enough population.");				
+		
+		Player owner = getPlayer(playerLogin);
+		if (owner == null) throw new RunningGameCommandException("Unknown player name '"+playerLogin+"'");
+		
+		if (getUnit(Probe.class, playerLogin, antiProbeMissileName) != null || getUnit(Probe.class, playerLogin, antiProbeMissileName+"1") != null)
+		{
+			throw new RunningGameCommandException("AntiProbeMissile serial '"+antiProbeMissileName+"' already exist.");
+		}
+		
+		Set<AntiProbeMissile> newAntiProbeMissiles = new HashSet<AntiProbeMissile>();
+		for(int i=0; i<quantity; ++i)
+		{
+			newAntiProbeMissiles.add(new AntiProbeMissile(antiProbeMissileName+i, owner, false));
+		}
+		
+		return new MakeAntiProbeMissilesCheckResult(area, planet, carbonCost, populationCost, starshipPlant, newAntiProbeMissiles);
 	}
-
+	
 	public boolean canMakeStarships(String playerLogin, String planetName, Map<Class<? extends IStarship>, Integer> starshipsToMake)
 	{
 		try
@@ -950,7 +1123,9 @@ public class GameBoard implements Serializable
 	{
 		MakeStarshipsCheckResult makeStarshipsCheckResult = checkMakeStarships(playerLogin, planetName, starshipsToMake);
 		
-		makeStarshipsCheckResult.starshipPlant.makeStarships(starshipsToMake);
+		Fleet unassignedFleet = makeStarshipsCheckResult.planet.getUnasignedFleet(playerLogin);		
+		makeStarshipsCheckResult.planet.mergeToUnasignedFleet(getPlayer(playerLogin), starshipsToMake);
+		
 		makeStarshipsCheckResult.planet.setCarbon(makeStarshipsCheckResult.planet.getCarbon() - makeStarshipsCheckResult.carbonCost);
 		makeStarshipsCheckResult.planet.setPopulation(makeStarshipsCheckResult.planet.getPopulation() - makeStarshipsCheckResult.populationCost);
 	}

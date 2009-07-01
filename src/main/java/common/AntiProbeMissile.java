@@ -1,5 +1,5 @@
 /**
- * @author Escallier Pierre
+ 																																								* @author Escallier Pierre
  * @file AntiProbeMissile.java
  * @date 3 juin 2009
  */
@@ -14,6 +14,10 @@ public class AntiProbeMissile extends Unit implements Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
+	public static final int PRICE_CARBON = 200;
+	
+	public static final int PRICE_POPULATION  = 0;
+	
 	private final boolean fired;
 	
 	/**
@@ -22,7 +26,7 @@ public class AntiProbeMissile extends Unit implements Serializable
 	public AntiProbeMissile(boolean isVisible, int lastObservation, String name, Player owner, int[] sourceLocation, int[] targetLocation, int[] currentEstimatedLocation, boolean fired)
 	{
 		super(isVisible, lastObservation, name, owner, sourceLocation, targetLocation, currentEstimatedLocation);
-		this.fired = fired;
+		this.fired = fired;																																																					
 	}
 	
 	@Override

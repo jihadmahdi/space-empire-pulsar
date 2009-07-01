@@ -32,15 +32,22 @@ public class Fleet extends Unit implements Serializable
 	
 	private final Map<Class<? extends IStarship>, Integer> starships;
 	private final Stack<Move> move;	
+	private final boolean isUnasignedFleet;
 	
 	/**
 	 * Full constructor. 
 	 */
-	public Fleet(boolean isVisible, int lastObservation, String name, Player owner, int[] sourceLocation, int[] destinationLocation, int[] currentEstimatedLocation, Map<Class<? extends IStarship>, Integer> starships, Stack<Move> move)
+	public Fleet(boolean isVisible, int lastObservation, String name, Player owner, int[] sourceLocation, int[] destinationLocation, int[] currentEstimatedLocation, Map<Class<? extends IStarship>, Integer> starships, Stack<Move> move, boolean isUnasignedFleet)
 	{
 		super(isVisible, lastObservation, name, owner, sourceLocation, destinationLocation, currentEstimatedLocation);
 		this.starships = starships;
 		this.move = move;
+		this.isUnasignedFleet = isUnasignedFleet;
+	}
+	
+	public boolean isUnasignedFleet()
+	{
+		return isUnasignedFleet;
 	}
 	
 	public boolean isGovernmentFleet()
@@ -70,5 +77,15 @@ public class Fleet extends Unit implements Serializable
 		}
 		
 		return sb.toString();
+	}
+
+	public boolean isEmpty()
+	{
+		for(Integer i : starships.values())
+		{
+			if (i != null && i > 0) return false;
+		}
+		
+		return true;
 	}
 }
