@@ -5,12 +5,14 @@
  */
 package common;
 
+import common.SEPUtils.Location;
+
 /**
  * 
  */
 public interface IMobile
 {
-	int[] getSourceLocation();
-	int[] getDestinationLocation();
-	int[] getCurrentEstimatedLocation();
+	Location getSourceLocation();
+	Location getDestinationLocation();
+	Location getCurrentEstimatedLocation();
 }

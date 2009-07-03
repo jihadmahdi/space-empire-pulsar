@@ -8,6 +8,7 @@ package client.gui;
 import javax.swing.JPanel;
 
 import common.PlayerGameBoard;
+import common.SEPUtils.Location;
 
 /**
  * 
@@ -16,7 +17,7 @@ public interface UniverseRenderer
 {
 	public static interface UniverseRendererListener
 	{
-		void updateSelectedArea(int x, int y, int z);
+		void updateSelectedArea(Location location);
 	}
 
 	void setListener(UniverseRendererListener listener);

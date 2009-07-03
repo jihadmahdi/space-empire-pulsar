@@ -6,11 +6,15 @@
 package server.model;
 
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.Stack;
 
+import common.ATravellingLogEntry;
 import common.EstimatedPulsarMarker;
 import common.Player;
+import common.SEPUtils.Location;
 
 /**
  * 
@@ -25,11 +29,13 @@ abstract class Unit implements Serializable
 	private final Player					owner;
 
 	// Variables
-	private int[]							sourceLocation;
+	private Location							sourceLocation;
 
-	private int[]							destinationLocation;
+	private Location							destinationLocation;
 
-	private int[]							currentEstimatedLocation;
+	private Location							currentEstimatedLocation;
+	
+	private Stack<ATravellingLogEntry>			travellingLog;
 
 	// Views
 	private final PlayerDatedView<Integer>	playersLastObservation	= new PlayerDatedView<Integer>();
@@ -65,12 +71,12 @@ abstract class Unit implements Serializable
 		return playersLastObservation.getLastValue(playerLogin, -1);
 	}
 
-	public int[] getSourceLocation()
+	public Location getSourceLocation()
 	{
 		return sourceLocation;
 	}
 	
-	protected int[] getSourceLocationView(String playerLogin)
+	protected Location getSourceLocationView(String playerLogin)
 	{
 		if (owner.isNamed(playerLogin))
 		{
@@ -79,12 +85,12 @@ abstract class Unit implements Serializable
 		return null;
 	}
 	
-	public int[] getDestinationLocation()
+	public Location getDestinationLocation()
 	{
 		return destinationLocation;
 	}
 	
-	protected int[] getDestinationLocationView(String playerLogin)
+	protected Location getDestinationLocationView(String playerLogin)
 	{
 		if (owner.isNamed(playerLogin))
 		{
@@ -93,12 +99,12 @@ abstract class Unit implements Serializable
 		return null;
 	}
 	
-	public int[] getCurrentEstimatedLocation()
+	public Location getCurrentEstimatedLocation()
 	{
 		return currentEstimatedLocation;
 	}
 	
-	protected int[] getCurrentEstimatedLocationView(String playerLogin)
+	protected Location getCurrentEstimatedLocationView(String playerLogin)
 	{
 		if (owner.isNamed(playerLogin))
 		{
@@ -107,10 +113,51 @@ abstract class Unit implements Serializable
 		return null;
 	}
 	
+	protected void setSourceLocation(Location sourceLocation)
+	{
+		this.sourceLocation = sourceLocation;
+	}
+	
+	protected void setDestinationLocation(Location destinationLocation)
+	{
+		this.destinationLocation = destinationLocation;
+	}
+	
+	protected void setCurrentLocation(Location currentLocation)
+	{
+		this.currentEstimatedLocation = currentLocation;
+	}
+	
+	public void addTravelligLogEntry(ATravellingLogEntry logEntry)
+	{
+		if (travellingLog == null)
+		{
+			travellingLog = new Stack<ATravellingLogEntry>();
+		}
+		
+		travellingLog.push(logEntry);
+	}
+	
+	public boolean isMoving()
+	{
+		if (currentEstimatedLocation == null || destinationLocation == null || sourceLocation == null) return false;
+		return (!currentEstimatedLocation.equals(sourceLocation) && !currentEstimatedLocation.equals(destinationLocation));
+	}
+	
 	/**
 	 * @param date
 	 * @param playerLogin
 	 * @return
 	 */
 	abstract public common.Unit getPlayerView(int date, String playerLogin, boolean isVisible);
+	
+	/**
+	 * If a previous move order has been registered, let the unit start the move.
+	 * This method must return true if the unit require to be considered as moving for its first move turn (not moved yet).
+	 */
+	abstract public boolean startMove(Location currentLocation, GameBoard gameBoard);	
+	
+	abstract public double getSpeed();
+
+	abstract public void endMove(Location currentLocation, GameBoard gameBoard);
 }

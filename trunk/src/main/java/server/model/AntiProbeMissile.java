@@ -3,6 +3,7 @@ package server.model;
 import java.io.Serializable;
 
 import common.Player;
+import common.SEPUtils.Location;
 
 public class AntiProbeMissile extends Unit implements Serializable
 {
@@ -10,6 +11,7 @@ public class AntiProbeMissile extends Unit implements Serializable
 	
 	// Variables
 	private boolean fired;
+	private String targetName;
 	
 	// Views
 	private final PlayerDatedView<Boolean> playersFiredView = new PlayerDatedView<Boolean>();
@@ -43,5 +45,32 @@ public class AntiProbeMissile extends Unit implements Serializable
 		}
 		
 		return new common.AntiProbeMissile(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentEstimatedLocationView(playerLogin), playersFiredView.getLastValue(playerLogin, false)); 
+	}
+
+	@Override
+	public double getSpeed()
+	{
+		// TODO
+		return 3;
+	}
+
+	@Override
+	public boolean startMove(Location currentLocation, GameBoard currentGameBoard)
+	{
+		if (fired && !isMoving())
+		{	
+			setSourceLocation(currentLocation);
+			setCurrentLocation(currentLocation);
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	@Override
+	public void endMove(Location currentLocation, GameBoard gameBoard)
+	{
+		// NOP
 	}
 }

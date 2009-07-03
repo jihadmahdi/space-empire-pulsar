@@ -1,5 +1,14 @@
 NOTES A METTRE A JOUR :
 
+/Cas d'exploit/
+soit 2 corps céleste A et B à 10 zones l'un de l'autre.
+soit la vitesse des vaisseaux de 1zone / tour.
+soit un joueur Gogol qui envoi en continu des flottes minuscules (un seul vaisseaux, donc ~gratuites) de A vers B
+Gogol reçoit à chaque tour des informations sur toutes les zones parcourus. Avec un retard de 10 tour pour la zone la plus proche du point de départ des flottes, néanmoins il est en position où il ne peut rater aucune flotte qui croiserait sa trajectoire.
+Si on optimise un peu le bovinage, il peut envoyer à chaqu tour dans les deux sens (A->B, B->A) ainsi c'est la zone au milieu de trajet pour laquelle le retard d'info est le plus grand, mais qui se trouve quand même divisé par deux.
+On peut même imaginer qu'à chaque tour on envoi des vaisseaux de tout ces corps celeste vers tout les autres.. Le prix d'un vaisseaux étant négligeable.
+Celà pose t'il problème ?
+
 // On peut construire plusieurs comptoirs sur un même corps céleste, chaque comptoir autorise la construction d'une nouvelle route spaciale, chaque comptoir autorise une nouvelle route commerciale ?
 => Idée : Chaque upgrade de comptoir augmente le nombre de route spatiale qu'il est possible de construire (1 comptoir = 1 route spatial), chaque upgrade de comptoir augmente la valeur maximale de carbone qu'il est possible de transporter en même temps (le pool de véhicules de transport de carbone), on peut créer autant de route commerciale que l'on souhaite mais à chaque instant le maximum de carbon qui peut être transporté est défini par le niveau d'upgrade du comptoir d'envoi.
 

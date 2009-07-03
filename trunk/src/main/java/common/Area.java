@@ -7,6 +7,7 @@ package common;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -87,6 +88,46 @@ public class Area implements IObservable, Serializable
 		return units;
 	}
 	
+	public Unit getMarkedUnit(String unitName)
+	{
+		for(UnitMarker m : getMarkers(UnitMarker.class))
+		{
+			Unit u = m.getUnit();			
+			if (u != null && u.getName().compareTo(unitName) == 0) return u;
+		}
+		
+		return null;
+	}
+	
+	public <U extends Unit> Set<U> getUnits(Class<U> unitType)
+	{
+		Set<U> filteredUnits = new HashSet<U>();
+		if (units != null) for(Unit u : units)
+		{
+			if (unitType.isInstance(u)) filteredUnits.add(unitType.cast(u));
+		}
+		
+		filteredUnits.addAll(getMarkedUnits(unitType));
+		
+		return filteredUnits;
+	}
+	
+	public <U extends Unit> Set<U> getMarkedUnits(Class<U> unitType)
+	{
+		Set<U> filteredMarkedUnits = new HashSet<U>();
+		
+		Set<UnitMarker> unitMarkers = getMarkers(UnitMarker.class);
+		if (unitMarkers != null) for(UnitMarker um : unitMarkers)
+		{
+			if (unitType.isInstance(um.getUnit()))
+			{
+				filteredMarkedUnits.add(unitType.cast(um.getUnit()));
+			}
+		}
+		
+		return filteredMarkedUnits;
+	}
+	
 	public Unit getUnit(String unitName)
 	{
 		if(units != null) for(Unit u : units)
@@ -94,12 +135,20 @@ public class Area implements IObservable, Serializable
 			if (u.getName().compareTo(unitName) == 0) return u;
 		}
 		
-		return null;
+		return getMarkedUnit(unitName);
 	}
 	
-	public Set<IMarker> getMarkers()
+	public <M extends IMarker> Set<M> getMarkers(Class<M> markerType)
 	{
-		return markers;
+		Set<M> filteredMarkers = new HashSet<M>();
+		if (markers != null) for(IMarker m : markers)
+		{
+			if (markerType.isInstance(m))
+			{
+				filteredMarkers.add(markerType.cast(m));
+			}
+		}
+		return filteredMarkers;
 	}
 	
 	public boolean isSun()

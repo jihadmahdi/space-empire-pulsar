@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import common.Player;
+import common.SEPUtils.Location;
 
 /**
  * 
@@ -26,11 +27,11 @@ class SpaceCounter extends ABuilding implements Serializable
 		
 		// Constants
 		private final int creationDate;
-		private final int[] from;
-		private final int[] to;
+		private final Location from;
+		private final Location to;
 		private final int speed;
 		
-		public SpaceRoad(int creationDate, int[] from, int[] to, int speed)
+		public SpaceRoad(int creationDate, Location from, Location to, int speed)
 		{
 			this.creationDate = creationDate;
 			this.from = from;
@@ -65,7 +66,32 @@ class SpaceCounter extends ABuilding implements Serializable
 		{
 			return new common.CarbonCarrier(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocation(), getDestinationLocation(), getCurrentEstimatedLocation());
 		}
+
+		@Override
+		public double getSpeed()
+		{
+			return 1;
+		}
+
+		@Override
+		public boolean startMove(Location currentLocation, GameBoard currentGameBoard)
+		{
+			if (getDestinationLocation() != null && !isMoving())
+			{
+				setCurrentLocation(currentLocation);
+				setSourceLocation(currentLocation);
+				
+				return true;
+			}
+			
+			return false;
+		}
 		
+		@Override
+		public void endMove(Location currentLocation, GameBoard gameBoard)
+		{
+			// NOP
+		}
 	}
 	
 	static class CarbonOrder implements Serializable

@@ -5,6 +5,7 @@
  */
 package common;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -14,45 +15,96 @@ import java.util.SortedSet;
 import java.util.Stack;
 import java.util.TreeSet;
 
+import org.axan.eplib.utils.Basic;
+
 /**
  * 
  */
 public abstract class SEPUtils
 {
-	public static int getDistance(int[] a, int[] b)
+	public static class Location implements Serializable
 	{
-		return getDistance(a[0], a[1], a[2], b[0], b[1], b[2]);
-	}
-	public static int getDistance(int xA, int yA, int zA, int xB, int yB, int zB)
-	{
-		return (int) Math.sqrt(Math.pow(xA-xB, 2) + Math.pow(yA-yB, 2) + Math.pow(zA-zB, 2));
-	}
-	
-	public static int[] getMobileEstimatedLocation(int xA, int yA, int zA, int xB, int yB, int zB, float progress)
-	{
-		float[] loc = getMobileLocation(xA, yA, zA, xB, yB, zB, progress);
-		return new int[]{(int) loc[0], (int) loc[1], (int) loc[2]};
-	}
-	public static float[] getMobileLocation(int xA, int yA, int zA, int xB, int yB, int zB, float progress)
-	{
-		float x = xA + (xB - xA)*progress;
-		float y = yA + (yB - yA)*progress;
-		float z = zA + (zB - zA)*progress;
+		private static final long	serialVersionUID	= 1L;
 		
-		return new float[]{x, y, z};
+		public final int x;
+		public final int y;
+		public final int z;
+		
+		public Location(String s)
+		{
+			String[] parts = Basic.split(s, ";");
+			if (parts.length != 3) throw new IllegalArgumentException("Bad string format '"+s+"', '[x;y;z]' expected");
+			this.x = Basic.intValueOf(parts[0].substring(1), -1);
+			this.y = Basic.intValueOf(parts[1], -1);
+			this.z = Basic.intValueOf(parts[2].substring(0, parts[2].length()-1), -1);
+			
+			if (x < 0 || y < 0 || z < 0) throw new IllegalArgumentException("Bad string format '"+s+"', '[x;y;z]' expected, with x, y, z positives or null.");
+		}
+		
+		public Location(int x, int y, int z)
+		{
+			//if (x < 0 || y < 0 || z < 0) throw new IllegalArgumentException("Location coordinates cannot be negatives.");
+			
+			this.x = x;
+			this.y = y;
+			this.z = z;
+		}
+		
+		public boolean equals(Location loc)
+		{
+			return x == loc.x && y == loc.y && z == loc.z; 
+		}
+		
+		@Override
+		public int hashCode()
+		{
+			return toString().hashCode();
+		}
+		
+		@Override
+		public String toString()
+		{
+			return "["+x+";"+y+";"+z+"]";
+		}
 	}
 	
-	public static Stack<int[]> getAllPathLoc(int xA, int yA, int zA, int xB, int yB, int zB)
+	public static double getDistance(Location a, Location b)
 	{
-		Stack<int[]> result = new Stack<int[]>();
-		int d = getDistance(xA, yA, zA, xB, yB, zB);
+		return Math.sqrt(Math.pow(a.x-b.x, 2) + Math.pow(a.y-b.y, 2) + Math.pow(a.z-b.z, 2));
+	}
+	
+	public static Location getMobileEstimatedLocation(Location a, Location b, double progress, boolean stopOnB)
+	{
+		double[] loc = getMobileLocation(a, b, progress, stopOnB);
+		return new Location((int) loc[0], (int) loc[1], (int) loc[2]);
+	}
+	public static double[] getMobileLocation(Location a, Location b, double progress, boolean stopOnB)
+	{
+		double x = a.x + (b.x - a.x)*progress;
+		double y = a.y + (b.y - a.y)*progress;
+		double z = a.z + (b.z - a.z)*progress;
+		
+		if (!stopOnB)
+		{
+			return new double[]{x, y, z};
+		}
+		else
+		{
+			return new double[]{(a.x<b.x?Math.min(x, b.x):Math.max(x, b.x)), (a.y<b.y?Math.min(y, b.y):Math.max(y, b.y)), (a.z<b.z?Math.min(z, b.z):Math.max(z, b.z))};
+		}
+	}
+	
+	public static Stack<Location> getAllPathLoc(Location a, Location b)
+	{
+		Stack<Location> result = new Stack<Location>();
+		double d = getDistance(a, b);
 		float delta = ((float) 1) / ((float) (2*d));
-		int[] lastLoc = null;
-		int[] loc;
+		Location lastLoc = null;
+		Location loc;
 		for(float t = 0; t < 1; t += delta)
 		{
-			loc = getMobileEstimatedLocation(xA, yA, zA, xB, yB, zB, t);
-			if (lastLoc == null || loc[0] != lastLoc[0] || loc[1] != lastLoc[1] || loc[2] != lastLoc[2])
+			loc = getMobileEstimatedLocation(a, b, t, true);
+			if (lastLoc == null || !loc.equals(lastLoc))
 			{
 				result.add(loc);
 				lastLoc = loc;
@@ -60,9 +112,9 @@ public abstract class SEPUtils
 		}
 		
 		lastLoc = result.lastElement();
-		if (lastLoc == null || xB != lastLoc[0] || yB != lastLoc[1] || zB != lastLoc[2])
+		if (lastLoc == null || !b.equals(lastLoc))
 		{
-			result.add(new int[]{xB, yB, zB});
+			result.add(b);
 		}
 		
 		return result;
@@ -108,13 +160,13 @@ public abstract class SEPUtils
 	
 	public static void main(String[] args)
 	{
-		int[] A = new int[]{2, 2, 0};
-		int[] B = new int[]{9, 4, 0};
-		System.out.println("getAllPathLoc("+Arrays.toString(A)+", "+Arrays.toString(B)+")");
-		Stack<int[]> path = getAllPathLoc(A[0], A[1], A[2], B[0], B[1], B[2]);
-		for(int[] loc : path)
+		Location A = new Location(2, 2, 0);
+		Location B = new Location(9, 4, 0);
+		System.out.println("getAllPathLoc("+A+", "+B+")");
+		Stack<Location> path = getAllPathLoc(A, B);
+		for(Location loc : path)
 		{
-			System.out.println(Arrays.toString(loc));
+			System.out.println(loc);
 		}
 	}
 }
