@@ -267,6 +267,35 @@ public class PlayerGameMove
 
 	}
 	
+	static class MoveFleetCommand extends GameMoveCommand
+	{
+		private final String fleetName;
+		private final Stack<common.Fleet.Move> checkpoints;
+		
+		public MoveFleetCommand(String playerLogin, String fleetName, Stack<common.Fleet.Move> checkpoints)
+		{
+			super(playerLogin);
+			this.fleetName = fleetName;
+			this.checkpoints = checkpoints;
+		}
+		
+		@Override
+		protected GameBoard apply(GameBoard originalGameBoard)
+		{
+			GameBoard newGameBoard = Basic.clone(originalGameBoard);
+			try
+			{
+				newGameBoard.moveFleet(playerLogin, fleetName, checkpoints);
+			}
+			catch(RunningGameCommandException e)
+			{
+				e.printStackTrace();
+				return originalGameBoard;
+			}
+			return newGameBoard;
+		}
+	}
+	
 	//////////////////
 	
 	private final GameBoard originalGameBoard;
@@ -403,6 +432,18 @@ public class PlayerGameMove
 		addGameMoveCommand(new EmbarkGovernmentCommand(playerLogin));		
 	}
 	
+	public void addMoveFleetCommand(String fleetName, Stack<common.Fleet.Move> checkpoints) throws RunningGameCommandException
+	{
+		checkTurnIsNotEnded();
+		
+		if (!getGameBoard().canMoveFleet(playerLogin, fleetName, checkpoints))
+		{
+			throw new RunningGameCommandException(playerLogin+" sent invalid roadmap for fleet '"+fleetName+"'");
+		}
+		
+		addGameMoveCommand(new MoveFleetCommand(playerLogin, fleetName, checkpoints));
+	}
+	
 	private void addGameMoveCommand(GameMoveCommand command) throws RunningGameCommandException
 	{
 		checkTurnIsNotEnded();
@@ -426,6 +467,6 @@ public class PlayerGameMove
 	public boolean isTurnEnded()
 	{
 		return isTurnEnded;
-	}	
+	}		
 			
 }

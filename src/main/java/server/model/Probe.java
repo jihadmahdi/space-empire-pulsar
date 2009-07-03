@@ -8,6 +8,7 @@ package server.model;
 import java.io.Serializable;
 
 import common.Player;
+import common.SEPUtils.Location;
 
 /**
  * 
@@ -51,5 +52,32 @@ public class Probe extends Unit implements Serializable
 		}
 		
 		return new common.Probe(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentEstimatedLocationView(playerLogin), playersDeployedView.getLastValue(playerLogin, false)); 
+	}
+
+	@Override
+	public double getSpeed()
+	{
+		// TODO
+		return 2;
+	}
+
+	@Override
+	public boolean startMove(Location currentLocation, GameBoard currentGameBoard)
+	{
+		if (getDestinationLocation() != null && !isMoving())
+		{
+			setCurrentLocation(currentLocation);
+			setSourceLocation(currentLocation);
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	@Override
+	public void endMove(Location currentLocation, GameBoard gameBoard)
+	{
+		// NOP
 	}
 }

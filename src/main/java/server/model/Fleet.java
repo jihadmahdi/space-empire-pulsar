@@ -9,6 +9,8 @@ import java.util.Stack;
 import common.GovernmentStarship;
 import common.IStarship;
 import common.Player;
+import common.SEPUtils;
+import common.SEPUtils.Location;
 
 public class Fleet extends Unit implements Serializable
 {
@@ -18,7 +20,8 @@ public class Fleet extends Unit implements Serializable
 	
 	// Variables
 	private final HashMap<Class<? extends IStarship>, Integer>		starships;
-	private final Stack<common.Fleet.Move> move;
+	private final Stack<common.Fleet.Move> checkpoints;
+	private common.Fleet.Move currentMove;
 
 	// Views
 	PlayerDatedView<HashMap<Class<? extends IStarship>, Integer>>	playersStarshipsView	= new PlayerDatedView<HashMap<Class<? extends IStarship>, Integer>>();
@@ -36,7 +39,7 @@ public class Fleet extends Unit implements Serializable
 			this.starships = new HashMap<Class<? extends IStarship>, Integer>();
 		}
 		
-		this.move = new Stack<common.Fleet.Move>();
+		this.checkpoints = new Stack<common.Fleet.Move>();
 		this.isUnassigned = isUnassigned;
 	}
 
@@ -49,7 +52,7 @@ public class Fleet extends Unit implements Serializable
 			playersStarshipsView.updateView(playerLogin, starships, date);
 		}
 
-		return new common.Fleet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentEstimatedLocationView(playerLogin), playersStarshipsView.getLastValue(playerLogin, null), (getOwner()!=null&&getOwner().isNamed(playerLogin)?move:null), isUnassigned);
+		return new common.Fleet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentEstimatedLocationView(playerLogin), playersStarshipsView.getLastValue(playerLogin, null), (getOwner()!=null&&getOwner().isNamed(playerLogin)?checkpoints:null), isUnassigned);
 	}
 
 	public boolean isGovernmentFleet()
@@ -99,4 +102,63 @@ public class Fleet extends Unit implements Serializable
 			starships.put(e.getKey(), starships.get(e.getKey()) - e.getValue());				
 		}
 	}
+	
+	public void updateMoveOrder(Stack<common.Fleet.Move> newCheckpoints)
+	{		
+		if (currentMove != null)
+		{
+			if (newCheckpoints.firstElement().getDestinationName().compareTo(currentMove.getDestinationName()) == 0)
+			{
+				newCheckpoints.setElementAt(currentMove, 0);
+			}
+			else
+			{
+				newCheckpoints.insertElementAt(currentMove, 0);
+			}
+		}
+		
+		checkpoints.removeAllElements();
+		if (currentMove != null) checkpoints.add(currentMove);
+		
+		for(common.Fleet.Move checkpoint : newCheckpoints)
+		{
+			if (checkpoints.size() > 0 && checkpoints.peek().getDestinationName().compareTo(checkpoint.getDestinationName()) == 0)
+			{
+				checkpoints.pop();
+			}
+			
+			checkpoints.push(checkpoint);
+		}
+	}
+	
+	@Override
+	public boolean startMove(Location currentLocation, GameBoard currentGameBoard)
+	{
+		if (currentMove == null && checkpoints.size() > 0)
+		{
+			currentMove = checkpoints.firstElement();
+			checkpoints.removeElementAt(0);
+			
+			setSourceLocation(currentLocation);
+			setDestinationLocation(currentGameBoard.getCelestialBodyLocation(currentMove.getDestinationName()));
+			setCurrentLocation(currentLocation);
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	@Override
+	public void endMove(Location currentLocation, GameBoard gameBoard)
+	{
+		currentMove = null; // Needed for the next startMove call.
+	}
+	
+	@Override
+	public double getSpeed()
+	{
+		// TODO, compute total speed from fleet composition
+		return 3;
+	}	
 }

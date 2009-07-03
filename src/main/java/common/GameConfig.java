@@ -9,6 +9,8 @@ import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.Map;
 
+import common.SEPUtils.Location;
+
 /**
  * Represent a game creation configuration.
  */
@@ -132,7 +134,7 @@ public class GameConfig implements Serializable
 	 */
 	private int												probeScope								= common.Probe.PROBE_SCORE;
 
-	public static final int									SUN_RADIUS								= 1;
+	public static final int									SUN_RADIUS								= 3;
 	/**
 	 * Sun radius (0: sun volume is 1; 1: sun volume is 9; 2: sun volume is 125;
 	 * n: sun volume is (2n+1)^3 );
@@ -273,14 +275,14 @@ public class GameConfig implements Serializable
 
 	static private int getSunVolume(int dimX, int dimY, int dimZ, int sunRadius)
 	{
-		int[] origin = new int[] { 0, 0, 0 };
+		Location origin = new Location( 0, 0, 0);
 		int volume = 0;
 
 		for(int x = -Math.min(dimX - 1, sunRadius); x <= Math.min(dimX - 1, sunRadius); ++x)
 			for(int y = -Math.min(dimY - 1, sunRadius); y <= Math.min(dimY - 1, sunRadius); ++y)
 				for(int z = -Math.min(dimZ - 1, sunRadius); z <= Math.min(dimZ - 1, sunRadius); ++z)
 				{
-					if (SEPUtils.getDistance(new int[] { x, y, z }, origin) <= sunRadius)
+					if (SEPUtils.getDistance(new Location(x, y, z), origin) <= sunRadius)
 					{
 						++volume;
 					}

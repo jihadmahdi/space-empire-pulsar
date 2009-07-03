@@ -7,6 +7,8 @@ package common;
 
 import java.io.Serializable;
 
+import common.SEPUtils.Location;
+
 /**
  * Represent a unit (fleet, probe, ...)
  */
@@ -22,14 +24,14 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	private final Player owner;
 	
 	// Only if owner
-	private final int[] sourceLocation;
-	private final int[] destinationLocation;
-	private final int[]	currentEstimatedLocation;
+	private final Location sourceLocation;
+	private final Location destinationLocation;
+	private final Location	currentEstimatedLocation;
 	
 	/**
 	 * Full constructor.
 	 */
-	public Unit(boolean isVisible, int lastObervation, String name, Player owner, int[] sourceLocation, int[] destinationLocation, int[] currentEstimatedLocation)
+	public Unit(boolean isVisible, int lastObervation, String name, Player owner, Location sourceLocation, Location destinationLocation, Location currentEstimatedLocation)
 	{
 		this.isVisible = isVisible;
 		this.lastObservation = lastObervation;
@@ -71,7 +73,7 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	 * @see common.Mobile#getCurrentEstimatedLocation()
 	 */
 	@Override
-	public int[] getCurrentEstimatedLocation()
+	public Location getCurrentEstimatedLocation()
 	{
 		return currentEstimatedLocation;
 	}
@@ -80,7 +82,7 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	 * @see common.Mobile#getDestinationLocation()
 	 */
 	@Override
-	public int[] getDestinationLocation()
+	public Location getDestinationLocation()
 	{
 		return destinationLocation;
 	}
@@ -89,7 +91,7 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	 * @see common.Mobile#getSourceLocation()
 	 */
 	@Override
-	public int[] getSourceLocation()
+	public Location getSourceLocation()
 	{
 		return sourceLocation;
 	}
@@ -107,11 +109,11 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 		
 		if (sourceLocation != null && destinationLocation != null)
 		{
-			sb.append(", moving from ["+sourceLocation[0]+";"+sourceLocation[1]+";"+sourceLocation[2]+"] to ["+destinationLocation[0]+";"+destinationLocation[1]+";"+destinationLocation[2]+"]");
+			sb.append(", moving from "+sourceLocation+" to "+destinationLocation);
 		}
 		if (currentEstimatedLocation != null)
 		{
-			sb.append(", current "+(isVisible?"":"estimated ")+"location : ["+currentEstimatedLocation[0]+";"+currentEstimatedLocation[1]+";"+currentEstimatedLocation[2]+"]");
+			sb.append(", current "+(isVisible?"":"estimated ")+"location : "+currentEstimatedLocation);
 		}				
 		
 		return sb.toString();
@@ -122,5 +124,18 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	{
 		// TODO
 		return "TODO"+(++generatedNameCount);
+	}
+	
+	public boolean isMoving()
+	{
+		if (currentEstimatedLocation == null || sourceLocation == null || destinationLocation == null) return false;
+		
+		boolean onSource = true;
+		boolean onDestination = true;
+		
+		if (!currentEstimatedLocation.equals(sourceLocation)) onSource = false;
+		if (!currentEstimatedLocation.equals(destinationLocation)) onDestination = false;
+		
+		return !onSource && !onDestination;
 	}
 }

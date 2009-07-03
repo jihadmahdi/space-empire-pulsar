@@ -1,5 +1,6 @@
 package server.model;
 
+import java.beans.DesignMode;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
@@ -9,6 +10,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
+import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,7 +23,11 @@ import common.GovernmentStarship;
 import common.IStarship;
 import common.Player;
 import common.Protocol;
+import common.SEPUtils;
+import common.TravellingLogEntryUnitSeen;
+import common.UnitMarker;
 import common.Protocol.ServerRunningGame.RunningGameCommandException;
+import common.SEPUtils.Location;
 
 import server.SEPServer;
 import server.model.Area.AreaIllegalDefinitionException;
@@ -39,14 +45,14 @@ public class GameBoard implements Serializable
 
 	private final Area[][][]			universe;
 
-	private final int[]					sunLocation;			// Sun center location : [0] x; [1] y; [2] z. Sun is always fill 9 area.
+	private final Location					sunLocation;			// Sun center location : [0] x; [1] y; [2] z. Sun is always fill 9 area.
 
 	private final common.GameConfig			config;
 	
 	private int date;
 
 	
-	private GameBoard(Set<common.Player> players, common.GameConfig config, int date, Area[][][] universe, int[] sunLocation)
+	private GameBoard(Set<common.Player> players, common.GameConfig config, int date, Area[][][] universe, Location sunLocation)
 	{
 		this.players = players;
 		this.config = config;
@@ -72,40 +78,41 @@ public class GameBoard implements Serializable
 		universe = new Area[config.getDimX()][config.getDimY()][config.getDimZ()];
 
 		// Make the sun
-		sunLocation = new int[] {(int) config.getDimX() / 2, (int) config.getDimY() / 2, (int) config.getDimZ() / 2};
+		sunLocation = new Location ((int) config.getDimX() / 2, (int) config.getDimY() / 2, (int) config.getDimZ() / 2);
 			
 		for(int x = -Math.min(config.getSunRadius(), config.getDimX()/2); x <= Math.min(config.getSunRadius(), config.getDimX()/2); ++x)
 		for(int y = -Math.min(config.getSunRadius(), config.getDimY()/2); y <= Math.min(config.getSunRadius(), config.getDimY()/2); ++y)
 		for(int z = -Math.min(config.getSunRadius(), config.getDimZ()/2); z <= Math.min(config.getSunRadius(), config.getDimZ()/2); ++z)
 		{
-			if (common.SEPUtils.getDistance(new int[]{sunLocation[0]+x, sunLocation[1]+y, sunLocation[2]+z}, sunLocation) <= config.getSunRadius())
+			Location parsedLoc = new Location(sunLocation.x+x, sunLocation.y+y, sunLocation.z+z);
+			if (common.SEPUtils.getDistance(parsedLoc, sunLocation) <= config.getSunRadius())
 			{
-				getArea(sunLocation[0]+x, sunLocation[1]+y, sunLocation[2]+z).setSunFlag(true);
+				getArea(parsedLoc).setSunFlag(true);
 			}
 		}						
 
 		// Add the players starting planets.
-		Set<int[]> playersPlanetLocations = new HashSet<int[]>();
+		Set<Location> playersPlanetLocations = new HashSet<Location>();
 		
 		for (common.Player player : players)
 		{
 			// Found a location to pop the planet.
-			int[] planetLocation;
+			Location planetLocation;
 			boolean locationOk;
 			do
 			{
 				locationOk = false;
-				planetLocation = new int[] {rnd.nextInt(config.getDimX()), rnd.nextInt(config.getDimY()), rnd.nextInt(config.getDimZ())};
+				planetLocation = new Location(rnd.nextInt(config.getDimX()), rnd.nextInt(config.getDimY()), rnd.nextInt(config.getDimZ()));
 				
-				if (universe[planetLocation[0]][planetLocation[1]][planetLocation[2]] != null && !universe[planetLocation[0]][planetLocation[1]][planetLocation[2]].isEmpty()) continue;
+				if (getNullArea(planetLocation) != null && !getNullArea(planetLocation).isEmpty()) continue;
 				
 				locationOk = true;
-				for(int[] l : playersPlanetLocations)
+				for(Location l : playersPlanetLocations)
 				{
-					Stack<int[]> path = common.SEPUtils.getAllPathLoc(planetLocation[0], planetLocation[1], planetLocation[2], l[0], l[1], l[2]);
-					for(int[] pl : path)
+					Stack<Location> path = common.SEPUtils.getAllPathLoc(planetLocation, l);
+					for(Location pl : path)
 					{
-						Area a = universe[pl[0]][pl[1]][pl[2]];
+						Area a = getNullArea(pl);
 						if (a != null && a.isSun())
 						{
 							locationOk = false;
@@ -133,11 +140,11 @@ public class GameBoard implements Serializable
 		for (int i = 0; i < config.getNeutralCelestialBodiesCount(); ++i)
 		{
 			// Found a location to pop the celestial body
-			int[] celestialBodyLocation;
+			Location celestialBodyLocation;
 			do
 			{
-				celestialBodyLocation = new int[] {rnd.nextInt(config.getDimX()), rnd.nextInt(config.getDimY()), rnd.nextInt(config.getDimZ())};
-			} while ( universe[celestialBodyLocation[0]][celestialBodyLocation[1]][celestialBodyLocation[2]] != null && !universe[celestialBodyLocation[0]][celestialBodyLocation[1]][celestialBodyLocation[2]].isEmpty());
+				celestialBodyLocation = new Location(rnd.nextInt(config.getDimX()), rnd.nextInt(config.getDimY()), rnd.nextInt(config.getDimZ()));
+			} while ( getNullArea(celestialBodyLocation) != null && !getNullArea(celestialBodyLocation).isEmpty());
 
 			Class<? extends common.ICelestialBody> celestialBodyType = Basic.getKeyFromRandomTable(config.getNeutralCelestialBodiesGenerationTable());
 
@@ -164,18 +171,18 @@ public class GameBoard implements Serializable
 		return null;
 	}
 	
-	private Area getArea(int[] location)
+	private Area getNullArea(Location location)
 	{
-		return getArea(location[0], location[1], location[2]);
+		return universe[location.x][location.y][location.z];
 	}
 	
-	private Area getArea(int x, int y, int z)
+	private Area getArea(Location location)
 	{
-		if (universe[x][y][z] == null)
+		if (universe[location.x][location.y][location.z] == null)
 		{
-			universe[x][y][z] = new Area();
+			universe[location.x][location.y][location.z] = new Area();
 		}
-		return universe[x][y][z];
+		return universe[location.x][location.y][location.z];
 	}
 	
 	public int getDate()
@@ -191,7 +198,7 @@ public class GameBoard implements Serializable
 		log.log(Level.INFO, "getGameBoard(" + playerLogin + ")");
 		common.Area[][][] playerUniverseView = new common.Area[config.getDimX()][config.getDimY()][config.getDimZ()];
 
-		Map<int[], Set<Probe>> playerProbes = getUnits(Probe.class, playerLogin);
+		Map<Location, Set<Probe>> playerProbes = getUnits(Probe.class, playerLogin);
 		
 		boolean isVisible = false;
 
@@ -200,7 +207,7 @@ public class GameBoard implements Serializable
 				for (int z = 0; z < config.getDimZ(); ++z)
 				{					
 					Area area = universe[x][y][z];
-					int[] location = new int[]{x, y, z};
+					Location location = new Location(x, y, z);
 
 					// Check for Area visibility (default to false)
 					isVisible = false;					
@@ -212,9 +219,9 @@ public class GameBoard implements Serializable
 					if (!isVisible && area != null && area.getCelestialBody() != null && !getUnits(location, playerLogin).isEmpty()) isVisible = true;
 
 					// Area is under a player probe scope.
-					if (!isVisible) for(Map.Entry<int[], Set<Probe>> e : playerProbes.entrySet())
+					if (!isVisible) for(Map.Entry<Location, Set<Probe>> e : playerProbes.entrySet())
 					{
-						int[] probesLocation = e.getKey();
+						Location probesLocation = e.getKey();
 						if (common.SEPUtils.getDistance(location, probesLocation) > config.getProbeScope()) continue;
 						for(Probe p : e.getValue())
 						{
@@ -230,7 +237,7 @@ public class GameBoard implements Serializable
 					
 					if (isVisible || area != null)
 					{						
-						playerUniverseView[x][y][z] = getArea(x, y, z).getPlayerView(getDate(), playerLogin, isVisible);
+						playerUniverseView[x][y][z] = getArea(new Location(x, y, z)).getPlayerView(getDate(), playerLogin, isVisible);
 					}
 				}
 
@@ -243,7 +250,7 @@ public class GameBoard implements Serializable
 	 * @param unitName
 	 * @return
 	 */
-	private <U extends Unit> int[] getUnitLocation(String playerLoginFilter, Class<U> unitTypeFilter, String unitName)
+	private <U extends Unit> Location getUnitLocation(String playerLoginFilter, Class<U> unitTypeFilter, String unitName)
 	{
 		for (int x = 0; x < config.getDimX(); ++x)
 			for (int y = 0; y < config.getDimY(); ++y)
@@ -251,7 +258,7 @@ public class GameBoard implements Serializable
 				{
 					if (universe[x][y][z] == null) continue;
 					
-					int[] location = new int[]{x, y, z};
+					Location location = new Location(x, y, z);
 										
 					Set<U> currentLocationUnits = getUnits(location, unitTypeFilter, playerLoginFilter);
 					
@@ -292,9 +299,9 @@ public class GameBoard implements Serializable
 	 * @return Map<int[], Set<U extends Unit>> filtered unit from the entire universe.
 	 * @see #getUnits(int[], String, Class)
 	 */
-	private <U extends Unit> Map<int[], Set<U>> getUnits(Class<U> unitType, String playerLogin)
+	private <U extends Unit> Map<Location, Set<U>> getUnits(Class<U> unitType, String playerLogin)
 	{
-		Map<int[], Set<U>> filteredUnits = new Hashtable<int[], Set<U>>();
+		Map<Location, Set<U>> filteredUnits = new Hashtable<Location, Set<U>>();
 		Set<U> currentLocationUnits;
 		
 		for (int x = 0; x < config.getDimX(); ++x)
@@ -303,7 +310,7 @@ public class GameBoard implements Serializable
 				{
 					if (universe[x][y][z] == null) continue;
 					
-					int[] location = new int[]{x, y, z};
+					Location location = new Location(x, y, z);
 					currentLocationUnits = getUnits(location, unitType, playerLogin);
 					
 					if (currentLocationUnits.isEmpty()) continue;
@@ -322,7 +329,7 @@ public class GameBoard implements Serializable
 	 * @return Set<Unit> filtered unit for the given location.
 	 * @see #getUnits(String, Class)
 	 */
-	private <U extends Unit> Set<U> getUnits(int[] location, Class<U> unitTypeFilter, String playerLoginFilter)
+	private <U extends Unit> Set<U> getUnits(Location location, Class<U> unitTypeFilter, String playerLoginFilter)
 	{
 		Set<U> filteredUnits = new HashSet<U>();
 		for(Unit u : getUnits(location, playerLoginFilter))
@@ -341,9 +348,9 @@ public class GameBoard implements Serializable
 	 * @return Map<int[], Set<Unit>> filtered unit from the entire universe.
 	 * @see #getUnits(int[], String, Class)
 	 */
-	private Map<int[], Set<Unit>> getUnits(String playerLogin)
+	private Map<Location, Set<Unit>> getUnits(String playerLogin)
 	{
-		Map<int[], Set<Unit>> filteredUnits = new Hashtable<int[], Set<Unit>>();
+		Map<Location, Set<Unit>> filteredUnits = new Hashtable<Location, Set<Unit>>();
 		Set<Unit> currentLocationUnits;
 		
 		for (int x = 0; x < config.getDimX(); ++x)
@@ -352,7 +359,7 @@ public class GameBoard implements Serializable
 				{
 					if (universe[x][y][z] == null) continue;
 					
-					int[] location = new int[]{x, y, z};
+					Location location = new Location(x, y, z);
 					currentLocationUnits = getUnits(location, playerLogin);
 					
 					if (currentLocationUnits.isEmpty()) continue;
@@ -369,11 +376,11 @@ public class GameBoard implements Serializable
 	 * @param playerLoginFilter if not null, return only units owned by this player.
 	 * @return
 	 */
-	private Set<Unit> getUnits(int[] location, String playerLoginFilter)
+	private Set<Unit> getUnits(Location location, String playerLoginFilter)
 	{
 		Set<Unit> filteredUnits = new HashSet<Unit>();
 		
-		Area area = universe[location[0]][location[1]][location[2]];
+		Area area = getNullArea(location);
 		if (area == null) return filteredUnits;
 		
 		Set<Unit> units = area.getUnits();
@@ -393,7 +400,7 @@ public class GameBoard implements Serializable
 	 * @param Map<int[], Set<T>> locatedObjects
 	 * @return Set<T> single set with all objects.
 	 */
-	private <T> Set<T> asSingleSet(Map<int[], Set<T>> locatedObjects)
+	private <T> Set<T> asSingleSet(Map<Location, Set<T>> locatedObjects)
 	{
 		Set<T> allObjects = new HashSet<T>();
 		for(Set<T> s : locatedObjects.values())
@@ -426,7 +433,7 @@ public class GameBoard implements Serializable
 	 * @param celestialBodyName
 	 * @return
 	 */
-	private int[] getCelestialBodyLocation(String celestialBodyName)
+	public Location getCelestialBodyLocation(String celestialBodyName)
 	{
 		for (int x = 0; x < config.getDimX(); ++x)
 			for (int y = 0; y < config.getDimY(); ++y)
@@ -437,16 +444,16 @@ public class GameBoard implements Serializable
 					ICelestialBody celestialBody = area.getCelestialBody();
 					if (celestialBody == null) continue;
 					
-					if (celestialBody.getName().compareTo(celestialBodyName) == 0) return new int[]{x, y, z};
+					if (celestialBody.getName().compareTo(celestialBodyName) == 0) return new Location(x, y, z);
 				}
 		return null;
 	}
 	
 	private ICelestialBody getCelestialBody(String celestialBodyName)
 	{
-		int[] location = getCelestialBodyLocation(celestialBodyName);
+		Location location = getCelestialBodyLocation(celestialBodyName);
 		if (location == null) return null;
-		return universe[location[0]][location[1]][location[2]].getCelestialBody();
+		return getNullArea(location).getCelestialBody();
 	}
 	
 	/**
@@ -504,6 +511,117 @@ public class GameBoard implements Serializable
 		return null;
 	}	
 
+	public void resolveCurrentTurn()
+	{
+		// TODO : Résolve mobile units movement, attacks, etc... On Current instance.
+		
+		Set<Unit> movingUnits = new HashSet<Unit>();
+		double maxSpeed = Double.MIN_VALUE;
+		
+		for(int x=0; x < config.getDimX(); ++x)
+		for(int y=0; y < config.getDimY(); ++y)
+		for(int z=0; z < config.getDimZ(); ++z)
+		{
+			Area area = universe[x][y][z];
+			if (area == null) continue;
+			
+			Location location = new Location(x, y, z);
+			
+			for(Unit unit : area.getUnits())
+			{				
+				if (unit.isMoving() || unit.startMove(location, this))
+				{
+					movingUnits.add(unit);
+					maxSpeed = Math.max(maxSpeed, unit.getSpeed());
+				}
+				
+			}
+						
+		}
+		
+		// Unit moves
+
+		// Detect units met.
+		Map<String, Set<Unit>> travelledAreas = new TreeMap<String, Set<Unit>>();
+		double step = 1 / maxSpeed;
+		for(float currentStep = 0; currentStep <= 1; currentStep+=step)
+		{
+			for(Unit u : movingUnits)
+			{
+				double distanceToTravel = SEPUtils.getDistance(u.getCurrentEstimatedLocation(), u.getDestinationLocation());
+				double distancePercentageInOneTurn = u.getSpeed() / distanceToTravel;
+				
+				Location currentStepLocation = SEPUtils.getMobileEstimatedLocation(u.getCurrentEstimatedLocation(), u.getDestinationLocation(), distancePercentageInOneTurn*currentStep, false);
+				
+				String locationTime = currentStepLocation.toString()+"@"+currentStep;
+				if (!travelledAreas.containsKey(locationTime))
+				{
+					travelledAreas.put(locationTime, new HashSet<Unit>());
+				}
+				
+				travelledAreas.get(locationTime).add(u);
+			}
+		}
+		
+		// Log units met.
+		for(Map.Entry<String, Set<Unit>> e : travelledAreas.entrySet())
+		{
+			if (e.getValue().size() < 2) continue;
+			
+			Location loc = new Location(e.getKey().substring(0, e.getKey().indexOf('@')));
+			String instantTime = e.getKey().substring(e.getKey().indexOf('@')+1);
+			
+			for(Unit u : e.getValue())
+			{
+				Set<common.Unit> seenUnits = new HashSet<common.Unit>();
+				for(Unit seenUnit : e.getValue())
+				{
+					if (seenUnit == u) continue;
+					
+					seenUnits.add(seenUnit.getPlayerView(date, u.getOwner().getName(), true));
+				}
+				
+				u.addTravelligLogEntry(new TravellingLogEntryUnitSeen("Unit seen", date, instantTime, loc, seenUnits));
+			}
+		}
+		
+		// Move units.
+		for(Unit movingUnit : movingUnits)
+		{
+			double distanceToTravel = SEPUtils.getDistance(movingUnit.getCurrentEstimatedLocation(), movingUnit.getDestinationLocation());
+			double distancePercentageInOneTurn = movingUnit.getSpeed() / distanceToTravel;
+			
+			Location endTurnLocation = SEPUtils.getMobileEstimatedLocation(movingUnit.getCurrentEstimatedLocation(), movingUnit.getDestinationLocation(), distancePercentageInOneTurn, true);
+			
+			String playerLogin = movingUnit.getOwner().getName();
+			Area startingArea = getNullArea(movingUnit.getCurrentEstimatedLocation());
+			startingArea.removeUnit(movingUnit);
+			UnitMarker unitMarker = startingArea.getMarkedUnit(playerLogin, movingUnit.getName());
+			if (unitMarker != null)
+			{
+				startingArea.removeMarker(playerLogin, unitMarker);
+			}
+			else
+			{
+				unitMarker = new UnitMarker(date, true, movingUnit.getPlayerView(date, playerLogin, true));
+			}
+			
+			Area endingArea = getArea(endTurnLocation);
+			
+			endingArea.addUnit(movingUnit);
+			endingArea.addMarker(playerLogin, unitMarker);
+			movingUnit.setCurrentLocation(endTurnLocation);
+			
+			if (endTurnLocation.equals(movingUnit.getDestinationLocation()))
+			{
+				movingUnit.endMove(endTurnLocation, this);
+			}
+		}
+		
+		++date;
+	}
+	
+	
     public void demolish(String playerLogin, String celestialBodyName, Class<? extends common.IBuilding> buildingType) throws RunningGameCommandException
 	{
 		DemolishCheckResult demolishCheckResult = checkDemolish(playerLogin, celestialBodyName, buildingType);		
@@ -663,10 +781,10 @@ public class GameBoard implements Serializable
 
 	public boolean canSettleGovernment(common.Player player, String planetName)
 	{
-		int[] celestialBodyLocation = getCelestialBodyLocation(planetName);
+		Location celestialBodyLocation = getCelestialBodyLocation(planetName);
 		if (celestialBodyLocation == null) throw new IllegalArgumentException("Celestial body '"+planetName+"' does not exist.");
 		
-		ICelestialBody celestialBody = universe[celestialBodyLocation[0]][celestialBodyLocation[1]][celestialBodyLocation[2]].getCelestialBody();
+		ICelestialBody celestialBody = getNullArea(celestialBodyLocation).getCelestialBody();
 		
 		// If celestial body is not a productive one.
 		if (!Planet.class.isInstance(celestialBody)) return false;
@@ -780,13 +898,67 @@ public class GameBoard implements Serializable
 		return new BuildCheckResult(productiveCelestialBody, building, carbonCost, populationCost, newBuilding);		
 	}
 
-
-	public void resolveCurrentTurn()
+	public boolean canMoveFleet(String playerLogin, String fleetName, Stack<common.Fleet.Move> checkpoints)
 	{
-		// TODO : Résolve mobile units movement, attacks, etc... On Current instance.
-		++date;
+		try
+		{
+			checkMoveFleet(playerLogin, fleetName, checkpoints);
+		}
+		catch(Throwable t)
+		{
+			return false;
+		}
+		return true;
+	}
+	
+	public void moveFleet(String playerLogin, String fleetName, Stack<common.Fleet.Move> checkpoints) throws RunningGameCommandException
+	{
+		MoveFleetCheckResult moveFleetCheckResult = checkMoveFleet(playerLogin, fleetName, checkpoints);		
+		moveFleetCheckResult.fleet.updateMoveOrder(checkpoints);
 	}
 
+	private static class MoveFleetCheckResult
+	{
+		final Area area;
+		final Fleet fleet;
+
+		public MoveFleetCheckResult(Area area, Fleet fleet)
+		{
+			this.area = area;
+			this.fleet = fleet;
+		}		
+	}
+	
+	public MoveFleetCheckResult checkMoveFleet(String playerLogin, String fleetName, Stack<common.Fleet.Move> checkpoints) throws RunningGameCommandException
+	{
+		Location location = getUnitLocation(playerLogin, Fleet.class, fleetName);
+		
+		Area area = getNullArea(location);
+		
+		if (area == null) throw new RunningGameCommandException("Fleet '"+fleetName+"' does not exist.");
+		
+		Fleet fleet = area.getUnit(Fleet.class, fleetName);
+		if (fleet == null) throw new RunningGameCommandException("Fleet '"+fleetName+"' does not exist.");
+		
+		if (!fleet.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Unexpected error : "+playerLogin+" is not '"+fleetName+"' fleet owner");
+		
+		// Check paths
+		Location currentStart = location;
+		for(common.Fleet.Move move : checkpoints)
+		{
+			Location destinationLocation = getCelestialBodyLocation(move.getDestinationName());
+			if (destinationLocation == null) throw new RunningGameCommandException("Unexpected error : checkpoint destination '"+move.getDestinationName()+"' not found.");
+			
+			for(Location pathStep : SEPUtils.getAllPathLoc(currentStart, destinationLocation))
+			{
+				if (getNullArea(pathStep) != null && getNullArea(pathStep).isSun()) throw new RunningGameCommandException("Impossible path : "+currentStart+" to "+destinationLocation+", cannot travel the sun.");
+			}
+			
+			currentStart = destinationLocation;
+		}
+		
+		return new MoveFleetCheckResult(area, fleet);
+	}		
 
 	public boolean canFormFleet(String playerLogin, String planetName, String fleetName, Map<Class<? extends IStarship>, Integer> fleetToForm)
 	{
@@ -824,8 +996,8 @@ public class GameBoard implements Serializable
 	
 	private FormFleetCheckResult checkFormFleet(String playerLogin, String planetName, String fleetName, Map<Class<? extends common.IStarship>, Integer> fleetToForm) throws RunningGameCommandException
 	{
-		int[] location = getCelestialBodyLocation(planetName);
-		Area area = universe[location[0]][location[1]][location[2]];
+		Location location = getCelestialBodyLocation(planetName);
+		Area area = getNullArea(location);
 		
 		if (area == null) throw new RunningGameCommandException("Celestial body '"+planetName+"' does not exist.");
 		ICelestialBody celestialBody = area.getCelestialBody();
@@ -896,8 +1068,8 @@ public class GameBoard implements Serializable
 	
 	private DismantleFleetCheckResult checkDismantleFleet(String playerLogin, String fleetName) throws RunningGameCommandException
 	{
-		int[] location = getUnitLocation(playerLogin, Fleet.class, fleetName);
-		Area area = universe[location[0]][location[1]][location[2]];
+		Location location = getUnitLocation(playerLogin, Fleet.class, fleetName);
+		Area area = getNullArea(location);
 		
 		if (area == null) throw new RunningGameCommandException("Fleet '"+fleetName+"' does not exist.");
 		ICelestialBody celestialBody = area.getCelestialBody();
@@ -960,8 +1132,8 @@ public class GameBoard implements Serializable
 	
 	private MakeProbesCheckResult checkMakeProbes(String playerLogin, String planetName, String probeName, int quantity) throws RunningGameCommandException
 	{
-		int[] location = getCelestialBodyLocation(planetName);
-		Area area = universe[location[0]][location[1]][location[2]];
+		Location location = getCelestialBodyLocation(planetName);
+		Area area = getNullArea(location);
 		
 		if (area == null) throw new RunningGameCommandException("Celestial body '"+planetName+"' does not exist.");
 		ICelestialBody celestialBody = area.getCelestialBody();
@@ -1056,8 +1228,8 @@ public class GameBoard implements Serializable
 	
 	private MakeAntiProbeMissilesCheckResult checkMakeAntiProbeMissiles(String playerLogin, String planetName, String antiProbeMissileName, int quantity) throws RunningGameCommandException
 	{
-		int[] location = getCelestialBodyLocation(planetName);
-		Area area = universe[location[0]][location[1]][location[2]];
+		Location location = getCelestialBodyLocation(planetName);
+		Area area = getNullArea(location);
 		
 		if (area == null) throw new RunningGameCommandException("Celestial body '"+planetName+"' does not exist.");
 		ICelestialBody celestialBody = area.getCelestialBody();

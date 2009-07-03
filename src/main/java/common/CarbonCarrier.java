@@ -7,6 +7,8 @@ package common;
 
 import java.io.Serializable;
 
+import common.SEPUtils.Location;
+
 /**
  * Represent a carbon carrier
  */
@@ -17,7 +19,7 @@ public class CarbonCarrier extends Unit implements Serializable
 	/**
 	 * 
 	 */
-	public CarbonCarrier(boolean isVisible, int lastObervation, String name, Player owner, int[] sourceLocation, int[] destinationLocation, int[] currentEstimatedLocation)
+	public CarbonCarrier(boolean isVisible, int lastObervation, String name, Player owner, Location sourceLocation, Location destinationLocation, Location currentEstimatedLocation)
 	{
 		super(isVisible, lastObervation, name, owner, sourceLocation, destinationLocation, currentEstimatedLocation);
 	}

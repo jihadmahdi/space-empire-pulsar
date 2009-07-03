@@ -60,6 +60,7 @@ public class ServerGame
 	{
 		GameBoard currentGameBoard = gameBoards.peek();
 		
+		// Merge players instant actions gameboards.
 		for(String playerLogin : playersCurrentMove.keySet())
 		{
 			PlayerGameMove playerGameMove = playersCurrentMove.get(playerLogin);
@@ -71,8 +72,10 @@ public class ServerGame
 			}
 		}
 		
+		// Resolve the turn on the merged gameboard.
 		currentGameBoard.resolveCurrentTurn();
 		
+		// Save new turn gameboard.
 		gameBoards.push(currentGameBoard);
 		
 		for(String playerLogin : playersCurrentMove.keySet())

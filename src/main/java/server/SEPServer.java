@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -47,6 +48,7 @@ import common.Protocol.ServerGameCreation;
 import common.Protocol.ServerPausedGame;
 import common.Protocol.ServerRunningGame;
 import common.Protocol.ServerRunningGame.RunningGameCommandException;
+import common.SEPUtils.Location;
 
 /**
  * TODO
@@ -470,7 +472,21 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public void canLaunchProbe() throws RpcException, StateMachineNotExpectedEventException
+		public boolean canFireAntiProbeMissile(String antiProbeMissileName, String targetProbeName) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			return false;
+		}
+		
+		@Override
+		public void fireAntiProbeMissile(String antiProbeMissileName, String targetProbeName) throws RpcException, StateMachineNotExpectedEventException
+		{
+			// TODO Auto-generated method stub
+			
+		}
+		
+		@Override
+		public boolean canLaunchProbe(String probeName, Location destination) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// if (getGameMove().isTurnEnded()) return false;
 			// TODO Auto-generated method stub
@@ -478,7 +494,7 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public void launchProbe(String probeName, int[] destination) throws RpcException, StateMachineNotExpectedEventException
+		public void launchProbe(String probeName, Location destination) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO Auto-generated method stub
 			throw new NotImplementedException();
@@ -545,12 +561,11 @@ public class SEPServer implements IServer, GameServerListener
 			// TODO Auto-generated method stub
 			throw new NotImplementedException();
 		}
-
+		
 		@Override
-		public void moveFleet(String fleetName, int delay, Set<String> checkpoints) throws RpcException, StateMachineNotExpectedEventException
+		public void moveFleet(String fleetName, Stack<common.Fleet.Move> checkpoints) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			getGameMove().addMoveFleetCommand(fleetName, checkpoints);
 		}
 
 		@Override

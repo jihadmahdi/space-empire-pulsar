@@ -7,12 +7,14 @@ package common;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 
 import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 
 import common.Protocol.ServerRunningGame.RunningGameCommandException;
+import common.SEPUtils.Location;
 
 
 /**
@@ -361,15 +363,35 @@ public interface Protocol
 		 * @param checkpoints
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 * @throws RunningGameCommandException 
 		 */
-		void moveFleet(String fleetName, int delay, Set<String> checkpoints) throws RpcException, StateMachineNotExpectedEventException;
+		void moveFleet(String fleetName, Stack<Fleet.Move> checkpoints) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
+		
+		/**
+		 * Test if he given antiprobe missile can be fired on the given target.
+		 * @param antiProbeMissileName
+		 * @param targetProbeName
+		 * @return
+		 * @throws RpcException
+		 * @throws StateMachineNotExpectedEventException
+		 */
+		boolean canFireAntiProbeMissile(String antiProbeMissileName, String targetProbeName) throws RpcException, StateMachineNotExpectedEventException;
+		
+		/**
+		 * Order to fire the antiprobe missile onto the given probe target.
+		 * @param antiProbeMissileName
+		 * @param targetProbeName
+		 * @throws RpcException
+		 * @throws StateMachineNotExpectedEventException
+		 */
+		void fireAntiProbeMissile(String antiProbeMissileName, String targetProbeName) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Test if probe can be launched.
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void canLaunchProbe() throws RpcException, StateMachineNotExpectedEventException;
+		boolean canLaunchProbe(String probeName, Location destination) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order to launch a probe to the specified destination.
@@ -378,7 +400,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void launchProbe(String probeName, int[] destination) throws RpcException, StateMachineNotExpectedEventException;
+		void launchProbe(String probeName, Location destination) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Test if player can attack enemies fleet.

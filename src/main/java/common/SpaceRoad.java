@@ -7,6 +7,8 @@ package common;
 
 import java.io.Serializable;
 
+import common.SEPUtils.Location;
+
 /**
  * Represent a space road.
  */
@@ -17,14 +19,14 @@ public class SpaceRoad implements IMarker, Serializable
 	private final int creationDate;
 	private final boolean isVisible;
 	
-	private final int[] pointALocation;
-	private final int[] pointBLocation;
+	private final Location pointALocation;
+	private final Location pointBLocation;
 	private final int speed;
 	
 	/**
 	 * Full constructor. 
 	 */
-	public SpaceRoad(int creationDate, boolean isVisible, int[] pointALocation, int[] pointBLocation, int speed)
+	public SpaceRoad(int creationDate, boolean isVisible, Location pointALocation, Location pointBLocation, int speed)
 	{
 		this.creationDate = creationDate;
 		this.isVisible = isVisible;
@@ -58,6 +60,6 @@ public class SpaceRoad implements IMarker, Serializable
 	@Override
 	public String toString()
 	{
-		return "["+pointALocation[0]+";"+pointALocation[1]+";"+pointALocation[2]+"] to ["+pointBLocation[0]+";"+pointBLocation[1]+";"+pointBLocation[2]+"] at speed "+speed;
+		return pointALocation+" to "+pointBLocation+" at speed "+speed;
 	}
 }

@@ -7,6 +7,8 @@ package common;
 
 import java.io.Serializable;
 
+import common.SEPUtils.Location;
+
 /**
  * Represent a launched pulsar missile.
  */
@@ -17,7 +19,7 @@ public class LaunchedPulsarMissile extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public LaunchedPulsarMissile(boolean isVisible, int lastObservation, String name, Player owner, int[] sourceLocation, int[] destinationLocation, int[] currentEstimatedLocation)
+	public LaunchedPulsarMissile(boolean isVisible, int lastObservation, String name, Player owner, Location sourceLocation, Location destinationLocation, Location currentEstimatedLocation)
 	{
 		super(isVisible, lastObservation, name, owner, sourceLocation, destinationLocation, currentEstimatedLocation);
 	}

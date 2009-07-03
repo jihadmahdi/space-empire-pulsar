@@ -14,6 +14,9 @@ import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
 
+import common.IMarker;
+import common.UnitMarker;
+
 class Area implements Serializable
 {
 	private static final long	serialVersionUID	= 1L;
@@ -114,6 +117,31 @@ class Area implements Serializable
 		return Collections.unmodifiableSet(units);
 	}
 	
+	public <U extends Unit> U getUnit(Class<U> unitType, String unitName)
+	{
+		for(Unit u : units)
+		{
+			if (!unitType.isInstance(u)) continue;
+			if (u.getName().compareTo(unitName) == 0) return unitType.cast(u);
+		}
+		
+		return null;
+	}
+	
+	public UnitMarker getMarkedUnit(String playerLogin, String unitName)
+	{
+		if (playersMarkers.containsKey(playerLogin)) for(IMarker m : playersMarkers.get(playerLogin))
+		{
+			if (m != null && UnitMarker.class.isInstance(m))
+			{
+				UnitMarker um = UnitMarker.class.cast(m);
+				if (um.getUnit().getName().compareTo(unitName) == 0) return um;
+			}
+		}
+		
+		return null;
+	}
+	
 	public void addUnit(Unit unit)
 	{
 		units.add(unit);
@@ -122,6 +150,21 @@ class Area implements Serializable
 	public void removeUnit(Unit unit)
 	{
 		units.remove(unit);
+	}
+	
+	public void removeMarker(String playerLogin, UnitMarker unitMarker)
+	{
+		if (playersMarkers.containsKey(playerLogin)) playersMarkers.get(playerLogin).remove(unitMarker);
+	}
+	
+	public void addMarker(String playerLogin, UnitMarker unitMarker)
+	{
+		if (!playersMarkers.containsKey(playerLogin) || playersMarkers.get(playerLogin) == null)
+		{
+			playersMarkers.put(playerLogin, new HashSet<IMarker>());
+		}
+		
+		playersMarkers.get(playerLogin).add(unitMarker);
 	}
 
 	/**
@@ -165,6 +208,6 @@ class Area implements Serializable
 		common.ICelestialBody celestialBodyView = (celestialBody == null)?null:celestialBody.getPlayerView(date, playerLogin, isVisible);		
 		
 		return new common.Area(isVisible, lastObservation, isSun, celestialBodyView, unitsView, playersMarkers.get(playerLogin));
-	}
+	}	
 	
 }

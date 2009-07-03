@@ -9,6 +9,8 @@ import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
+import common.SEPUtils.Location;
+
 /**
  * Represent the game board at a specific turn for a specific player.
  * It provide informations about the universe and the last turn resolution.
@@ -21,7 +23,7 @@ public class PlayerGameBoard implements Serializable
 	private final Area[][][] universe;
 	
 	/** Sun location. Sun always fills 9 area. */
-	private final int[] sunLocation;
+	private final Location sunLocation;
 	
 	private final int date;
 	
@@ -30,7 +32,7 @@ public class PlayerGameBoard implements Serializable
 	/**
 	 * Full constructor.
 	 */
-	public PlayerGameBoard(Area[][][] universe, int[] sunLocation, int date)
+	public PlayerGameBoard(Area[][][] universe, Location sunLocation, int date)
 	{
 		this.universe = universe;
 		this.sunLocation = sunLocation;
@@ -52,6 +54,11 @@ public class PlayerGameBoard implements Serializable
 		return universe[0][0].length;
 	}
 	
+	public Area getArea(Location location)
+	{
+		return getArea(location.x, location.y, location.z);
+	}
+	
 	public Area getArea(int x, int y, int z)
 	{
 		if (universe[x][y][z] == null)
@@ -64,9 +71,9 @@ public class PlayerGameBoard implements Serializable
 	public int getDate()
 	{
 		return date;
-	}
-
-	public int[] getUnitLocation(String unitName)
+	}	
+	
+	public Location getUnitLocation(String unitName)
 	{
 		for(int x = 0; x < getDimX(); ++x)
 		for(int y = 0; y < getDimY(); ++y)
@@ -76,7 +83,7 @@ public class PlayerGameBoard implements Serializable
 			if (area == null) continue;
 			
 			Unit unit = area.getUnit(unitName);
-			if (unit != null) return new int[]{x, y, z};			
+			if (unit != null) return new Location(x, y, z);
 		}
 		
 		return null;
@@ -96,6 +103,24 @@ public class PlayerGameBoard implements Serializable
 		}
 		
 		return null;
+	}
+	
+	public <U extends Unit> Set<U> getUnits(Class<U> unitType)
+	{
+		Set<U> result = new HashSet<U>();
+		
+		for(int x = 0; x < getDimX(); ++x)
+		for(int y = 0; y < getDimY(); ++y)
+		for(int z = 0; z < getDimZ(); ++z)
+		{
+			Area area = universe[x][y][z];
+			if (area == null) continue;
+			
+			Set<U> units = area.getUnits(unitType);
+			if (units != null) result.addAll(units);
+		}
+		
+		return result;
 	}
 
 	public Set<ICelestialBody> getCelestialBodies()
@@ -143,5 +168,5 @@ public class PlayerGameBoard implements Serializable
 		}
 		
 		return result;
-	}
+	}	
 }
