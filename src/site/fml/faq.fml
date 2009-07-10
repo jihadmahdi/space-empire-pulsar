@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <faqs
 	xsi:schemaLocation="http://maven.apache.org/maven-1.x/plugins/faq/faq.xsd"
-	title="FAQ Kanji No Sensei" toplink="true">
+	title="FAQ Space Empire Pulsar" toplink="true">
 	<part id="partIdInstall">
 		<title>Installation</title>
 		<faq id="faqIdDecompression">
