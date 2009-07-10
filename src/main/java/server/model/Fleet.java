@@ -50,9 +50,9 @@ public class Fleet extends Unit implements Serializable
 		{
 			// Updates
 			playersStarshipsView.updateView(playerLogin, starships, date);
-		}
-
-		return new common.Fleet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentEstimatedLocationView(playerLogin), playersStarshipsView.getLastValue(playerLogin, null), (getOwner()!=null&&getOwner().isNamed(playerLogin)?checkpoints:null), isUnassigned);
+		}				
+		
+		return new common.Fleet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentEstimatedLocationView(playerLogin), playersStarshipsView.getLastValue(playerLogin, null), (getOwner()!=null&&getOwner().isNamed(playerLogin)?currentMove:null) ,(getOwner()!=null&&getOwner().isNamed(playerLogin)?checkpoints:null), isUnassigned);
 	}
 
 	public boolean isGovernmentFleet()
@@ -71,6 +71,16 @@ public class Fleet extends Unit implements Serializable
 	public Map<Class<? extends IStarship>, Integer> getComposition()
 	{
 		return Collections.unmodifiableMap(starships);
+	}
+	
+	public boolean isEmpty()
+	{
+		for(Map.Entry<Class<? extends IStarship>, Integer> e : starships.entrySet())
+		{
+			if (e.getValue() != null && e.getValue() > 0) return false;
+		}
+		
+		return true;
 	}
 
 	public void merge(Map<Class<? extends IStarship>, Integer> starshipsToMake)
@@ -104,21 +114,8 @@ public class Fleet extends Unit implements Serializable
 	}
 	
 	public void updateMoveOrder(Stack<common.Fleet.Move> newCheckpoints)
-	{		
-		if (currentMove != null)
-		{
-			if (newCheckpoints.firstElement().getDestinationName().compareTo(currentMove.getDestinationName()) == 0)
-			{
-				newCheckpoints.setElementAt(currentMove, 0);
-			}
-			else
-			{
-				newCheckpoints.insertElementAt(currentMove, 0);
-			}
-		}
-		
+	{
 		checkpoints.removeAllElements();
-		if (currentMove != null) checkpoints.add(currentMove);
 		
 		for(common.Fleet.Move checkpoint : newCheckpoints)
 		{
@@ -134,7 +131,7 @@ public class Fleet extends Unit implements Serializable
 	@Override
 	public boolean startMove(Location currentLocation, GameBoard currentGameBoard)
 	{
-		if (currentMove == null && checkpoints.size() > 0)
+		if ((currentMove == null || currentMove.getDestinationLocation().equals(currentLocation)) && checkpoints.size() > 0)
 		{
 			currentMove = checkpoints.firstElement();
 			checkpoints.removeElementAt(0);
@@ -152,6 +149,7 @@ public class Fleet extends Unit implements Serializable
 	@Override
 	public void endMove(Location currentLocation, GameBoard gameBoard)
 	{
+		setDestinationLocation(null);
 		currentMove = null; // Needed for the next startMove call.
 	}
 	

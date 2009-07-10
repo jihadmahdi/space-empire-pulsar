@@ -40,4 +40,9 @@ public class Probe extends Unit implements Serializable
 		sb.append("\nStatus : "+(deployed?"deployed":"not deployed"));
 		return sb.toString();
 	}
+
+	public boolean isDeployed()
+	{
+		return deployed;
+	}
 }

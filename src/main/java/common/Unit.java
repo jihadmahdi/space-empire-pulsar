@@ -138,4 +138,9 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 		
 		return !onSource && !onDestination;
 	}
+
+	public String getOwnerName()
+	{
+		return (owner==null?null:owner.getName());
+	}
 }

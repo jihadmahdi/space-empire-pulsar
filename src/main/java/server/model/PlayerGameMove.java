@@ -20,6 +20,7 @@ import common.Player;
 import common.PlayerGameBoard;
 import common.Protocol;
 import common.Protocol.ServerRunningGame.RunningGameCommandException;
+import common.SEPUtils.Location;
 
 /**
  * Represent a player move for a specific game board.
@@ -296,6 +297,66 @@ public class PlayerGameMove
 		}
 	}
 	
+	static class LaunchProbeCommand extends GameMoveCommand
+	{
+		private final String probeName;
+		private final Location destination;
+		
+		public LaunchProbeCommand(String playerLogin, String probeName, Location destination)
+		{
+			super(playerLogin);
+			this.probeName = probeName;
+			this.destination = destination;
+		}
+		
+		@Override
+		protected GameBoard apply(GameBoard originalGameBoard)
+		{
+			GameBoard newGameBoard = Basic.clone(originalGameBoard);
+			try
+			{
+				newGameBoard.launchProbe(playerLogin, probeName, destination);
+			}
+			catch(RunningGameCommandException e)
+			{
+				e.printStackTrace();
+				return originalGameBoard;
+			}
+			return newGameBoard;
+		}
+	}
+	
+	static class FireAntiProbeMissileCommand extends GameMoveCommand
+	{
+		private final String antiProbeMissileName;
+		private final String targetProbeName;
+		private final String targetOwnerName;
+		
+		public FireAntiProbeMissileCommand(String playerLogin, String antiProbeMissileName, String targetOwnerName, String targetProbeName)
+		{
+			super(playerLogin);
+			this.antiProbeMissileName = antiProbeMissileName;
+			this.targetProbeName = targetProbeName;
+			this.targetOwnerName = targetOwnerName;
+		}
+		
+		@Override
+		protected GameBoard apply(GameBoard originalGameBoard)
+		{
+			GameBoard newGameBoard = Basic.clone(originalGameBoard);
+			try
+			{
+				newGameBoard.fireAntiProbeMissile(playerLogin, antiProbeMissileName, targetOwnerName, targetProbeName);
+			}
+			catch(RunningGameCommandException e)
+			{
+				e.printStackTrace();
+				return originalGameBoard;
+			}
+			return newGameBoard;
+		}
+	}	
+	
 	//////////////////
 	
 	private final GameBoard originalGameBoard;
@@ -418,6 +479,30 @@ public class PlayerGameMove
 		}
 		
 		addGameMoveCommand(new MakeAntiProbeMissilesCommand(playerLogin, planetName, antiProbeMissileName, quantity));
+	}
+	
+	public void addLaunchProbeCommand(String probeName, Location destination) throws RunningGameCommandException
+	{
+		checkTurnIsNotEnded();
+			
+		if (!getGameBoard().canLaunchProbe(playerLogin, probeName, destination))
+		{
+			throw new RunningGameCommandException(playerLogin+" cannot launch probe '"+probeName+"' to "+destination);
+		}
+		
+		addGameMoveCommand(new LaunchProbeCommand(playerLogin, probeName, destination));
+	}
+	
+	public void addFireAntiProbeMissileCommand(String antiProbeMissileName, String targetOwnerName, String targetProbeName) throws RunningGameCommandException
+	{
+		checkTurnIsNotEnded();
+		
+		if (!getGameBoard().canFireAntiProbeMissile(playerLogin, antiProbeMissileName, targetOwnerName, targetProbeName))
+		{
+			throw new RunningGameCommandException(playerLogin+" cannot fire anti-probe missile '"+antiProbeMissileName+"' to probe '"+targetProbeName+"'");
+		}
+		
+		addGameMoveCommand(new FireAntiProbeMissileCommand(playerLogin, antiProbeMissileName, targetOwnerName, targetProbeName));
 	}
 	
 	public void addEmbarkGovernmentCommand(String playerLogin) throws RunningGameCommandException

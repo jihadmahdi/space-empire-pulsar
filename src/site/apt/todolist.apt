@@ -13,6 +13,10 @@ TODO List
 * Work flow en cours.
 	
 ** Interface
+
+	* Implémenter un UniverseRenderer en 3d.
+	
+	* Refaire une interface adapté au renderer 3d (plein écran).
 					
 ** Permanent, récurent
 	
@@ -27,4 +31,16 @@ TODO List
 ** Gestion projet
 		
 ** Notes (brouillon)  
-		
+	
+	* Déployer sonde
+	
+	* Tirer missile anti-sondes
+	
+	* Tester/Coder Pulsar Launching Pad.
+	
+	* Implémenter la conquète de corps céleste neutres, tester/coder alors Space Counter.
+	
+	* Changer diplomaties
+	
+	* Attaquer flottes ennemis en présence
+	

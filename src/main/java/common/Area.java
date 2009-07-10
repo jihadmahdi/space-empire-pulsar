@@ -88,11 +88,16 @@ public class Area implements IObservable, Serializable
 		return units;
 	}
 	
-	public Unit getMarkedUnit(String unitName)
+	public Unit getMarkedUnit(String ownerName, String unitName)
 	{
 		for(UnitMarker m : getMarkers(UnitMarker.class))
 		{
-			Unit u = m.getUnit();			
+			Unit u = m.getUnit();
+
+			// Owner filter
+			if (!((ownerName == null && u.getOwner() == null) || (ownerName != null && u.getOwner() != null && u.getOwner().isNamed(ownerName)))) continue;
+			
+			// Unit name filter
 			if (u != null && u.getName().compareTo(unitName) == 0) return u;
 		}
 		
@@ -128,14 +133,18 @@ public class Area implements IObservable, Serializable
 		return filteredMarkedUnits;
 	}
 	
-	public Unit getUnit(String unitName)
+	public Unit getUnit(String ownerName, String unitName)
 	{
 		if(units != null) for(Unit u : units)
 		{
+			// Owner filter
+			if (!((ownerName == null && u.getOwner() == null) || (ownerName != null && u.getOwner() != null && u.getOwner().isNamed(ownerName)))) continue;
+
+			// Name filter
 			if (u.getName().compareTo(unitName) == 0) return u;
 		}
 		
-		return getMarkedUnit(unitName);
+		return getMarkedUnit(ownerName, unitName);
 	}
 	
 	public <M extends IMarker> Set<M> getMarkers(Class<M> markerType)

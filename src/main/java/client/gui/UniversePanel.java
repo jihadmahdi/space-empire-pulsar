@@ -256,7 +256,7 @@ public class UniversePanel extends javax.swing.JPanel implements UniverseRendere
 						}						
 					}
 					
-					if (!area.isVisible()) image.setBorder(BorderFactory.createLineBorder(Color.blue));
+					if (celestialBody == null) image.setBorder(BorderFactory.createLineBorder(Color.blue));
 				}
 
 				// Border is yellow if selected

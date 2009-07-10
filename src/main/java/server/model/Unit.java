@@ -160,4 +160,9 @@ abstract class Unit implements Serializable
 	abstract public double getSpeed();
 
 	abstract public void endMove(Location currentLocation, GameBoard gameBoard);
+
+	public String getOwnerName()
+	{
+		return (owner == null?null:owner.getName());
+	}
 }

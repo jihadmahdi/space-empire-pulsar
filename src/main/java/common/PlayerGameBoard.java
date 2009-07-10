@@ -73,7 +73,7 @@ public class PlayerGameBoard implements Serializable
 		return date;
 	}	
 	
-	public Location getUnitLocation(String unitName)
+	public Location getUnitLocation(String ownerName, String unitName)
 	{
 		for(int x = 0; x < getDimX(); ++x)
 		for(int y = 0; y < getDimY(); ++y)
@@ -82,14 +82,14 @@ public class PlayerGameBoard implements Serializable
 			Area area = universe[x][y][z];
 			if (area == null) continue;
 			
-			Unit unit = area.getUnit(unitName);
+			Unit unit = area.getUnit(ownerName, unitName);
 			if (unit != null) return new Location(x, y, z);
 		}
 		
 		return null;
 	}
 	
-	public Unit getUnit(String unitName)
+	public Unit getUnit(String ownerName, String unitName)
 	{
 		for(int x = 0; x < getDimX(); ++x)
 		for(int y = 0; y < getDimY(); ++y)
@@ -98,7 +98,7 @@ public class PlayerGameBoard implements Serializable
 			Area area = universe[x][y][z];
 			if (area == null) continue;
 			
-			Unit unit = area.getUnit(unitName);
+			Unit unit = area.getUnit(ownerName, unitName);
 			if (unit != null) return unit;
 		}
 		
