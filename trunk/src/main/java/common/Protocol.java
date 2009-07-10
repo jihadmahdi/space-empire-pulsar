@@ -375,7 +375,7 @@ public interface Protocol
 		 * @throws RpcException
 		 * @throws StateMachineNotExpectedEventException
 		 */
-		boolean canFireAntiProbeMissile(String antiProbeMissileName, String targetProbeName) throws RpcException, StateMachineNotExpectedEventException;
+		boolean canFireAntiProbeMissile(String antiProbeMissileName, String targetOwnerName, String targetProbeName) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order to fire the antiprobe missile onto the given probe target.
@@ -383,8 +383,9 @@ public interface Protocol
 		 * @param targetProbeName
 		 * @throws RpcException
 		 * @throws StateMachineNotExpectedEventException
+		 * @throws RunningGameCommandException 
 		 */
-		void fireAntiProbeMissile(String antiProbeMissileName, String targetProbeName) throws RpcException, StateMachineNotExpectedEventException;
+		void fireAntiProbeMissile(String antiProbeMissileName, String targetOwnerName, String targetProbeName) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
 		
 		/**
 		 * Test if probe can be launched.
@@ -399,8 +400,9 @@ public interface Protocol
 		 * @param destination
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 * @throws RunningGameCommandException 
 		 */
-		void launchProbe(String probeName, Location destination) throws RpcException, StateMachineNotExpectedEventException;
+		void launchProbe(String probeName, Location destination) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
 		
 		/**
 		 * Test if player can attack enemies fleet.

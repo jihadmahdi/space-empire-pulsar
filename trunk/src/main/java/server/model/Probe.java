@@ -78,6 +78,7 @@ public class Probe extends Unit implements Serializable
 	@Override
 	public void endMove(Location currentLocation, GameBoard gameBoard)
 	{
-		// NOP
+		setDestinationLocation(null);
+		deployed = true;
 	}
 }

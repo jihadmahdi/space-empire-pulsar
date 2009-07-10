@@ -472,32 +472,29 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canFireAntiProbeMissile(String antiProbeMissileName, String targetProbeName) throws RpcException, StateMachineNotExpectedEventException
+		public boolean canFireAntiProbeMissile(String antiProbeMissileName, String targetOwnerName, String targetProbeName) throws RpcException, StateMachineNotExpectedEventException
 		{
-			// TODO Auto-generated method stub
-			return false;
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canFireAntiProbeMissile(getLogin(), antiProbeMissileName, targetOwnerName, targetProbeName);
 		}
 		
 		@Override
-		public void fireAntiProbeMissile(String antiProbeMissileName, String targetProbeName) throws RpcException, StateMachineNotExpectedEventException
+		public void fireAntiProbeMissile(String antiProbeMissileName, String targetOwnerName, String targetProbeName) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
-			// TODO Auto-generated method stub
-			
+			getGameMove().addFireAntiProbeMissileCommand(antiProbeMissileName, targetOwnerName, targetProbeName);			
 		}
 		
 		@Override
 		public boolean canLaunchProbe(String probeName, Location destination) throws RpcException, StateMachineNotExpectedEventException
 		{
-			// if (getGameMove().isTurnEnded()) return false;
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canLaunchProbe(getLogin(), probeName, destination);
 		}
 
 		@Override
-		public void launchProbe(String probeName, Location destination) throws RpcException, StateMachineNotExpectedEventException
+		public void launchProbe(String probeName, Location destination) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			getGameMove().addLaunchProbeCommand(probeName, destination);
 		}
 
 		@Override

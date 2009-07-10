@@ -2,6 +2,8 @@ package server.model;
 
 import java.io.Serializable;
 
+import server.SEPServer;
+
 import common.Player;
 import common.SEPUtils.Location;
 
@@ -12,6 +14,7 @@ public class AntiProbeMissile extends Unit implements Serializable
 	// Variables
 	private boolean fired;
 	private String targetName;
+	private String targetOwnerName;
 	
 	// Views
 	private final PlayerDatedView<Boolean> playersFiredView = new PlayerDatedView<Boolean>();
@@ -71,6 +74,30 @@ public class AntiProbeMissile extends Unit implements Serializable
 	@Override
 	public void endMove(Location currentLocation, GameBoard gameBoard)
 	{
-		// NOP
+		setDestinationLocation(null);
+	}
+
+	public void fire(String targetProbeOwnerName, String targetProbeName, Location source, Location destination)
+	{
+		if (fired) throw new SEPServer.SEPImplementationException("Error: AntiProbeMissile '"+getName()+"' already fired.");
+		
+		fired = true;
+		
+		targetName = targetProbeName;
+		targetOwnerName = targetProbeOwnerName;
+		
+		setCurrentLocation(source);
+		setSourceLocation(source);
+		setDestinationLocation(destination);
+	}
+	
+	public String getTargetName()
+	{
+		return targetName;
+	}
+	
+	public String getTargetOwnerName()
+	{
+		return targetOwnerName;
 	}
 }

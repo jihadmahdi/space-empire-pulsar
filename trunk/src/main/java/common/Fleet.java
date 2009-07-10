@@ -23,19 +23,34 @@ public class Fleet extends Unit implements Serializable
 		private static final long	serialVersionUID	= 1L;
 		
 		private final String destinaionCelestialBodyName;
+		private final Location destinationLocation;
 		private final int departureDelay;
 		private final boolean isAnAttack;
 		
 		public Move(String destinationCelestialBodyName, int departureDelay, boolean isAnAttack)
 		{
 			this.destinaionCelestialBodyName = destinationCelestialBodyName;
+			this.destinationLocation = null;
 			this.departureDelay = departureDelay;
 			this.isAnAttack = isAnAttack;
+		}
+		
+		public Move(Move unLocatedMove, Location destinationLocation)
+		{
+			this.destinaionCelestialBodyName = unLocatedMove.destinaionCelestialBodyName;
+			this.departureDelay = unLocatedMove.departureDelay;
+			this.isAnAttack = unLocatedMove.isAnAttack;
+			this.destinationLocation = destinationLocation;			
 		}
 		
 		public String getDestinationName()
 		{
 			return destinaionCelestialBodyName;
+		}
+		
+		public Location getDestinationLocation()
+		{
+			return destinationLocation;
 		}
 		
 		public int getDelay()
@@ -56,16 +71,18 @@ public class Fleet extends Unit implements Serializable
 	}
 	
 	private final Map<Class<? extends IStarship>, Integer> starships;
-	private final Stack<Move> checkpoints;	
+	private final Stack<Move> checkpoints;
+	private final Move currentMove;
 	private final boolean isUnasignedFleet;
 	
 	/**
 	 * Full constructor. 
 	 */
-	public Fleet(boolean isVisible, int lastObservation, String name, Player owner, Location sourceLocation, Location destinationLocation, Location currentEstimatedLocation, Map<Class<? extends IStarship>, Integer> starships, Stack<Move> checkpoints, boolean isUnasignedFleet)
+	public Fleet(boolean isVisible, int lastObservation, String name, Player owner, Location sourceLocation, Location destinationLocation, Location currentEstimatedLocation, Map<Class<? extends IStarship>, Integer> starships, Move currentMove, Stack<Move> checkpoints, boolean isUnasignedFleet)
 	{
 		super(isVisible, lastObservation, name, owner, sourceLocation, destinationLocation, currentEstimatedLocation);
 		this.starships = starships;
+		this.currentMove = currentMove;
 		this.checkpoints = checkpoints;
 		this.isUnasignedFleet = isUnasignedFleet;
 	}
@@ -112,6 +129,11 @@ public class Fleet extends Unit implements Serializable
 		}
 		
 		return true;
+	}
+	
+	public Move getCurrentMove()
+	{
+		return currentMove;
 	}
 	
 	public Stack<Move> getCheckpoints()

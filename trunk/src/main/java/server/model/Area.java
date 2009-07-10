@@ -14,7 +14,10 @@ import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
 
+import server.SEPServer;
+
 import common.IMarker;
+import common.SEPUtils;
 import common.UnitMarker;
 
 class Area implements Serializable
@@ -117,52 +120,72 @@ class Area implements Serializable
 		return Collections.unmodifiableSet(units);
 	}
 	
-	public <U extends Unit> U getUnit(Class<U> unitType, String unitName)
+	public <U extends Unit> U getUnit(Class<U> unitType, String ownerName, String unitName)
 	{
 		for(Unit u : units)
 		{
 			if (!unitType.isInstance(u)) continue;
+			
+			// Owner filter
+			if (!((ownerName == null && u.getOwner() == null) || (ownerName != null && u.getOwner() != null && u.getOwner().isNamed(ownerName)))) continue;
+			
+			// Name filter
 			if (u.getName().compareTo(unitName) == 0) return unitType.cast(u);
 		}
 		
 		return null;
 	}
 	
-	public UnitMarker getMarkedUnit(String playerLogin, String unitName)
+	public void updateUnit(Unit unit)
+	{
+		Unit oldUnit = getUnit(unit.getClass(), unit.getOwnerName(), unit.getName());
+		if (oldUnit != null) units.remove(oldUnit);
+		
+		units.add(unit);
+	}
+	
+	public <U extends Unit> void removeUnit(Class<U> unitType, String ownerName, String unitName)
+	{
+		Unit unit = getUnit(unitType, ownerName, unitName);
+		if (unit != null) units.remove(unit);
+	}
+	
+	public UnitMarker getUnitMarker(String playerLogin, String ownerName, String unitName)
 	{
 		if (playersMarkers.containsKey(playerLogin)) for(IMarker m : playersMarkers.get(playerLogin))
 		{
 			if (m != null && UnitMarker.class.isInstance(m))
 			{
 				UnitMarker um = UnitMarker.class.cast(m);
-				if (um.getUnit().getName().compareTo(unitName) == 0) return um;
+				
+				common.Unit u = um.getUnit();
+				
+				// Owner filter
+				if (!((ownerName == null && u.getOwner() == null) || (ownerName != null && u.getOwner() != null && u.getOwner().isNamed(ownerName)))) continue;
+				
+				// Name filter
+				if (u.getName().compareTo(unitName) == 0) return um;
 			}
 		}
 		
 		return null;
 	}
 	
-	public void addUnit(Unit unit)
+	public void removeUnitMarker(String playerLogin, String markedUnitOwnerName, String markedUnitName)
 	{
-		units.add(unit);
+		UnitMarker unitMarker = getUnitMarker(playerLogin, markedUnitOwnerName, markedUnitName);
+		if (unitMarker != null) playersMarkers.get(playerLogin).remove(unitMarker);
 	}
 	
-	public void removeUnit(Unit unit)
-	{
-		units.remove(unit);
-	}
-	
-	public void removeMarker(String playerLogin, UnitMarker unitMarker)
-	{
-		if (playersMarkers.containsKey(playerLogin)) playersMarkers.get(playerLogin).remove(unitMarker);
-	}
-	
-	public void addMarker(String playerLogin, UnitMarker unitMarker)
+	public void updateUnitMarker(String playerLogin, UnitMarker unitMarker)
 	{
 		if (!playersMarkers.containsKey(playerLogin) || playersMarkers.get(playerLogin) == null)
 		{
 			playersMarkers.put(playerLogin, new HashSet<IMarker>());
 		}
+		
+		UnitMarker oldUnitMarker = getUnitMarker(playerLogin, unitMarker.getUnit().getOwnerName(), unitMarker.getUnit().getName());
+		if (oldUnitMarker != null) playersMarkers.get(playerLogin).remove(oldUnitMarker);
 		
 		playersMarkers.get(playerLogin).add(unitMarker);
 	}
@@ -173,10 +196,15 @@ class Area implements Serializable
 	 * @return
 	 */
 	public common.Area getPlayerView(int date, String playerLogin, boolean isVisible)
-	{		
+	{				
 		HashSet<common.Unit> unitsView;
+		Set<common.IMarker> markersView;
+		
 		if (isVisible)
 		{
+			// Updates
+			playersLastObservation.updateView(playerLogin, date, date);
+			
 			// Updates
 			playersLastObservation.updateView(playerLogin, date, date);
 			
@@ -186,10 +214,53 @@ class Area implements Serializable
 				unitsView.add(u.getPlayerView(date, playerLogin, isVisible));
 			}
 			playersUnitsView.updateView(playerLogin, unitsView, date);
+			
+			// Refresh markers
+			markersView = new HashSet<IMarker>();
+			if (playersMarkers.containsKey(playerLogin)) for(common.IMarker m : playersMarkers.get(playerLogin))
+			{
+				// Unit markers
+				if (UnitMarker.class.isInstance(m))
+				{
+					UnitMarker um = UnitMarker.class.cast(m);
+					Unit unit = getUnit(getServerUnitType(um.getUnit().getClass()), um.getUnit().getOwnerName(), um.getUnit().getName());
+					
+					if (unit == null) markersView.add(um);
+					
+					continue;
+				}
+				
+				// TODO: Other markers
+			}
 		}
 		else
-		{
-			unitsView = playersUnitsView.getLastValue(playerLogin, null);
+		{		
+			// Refresh player units only
+			boolean modified = false;
+			unitsView = new HashSet<common.Unit>();
+			if (playersUnitsView.hasView(playerLogin)) for(common.Unit u : playersUnitsView.getView(playerLogin).getValue())
+			{
+				if (u.getOwner() != null && u.getOwner().isNamed(playerLogin))
+				{
+					modified = true;
+					
+					Unit unit = getUnit(getServerUnitType(u.getClass()), u.getOwnerName(), u.getName());						
+					if (unit == null) continue;
+					
+					unitsView.add(unit.getPlayerView(date, playerLogin, true));					
+				}
+				else
+				{
+					unitsView.add(u);
+				}
+			}
+			
+			if (modified)
+			{
+				playersUnitsView.updateView(playerLogin, unitsView, date);
+			}
+			
+			markersView = playersMarkers.get(playerLogin);
 		}
 		
 		if (celestialBody != null && ProductiveCelestialBody.class.isInstance(celestialBody))
@@ -207,7 +278,19 @@ class Area implements Serializable
 		int lastObservation = playersLastObservation.getLastValue(playerLogin, -1);
 		common.ICelestialBody celestialBodyView = (celestialBody == null)?null:celestialBody.getPlayerView(date, playerLogin, isVisible);		
 		
-		return new common.Area(isVisible, lastObservation, isSun, celestialBodyView, unitsView, playersMarkers.get(playerLogin));
-	}	
+		return new common.Area(isVisible, lastObservation, isSun, celestialBodyView, unitsView, markersView);
+	}
+	
+	private static <U extends common.Unit> Class<? extends Unit> getServerUnitType(Class<U> clientUnitType)
+	{
+		try
+		{
+			return Class.forName(Unit.class.getPackage().getName()+"."+clientUnitType.getSimpleName()).asSubclass(Unit.class);
+		}
+		catch(ClassNotFoundException e)
+		{
+			throw new SEPServer.SEPImplementationException("Cannot find server unit type for '" + clientUnitType.getSimpleName() + "'", e);
+		}
+	}
 	
 }

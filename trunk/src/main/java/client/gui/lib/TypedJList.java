@@ -4,6 +4,7 @@ import java.awt.Component;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.Vector;
 
@@ -24,6 +25,7 @@ public class TypedJList<E> extends JList
 	private final DefaultListModel model;
 	private TypedJListCellRenderer<E> cellRenderer;
 	private final ListCellRenderer defaultListCellRenderer;
+	private final Comparator<E> comparator;
 
 	public static interface TypedJListCellRenderer<E>
 	{
@@ -63,8 +65,9 @@ public class TypedJList<E> extends JList
 		};
 	}
 	
-	public TypedJList(Class<E> type)
+	public TypedJList(Class<E> type, Comparator<E> comparator)
 	{
+		this.comparator = comparator;
 		this.type = type;
 		model = new DefaultListModel();
 		setModel(model);
@@ -267,26 +270,42 @@ public class TypedJList<E> extends JList
 		return (E[]) super.getSelectedValues();
 	}
 
+	@Deprecated
 	public void setListData(Object[] listData)
 	{
 		throw new NotImplementedException();
 	}
 
+	@Deprecated
 	public void setListData(Vector listData)
 	{
 		throw new NotImplementedException();
 	}
 
+	@Deprecated
 	public void setPrototypeCellValue(Object prototypeCellValue)
 	{
 		throw new NotImplementedException();
 	}
 
+	@Deprecated
 	public void setSelectedValue(Object anObject, boolean shouldScroll)
 	{
 		throw new NotImplementedException();
 	}
 
+	public void setSelectedElement(E element, boolean shouldScroll)
+	{
+		for(E e : toArray())
+		{
+			if (comparator.compare(element, e) == 0)
+			{
+				super.setSelectedValue(e, shouldScroll);
+				return;
+			}
+		}		
+	}
+	
 	/////////////////////////////
 	
 	public boolean addAll(Collection<? extends E> c)
@@ -304,7 +323,14 @@ public class TypedJList<E> extends JList
 	 */
 	public static void main(String[] args)
 	{
-		TypedJList<String> typedJList = new TypedJList<String>(String.class);
+		TypedJList<String> typedJList = new TypedJList<String>(String.class, new Comparator<String>()
+		{
+			@Override
+			public int compare(String o1, String o2)
+			{
+				return o1.compareTo(o2);
+			}
+		});
 		typedJList.addElement("Un");
 		typedJList.addElement("Deux");
 		typedJList.setVisible(true);

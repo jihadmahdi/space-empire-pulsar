@@ -3,6 +3,7 @@ package server.model;
 import java.beans.DesignMode;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -148,17 +149,19 @@ public class GameBoard implements Serializable
 
 			Class<? extends common.ICelestialBody> celestialBodyType = Basic.getKeyFromRandomTable(config.getNeutralCelestialBodiesGenerationTable());
 
-			try
-			{
-				Class<? extends ICelestialBody> serverCelestialBodyType = Class.forName("server.model." + celestialBodyType.getSimpleName()).asSubclass(ICelestialBody.class);
-				Constructor<? extends ICelestialBody> ctor = serverCelestialBodyType.getConstructor(String.class, common.GameConfig.class);
-				ICelestialBody celestialBody = ctor.newInstance(generateCelestialBodyName(), config);
-				getArea(celestialBodyLocation).setCelestialBody(celestialBody);
-			}
-			catch (Exception e)
-			{
-				throw new Error("Cannot create celestial body type " + celestialBodyType.getSimpleName() + " (not implemented server side ?)", e);
-			}
+				Class<? extends ICelestialBody> serverCelestialBodyType;
+				String nextName = generateCelestialBodyName();
+				try
+				{
+					serverCelestialBodyType = Class.forName("server.model." + celestialBodyType.getSimpleName()).asSubclass(ICelestialBody.class);				
+					Constructor<? extends ICelestialBody> ctor = serverCelestialBodyType.getConstructor(String.class, common.GameConfig.class);
+					ICelestialBody celestialBody = ctor.newInstance(nextName, config);
+					getArea(celestialBodyLocation).setCelestialBody(celestialBody);
+				}
+				catch(Exception e)
+				{
+					throw new Error("Cannot create celestial body type " + celestialBodyType.getSimpleName() + " (not implemented server side ?)", e);
+				}
 		}
 	}
 	
@@ -210,14 +213,25 @@ public class GameBoard implements Serializable
 					Location location = new Location(x, y, z);
 
 					// Check for Area visibility (default to false)
-					isVisible = false;					
+					isVisible = false;
+					
+					ICelestialBody celestialBody = (area!=null?area.getCelestialBody():null);
+					ProductiveCelestialBody productiveCelestialBody = (celestialBody!=null && ProductiveCelestialBody.class.isInstance(celestialBody)?ProductiveCelestialBody.class.cast(celestialBody):null);
+					Player celestialBodyOwner = (celestialBody!=null?celestialBody.getOwner():null);
+					Fleet unassignedFleet = (productiveCelestialBody!=null?productiveCelestialBody.getUnasignedFleet(playerLogin):null);
 					
 					// Visible if area celestial body is owned by the player.
-					if (!isVisible && area != null && area.getCelestialBody() != null && area.getCelestialBody().getOwner() != null && area.getCelestialBody().getOwner().isNamed(playerLogin)) isVisible = true;
+					if (!isVisible && celestialBodyOwner != null && celestialBodyOwner.isNamed(playerLogin))
+					{
+						isVisible = true;
+					}
 
 					// Visible if area contains a celestial body and player has a unit on it.
-					if (!isVisible && area != null && area.getCelestialBody() != null && !getUnits(location, playerLogin).isEmpty()) isVisible = true;
-
+					if (!isVisible && ((unassignedFleet != null && !unassignedFleet.isEmpty()) || (productiveCelestialBody != null && !getUnits(location, playerLogin).isEmpty())))
+					{
+						isVisible = true;
+					}
+					
 					// Area is under a player probe scope.
 					if (!isVisible) for(Map.Entry<Location, Set<Probe>> e : playerProbes.entrySet())
 					{
@@ -250,7 +264,7 @@ public class GameBoard implements Serializable
 	 * @param unitName
 	 * @return
 	 */
-	private <U extends Unit> Location getUnitLocation(String playerLoginFilter, Class<U> unitTypeFilter, String unitName)
+	private <U extends Unit> Location getUnitLocation(Class<U> unitTypeFilter, String ownerName, String unitName)
 	{
 		for (int x = 0; x < config.getDimX(); ++x)
 			for (int y = 0; y < config.getDimY(); ++y)
@@ -260,7 +274,7 @@ public class GameBoard implements Serializable
 					
 					Location location = new Location(x, y, z);
 										
-					Set<U> currentLocationUnits = getUnits(location, unitTypeFilter, playerLoginFilter);
+					Set<U> currentLocationUnits = getUnits(location, unitTypeFilter, ownerName);
 					
 					for(Unit unit : currentLocationUnits)
 					{
@@ -279,9 +293,9 @@ public class GameBoard implements Serializable
 	 * @param unitName
 	 * @return
 	 */
-	private <U extends Unit> U getUnit(Class<U> unitType, String playerLogin, String unitName)
+	private <U extends Unit> U getUnit(Class<U> unitType, String ownerName, String unitName)
 	{
-		for(Set<U> set : getUnits(unitType, playerLogin).values())
+		for(Set<U> set : getUnits(unitType, ownerName).values())
 		{
 			for(U unit : set)
 			{
@@ -376,8 +390,10 @@ public class GameBoard implements Serializable
 	 * @param playerLoginFilter if not null, return only units owned by this player.
 	 * @return
 	 */
-	private Set<Unit> getUnits(Location location, String playerLoginFilter)
+	private Set<Unit> getUnits(Location location, String ownerName)
 	{
+		if (ownerName == null || ownerName.isEmpty()) log.log(Level.WARNING, "ownerName is null or empty, check if it's not a bug, null select no-owner units, not any units.");
+		
 		Set<Unit> filteredUnits = new HashSet<Unit>();
 		
 		Area area = getNullArea(location);
@@ -387,7 +403,8 @@ public class GameBoard implements Serializable
 		
 		for(Unit u : units)
 		{
-			if (playerLoginFilter != null && ((u.getOwner() == null) || (!u.getOwner().isNamed(playerLoginFilter)))) continue;
+			// Owner filter
+			if (!((ownerName == null && u.getOwner() == null) || (ownerName != null && u.getOwner() != null && u.getOwner().isNamed(ownerName)))) continue;
 			
 			filteredUnits.add(u);
 		}
@@ -585,6 +602,8 @@ public class GameBoard implements Serializable
 			}
 		}
 		
+		Map<Area, Set<AntiProbeMissile>> explodingAntiProbeMissiles = new HashMap<Area, Set<AntiProbeMissile>>();
+		
 		// Move units.
 		for(Unit movingUnit : movingUnits)
 		{
@@ -595,26 +614,55 @@ public class GameBoard implements Serializable
 			
 			String playerLogin = movingUnit.getOwner().getName();
 			Area startingArea = getNullArea(movingUnit.getCurrentEstimatedLocation());
-			startingArea.removeUnit(movingUnit);
-			UnitMarker unitMarker = startingArea.getMarkedUnit(playerLogin, movingUnit.getName());
+			startingArea.removeUnit(movingUnit.getClass(), movingUnit.getOwnerName(), movingUnit.getName());
+			UnitMarker unitMarker = startingArea.getUnitMarker(playerLogin, movingUnit.getOwnerName(), movingUnit.getName());
 			if (unitMarker != null)
 			{
-				startingArea.removeMarker(playerLogin, unitMarker);
+				startingArea.removeUnitMarker(playerLogin, movingUnit.getOwnerName(), movingUnit.getName());
 			}
 			else
 			{
 				unitMarker = new UnitMarker(date, true, movingUnit.getPlayerView(date, playerLogin, true));
-			}
+			}						
 			
 			Area endingArea = getArea(endTurnLocation);
 			
-			endingArea.addUnit(movingUnit);
-			endingArea.addMarker(playerLogin, unitMarker);
+			endingArea.updateUnit(movingUnit);
 			movingUnit.setCurrentLocation(endTurnLocation);
 			
 			if (endTurnLocation.equals(movingUnit.getDestinationLocation()))
 			{
 				movingUnit.endMove(endTurnLocation, this);
+				if (AntiProbeMissile.class.isInstance(movingUnit))
+				{
+					if (!explodingAntiProbeMissiles.containsKey(endingArea))
+					{
+						explodingAntiProbeMissiles.put(endingArea, new HashSet<AntiProbeMissile>());
+					}
+					
+					explodingAntiProbeMissiles.get(endingArea).add(AntiProbeMissile.class.cast(movingUnit));
+				}
+			}
+			else
+			{
+				endingArea.updateUnitMarker(playerLogin, unitMarker);
+			}
+		}
+		
+		// Explode anti-probe missiles.
+		for(Area area : explodingAntiProbeMissiles.keySet())
+		{
+			if (explodingAntiProbeMissiles.get(area) == null) continue;
+			for(AntiProbeMissile apm : explodingAntiProbeMissiles.get(area))
+			{
+				Probe targetProbe = area.getUnit(Probe.class, apm.getTargetOwnerName(), apm.getTargetName());
+				if (targetProbe != null)
+				{
+					// TODO : New event for targetProbe owner (probe destroyed)
+					area.removeUnit(Probe.class, targetProbe.getOwnerName(), targetProbe.getName());
+				}
+				
+				area.removeUnit(AntiProbeMissile.class, apm.getOwnerName(), apm.getName());
 			}
 		}
 		
@@ -897,6 +945,156 @@ public class GameBoard implements Serializable
 		
 		return new BuildCheckResult(productiveCelestialBody, building, carbonCost, populationCost, newBuilding);		
 	}
+	
+	public boolean canFireAntiProbeMissile(String playerLogin, String antiProbeMissileName, String targetOwnerName, String targetProbeName)
+	{
+		try
+		{
+			checkFireAntiProbeMissile(playerLogin, antiProbeMissileName, targetOwnerName, targetProbeName);
+		}
+		catch(Throwable t)
+		{
+			return false;
+		}
+		return true;
+	}
+	
+	public void fireAntiProbeMissile(String playerLogin, String antiProbeMissileName, String targetOwnerName, String targetProbeName) throws RunningGameCommandException
+	{
+		FireAntiProbeMissileCheckResult fireAntiProbeMissileCheckResult = checkFireAntiProbeMissile(playerLogin, antiProbeMissileName, targetOwnerName, targetProbeName);		
+		fireAntiProbeMissileCheckResult.antiProbeMissile.fire(targetOwnerName, targetProbeName, fireAntiProbeMissileCheckResult.source, fireAntiProbeMissileCheckResult.destination);		
+	}
+	
+	private static class FireAntiProbeMissileCheckResult
+	{
+		final Area area;
+		final AntiProbeMissile antiProbeMissile;
+		final String targetProbeName;
+		final Location source;
+		final Location destination;
+
+		public FireAntiProbeMissileCheckResult(Area area, AntiProbeMissile antiProbeMissile, String targetProbeName, Location source, Location destination)
+		{
+			this.area = area;
+			this.antiProbeMissile = antiProbeMissile;
+			this.targetProbeName = targetProbeName;
+			this.source = source;
+			this.destination = destination;
+		}		
+	}
+	
+	public FireAntiProbeMissileCheckResult checkFireAntiProbeMissile(String playerLogin, String antiProbeMissileName, String targetOwnerName, String targetProbeName) throws RunningGameCommandException
+	{
+		Location location = getUnitLocation(AntiProbeMissile.class, playerLogin, antiProbeMissileName);
+		if (location == null) throw new RunningGameCommandException("AntiProbeMissile '"+antiProbeMissileName+"' does not exist.");
+				
+		Area area = getNullArea(location);
+		if (area == null) throw new RunningGameCommandException("AntiProbeMissile '"+antiProbeMissileName+"' does not exist.");
+
+		
+		AntiProbeMissile antiProbeMissile = area.getUnit(AntiProbeMissile.class, targetOwnerName, antiProbeMissileName);
+		if (antiProbeMissile == null) throw new RunningGameCommandException("AntiProbeMissile '"+antiProbeMissileName+"' does not exist.");
+		
+		if (!antiProbeMissile.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Unexpected error : "+playerLogin+" is not '"+antiProbeMissileName+"' anti-probe missile owner");
+		
+		if (antiProbeMissile.isMoving()) throw new RunningGameCommandException("AntiProbeMissile '"+antiProbeMissileName+"' has already been fired.");
+
+		if (antiProbeMissile.isFired()) throw new RunningGameCommandException("AntiProbeMissile '"+antiProbeMissileName+"' is already fired.");
+		
+		Location destination = getUnitLocation(Probe.class, targetOwnerName, targetProbeName);
+		if (destination == null) throw new RunningGameCommandException("AntiProbeMissile '"+antiProbeMissileName+"' target '"+targetProbeName+"' does not exist.");
+				
+		Area destinationArea = getNullArea(destination);
+		if (destinationArea == null) throw new RunningGameCommandException("AntiProbeMissile '"+antiProbeMissileName+"' target '"+targetProbeName+"' does not exist.");
+
+		
+		Probe targetProbe = destinationArea.getUnit(Probe.class, targetOwnerName, targetProbeName);
+		if (targetProbe == null)
+		{
+			UnitMarker um = destinationArea.getUnitMarker(playerLogin, targetOwnerName, targetProbeName);
+			if (um == null || um.getUnit() == null || !common.Probe.class.isInstance(um.getUnit()))
+			{
+				throw new RunningGameCommandException("AntiProbeMissile '"+antiProbeMissileName+"' target '"+targetProbeName+"' does not exist.");
+			}
+			
+			common.Probe probe = common.Probe.class.cast(um.getUnit());
+			
+			if (probe.isMoving()) throw new RunningGameCommandException("AntiProbeMissile '"+antiProbeMissileName+"' cannot be fired on moving target '"+targetProbeName+"'");
+		}
+		
+		return new FireAntiProbeMissileCheckResult(area, antiProbeMissile, targetProbeName, location, destination);
+	}
+	
+	public boolean canLaunchProbe(String playerLogin, String probeName, Location destination)
+	{
+		try
+		{
+			checkLaunchProbe(playerLogin, probeName, destination);
+		}
+		catch(Throwable t)
+		{
+			return false;
+		}
+		return true;
+	}
+	
+	public void launchProbe(String playerLogin, String probeName, Location destination) throws RunningGameCommandException
+	{
+		LaunchProbeCheckResult launchProbeCheckResult = checkLaunchProbe(playerLogin, probeName, destination);
+		
+		launchProbeCheckResult.probe.setSourceLocation(launchProbeCheckResult.source);
+		launchProbeCheckResult.probe.setDestinationLocation(launchProbeCheckResult.destination);
+		launchProbeCheckResult.probe.setCurrentLocation(launchProbeCheckResult.source);
+	}
+	
+	private static class LaunchProbeCheckResult
+	{
+		final Area area;
+		final Probe probe;
+		final Location source;
+		final Location destination;
+
+		public LaunchProbeCheckResult(Area area, Probe probe, Location source, Location destination)
+		{
+			this.area = area;
+			this.probe = probe;
+			this.source = source;
+			this.destination = destination;
+		}		
+	}
+	
+	public LaunchProbeCheckResult checkLaunchProbe(String playerLogin, String probeName, Location destination) throws RunningGameCommandException
+	{
+		Location location = getUnitLocation(Probe.class, playerLogin, probeName);
+		if (location == null) throw new RunningGameCommandException("Probe '"+probeName+"' does not exist.");
+				
+		Area area = getNullArea(location);
+		if (area == null) throw new RunningGameCommandException("Probe '"+probeName+"' does not exist.");
+
+		
+		Probe probe = area.getUnit(Probe.class, playerLogin, probeName);
+		if (probe == null) throw new RunningGameCommandException("Probe '"+probeName+"' does not exist.");
+		
+		if (!probe.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Unexpected error : "+playerLogin+" is not '"+probeName+"' probe owner");
+		
+		if (probe.isMoving()) throw new RunningGameCommandException("Probe '"+probeName+"' has already been launched.");
+
+		if (probe.isDeployed()) throw new RunningGameCommandException("Probe '"+probeName+"' is already deployed.");
+		
+		if (destination.x < 0 || destination.x >= config.getDimX()) throw new RunningGameCommandException("Probe '"+probeName+"' destination is incorrect (x).");
+		if (destination.y < 0 || destination.y >= config.getDimY()) throw new RunningGameCommandException("Probe '"+probeName+"' destination is incorrect (y).");
+		if (destination.z < 0 || destination.z >= config.getDimZ()) throw new RunningGameCommandException("Probe '"+probeName+"' destination is incorrect (z).");
+
+		for(Location pathStep : SEPUtils.getAllPathLoc(location, destination))
+		{
+			if (getNullArea(pathStep) != null && getNullArea(pathStep).isSun()) throw new RunningGameCommandException("Impossible path : "+location+" to "+destination+", cannot travel the sun.");
+		}
+		
+		Area destinationArea = getNullArea(destination);
+		if (destinationArea != null && destinationArea.isSun()) throw new RunningGameCommandException("Cannot send Probe on sun.");
+		
+		return new LaunchProbeCheckResult(area, probe, location, destination);
+	}
 
 	public boolean canMoveFleet(String playerLogin, String fleetName, Stack<common.Fleet.Move> checkpoints)
 	{
@@ -914,35 +1112,39 @@ public class GameBoard implements Serializable
 	public void moveFleet(String playerLogin, String fleetName, Stack<common.Fleet.Move> checkpoints) throws RunningGameCommandException
 	{
 		MoveFleetCheckResult moveFleetCheckResult = checkMoveFleet(playerLogin, fleetName, checkpoints);		
-		moveFleetCheckResult.fleet.updateMoveOrder(checkpoints);
+		moveFleetCheckResult.fleet.updateMoveOrder(moveFleetCheckResult.locatedCheckpoints);
 	}
 
 	private static class MoveFleetCheckResult
 	{
 		final Area area;
 		final Fleet fleet;
+		final Stack<common.Fleet.Move> locatedCheckpoints;
 
-		public MoveFleetCheckResult(Area area, Fleet fleet)
+		public MoveFleetCheckResult(Area area, Fleet fleet, Stack<common.Fleet.Move> locatedCheckpoints)
 		{
 			this.area = area;
 			this.fleet = fleet;
+			this.locatedCheckpoints = locatedCheckpoints;
 		}		
 	}
 	
 	public MoveFleetCheckResult checkMoveFleet(String playerLogin, String fleetName, Stack<common.Fleet.Move> checkpoints) throws RunningGameCommandException
 	{
-		Location location = getUnitLocation(playerLogin, Fleet.class, fleetName);
-		
-		Area area = getNullArea(location);
-		
+		Location location = getUnitLocation(Fleet.class, playerLogin, fleetName);
+		if (location == null) throw new RunningGameCommandException("Fleet '"+fleetName+"' does not exist.");
+
+		Area area = getNullArea(location);		
 		if (area == null) throw new RunningGameCommandException("Fleet '"+fleetName+"' does not exist.");
 		
-		Fleet fleet = area.getUnit(Fleet.class, fleetName);
+		Fleet fleet = area.getUnit(Fleet.class, playerLogin, fleetName);
 		if (fleet == null) throw new RunningGameCommandException("Fleet '"+fleetName+"' does not exist.");
 		
 		if (!fleet.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Unexpected error : "+playerLogin+" is not '"+fleetName+"' fleet owner");
 		
 		// Check paths
+		Stack<common.Fleet.Move> locatedCheckpoints = new Stack<common.Fleet.Move>();
+		
 		Location currentStart = location;
 		for(common.Fleet.Move move : checkpoints)
 		{
@@ -955,9 +1157,11 @@ public class GameBoard implements Serializable
 			}
 			
 			currentStart = destinationLocation;
+			
+			locatedCheckpoints.add(new common.Fleet.Move(move, destinationLocation));
 		}
 		
-		return new MoveFleetCheckResult(area, fleet);
+		return new MoveFleetCheckResult(area, fleet, locatedCheckpoints);
 	}		
 
 	public boolean canFormFleet(String playerLogin, String planetName, String fleetName, Map<Class<? extends IStarship>, Integer> fleetToForm)
@@ -976,7 +1180,7 @@ public class GameBoard implements Serializable
 	public void formFleet(String playerLogin, String planetName, String fleetName, Map<Class<? extends IStarship>, Integer> fleetToForm) throws RunningGameCommandException
 	{
 		FormFleetCheckResult formFleetCheckResult = checkFormFleet(playerLogin, planetName, fleetName, fleetToForm);
-		formFleetCheckResult.area.addUnit(formFleetCheckResult.newFleet);
+		formFleetCheckResult.area.updateUnit(formFleetCheckResult.newFleet);
 		formFleetCheckResult.productiveCelestialBody.removeFromUnasignedFleet(getPlayer(playerLogin), fleetToForm);
 	}
 	
@@ -1048,7 +1252,7 @@ public class GameBoard implements Serializable
 	public void dismantleFleet(String playerLogin, String fleetName) throws RunningGameCommandException
 	{
 		DismantleFleetCheckResult dismantleFleetCheckResult = checkDismantleFleet(playerLogin, fleetName);
-		dismantleFleetCheckResult.area.removeUnit(dismantleFleetCheckResult.fleet);
+		dismantleFleetCheckResult.area.removeUnit(dismantleFleetCheckResult.fleet.getClass(), dismantleFleetCheckResult.fleet.getOwnerName(), dismantleFleetCheckResult.fleet.getName());
 		dismantleFleetCheckResult.productiveCelestialBody.mergeToUnasignedFleet(getPlayer(playerLogin), dismantleFleetCheckResult.fleet.getComposition());
 	}
 	
@@ -1068,7 +1272,7 @@ public class GameBoard implements Serializable
 	
 	private DismantleFleetCheckResult checkDismantleFleet(String playerLogin, String fleetName) throws RunningGameCommandException
 	{
-		Location location = getUnitLocation(playerLogin, Fleet.class, fleetName);
+		Location location = getUnitLocation(Fleet.class, playerLogin, fleetName);
 		Area area = getNullArea(location);
 		
 		if (area == null) throw new RunningGameCommandException("Fleet '"+fleetName+"' does not exist.");
@@ -1104,7 +1308,7 @@ public class GameBoard implements Serializable
 		MakeProbesCheckResult makeProbesCheckResult = checkMakeProbes(playerLogin, planetName, probeName, quantity);
 		for(Probe p : makeProbesCheckResult.newProbes)
 		{
-			makeProbesCheckResult.area.addUnit(p);
+			makeProbesCheckResult.area.updateUnit(p);
 		}
 		makeProbesCheckResult.planet.setCarbon(makeProbesCheckResult.planet.getCarbon()-makeProbesCheckResult.carbonCost);
 		makeProbesCheckResult.planet.setPopulation(makeProbesCheckResult.planet.getPopulation()-makeProbesCheckResult.populationCost);
@@ -1200,7 +1404,7 @@ public class GameBoard implements Serializable
 		MakeAntiProbeMissilesCheckResult makeAntiProbeMissilesCheckResult = checkMakeAntiProbeMissiles(playerLogin, planetName, antiProbeMissileName, quantity);
 		for(AntiProbeMissile p : makeAntiProbeMissilesCheckResult.newAntiProbeMissiles)
 		{
-			makeAntiProbeMissilesCheckResult.area.addUnit(p);
+			makeAntiProbeMissilesCheckResult.area.updateUnit(p);
 		}
 		makeAntiProbeMissilesCheckResult.planet.setCarbon(makeAntiProbeMissilesCheckResult.planet.getCarbon()-makeAntiProbeMissilesCheckResult.carbonCost);
 		makeAntiProbeMissilesCheckResult.planet.setPopulation(makeAntiProbeMissilesCheckResult.planet.getPopulation()-makeAntiProbeMissilesCheckResult.populationCost);
@@ -1276,7 +1480,7 @@ public class GameBoard implements Serializable
 		}
 		
 		return new MakeAntiProbeMissilesCheckResult(area, planet, carbonCost, populationCost, starshipPlant, newAntiProbeMissiles);
-	}
+	}				
 	
 	public boolean canMakeStarships(String playerLogin, String planetName, Map<Class<? extends IStarship>, Integer> starshipsToMake)
 	{
