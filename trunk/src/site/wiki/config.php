@@ -106,7 +106,7 @@ $PDF_DOC_SUBJECT = $APP_TITLE;
 $AUTHORS = array();
 $AUTHORS[] = "Auriol Arnaud (aaa-auriol@club-internet.fr)";
 $AUTHORS[] = "Bézille Yohann (yohann.bezille@club-internet.fr)";
-$AUTHORS[] = "Cabanes Romain (lawilwilderwein@wanadoo.fr)";
+$AUTHORS[] = "Cabanes Romain (romain.cabanes@laposte.net)";
 $AUTHORS[] = "Escallier Pierre (p.escallier@laposte.net)";
 shuffle($AUTHORS);
 $PDF_DOC_AUTHOR = join(", ", $AUTHORS);

@@ -1,9 +1,7 @@
 package server.model;
 
-import java.beans.DesignMode;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -18,21 +16,18 @@ import java.util.logging.Logger;
 
 import org.axan.eplib.utils.Basic;
 
-import client.gui.RunningGamePanel;
+import server.SEPServer;
+import server.model.Area.AreaIllegalDefinitionException;
+import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 
 import common.GovernmentStarship;
 import common.IStarship;
 import common.Player;
-import common.Protocol;
 import common.SEPUtils;
 import common.TravellingLogEntryUnitSeen;
 import common.UnitMarker;
 import common.Protocol.ServerRunningGame.RunningGameCommandException;
 import common.SEPUtils.Location;
-
-import server.SEPServer;
-import server.model.Area.AreaIllegalDefinitionException;
-import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 
 public class GameBoard implements Serializable
 {

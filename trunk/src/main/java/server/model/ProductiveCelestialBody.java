@@ -232,7 +232,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		{
 			for(String player : unasignedFleets.keySet())
 			{
-				if (!playersUnasignedFleetsView.containsKey(player))
+				if ((!playersUnasignedFleetsView.containsKey(player)) || playersUnasignedFleetsView.get(player) == null)
 				{
 					playersUnasignedFleetsView.put(player, new PlayerDatedView<common.Fleet>());
 				}
@@ -243,9 +243,10 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		
 		for(String player : playersUnasignedFleetsView.keySet())
 		{
-			if (!playersUnasignedFleetsView.get(player).getLastValue(playerLogin, null).isEmpty())
+			common.Fleet unasignedFleetView = playersUnasignedFleetsView.get(player).getLastValue(playerLogin, null);
+			if (unasignedFleetView != null && !unasignedFleetView.isEmpty())
 			{
-				result.put(player, playersUnasignedFleetsView.get(player).getLastValue(playerLogin, null));
+				result.put(player, unasignedFleetView);
 			}
 		}
 		
