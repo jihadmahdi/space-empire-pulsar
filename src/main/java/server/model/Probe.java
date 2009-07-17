@@ -8,7 +8,7 @@ package server.model;
 import java.io.Serializable;
 
 import common.Player;
-import common.SEPUtils.Location;
+import common.SEPUtils.RealLocation;
 
 /**
  * 
@@ -26,9 +26,9 @@ public class Probe extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public Probe(String name, Player owner, boolean deployed)
+	public Probe(String name, Player owner, RealLocation sourceLocation, boolean deployed)
 	{
-		super(name, owner);
+		super(name, owner, sourceLocation);
 		this.deployed = deployed;
 	}
 
@@ -51,7 +51,7 @@ public class Probe extends Unit implements Serializable
 			playersDeployedView.updateView(playerLogin, deployed, date);			
 		}
 		
-		return new common.Probe(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentEstimatedLocationView(playerLogin), playersDeployedView.getLastValue(playerLogin, false)); 
+		return new common.Probe(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), playersDeployedView.getLastValue(playerLogin, false)); 
 	}
 
 	@Override
@@ -62,23 +62,23 @@ public class Probe extends Unit implements Serializable
 	}
 
 	@Override
-	public boolean startMove(Location currentLocation, GameBoard currentGameBoard)
+	public boolean startMove(RealLocation currentLocation, GameBoard currentGameBoard)
 	{
-		if (getDestinationLocation() != null && !isMoving())
-		{
-			setCurrentLocation(currentLocation);
-			setSourceLocation(currentLocation);
-			
-			return true;
-		}
-		
-		return false;
+		return (getDestinationLocation() != null && super.startMove(currentLocation, currentGameBoard));		
 	}
 	
 	@Override
-	public void endMove(Location currentLocation, GameBoard gameBoard)
+	public void endMove(RealLocation currentLocation, GameBoard gameBoard)
 	{
 		setDestinationLocation(null);
 		deployed = true;
+		super.endMove(currentLocation, gameBoard);
+	}
+
+	public void launch(RealLocation source, RealLocation destination)
+	{
+		setSourceLocation(source);
+		setDestinationLocation(destination);
+		setTravellingProgress(0);
 	}
 }

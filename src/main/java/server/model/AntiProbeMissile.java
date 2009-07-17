@@ -5,7 +5,7 @@ import java.io.Serializable;
 import server.SEPServer;
 
 import common.Player;
-import common.SEPUtils.Location;
+import common.SEPUtils.RealLocation;
 
 public class AntiProbeMissile extends Unit implements Serializable
 {
@@ -22,9 +22,9 @@ public class AntiProbeMissile extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public AntiProbeMissile(String name, Player owner, boolean fired)
+	public AntiProbeMissile(String name, Player owner, RealLocation sourceLocation, boolean fired)
 	{
-		super(name, owner);
+		super(name, owner, sourceLocation);
 		this.fired = fired;
 	}
 
@@ -47,8 +47,8 @@ public class AntiProbeMissile extends Unit implements Serializable
 			playersFiredView.updateView(playerLogin, fired, date);			
 		}
 		
-		return new common.AntiProbeMissile(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentEstimatedLocationView(playerLogin), playersFiredView.getLastValue(playerLogin, false)); 
-	}
+		return new common.AntiProbeMissile(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), playersFiredView.getLastValue(playerLogin, false)); 
+	}	
 
 	@Override
 	public double getSpeed()
@@ -58,26 +58,19 @@ public class AntiProbeMissile extends Unit implements Serializable
 	}
 
 	@Override
-	public boolean startMove(Location currentLocation, GameBoard currentGameBoard)
+	public boolean startMove(RealLocation currentLocation, GameBoard currentGameBoard)
 	{
-		if (fired && !isMoving())
-		{	
-			setSourceLocation(currentLocation);
-			setCurrentLocation(currentLocation);
-			
-			return true;
-		}
-		
-		return false;
+		return (fired && super.startMove(currentLocation, currentGameBoard));		
 	}
 	
 	@Override
-	public void endMove(Location currentLocation, GameBoard gameBoard)
+	public void endMove(RealLocation currentLocation, GameBoard gameBoard)
 	{
 		setDestinationLocation(null);
+		super.endMove(currentLocation, gameBoard);
 	}
 
-	public void fire(String targetProbeOwnerName, String targetProbeName, Location source, Location destination)
+	public void fire(String targetProbeOwnerName, String targetProbeName, RealLocation source, RealLocation destination)
 	{
 		if (fired) throw new SEPServer.SEPImplementationException("Error: AntiProbeMissile '"+getName()+"' already fired.");
 		
@@ -86,7 +79,7 @@ public class AntiProbeMissile extends Unit implements Serializable
 		targetName = targetProbeName;
 		targetOwnerName = targetProbeOwnerName;
 		
-		setCurrentLocation(source);
+		setTravellingProgress(0);
 		setSourceLocation(source);
 		setDestinationLocation(destination);
 	}

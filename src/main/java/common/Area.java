@@ -5,6 +5,8 @@
  */
 package common;
 
+import java.io.IOException;
+import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashSet;
@@ -34,12 +36,12 @@ public class Area implements IObservable, Serializable
 	 * Each unit has its own observation turn date.
 	 * But units remain until the area is visible and the unit has leaved.
 	 */
-	private final Set<Unit> units;
+	private transient Set<Unit> units;
 	
 	/**
 	 * Set of markers applied to this area.
 	 */
-	private final Set<IMarker> markers;
+	private transient Set<IMarker> markers;
 
 	
 	public Area()
@@ -212,4 +214,48 @@ public class Area implements IObservable, Serializable
 		
 		return sb.toString();
 	}
+	
+	private void writeObject(java.io.ObjectOutputStream out) throws IOException
+	{
+		out.defaultWriteObject();
+		
+		out.writeInt(units == null?0:units.size());
+		if (units != null) for(Unit u : units)
+		{
+			out.writeObject(u);
+		}
+		
+		out.writeInt(markers == null?0:markers.size());
+		if (markers != null) for(IMarker m : markers)
+		{
+			out.writeObject(m);
+		}		
+	}
+
+	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
+	{
+		in.defaultReadObject();
+		
+		int nbUnits = in.readInt();
+		if (nbUnits > 0) this.units = new HashSet<Unit>();
+		for(int i=0; i < nbUnits; ++i)
+		{
+			Unit u = Unit.class.cast(in.readObject());
+			units.add(u);
+		}
+		
+		int nbMarkers = in.readInt();
+		if (nbMarkers > 0) this.markers = new HashSet<IMarker>();
+		for(int i=0; i < nbMarkers; ++i)
+		{
+			IMarker m = IMarker.class.cast(in.readObject());
+			markers.add(m);
+		}
+	}
+
+	private void readObjectNoData() throws ObjectStreamException
+	{
+
+	}
+
 }

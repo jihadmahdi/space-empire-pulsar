@@ -267,7 +267,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	{
 		if (!unasignedFleets.containsKey(player.getName()))
 		{
-			unasignedFleets.put(player.getName(), new Fleet("Unasigned fleet", player, starshipsToMake, true));
+			unasignedFleets.put(player.getName(), new Fleet("Unasigned fleet", player, null, starshipsToMake, true));
 		}
 		else
 		{

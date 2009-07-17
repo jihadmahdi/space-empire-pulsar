@@ -7,7 +7,7 @@ package common;
 
 import java.io.Serializable;
 
-import common.SEPUtils.Location;
+import common.SEPUtils.RealLocation;
 
 /**
  * Represent an anti-probe missile.
@@ -25,9 +25,9 @@ public class AntiProbeMissile extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public AntiProbeMissile(boolean isVisible, int lastObservation, String name, Player owner, Location sourceLocation, Location targetLocation, Location currentEstimatedLocation, boolean fired)
+	public AntiProbeMissile(boolean isVisible, int lastObservation, String name, Player owner, RealLocation sourceLocation, RealLocation targetLocation, RealLocation currentLocation, double travellingProgress, boolean fired)
 	{
-		super(isVisible, lastObservation, name, owner, sourceLocation, targetLocation, currentEstimatedLocation);
+		super(isVisible, lastObservation, name, owner, sourceLocation, targetLocation, currentLocation, travellingProgress);
 		this.fired = fired;																																																					
 	}
 	

@@ -22,6 +22,45 @@ import org.axan.eplib.utils.Basic;
  */
 public abstract class SEPUtils
 {
+	public static class RealLocation implements Serializable
+	{
+		private static final long	serialVersionUID	= 1L;
+		
+		public final double x;
+		public final double y;
+		public final double z;
+		
+		public RealLocation(double x, double y, double z)
+		{			
+			this.x = x;
+			this.y = y;
+			this.z = z;
+		}
+
+		public boolean equals(RealLocation loc)
+		{
+			return x == loc.x && y == loc.y && z == loc.z; 
+		}
+		
+		@Override
+		public int hashCode()
+		{
+			return toString().hashCode();
+		}
+		
+		@Override
+		public String toString()
+		{
+			return String.format("[%.2f;%.2f;%.2f]", x, y, z);
+		}
+
+		public RealLocation asLocation()
+		{
+			return new RealLocation((int) x, (int) y, (int) z);
+		}
+	}
+	
+	/*
 	public static class Location implements Serializable
 	{
 		private static final long	serialVersionUID	= 1L;
@@ -49,10 +88,10 @@ public abstract class SEPUtils
 			this.y = y;
 			this.z = z;
 		}
-		
+				
 		public boolean equals(Location loc)
 		{
-			return x == loc.x && y == loc.y && z == loc.z; 
+			return x == loc.x && y == loc.y && z == loc.z;
 		}
 		
 		@Override
@@ -67,18 +106,18 @@ public abstract class SEPUtils
 			return "["+x+";"+y+";"+z+"]";
 		}
 	}
+	*/		
 	
-	public static double getDistance(Location a, Location b)
+	public static double getDistance(RealLocation a, RealLocation b)
 	{
 		return Math.sqrt(Math.pow(a.x-b.x, 2) + Math.pow(a.y-b.y, 2) + Math.pow(a.z-b.z, 2));
 	}
 	
-	public static Location getMobileEstimatedLocation(Location a, Location b, double progress, boolean stopOnB)
+	public static RealLocation getMobileEstimatedLocation(RealLocation a, RealLocation b, double progress, boolean stopOnB)
 	{
-		double[] loc = getMobileLocation(a, b, progress, stopOnB);
-		return new Location((int) loc[0], (int) loc[1], (int) loc[2]);
+		return getMobileLocation(a, b, progress, stopOnB);
 	}
-	public static double[] getMobileLocation(Location a, Location b, double progress, boolean stopOnB)
+	public static RealLocation getMobileLocation(RealLocation a, RealLocation b, double progress, boolean stopOnB)
 	{
 		double x = a.x + (b.x - a.x)*progress;
 		double y = a.y + (b.y - a.y)*progress;
@@ -86,21 +125,21 @@ public abstract class SEPUtils
 		
 		if (!stopOnB)
 		{
-			return new double[]{x, y, z};
+			return new RealLocation(x, y, z);
 		}
 		else
 		{
-			return new double[]{(a.x<b.x?Math.min(x, b.x):Math.max(x, b.x)), (a.y<b.y?Math.min(y, b.y):Math.max(y, b.y)), (a.z<b.z?Math.min(z, b.z):Math.max(z, b.z))};
+			return new RealLocation((a.x<b.x?Math.min(x, b.x):Math.max(x, b.x)), (a.y<b.y?Math.min(y, b.y):Math.max(y, b.y)), (a.z<b.z?Math.min(z, b.z):Math.max(z, b.z)));
 		}
 	}
 	
-	public static Stack<Location> getAllPathLoc(Location a, Location b)
+	public static Stack<RealLocation> getAllPathLoc(RealLocation a, RealLocation b)
 	{
-		Stack<Location> result = new Stack<Location>();
+		Stack<RealLocation> result = new Stack<RealLocation>();
 		double d = getDistance(a, b);
 		float delta = ((float) 1) / ((float) (2*d));
-		Location lastLoc = null;
-		Location loc;
+		RealLocation lastLoc = null;
+		RealLocation loc;
 		for(float t = 0; t < 1; t += delta)
 		{
 			loc = getMobileEstimatedLocation(a, b, t, true);
@@ -160,13 +199,23 @@ public abstract class SEPUtils
 	
 	public static void main(String[] args)
 	{
-		Location A = new Location(2, 2, 0);
-		Location B = new Location(9, 4, 0);
+		RealLocation A = new RealLocation(19, 4, 0);
+		RealLocation B = new RealLocation(17, 12, 0);
+		
 		System.out.println("getAllPathLoc("+A+", "+B+")");
-		Stack<Location> path = getAllPathLoc(A, B);
-		for(Location loc : path)
+		Stack<RealLocation> path = getAllPathLoc(A, B);
+		for(RealLocation loc : path)
 		{
 			System.out.println(loc);
 		}
+		
+		System.out.println("\nRefresh path after each step");
+		RealLocation loc;
+		do
+		{
+			loc = path.get(1);
+			System.out.println(loc);
+			path = getAllPathLoc(loc, B);
+		}while(!loc.equals(B));
 	}
 }

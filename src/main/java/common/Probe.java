@@ -7,7 +7,7 @@ package common;
 
 import java.io.Serializable;
 
-import common.SEPUtils.Location;
+import common.SEPUtils.RealLocation;
 
 /**
  * Represent a probe.
@@ -27,9 +27,9 @@ public class Probe extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public Probe(boolean isVisible, int lastObservation, String name, Player owner, Location sourceLocation, Location destinationLocation, Location currentEstimatedLocation, boolean deployed)
+	public Probe(boolean isVisible, int lastObservation, String name, Player owner, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress, boolean deployed)
 	{
-		super(isVisible, lastObservation, name, owner, sourceLocation, destinationLocation, currentEstimatedLocation);
+		super(isVisible, lastObservation, name, owner, sourceLocation, destinationLocation, currentLocation, travellingProgress);
 		this.deployed = deployed;
 	}
 	

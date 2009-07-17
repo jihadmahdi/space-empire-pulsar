@@ -7,7 +7,7 @@ package common;
 
 import java.io.Serializable;
 
-import common.SEPUtils.Location;
+import common.SEPUtils.RealLocation;
 
 /**
  * Represent a pulsar estimated effect marker.
@@ -21,14 +21,14 @@ public class EstimatedPulsarMarker implements IMarker, Serializable
 	private final int creationDate;
 	private final boolean isVisible;
 	
-	private final Location targetLocation;
+	private final RealLocation targetLocation;
 	private int estimatedVolume;
 	private int estimatedTime;
 	
 	/**
 	 * Full constructor.
 	 */
-	public EstimatedPulsarMarker(int creationDate, boolean isVisible, Location targetLocation, int estimatedVolume, int estimatedTime)
+	public EstimatedPulsarMarker(int creationDate, boolean isVisible, RealLocation targetLocation, int estimatedVolume, int estimatedTime)
 	{
 		this.creationDate = creationDate;
 		this.isVisible = isVisible;

@@ -12,7 +12,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import common.Player;
-import common.SEPUtils.Location;
+import common.SEPUtils.RealLocation;
 
 /**
  * 
@@ -27,11 +27,11 @@ class SpaceCounter extends ABuilding implements Serializable
 		
 		// Constants
 		private final int creationDate;
-		private final Location from;
-		private final Location to;
+		private final RealLocation from;
+		private final RealLocation to;
 		private final int speed;
 		
-		public SpaceRoad(int creationDate, Location from, Location to, int speed)
+		public SpaceRoad(int creationDate, RealLocation from, RealLocation to, int speed)
 		{
 			this.creationDate = creationDate;
 			this.from = from;
@@ -53,9 +53,9 @@ class SpaceCounter extends ABuilding implements Serializable
 		 * @param name
 		 * @param owner
 		 */
-		public CarbonCarrier(String name, Player owner)
+		public CarbonCarrier(String name, Player owner, RealLocation sourceLocation)
 		{
-			super(name, owner);			
+			super(name, owner, sourceLocation);			
 		}
 
 		/* (non-Javadoc)
@@ -64,7 +64,7 @@ class SpaceCounter extends ABuilding implements Serializable
 		@Override
 		public common.CarbonCarrier getPlayerView(int date, String playerLogin, boolean isVisible)
 		{
-			return new common.CarbonCarrier(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocation(), getDestinationLocation(), getCurrentEstimatedLocation());
+			return new common.CarbonCarrier(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocation(), getDestinationLocation(), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin));
 		}
 
 		@Override
@@ -74,23 +74,16 @@ class SpaceCounter extends ABuilding implements Serializable
 		}
 
 		@Override
-		public boolean startMove(Location currentLocation, GameBoard currentGameBoard)
+		public boolean startMove(RealLocation currentLocation, GameBoard currentGameBoard)
 		{
-			if (getDestinationLocation() != null && !isMoving())
-			{
-				setCurrentLocation(currentLocation);
-				setSourceLocation(currentLocation);
-				
-				return true;
-			}
-			
-			return false;
+			return (getDestinationLocation() != null && super.startMove(currentLocation, currentGameBoard));			
 		}
 		
 		@Override
-		public void endMove(Location currentLocation, GameBoard gameBoard)
+		public void endMove(RealLocation currentLocation, GameBoard gameBoard)
 		{
 			// NOP
+			super.endMove(currentLocation, gameBoard);
 		}
 	}
 	
