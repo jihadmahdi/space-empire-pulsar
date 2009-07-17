@@ -9,7 +9,8 @@ import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.Map;
 
-import common.SEPUtils.Location;
+import common.SEPUtils.RealLocation;
+
 
 /**
  * Represent a game creation configuration.
@@ -275,14 +276,14 @@ public class GameConfig implements Serializable
 
 	static private int getSunVolume(int dimX, int dimY, int dimZ, int sunRadius)
 	{
-		Location origin = new Location( 0, 0, 0);
+		RealLocation origin = new RealLocation( 0, 0, 0);
 		int volume = 0;
 
 		for(int x = -Math.min(dimX - 1, sunRadius); x <= Math.min(dimX - 1, sunRadius); ++x)
 			for(int y = -Math.min(dimY - 1, sunRadius); y <= Math.min(dimY - 1, sunRadius); ++y)
 				for(int z = -Math.min(dimZ - 1, sunRadius); z <= Math.min(dimZ - 1, sunRadius); ++z)
 				{
-					if (SEPUtils.getDistance(new Location(x, y, z), origin) <= sunRadius)
+					if (SEPUtils.getDistance(new RealLocation(x, y, z), origin) <= sunRadius)
 					{
 						++volume;
 					}

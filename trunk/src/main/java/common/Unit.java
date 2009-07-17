@@ -7,7 +7,7 @@ package common;
 
 import java.io.Serializable;
 
-import common.SEPUtils.Location;
+import common.SEPUtils.RealLocation;
 
 /**
  * Represent a unit (fleet, probe, ...)
@@ -22,16 +22,17 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	// Only if visible	
 	private final String name;
 	private final Player owner;
+	private final RealLocation currentLocation;
 	
 	// Only if owner
-	private final Location sourceLocation;
-	private final Location destinationLocation;
-	private final Location	currentEstimatedLocation;
+	private final RealLocation sourceLocation;
+	private final RealLocation destinationLocation;
+	private final double	travellingProgress;
 	
 	/**
 	 * Full constructor.
 	 */
-	public Unit(boolean isVisible, int lastObervation, String name, Player owner, Location sourceLocation, Location destinationLocation, Location currentEstimatedLocation)
+	public Unit(boolean isVisible, int lastObervation, String name, Player owner, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress)
 	{
 		this.isVisible = isVisible;
 		this.lastObservation = lastObervation;
@@ -39,7 +40,8 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 		this.owner = owner;
 		this.sourceLocation = sourceLocation;
 		this.destinationLocation = destinationLocation;
-		this.currentEstimatedLocation = currentEstimatedLocation;
+		this.currentLocation = currentLocation;
+		this.travellingProgress = travellingProgress;
 	}
 	
 	/* (non-Javadoc)
@@ -70,19 +72,19 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	}
 	
 	/* (non-Javadoc)
-	 * @see common.Mobile#getCurrentEstimatedLocation()
+	 * @see common.Mobile#getTravellingProgress()
 	 */
 	@Override
-	public Location getCurrentEstimatedLocation()
+	public double getTravellingProgress()
 	{
-		return currentEstimatedLocation;
+		return travellingProgress;
 	}
 
 	/* (non-Javadoc)
 	 * @see common.Mobile#getDestinationLocation()
 	 */
 	@Override
-	public Location getDestinationLocation()
+	public RealLocation getDestinationLocation()
 	{
 		return destinationLocation;
 	}
@@ -91,9 +93,18 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	 * @see common.Mobile#getSourceLocation()
 	 */
 	@Override
-	public Location getSourceLocation()
+	public RealLocation getSourceLocation()
 	{
 		return sourceLocation;
+	}
+	
+	/* (non-Javadoc)
+	 * @see common.Mobile#getCurrentLocation()
+	 */
+	@Override
+	public RealLocation getCurrentLocation()
+	{
+		return currentLocation;
 	}
 	
 	/* (non-Javadoc)
@@ -111,9 +122,9 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 		{
 			sb.append(", moving from "+sourceLocation+" to "+destinationLocation);
 		}
-		if (currentEstimatedLocation != null)
+		if (travellingProgress >= 0)
 		{
-			sb.append(", current "+(isVisible?"":"estimated ")+"location : "+currentEstimatedLocation);
+			sb.append(", "+(isVisible?"current estimated progress":"last seen progress")+" : "+travellingProgress);
 		}				
 		
 		return sb.toString();
@@ -128,15 +139,9 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	
 	public boolean isMoving()
 	{
-		if (currentEstimatedLocation == null || sourceLocation == null || destinationLocation == null) return false;
+		if (travellingProgress < 0 || sourceLocation == null || destinationLocation == null) return false;
 		
-		boolean onSource = true;
-		boolean onDestination = true;
-		
-		if (!currentEstimatedLocation.equals(sourceLocation)) onSource = false;
-		if (!currentEstimatedLocation.equals(destinationLocation)) onDestination = false;
-		
-		return !onSource && !onDestination;
+		return (travellingProgress != 0 && travellingProgress != 1);		
 	}
 
 	public String getOwnerName()

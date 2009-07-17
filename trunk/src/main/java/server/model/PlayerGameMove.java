@@ -20,7 +20,7 @@ import common.Player;
 import common.PlayerGameBoard;
 import common.Protocol;
 import common.Protocol.ServerRunningGame.RunningGameCommandException;
-import common.SEPUtils.Location;
+import common.SEPUtils.RealLocation;
 
 /**
  * Represent a player move for a specific game board.
@@ -300,9 +300,9 @@ public class PlayerGameMove
 	static class LaunchProbeCommand extends GameMoveCommand
 	{
 		private final String probeName;
-		private final Location destination;
+		private final RealLocation destination;
 		
-		public LaunchProbeCommand(String playerLogin, String probeName, Location destination)
+		public LaunchProbeCommand(String playerLogin, String probeName, RealLocation destination)
 		{
 			super(playerLogin);
 			this.probeName = probeName;
@@ -481,7 +481,7 @@ public class PlayerGameMove
 		addGameMoveCommand(new MakeAntiProbeMissilesCommand(playerLogin, planetName, antiProbeMissileName, quantity));
 	}
 	
-	public void addLaunchProbeCommand(String probeName, Location destination) throws RunningGameCommandException
+	public void addLaunchProbeCommand(String probeName, RealLocation destination) throws RunningGameCommandException
 	{
 		checkTurnIsNotEnded();
 			

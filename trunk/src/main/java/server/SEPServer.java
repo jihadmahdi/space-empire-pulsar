@@ -48,7 +48,7 @@ import common.Protocol.ServerGameCreation;
 import common.Protocol.ServerPausedGame;
 import common.Protocol.ServerRunningGame;
 import common.Protocol.ServerRunningGame.RunningGameCommandException;
-import common.SEPUtils.Location;
+import common.SEPUtils.RealLocation;
 
 /**
  * TODO
@@ -485,14 +485,14 @@ public class SEPServer implements IServer, GameServerListener
 		}
 		
 		@Override
-		public boolean canLaunchProbe(String probeName, Location destination) throws RpcException, StateMachineNotExpectedEventException
+		public boolean canLaunchProbe(String probeName, RealLocation destination) throws RpcException, StateMachineNotExpectedEventException
 		{
 			if (getGameMove().isTurnEnded()) return false;
 			return getGameBoard().canLaunchProbe(getLogin(), probeName, destination);
 		}
 
 		@Override
-		public void launchProbe(String probeName, Location destination) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
+		public void launchProbe(String probeName, RealLocation destination) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
 			getGameMove().addLaunchProbeCommand(probeName, destination);
 		}

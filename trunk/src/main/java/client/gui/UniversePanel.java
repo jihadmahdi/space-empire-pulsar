@@ -41,7 +41,7 @@ import common.Planet;
 import common.PlayerGameBoard;
 import common.Unit;
 import common.UnitMarker;
-import common.SEPUtils.Location;
+import common.SEPUtils.RealLocation;
 
 /**
  * This code was edited or generated using CloudGarden's Jigloo SWT/Swing GUI
@@ -260,7 +260,7 @@ public class UniversePanel extends javax.swing.JPanel implements UniverseRendere
 				}
 
 				// Border is yellow if selected
-				if (selectedLocation != null && selectedLocation.equals(new Location(x, y, z)))
+				if (selectedLocation != null && selectedLocation.equals(new RealLocation(x + 0.5, y + 0.5, z + 0.5)))
 				{
 					image.setBorder(BorderFactory.createLineBorder(Color.yellow));
 				}
@@ -351,11 +351,11 @@ public class UniversePanel extends javax.swing.JPanel implements UniverseRendere
 		return images.get(i);
 	}
 
-	private Location	selectedLocation;
+	private RealLocation	selectedLocation;
 
 	private void selectLocation(int x, int y, int z)
 	{
-		selectedLocation = new Location(x, y, z);
+		selectedLocation = new RealLocation(x + 0.5, y + 0.5, z + 0.5);
 		changeZView(getZSlider().getValue());
 		if (listener != null) listener.updateSelectedArea(selectedLocation);
 	}

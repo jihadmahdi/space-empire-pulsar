@@ -1,18 +1,22 @@
 package common;
 
+import java.io.IOException;
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
-import common.SEPUtils.Location;
+import common.SEPUtils.RealLocation;
 
-public class TravellingLogEntryUnitSeen extends ATravellingLogEntry
+public class TravellingLogEntryUnitSeen extends ATravellingLogEntry implements Serializable
 {
-	private final Set<Unit> units;
+	private static final long	serialVersionUID	= 1L;
 	
-	public TravellingLogEntryUnitSeen(String title, int date, String instantTime, Location location, Set<Unit> units)
+	private final Unit unit;
+	
+	public TravellingLogEntryUnitSeen(String title, int date, float instantTime, RealLocation location, Unit unit)
 	{
 		super(title, date, instantTime, location);
-		this.units = units;
-	}
-
+		this.unit = unit;
+	}	
 }

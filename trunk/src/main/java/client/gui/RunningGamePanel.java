@@ -119,7 +119,7 @@ import common.Unit;
 import common.UnitMarker;
 import common.Fleet.Move;
 import common.Protocol.ServerRunningGame.RunningGameCommandException;
-import common.SEPUtils.Location;
+import common.SEPUtils.RealLocation;
 
 /**
  * This code was edited or generated using CloudGarden's Jigloo SWT/Swing GUI
@@ -731,7 +731,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	private PlayerGameBoard	currentGameBoard;
 
 	private Area			currentSelectedArea;
-	private Location		currentSelectedLocation;
+	private RealLocation	currentSelectedLocation;
 
 	/*
 	 * (non-Javadoc)
@@ -739,7 +739,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	 * @see client.gui.UniverseRenderer.UniverseRendererListener#updateSelectedArea(int, int, int)
 	 */
 	@Override
-	public void updateSelectedArea(Location location)
+	public void updateSelectedArea(RealLocation location)
 	{
 		if (currentGameBoard == null) return;
 
@@ -929,7 +929,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		if (unit == null) return;
 		
-		Location unitLocation = currentGameBoard.getUnitLocation(unit.getOwnerName(), unit.getName());
+		RealLocation unitLocation = currentGameBoard.getUnitLocation(unit.getOwnerName(), unit.getName());
 		if (unitLocation == null) return;
 
 		Area area = currentGameBoard.getArea(unitLocation);
@@ -1128,7 +1128,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						int y = Basic.intValueOf(getLaunchProbeDestinationYTextField().getText(), -1);
 						int z = Basic.intValueOf(getLaunchProbeDestinationZTextField().getText(), -1);
 						
-						Location dest = new Location(x, y, z);
+						RealLocation dest = new RealLocation(x + 0.5, y + 0.5, z + 0.5);
 						
 						try
 						{

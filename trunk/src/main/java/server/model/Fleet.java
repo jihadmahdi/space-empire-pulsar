@@ -10,7 +10,7 @@ import common.GovernmentStarship;
 import common.IStarship;
 import common.Player;
 import common.SEPUtils;
-import common.SEPUtils.Location;
+import common.SEPUtils.RealLocation;
 
 public class Fleet extends Unit implements Serializable
 {
@@ -26,9 +26,9 @@ public class Fleet extends Unit implements Serializable
 	// Views
 	PlayerDatedView<HashMap<Class<? extends IStarship>, Integer>>	playersStarshipsView	= new PlayerDatedView<HashMap<Class<? extends IStarship>, Integer>>();
 
-	public Fleet(String name, Player owner, Map<Class<? extends IStarship>, Integer> starships, boolean isUnassigned)
+	public Fleet(String name, Player owner, RealLocation sourceLocation, Map<Class<? extends IStarship>, Integer> starships, boolean isUnassigned)
 	{
-		super(name, owner);
+		super(name, owner, sourceLocation);
 		
 		if (starships != null)
 		{
@@ -52,7 +52,7 @@ public class Fleet extends Unit implements Serializable
 			playersStarshipsView.updateView(playerLogin, starships, date);
 		}				
 		
-		return new common.Fleet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentEstimatedLocationView(playerLogin), playersStarshipsView.getLastValue(playerLogin, null), (getOwner()!=null&&getOwner().isNamed(playerLogin)?currentMove:null) ,(getOwner()!=null&&getOwner().isNamed(playerLogin)?checkpoints:null), isUnassigned);
+		return new common.Fleet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), playersStarshipsView.getLastValue(playerLogin, null), (getOwner()!=null&&getOwner().isNamed(playerLogin)?currentMove:null) ,(getOwner()!=null&&getOwner().isNamed(playerLogin)?checkpoints:null), isUnassigned);
 	}
 
 	public boolean isGovernmentFleet()
@@ -129,28 +129,30 @@ public class Fleet extends Unit implements Serializable
 	}
 	
 	@Override
-	public boolean startMove(Location currentLocation, GameBoard currentGameBoard)
+	public boolean startMove(RealLocation currentLocation, GameBoard currentGameBoard)
 	{
 		if ((currentMove == null || currentMove.getDestinationLocation().equals(currentLocation)) && checkpoints.size() > 0)
 		{
-			currentMove = checkpoints.firstElement();
-			checkpoints.removeElementAt(0);
-			
-			setSourceLocation(currentLocation);
-			setDestinationLocation(currentGameBoard.getCelestialBodyLocation(currentMove.getDestinationName()));
-			setCurrentLocation(currentLocation);
-			
-			return true;
-		}
+			if (super.startMove(currentLocation, currentGameBoard))
+			{
+				currentMove = checkpoints.firstElement();
+				checkpoints.removeElementAt(0);
+				
+				setDestinationLocation(currentGameBoard.getCelestialBodyLocation(currentMove.getDestinationName()));
+				
+				return true;
+			}
+		}		
 		
 		return false;
 	}
 	
 	@Override
-	public void endMove(Location currentLocation, GameBoard gameBoard)
+	public void endMove(RealLocation currentLocation, GameBoard gameBoard)
 	{
 		setDestinationLocation(null);
 		currentMove = null; // Needed for the next startMove call.
+		super.endMove(currentLocation, gameBoard);
 	}
 	
 	@Override

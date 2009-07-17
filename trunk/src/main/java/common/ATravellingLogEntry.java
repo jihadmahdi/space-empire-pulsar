@@ -1,15 +1,17 @@
 package common;
 
-import common.SEPUtils.Location;
+import java.io.Serializable;
 
-public abstract class ATravellingLogEntry
+import common.SEPUtils.RealLocation;
+
+public abstract class ATravellingLogEntry implements Serializable
 {
 	private final String title;
 	private final int date;
-	private final String instantTime;
-	private final Location location;
+	private final float instantTime;
+	private final RealLocation location;
 	
-	public ATravellingLogEntry(String title, int date, String instantTime, Location location)
+	public ATravellingLogEntry(String title, int date, float instantTime, RealLocation location)
 	{
 		this.title = title;
 		this.date = date;
