@@ -43,13 +43,13 @@ class ExtractionModule extends ABuilding implements Serializable
 	@Override
 	public common.ExtractionModule getPlayerView(int date, String playerLogin)
 	{
-		return new common.ExtractionModule(nbBuild, getTotalBonus(), getUpgradeCarbonCost());
+		return new common.ExtractionModule(nbBuild, getCarbonProductionPerTurn(), getUpgradeCarbonCost());
 	}
 	
-	private float getTotalBonus()
+	public int getCarbonProductionPerTurn()
 	{
 		// TODO : Redefine the formula
-		return Float.valueOf(nbBuild)* (float) 0.25;
+		return (int) (5000 * (Float.valueOf(nbBuild) * (float) 0.25));
 	}
 
 	@Override

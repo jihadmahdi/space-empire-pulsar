@@ -642,4 +642,16 @@ public class GameConfig implements Serializable
 
 		return sb.toString();
 	}
+
+	public int getNaturalCarbonPerTurn()
+	{
+		// TODO : Add to CTOR
+		return ProductiveCelestialBody.NATURAL_CARBON_PER_TURN;
+	}
+
+	public int getMaxNaturalCarbon()
+	{
+		// TODO : Add to CTOR
+		return ProductiveCelestialBody.MAX_NATURAL_CARBON;
+	}
 }

@@ -420,32 +420,19 @@ public interface Protocol
 		void attackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
-		 * Test if player can change its domestic policy.
+		 * Test if player can change its diplomaty.
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void canChangeDomesticPolicy() throws RpcException, StateMachineNotExpectedEventException;
+		boolean canChangeDiplomacy(Diplomacy newDiplomacy) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Change the player domestic policy.
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 * @throws RunningGameCommandException 
 		 */
-		void changeDomesticPolicy(/*TODO*/) throws RpcException, StateMachineNotExpectedEventException;
-		
-		/**
-		 * Test if player can change its conquest policy.
-		 * @throws RpcException On connection error.
-		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
-		 */
-		void canChangeConquestPolicy() throws RpcException, StateMachineNotExpectedEventException;
-		
-		/**
-		 * Change the player conquest policy.
-		 * @throws RpcException On connection error.
-		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
-		 */
-		void changeConquestPolicy() throws RpcException, StateMachineNotExpectedEventException;
+		void changeDiplomacy(Diplomacy newDiplomacy) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
 
 		/**
 		 * Test if turn can be reseted (not ended yet).

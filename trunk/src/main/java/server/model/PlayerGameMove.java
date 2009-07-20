@@ -14,6 +14,7 @@ import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 
 import client.gui.RunningGamePanel;
 
+import common.Diplomacy;
 import common.IBuilding;
 import common.IStarship;
 import common.Player;
@@ -355,7 +356,34 @@ public class PlayerGameMove
 			}
 			return newGameBoard;
 		}
-	}	
+	}
+	
+	static class ChangeDiplomacyCommand extends GameMoveCommand
+	{
+		private final common.Diplomacy newDiplomacy;
+		
+		public ChangeDiplomacyCommand(String playerLogin, common.Diplomacy newDiplomacy)
+		{
+			super(playerLogin);
+			this.newDiplomacy = newDiplomacy;
+		}
+		
+		@Override
+		protected GameBoard apply(GameBoard originalGameBoard)
+		{
+			GameBoard newGameBoard = Basic.clone(originalGameBoard);
+			try
+			{
+				newGameBoard.changeDiplomacy(playerLogin, newDiplomacy);
+			}
+			catch(RunningGameCommandException e)
+			{
+				e.printStackTrace();
+				return originalGameBoard;
+			}
+			return newGameBoard;
+		}
+	}
 	
 	//////////////////
 	
@@ -527,6 +555,24 @@ public class PlayerGameMove
 		}
 		
 		addGameMoveCommand(new MoveFleetCommand(playerLogin, fleetName, checkpoints));
+	}
+	
+	public void addChangeDiplomacyCommand(Diplomacy newDiplomacy) throws RunningGameCommandException
+	{
+		checkTurnIsNotEnded();
+		
+		if (!newDiplomacy.getOwner().isNamed(playerLogin))
+		{
+			throw new RunningGameCommandException(playerLogin+" sent a diplomacy plan with wrong signature '"+newDiplomacy.getOwnerName()+"'.");
+		}
+		
+		if (!getGameBoard().canChangeDiplomacy(playerLogin, newDiplomacy))
+		{
+			throw new RunningGameCommandException(playerLogin+" cannot change diplomacy or sent an invalid diplomacy plan.");
+		}
+		
+		
+		addGameMoveCommand(new ChangeDiplomacyCommand(playerLogin, newDiplomacy));
 	}
 	
 	private void addGameMoveCommand(GameMoveCommand command) throws RunningGameCommandException

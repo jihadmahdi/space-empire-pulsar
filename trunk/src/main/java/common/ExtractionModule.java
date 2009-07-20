@@ -18,7 +18,7 @@ public class ExtractionModule implements IBuilding, Serializable
 	
 	// Only if visible
 	private final int nbBuild;
-	private final float totalBonus;
+	private final float carbonProductionPerTurn;
 	
 	// Only if owner
 	private final int nextBuildCost;
@@ -26,10 +26,10 @@ public class ExtractionModule implements IBuilding, Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public ExtractionModule(int nbBuild, float totalBonus, int nextBuildCost)
+	public ExtractionModule(int nbBuild, float carbonProductionPerTurn, int nextBuildCost)
 	{
 		this.nbBuild = nbBuild;
-		this.totalBonus = totalBonus;
+		this.carbonProductionPerTurn = carbonProductionPerTurn;
 		this.nextBuildCost = nextBuildCost;
 	}
 	
@@ -38,9 +38,9 @@ public class ExtractionModule implements IBuilding, Serializable
 		return nbBuild;
 	}
 
-	public float getTotalBonus()
+	public float getCarbonProductionPerTurn()
 	{
-		return totalBonus;
+		return carbonProductionPerTurn;
 	}
 
 	public int getNextBuildCost()
@@ -63,6 +63,6 @@ public class ExtractionModule implements IBuilding, Serializable
 	@Override
 	public String toString()
 	{
-		return nbBuild+" Extraction modules build, give an extraction bonus of "+totalBonus+".\n"+((nextBuildCost<0)?"Can't build more":"Next build cost "+nextBuildCost)+".";
+		return nbBuild+" Extraction modules build, extract "+carbonProductionPerTurn+"c per turn.\n"+((nextBuildCost<0)?"Can't build more":"Next build cost "+nextBuildCost)+".";
 	}
 }

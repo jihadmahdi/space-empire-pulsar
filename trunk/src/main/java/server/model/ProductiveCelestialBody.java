@@ -6,6 +6,7 @@
 package server.model;
 
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,6 +14,8 @@ import java.util.Hashtable;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+
+import server.SEPServer;
 
 import common.GameConfig;
 import common.IStarship;
@@ -31,12 +34,13 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	
 	// Constants
 	private final String name;
-	private final int carbonStock;
+	private final int startingCarbonStock;
 	private final int slots;
 	
 	// Variables
 	private int carbon;
 	private Player owner;
+	private int carbonStock;
 	private final Map<Class<? extends ABuilding>, ABuilding> buildings;
 	private final Map<String, Fleet> unasignedFleets;
 	
@@ -44,6 +48,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	
 	// Views
 	private PlayerDatedView<Integer> playersLastObservation = new PlayerDatedView<Integer>();
+	private PlayerDatedView<Integer> playersCarbonStockView = new PlayerDatedView<Integer>();
 	private PlayerDatedView<Integer> playersCarbonView = new PlayerDatedView<Integer>();
 	private PlayerDatedView<Player> playersOwnerView = new PlayerDatedView<Player>();
 	private PlayerDatedView<HashSet<common.IBuilding>> playersBuildingsView = new PlayerDatedView<HashSet<common.IBuilding>>();
@@ -62,10 +67,11 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	/**
 	 * Full constructor.
 	 */
-	public ProductiveCelestialBody(String name, int carbonStock, int slots, Player owner)
+	public ProductiveCelestialBody(String name, int startingCarbonStock, int slots, Player owner)
 	{
 		this.name = name;
-		this.carbonStock = carbonStock;
+		this.startingCarbonStock = startingCarbonStock;
+		this.carbonStock = this.startingCarbonStock;
 		this.slots = slots;
 		this.owner = owner;
 		this.buildings = new HashMap<Class<? extends ABuilding>, ABuilding>();
@@ -81,7 +87,8 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		
 		// Fix carbon amount to the mean value.
 		Integer[] carbonAmount = gameConfig.getCelestialBodiesStartingCarbonAmount().get(celestialBodyType);
-		this.carbonStock = random.nextInt(carbonAmount[1] - carbonAmount[0]) + carbonAmount[0];
+		this.startingCarbonStock = random.nextInt(carbonAmount[1] - carbonAmount[0]) + carbonAmount[0];
+		this.carbonStock = this.startingCarbonStock;
 		
 		// Fix slots amount to the mean value.
 		Integer[] slotsAmount = gameConfig.getCelestialBodiesSlotsAmount().get(celestialBodyType);
@@ -186,6 +193,21 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		return carbonStock;
 	}
 	
+	public int getStartingCarbonStock()
+	{
+		return startingCarbonStock;
+	}
+	
+	protected int getCarbonStockView(int date, String playerLogin, boolean isVisible)
+	{
+		if (isVisible)
+		{
+			playersCarbonStockView.updateView(playerLogin, carbonStock, date);
+		}
+		
+		return playersCarbonStockView.getLastValue(playerLogin, -1);
+	}
+	
 	protected int getCarbonView(int date, String playerLogin, boolean isVisible)
 	{
 		if (isVisible)
@@ -287,6 +309,16 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		return unasignedFleets.get(playerLogin);
 	}
 	
+	public <B extends ABuilding> B getBuilding(Class<B> buildingType)
+	{
+		if (buildings.containsKey(buildingType))
+		{
+			return buildingType.cast(buildings.get(buildingType));
+		}
+		
+		return null;
+	}
+	
 	public Collection<ABuilding> getBuildings()
 	{
 		return buildings.values();
@@ -324,5 +356,27 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		buildings.remove(buildingType);
 	}
 	
-	abstract public boolean canBuild(ABuilding building);		
+	abstract public boolean canBuild(ABuilding building);
+	
+	static int getNaturalCarbonPerTurn(Class<? extends ProductiveCelestialBody> productiveCelestialBodyType)
+	{
+		// TODO : Distinguish between productive celestial body type.		
+		return common.ProductiveCelestialBody.NATURAL_CARBON_PER_TURN;
+	}
+	
+	static int getMaxNaturalCarbon(Class<? extends ProductiveCelestialBody> productiveCelestialBodyType)
+	{
+		// TODO : Distinguish between productive celestial body type.		
+		return common.ProductiveCelestialBody.MAX_NATURAL_CARBON;
+	}
+
+	public void decreaseCarbonStock(int generatedCarbon)
+	{		
+		this.carbonStock -= generatedCarbon;
+	}
+	
+	public String getOwnerName()
+	{
+		return owner == null ? null : owner.getName();
+	}
 }

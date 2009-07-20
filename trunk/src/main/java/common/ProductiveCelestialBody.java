@@ -16,6 +16,10 @@ import java.util.Set;
 public abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 {
 	private static final long		serialVersionUID	= 1L;
+	
+	public static final int NATURAL_CARBON_PER_TURN = 2000; // TODO : A revoir
+	
+	public static final int MAX_NATURAL_CARBON = 2000;
 
 	private final boolean			isVisible;
 
@@ -24,11 +28,12 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 	// Constant
 	private final String			name;
 
-	private final int				carbonStock;
+	private final int				startingCarbonStock;
 
 	private final int				slots;
 
 	// Only if visible
+	private final int				carbonStock;
 	private final int				carbon;
 
 	private final Set<IBuilding>	buildings;
@@ -40,11 +45,12 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 	/**
 	 * Full constructor.
 	 */
-	public ProductiveCelestialBody(boolean isVisible, int lastObservation, String name, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, Player owner, Map<Class<? extends IStarship>, Integer> unasignedFleet)
+	public ProductiveCelestialBody(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, Player owner, Map<Class<? extends IStarship>, Integer> unasignedFleet)
 	{
 		this.isVisible = isVisible;
 		this.lastObservation = lastObservation;
 		this.name = name;
+		this.startingCarbonStock = startingCarbonStock;
 		this.carbonStock = carbonStock;
 		this.carbon = carbon;
 		this.slots = slots;
@@ -93,6 +99,11 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 		return name;
 	}
 
+	public int getStartingCarbonStock()
+	{
+		return startingCarbonStock;
+	}
+	
 	public int getCarbonStock()
 	{
 		return carbonStock;
@@ -139,7 +150,7 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 
 		sb.append((owner == null) ? "" : "[" + owner.getName() + "] ");
 		sb.append(name + " (" + getClass().getSimpleName() + ")\n");
-		sb.append("  Carbon : " + carbon + " / " + carbonStock + "\n");
+		sb.append("  Carbon : " + carbon + " / " + carbonStock + " ("+startingCarbonStock+")\n");
 		sb.append("  Slots : " + getBuildSlotsCount() + " / " + slots + "\n");
 		if (buildings != null)
 		{

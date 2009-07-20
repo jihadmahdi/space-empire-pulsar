@@ -38,9 +38,17 @@ public class Fleet extends Unit implements Serializable
 		public Move(Move unLocatedMove, RealLocation destinationLocation)
 		{
 			this.destinaionCelestialBodyName = unLocatedMove.destinaionCelestialBodyName;
+			this.destinationLocation = destinationLocation;
 			this.departureDelay = unLocatedMove.departureDelay;
-			this.isAnAttack = unLocatedMove.isAnAttack;
-			this.destinationLocation = destinationLocation;			
+			this.isAnAttack = unLocatedMove.isAnAttack;				
+		}
+		
+		public Move(Move previousMove, int decreasedDelay)
+		{
+			this.destinaionCelestialBodyName = previousMove.destinaionCelestialBodyName;
+			this.destinationLocation = previousMove.destinationLocation;
+			this.departureDelay = decreasedDelay;
+			this.isAnAttack = this.isAnAttack;
 		}
 		
 		public String getDestinationName()
@@ -67,6 +75,11 @@ public class Fleet extends Unit implements Serializable
 		public String toString()
 		{
 			return (isAnAttack?"Attack ":"Go to ")+destinaionCelestialBodyName+(departureDelay>0?" ("+departureDelay+")":"");
+		}
+
+		public Move getDecreaseDelayMove()
+		{
+			return new Move(this, Math.max(0, this.departureDelay - 1));
 		}
 	}
 	

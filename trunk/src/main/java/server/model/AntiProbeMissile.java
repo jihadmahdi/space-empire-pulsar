@@ -17,7 +17,7 @@ public class AntiProbeMissile extends Unit implements Serializable
 	private String targetOwnerName;
 	
 	// Views
-	private final PlayerDatedView<Boolean> playersFiredView = new PlayerDatedView<Boolean>();
+	private final PlayerDatedView<Boolean> playersFiredView = new PlayerDatedView<Boolean>();	
 	
 	/**
 	 * Full constructor. 
@@ -79,9 +79,9 @@ public class AntiProbeMissile extends Unit implements Serializable
 		targetName = targetProbeName;
 		targetOwnerName = targetProbeOwnerName;
 		
-		setTravellingProgress(0);
 		setSourceLocation(source);
 		setDestinationLocation(destination);
+		setTravellingProgress(0);		
 	}
 	
 	public String getTargetName()

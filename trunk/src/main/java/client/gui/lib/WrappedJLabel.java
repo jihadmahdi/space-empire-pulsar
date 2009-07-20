@@ -31,6 +31,12 @@ public class WrappedJLabel extends JScrollPane
 		textComp = new WrappedTextArea();
 		setViewportView(textComp);
 	}
+	
+	public WrappedJLabel(String text)
+	{
+		this();
+		setText(text);
+	}
 
 	class WrappedTextArea extends JTextArea
 	{
