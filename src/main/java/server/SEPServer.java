@@ -361,33 +361,16 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public void canChangeConquestPolicy() throws RpcException, StateMachineNotExpectedEventException
+		public boolean canChangeDiplomacy(common.Diplomacy newDiplomacy) throws RpcException, StateMachineNotExpectedEventException
 		{
-			// if (getGameMove().isTurnEnded()) return false;
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canChangeDiplomacy(getLogin(), newDiplomacy);
 		}
 
 		@Override
-		public void changeConquestPolicy() throws RpcException, StateMachineNotExpectedEventException
+		public void changeDiplomacy(common.Diplomacy newDiplomacy) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
-		}
-
-		@Override
-		public void canChangeDomesticPolicy() throws RpcException, StateMachineNotExpectedEventException
-		{
-			// if (getGameMove().isTurnEnded()) return false;
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
-		}
-
-		@Override
-		public void changeDomesticPolicy() throws RpcException, StateMachineNotExpectedEventException
-		{
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			getGameMove().addChangeDiplomacyCommand(newDiplomacy);
 		}
 
 		@Override

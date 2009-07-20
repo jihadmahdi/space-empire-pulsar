@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -45,7 +46,9 @@ import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -109,6 +112,7 @@ import common.LaunchedPulsarMissile;
 import common.Planet;
 import common.Player;
 import common.PlayerGameBoard;
+import common.Diplomacy;
 import common.Probe;
 import common.ProductiveCelestialBody;
 import common.PulsarLauchingPad;
@@ -118,6 +122,7 @@ import common.StarshipPlant;
 import common.Unit;
 import common.UnitMarker;
 import common.Fleet.Move;
+import common.Diplomacy.PlayerPolicies;
 import common.Protocol.ServerRunningGame.RunningGameCommandException;
 import common.SEPUtils.RealLocation;
 
@@ -217,6 +222,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			runningGameSouthPanel.setPreferredSize(new Dimension(Integer.MAX_VALUE, 20));
 
 			runningGameSouthPanel.add(getRunningGameShortcutBarLabel());
+			runningGameSouthPanel.add(getDiplomacyBtn());
 			runningGameSouthPanel.add(getRunningGameCancelTurnBtn());
 			runningGameSouthPanel.add(getRunningGameEndTurnBtn());
 		}
@@ -229,6 +235,27 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		JOptionPane.showMessageDialog(null, e.getMessage(), "Game command exception", JOptionPane.ERROR_MESSAGE);
 	}
 
+	private JButton diplomacyBtn;
+	private JButton getDiplomacyBtn()
+	{
+		if (diplomacyBtn == null)
+		{
+			diplomacyBtn = new JButton("Diplomacy");
+			diplomacyBtn.setPreferredSize(new Dimension(diplomacyBtn.getPreferredSize().width, 20));
+			diplomacyBtn.addActionListener(new ActionListener()
+			{
+				
+				@Override
+				public void actionPerformed(ActionEvent e)
+				{
+					displayDiplomacyActionPanel();
+					getRunningGameTabbedPanel().setSelectedComponent(getActionPanel());
+				}
+			});
+		}
+		return diplomacyBtn;
+	}
+	
 	private JButton	runningGameCancelTurnBtn;
 
 	private JButton getRunningGameCancelTurnBtn()
@@ -356,34 +383,22 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			runningGameTabbedPanel = new JTabbedPane();
 			runningGameTabbedPanel.setPreferredSize(new Dimension(4, 200));
 			runningGameTabbedPanel.addTab("Chat panel", getRunningGameChatPanel());
-			runningGameTabbedPanel.addTab("Building action", getBuildingActionPanel());
-			runningGameTabbedPanel.addTab("Fleet action", getUnitActionPanel());
+			runningGameTabbedPanel.addTab("Action", getActionPanel());
 		}
 		return runningGameTabbedPanel;
 	}
 
-	private JPanel	buildingActionPanel;
+	private JPanel	actionPanel;
 
-	private JPanel getBuildingActionPanel()
+	private JPanel getActionPanel()
 	{
-		if (buildingActionPanel == null)
+		if (actionPanel == null)
 		{
-			buildingActionPanel = new JPanel(new BorderLayout());
+			actionPanel = new JPanel(new BorderLayout());
 		}
-		return buildingActionPanel;
+		return actionPanel;
 	}
-
-	private JPanel	unitActionPanel;
-
-	private JPanel getUnitActionPanel()
-	{
-		if (unitActionPanel == null)
-		{
-			unitActionPanel = new JPanel(new BorderLayout());
-		}
-		return unitActionPanel;
-	}
-
+	
 	private JPanel	runningGameChatPanel;
 
 	private JPanel getRunningGameChatPanel()
@@ -541,7 +556,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 					if (runningGameCelestialBodyDetailsBuildingsList.isFocusOwner())
 					{
-						getRunningGameTabbedPanel().setSelectedComponent(getBuildingActionPanel());
+						getRunningGameTabbedPanel().setSelectedComponent(getActionPanel());
 					}
 				}
 			});
@@ -612,11 +627,11 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					{
 						if (Fleet.class.isInstance(selectedUnit) && Fleet.class.cast(selectedUnit).isUnasignedFleet())
 						{
-							getRunningGameTabbedPanel().setSelectedComponent(getBuildingActionPanel());
+							getRunningGameTabbedPanel().setSelectedComponent(getActionPanel());
 						}
 						else
 						{
-							getRunningGameTabbedPanel().setSelectedComponent(getUnitActionPanel());
+							getRunningGameTabbedPanel().setSelectedComponent(getActionPanel());
 						}
 					}
 				}
@@ -1084,9 +1099,17 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						{
 							showRunningGameCommandExceptionMsg(e);
 						}
+						finally
+						{
+							refreshGameBoard();
+						}
 					}
 				});
 
+				Set<Probe> probes = currentGameBoard.getUnits(Probe.class);				
+				getAntiPulsarMissileTargetComboBox().clear();
+				getAntiPulsarMissileTargetComboBox().addAll(probes);
+				
 				btnsPanel.add(getAntiPulsarMissileTargetComboBox().getComponent());
 				btnsPanel.add(fireBtn);
 
@@ -1219,9 +1242,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	private TypedListWrapper<JComboBox, Probe> getAntiPulsarMissileTargetComboBox()
 	{
 		if (antiPulsarMissileTargetComboBox == null)
-		{
-			Set<Probe> probes = currentGameBoard.getUnits(Probe.class);
-			
+		{			
 			antiPulsarMissileTargetComboBox = new TypedListWrapper<JComboBox, Probe>(Probe.class, new JComboBox(), new Comparator<Probe>()
 			{
 				
@@ -1243,9 +1264,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					label.setText("["+value.getOwnerName()+"] "+value.getName());
 					return label;
 				}
-			});
-			
-			antiPulsarMissileTargetComboBox.addAll(probes);
+			});						
 		}
 		return antiPulsarMissileTargetComboBox;
 	}
@@ -1967,6 +1986,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 	private <B extends IBuilding> SelectedBuildingInfos<B> getSelectedBuildingInfos(Class<B> buildingType)
 	{
+		if (currentSelectedArea == null) return null;
 		ICelestialBody celestialBody = currentSelectedArea.getCelestialBody();
 		if (celestialBody == null) return null;
 		if (!ProductiveCelestialBody.class.isInstance(celestialBody)) return null;
@@ -2069,10 +2089,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		getSpaceCounterActionScrollPane().setViewportView(spaceCounterActionPanel);
 
-		getBuildingActionPanel().removeAll();
-		getBuildingActionPanel().add(getSpaceCounterActionScrollPane(), BorderLayout.CENTER);
+		getActionPanel().removeAll();
+		getActionPanel().add(getSpaceCounterActionScrollPane(), BorderLayout.CENTER);
 
-		getRunningGameTabbedPanel().setTitleAt(getRunningGameTabbedPanel().indexOfComponent(getBuildingActionPanel()), infos.productiveCelestialBody.getName() + " " + SpaceCounter.class.getSimpleName());
+		getRunningGameTabbedPanel().setTitleAt(getRunningGameTabbedPanel().indexOfComponent(getActionPanel()), infos.productiveCelestialBody.getName() + " " + SpaceCounter.class.getSimpleName());
 
 		updateUI();
 		// TODO
@@ -2533,6 +2553,204 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 	///////
 
+	private void displayDiplomacyActionPanel()
+	{
+		Map<String, Diplomacy> policies = currentGameBoard.getPlayersPolicies();
+		
+		JPanel diplomacyActionPanel = new JPanel();
+		GridLayout gridLayout = new GridLayout(policies.size()+1, policies.size()+1, 1, 1);
+		diplomacyActionPanel.setLayout(gridLayout);
+		
+		diplomacyActionPanel.add(getDiplomacyPanelPlayerFieldLabel());
+		
+		diplomacyActionPanel.add(getDiplomacyPlayerLabel(currentPlayer));
+		for(Player player : currentGamePlayers)
+		{
+			if (currentPlayer.isNamed(player.getName())) continue;
+			diplomacyActionPanel.add(getDiplomacyPlayerLabel(player));
+		}
+		
+		diplomacyActionPanel.add(getDiplomacyPlayerLabel(currentPlayer));
+		diplomacyActionPanel.add(new JLabel());
+		
+		for(Player player : currentGamePlayers)
+		{
+			if (currentPlayer.isNamed(player.getName())) continue;
+			JPanel panel = new JPanel(new BorderLayout());
+			panel.add(getDiplomacyPlayerHomeDiplomacyPanel(player), BorderLayout.NORTH);
+			panel.add(getDiplomacyPlayerForeignDiplomacyPanel(player), BorderLayout.SOUTH);
+			
+			diplomacyActionPanel.add(panel);
+		}
+		
+		for(Player owner : currentGamePlayers)
+		{
+			if (currentPlayer.isNamed(owner.getName())) continue;
+			
+			diplomacyActionPanel.add(getDiplomacyPlayerLabel(owner));
+			
+			Diplomacy diplomacy = policies.get(owner.getName());
+			
+			diplomacyActionPanel.add(diplomacy == null || diplomacy.getPolicies(currentPlayer.getName()) == null ? new JLabel() : new WrappedJLabel(diplomacy.getPolicies(currentPlayer.getName()).toString()));
+			
+			for(Player player : currentGamePlayers)
+			{
+				if (currentPlayer.isNamed(player.getName())) continue;
+				if (owner.isNamed(player.getName()))
+				{
+					diplomacyActionPanel.add(new JLabel());
+				}
+				else
+				{
+					diplomacyActionPanel.add(diplomacy == null || diplomacy.getPolicies(player.getName()) == null ? new JLabel() : new WrappedJLabel(diplomacy.getPolicies(player.getName()).toString()));
+				}
+			}
+		}
+
+		getDiplomacyActionScrollPane().setViewportView(diplomacyActionPanel);
+
+		getActionPanel().removeAll();
+		getActionPanel().add(getDiplomacyActionScrollPane(), BorderLayout.CENTER);
+
+		getRunningGameTabbedPanel().setTitleAt(getRunningGameTabbedPanel().indexOfComponent(getActionPanel()), "Diplomacy");
+
+		refreshDiplomacyActionPanel();
+
+		updateUI();
+	}
+	
+	private void refreshDiplomacyActionPanel()
+	{
+		if (currentGameBoard == null || currentPlayer == null) return;
+		
+		Diplomacy diplomacy = currentGameBoard.getPlayersPolicies().get(currentPlayer.getName());
+		
+		for(Player player : currentGamePlayers)
+		{
+			if (currentPlayer.isNamed(player.getName())) continue;
+			
+			PlayerPolicies policies = diplomacy.getPolicies(player.getName());
+			
+			getDiplomacyPlayerHomeDiplomacyPanel(player).setSelected(policies.isAllowedToLandFleetInHomeTerritory());
+			getDiplomacyPlayerForeignDiplomacyPanel(player).setSelected(policies.isAlwaysEngagedInConflictOnStrangerTerritory());
+		}
+				
+		updateUI();
+	}
+	
+	private JScrollPane diplomacyActionScrollPane;
+	private JScrollPane getDiplomacyActionScrollPane()
+	{
+		if (diplomacyActionScrollPane == null)
+		{
+			diplomacyActionScrollPane = new JScrollPane();
+		}
+		return diplomacyActionScrollPane;
+	}
+	
+	private JLabel diplomacyPanelPlayerFieldLabel;
+	private JLabel getDiplomacyPanelPlayerFieldLabel()
+	{
+		if (diplomacyPanelPlayerFieldLabel == null)
+		{
+			diplomacyPanelPlayerFieldLabel = new JLabel("Diplomacy \\ Players");
+		}
+		return diplomacyPanelPlayerFieldLabel;
+	}
+	
+	//private Map<String, JLabel> playersLabels = new Hashtable<String, JLabel>();
+	private JLabel getDiplomacyPlayerLabel(Player player)
+	{
+		/*
+		if (!playersLabels.containsKey(player.getName()))		
+		{
+			JLabel playerLabel = new JLabel(player.getName());
+			playerLabel.setForeground(player.getConfig().getColor());
+			playersLabels.put(player.getName(), playerLabel);
+		}
+		
+		return playersLabels.get(player.getName());
+		*/
+		JLabel playerLabel = new JLabel(player.getName());
+		playerLabel.setForeground(player.getConfig().getColor());
+		return playerLabel;
+	}
+	
+	private Map<String, JCheckBox> playersHomeDiplomacy = new Hashtable<String, JCheckBox>();
+	private JCheckBox getDiplomacyPlayerHomeDiplomacyPanel(Player player)
+	{
+		if (!playersHomeDiplomacy.containsKey(player.getName()))
+		{
+			JCheckBox checkbox = new JCheckBox("Allow fleet");
+			checkbox.addActionListener(new ActionListener()
+			{
+				
+				@Override
+				public void actionPerformed(ActionEvent e)
+				{
+					updateDiplomacy();
+				}
+			});
+			playersHomeDiplomacy.put(player.getName(), checkbox);			
+		}
+		return playersHomeDiplomacy.get(player.getName());
+	}
+	
+	private Map<String, JCheckBox> playersForeignDiplomacy = new Hashtable<String, JCheckBox>();
+	private JCheckBox getDiplomacyPlayerForeignDiplomacyPanel(Player player)
+	{
+		if (!playersForeignDiplomacy.containsKey(player.getName()))
+		{
+			JCheckBox checkbox = new JCheckBox("Hostile in foreign conflicts");
+			checkbox.addActionListener(new ActionListener()
+			{
+				
+				@Override
+				public void actionPerformed(ActionEvent e)
+				{
+					updateDiplomacy();
+				}
+			});
+			playersForeignDiplomacy.put(player.getName(), checkbox);
+		}
+		return playersForeignDiplomacy.get(player.getName());
+	}
+	
+	private void updateDiplomacy()
+	{
+		Map<String, PlayerPolicies> policies = new Hashtable<String, PlayerPolicies>();
+		for(Player player : currentGamePlayers)
+		{
+			if (currentPlayer.isNamed(player.getName())) continue;;;;
+			boolean allowFleetAtHome = getDiplomacyPlayerHomeDiplomacyPanel(player).isSelected();
+			boolean alwaysEngageFightInStrangerTerritory = getDiplomacyPlayerForeignDiplomacyPanel(player).isSelected();
+			policies.put(player.getName(), new PlayerPolicies(player.getName(), allowFleetAtHome, alwaysEngageFightInStrangerTerritory));
+		}
+		
+		try
+		{
+			client.getRunningGameInterface().changeDiplomacy(new Diplomacy(currentPlayer, policies));
+		}
+		catch(RpcException e)
+		{
+			e.printStackTrace();
+		}
+		catch(StateMachineNotExpectedEventException e)
+		{
+			e.printStackTrace();
+		}
+		catch(RunningGameCommandException e)
+		{
+			showRunningGameCommandExceptionMsg(e);
+		}
+		finally
+		{
+			refreshGameBoard();
+		}
+	}
+	
+	////////////////
+	
 	private void displayFleetActionPanel()
 	{
 		SelectedUnitInfos<Fleet> infos = getSelectedUnitInfos(Fleet.class);
@@ -2561,10 +2779,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		getFleetActionScrollPane().setViewportView(fleetActionPanel);
 
-		getUnitActionPanel().removeAll();
-		getUnitActionPanel().add(getFleetActionScrollPane(), BorderLayout.CENTER);
+		getActionPanel().removeAll();
+		getActionPanel().add(getFleetActionScrollPane(), BorderLayout.CENTER);
 
-		getRunningGameTabbedPanel().setTitleAt(getRunningGameTabbedPanel().indexOfComponent(getUnitActionPanel()), "Fleet " + infos.unit.getName());
+		getRunningGameTabbedPanel().setTitleAt(getRunningGameTabbedPanel().indexOfComponent(getActionPanel()), "Fleet " + infos.unit.getName());
 
 		refreshFleetActionPanel();
 
@@ -2574,14 +2792,13 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	private void refreshFleetActionPanel()
 	{
 		SelectedUnitInfos<Fleet> infos = getSelectedUnitInfos(Fleet.class);
-		if (infos == null) return;
+		if (infos == null || infos.unit == null) return;
 
 		getFleetMoveCurrentMoveLabel().setText(infos.unit.getCurrentMove() == null ? "Stopped" : "Current move : " + infos.unit.getCurrentMove().toString());
 
 		getFleetMoveCheckPointList().getComponent().setEnabled(false);
 		getFleetMoveCheckPointList().clear();
-		SpaceEmpirePulsarGUI.log.log(Level.WARNING, "Checkpoints : " + Arrays.toString(infos.unit.getCheckpoints().toArray(new Fleet.Move[infos.unit.getCheckpoints().size()])));
-		getFleetMoveCheckPointList().addAll(infos.unit.getCheckpoints());
+		if (infos.unit.getCheckpoints() != null) getFleetMoveCheckPointList().addAll(infos.unit.getCheckpoints());
 		getFleetMoveCheckPointList().getComponent().setEnabled(true);
 
 		updateUI();
@@ -3042,10 +3259,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		getStarshipPlantActionScrollPane().setViewportView(starshipPlantActionPanel);
 
-		getBuildingActionPanel().removeAll();
-		getBuildingActionPanel().add(getStarshipPlantActionScrollPane(), BorderLayout.CENTER);
+		getActionPanel().removeAll();
+		getActionPanel().add(getStarshipPlantActionScrollPane(), BorderLayout.CENTER);
 
-		getRunningGameTabbedPanel().setTitleAt(getRunningGameTabbedPanel().indexOfComponent(getBuildingActionPanel()), (infos.building != null ? "Starship plant" : "Unasigned fleet"));
+		getRunningGameTabbedPanel().setTitleAt(getRunningGameTabbedPanel().indexOfComponent(getActionPanel()), (infos.building != null ? "Starship plant" : "Unasigned fleet"));
 
 		refreshStarshipPlantActionPanel();
 
@@ -3214,17 +3431,30 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	{
 		currentGameBoard = gameBoard;
 		getUniverseRenderer().refreshGameBoard(gameBoard);
-		SpaceEmpirePulsarGUI.log.log(Level.SEVERE, "Bordel !!!!");
 
+		String actionTabTitle = null;
+		
+		actionTabTitle = getRunningGameTabbedPanel().getTitleAt(getRunningGameTabbedPanel().indexOfComponent(getActionPanel()));			
+		Component comp = (getActionPanel().getComponentCount() > 0 ? getActionPanel().getComponent(0) : null);
+		
 		if (currentSelectedArea != null)
 		{
 			updateSelectedArea(currentSelectedLocation);
-		}
-
+		}						
+		
 		refreshBuildingDetails();
 		refreshUnitDetails();
 		refreshPlayerList();
 		refreshShortcutBtns();
+		
+		refreshStarshipPlantActionPanel();
+		refreshDiplomacyActionPanel();
+		refreshFleetActionPanel();
+		
+		getActionPanel().removeAll();
+		
+		if (comp != null) getActionPanel().add(comp);
+		if (actionTabTitle != null) getRunningGameTabbedPanel().setTitleAt(getRunningGameTabbedPanel().indexOfComponent(getActionPanel()), actionTabTitle);
 	}
 
 	private void refreshShortcutBtns()
@@ -3382,12 +3612,23 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		});
 	}
 
+	private Stack<Player> currentGamePlayers = new Stack<Player>();
+	private Player currentPlayer = null;
+	
 	public void refreshPlayerList(Set<Player> players)
 	{
 		System.out.println("RunningGamePanel refreshPlayerList : " + players);
+		currentGamePlayers.removeAllElements();
+		currentGamePlayers.addAll(players);
+		
 		getRunningGameChatPlayerListPanel().removeAll();
-		for(Player p : players)
+		for(Player p : currentGamePlayers)
 		{
+			if (p.isNamed(client.getLogin()))
+			{
+				currentPlayer = p;
+			}
+			
 			JPanel panel = new JPanel(new BorderLayout());
 			panel.add(new JImagePanel(p.getConfig().getPortrait()), BorderLayout.WEST);
 			panel.add(new JImagePanel(p.getConfig().getSymbol()), BorderLayout.EAST);

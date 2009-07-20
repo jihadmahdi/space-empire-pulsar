@@ -117,6 +117,8 @@ public class Fleet extends Unit implements Serializable
 	{
 		checkpoints.removeAllElements();
 		
+		if (!isMoving()) currentMove = null;
+		
 		for(common.Fleet.Move checkpoint : newCheckpoints)
 		{
 			if (checkpoints.size() > 0 && checkpoints.peek().getDestinationName().compareTo(checkpoint.getDestinationName()) == 0)
@@ -136,13 +138,22 @@ public class Fleet extends Unit implements Serializable
 			if (super.startMove(currentLocation, currentGameBoard))
 			{
 				currentMove = checkpoints.firstElement();
-				checkpoints.removeElementAt(0);
-				
+				checkpoints.removeElementAt(0);												
+			}
+		}
+		
+		if (currentMove != null)
+		{
+			if (currentMove.getDelay() == 0)
+			{
 				setDestinationLocation(currentGameBoard.getCelestialBodyLocation(currentMove.getDestinationName()));
-				
 				return true;
 			}
-		}		
+			else
+			{
+				currentMove = currentMove.getDecreaseDelayMove();
+			}
+		}
 		
 		return false;
 	}

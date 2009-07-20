@@ -165,7 +165,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 			playersPopulationView.updateView(playerLogin, population, date);			
 		}
 		
-		return new common.Planet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getCarbonStock(), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerView(date, playerLogin, isVisible), getUnasignedFleetComposition(playerLogin), populationLimit, populationPerTurn, playersPopulationView.getLastValue(playerLogin, -1));
+		return new common.Planet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getStartingCarbonStock(), getCarbonStockView(date, playerLogin, isVisible), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerView(date, playerLogin, isVisible), getUnasignedFleetComposition(playerLogin), populationLimit, populationPerTurn, playersPopulationView.getLastValue(playerLogin, -1));
 	}
 	
 	public int getPopulation()
@@ -186,5 +186,15 @@ class Planet extends ProductiveCelestialBody implements Serializable
 	public void setPopulation(int population)
 	{
 		this.population = population;
-	}		
+	}
+	
+	public int getPopulationPerTurn()
+	{
+		return populationPerTurn;
+	}
+	
+	public int getPopulationLimit()
+	{
+		return populationLimit;
+	}
 }

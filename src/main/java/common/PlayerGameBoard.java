@@ -26,6 +26,7 @@ import java.io.ObjectOutputStream;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -50,19 +51,27 @@ public class PlayerGameBoard implements Serializable
 	private final RealLocation				sunLocation;
 
 	private final int					date;
+	
+	private final Map<String, Diplomacy>	playersPolicies;
 
 	// TODO : add last turn resolution informations.
 
 	/**
 	 * Full constructor.
 	 */
-	public PlayerGameBoard(Area[][][] universe, RealLocation sunLocation, int date)
+	public PlayerGameBoard(Area[][][] universe, RealLocation sunLocation, int date, Map<String, Diplomacy> playersPolicies)
 	{
 		this.universe = universe;
 		this.sunLocation = sunLocation;
 		this.date = date;
+		this.playersPolicies = playersPolicies;
 	}
 
+	public Map<String, Diplomacy> getPlayersPolicies()
+	{
+		return playersPolicies;
+	}
+	
 	public int getDimX()
 	{
 		return universe.length;

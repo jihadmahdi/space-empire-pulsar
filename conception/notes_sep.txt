@@ -36,6 +36,12 @@ Il est possible de connaitre l'attitude diplomatique d'un joueur.
 Pour celà il faut poser sur la planète sur laquelle il a son module gouvernemental une flotte plus importante que la défense de la planète.
 Si le gouvernement est dans un vaisseau, l'espionnage devrait être facilité.
 Reste à voir si en cas de success les 2 politiques (intérieure & de conquète) sont rendues visibles, ou une seule des deux.
+=> Actuellement, il suffit d'avoir la vue sur le gouvernement (même lorsqu'il est en voyage, s'il est repéré par une sonde) pour que la politique globable du joueur soit dévoilée)
+
+
+// Notes visibilités
+Des unités d'un même joueur peuvent être amené à ne pas avoir de visibilité sur les éléments globaux du joueur (ex: sa diplomatie, lorsqu'une flotte est prise dans une pulsar)
+Les unités devraient noter et pouvoir se référer à leur dernière vue de ces éléments.
 
 ====
 

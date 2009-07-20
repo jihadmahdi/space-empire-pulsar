@@ -29,9 +29,9 @@ public class AsteroidField extends ProductiveCelestialBody implements Serializab
 	/**
 	 * Full constructor.
 	 */
-	public AsteroidField(boolean isVisible, int lastObservation, String name, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, Player owner, Map<Class<? extends IStarship>, Integer> unasignedFleet)
+	public AsteroidField(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, Player owner, Map<Class<? extends IStarship>, Integer> unasignedFleet)
 	{
-		super(isVisible, lastObservation, name, carbonStock, carbon, slots, buildings, owner, unasignedFleet);
+		super(isVisible, lastObservation, name, startingCarbonStock, carbonStock, carbon, slots, buildings, owner, unasignedFleet);
 	}
 
 	/* (non-Javadoc)
