@@ -283,7 +283,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void settleGovernment() throws RpcException, StateMachineNotExpectedEventException;
+		void settleGovernment(String planetName) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
 		
 		/**
 		 * Test if pulsar missile can be fired from the given celestial body.

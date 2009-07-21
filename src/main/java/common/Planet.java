@@ -87,7 +87,7 @@ public class Planet extends ProductiveCelestialBody implements Serializable
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
 
-		sb.append((getOwner() == null) ? "" : "[" + getOwner().getName() + "] ");
+		sb.append((getOwner() == null) ? "" : "[" + getOwnerName() + "] ");
 		sb.append(getName() + " (" + getClass().getSimpleName() + ")\n");
 		sb.append("  Population : " + population + " / " + populationLimit+ "\n");
 		sb.append("  Pop. per turn : "+populationPerTurn + "\n");

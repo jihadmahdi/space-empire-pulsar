@@ -67,7 +67,7 @@ public class Diplomacy implements Serializable
 	
 	public String getOwnerName()
 	{
-		return owner == null ? null : owner.getName();
+		return Player.getName(owner);
 	}
 
 	public Set<String> targetSet()

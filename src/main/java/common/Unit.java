@@ -146,6 +146,6 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 
 	public String getOwnerName()
 	{
-		return (owner==null?null:owner.getName());
+		return Player.getName(owner);
 	}
 }

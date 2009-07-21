@@ -148,6 +148,11 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 	{
 		return owner;
 	}
+	
+	public String getOwnerName()
+	{
+		return Player.getName(owner);
+	}
 
 	/*
 	 * (non-Javadoc)
