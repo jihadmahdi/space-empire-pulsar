@@ -48,9 +48,9 @@ public class Planet extends ProductiveCelestialBody implements Serializable
 	/**
 	 * Full constructor.
 	 */
-	public Planet(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, Player owner, Map<Class<? extends IStarship>, Integer> unasignedFleet, int populationLimit, int populationPerTurn, int population)
+	public Planet(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, Player owner, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits, int populationLimit, int populationPerTurn, int population)
 	{
-		super(isVisible, lastObservation, name, startingCarbonStock, carbonStock, carbon, slots, buildings, owner, unasignedFleet);
+		super(isVisible, lastObservation, name, startingCarbonStock, carbonStock, carbon, slots, buildings, owner, unasignedFleetStarships, unasignedFleetSpecialUnits);
 		this.populationLimit = populationLimit;
 		this.populationPerTurn = populationPerTurn;
 		this.population = population;

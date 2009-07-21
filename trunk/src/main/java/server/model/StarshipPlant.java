@@ -17,7 +17,6 @@ import server.model.SpaceCounter.SpaceRoad;
 import client.gui.RunningGamePanel;
 
 import common.GovernmentStarship;
-import common.IStarship;
 import common.Protocol;
 import common.Protocol.ServerRunningGame.RunningGameCommandException;
 

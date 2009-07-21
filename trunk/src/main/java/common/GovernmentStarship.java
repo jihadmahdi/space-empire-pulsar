@@ -1,15 +1,43 @@
-/**
- * @author Escallier Pierre
- * @file GovernmentStarship.java
- * @date 7 juin 2009
- */
 package common;
 
-/**
- * 
- */
-public class GovernmentStarship implements IStarship
+import java.io.Serializable;
+
+public class GovernmentStarship implements ISpecialUnit, Serializable
 {
-	public static final int PRICE_POPULATION = 200;
-	public static final int PRICE_CARBON = 200;
+	public static final int CARBON_PRICE = 200;
+	public static final int POPULATION_PRICE = 200;
+	
+	private final String name;
+	
+	public GovernmentStarship(String starshipName)
+	{
+		this.name = starshipName;
+	}
+	
+	@Override
+	public String getName()
+	{
+		return name;
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (!GovernmentStarship.class.isInstance(obj)) return false;
+		GovernmentStarship o = GovernmentStarship.class.cast(obj);
+		
+		return (this.name.compareTo(o.name) == 0);
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		return (getClass().getName()+this.name).hashCode();
+	}
+	
+	@Override
+	public String toString()
+	{
+		return name;
+	}
 }

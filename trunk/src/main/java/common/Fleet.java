@@ -7,6 +7,7 @@ package common;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
 import common.SEPUtils.RealLocation;
@@ -83,7 +84,8 @@ public class Fleet extends Unit implements Serializable
 		}
 	}
 	
-	private final Map<Class<? extends IStarship>, Integer> starships;
+	private final Map<StarshipTemplate, Integer> starships;
+	private final Set<ISpecialUnit> specialUnits;
 	private final Stack<Move> checkpoints;
 	private final Move currentMove;
 	private final boolean isUnasignedFleet;
@@ -91,10 +93,11 @@ public class Fleet extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public Fleet(boolean isVisible, int lastObservation, String name, Player owner, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress, Map<Class<? extends IStarship>, Integer> starships, Move currentMove, Stack<Move> checkpoints, boolean isUnasignedFleet)
+	public Fleet(boolean isVisible, int lastObservation, String name, Player owner, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress, Map<StarshipTemplate, Integer> starships, Set<ISpecialUnit> specialUnits, Move currentMove, Stack<Move> checkpoints, boolean isUnasignedFleet)
 	{
 		super(isVisible, lastObservation, name, owner, sourceLocation, destinationLocation, currentLocation, travellingProgress);
 		this.starships = starships;
+		this.specialUnits = specialUnits;
 		this.currentMove = currentMove;
 		this.checkpoints = checkpoints;
 		this.isUnasignedFleet = isUnasignedFleet;
@@ -107,9 +110,9 @@ public class Fleet extends Unit implements Serializable
 	
 	public boolean isGovernmentFleet()
 	{
-		for(Class<? extends IStarship> starship : starships.keySet())
+		for(ISpecialUnit specialUnit : specialUnits)
 		{
-			if (GovernmentStarship.class.equals(starship))
+			if (GovernmentStarship.class.isInstance(specialUnit))
 			{
 				return true;
 			}
@@ -123,11 +126,21 @@ public class Fleet extends Unit implements Serializable
 	{
 		StringBuffer sb = new StringBuffer(super.toString());
 		sb.append("\nFleet composition :\n");
-		for(Map.Entry<Class<? extends IStarship>, Integer> e : starships.entrySet())
+		for(Map.Entry<StarshipTemplate, Integer> e : starships.entrySet())
 		{
 			if (e.getValue() != null && e.getValue() > 0)
 			{
-				sb.append("  "+e.getKey().getSimpleName()+"\t"+e.getValue()+"\n");
+				sb.append("  "+e.getKey().getName()+"\t"+e.getValue()+"\n");
+			}
+		}
+		
+		if (specialUnits != null)
+		{
+			sb.append("\nSpecial units :\n");
+			
+			for(ISpecialUnit u : specialUnits)
+			{
+				sb.append("  "+u.toString()+"\n");
 			}
 		}
 		

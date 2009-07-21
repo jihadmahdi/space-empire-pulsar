@@ -14,7 +14,6 @@ import java.util.Set;
 import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 
 import common.GameConfig;
-import common.IStarship;
 import common.Player;
 
 /**
@@ -165,7 +164,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 			playersPopulationView.updateView(playerLogin, population, date);			
 		}
 		
-		return new common.Planet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getStartingCarbonStock(), getCarbonStockView(date, playerLogin, isVisible), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerView(date, playerLogin, isVisible), getUnasignedFleetComposition(playerLogin), populationLimit, populationPerTurn, playersPopulationView.getLastValue(playerLogin, -1));
+		return new common.Planet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getStartingCarbonStock(), getCarbonStockView(date, playerLogin, isVisible), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerView(date, playerLogin, isVisible), getUnasignedFleetStarships(playerLogin), getUnasignedFleetSpecialUnits(playerLogin), populationLimit, populationPerTurn, playersPopulationView.getLastValue(playerLogin, -1));
 	}
 	
 	public int getPopulation()

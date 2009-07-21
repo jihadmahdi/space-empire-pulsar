@@ -14,11 +14,11 @@ import java.util.Hashtable;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.Stack;
 
 import server.SEPServer;
 
 import common.GameConfig;
-import common.IStarship;
 import common.Player;
 
 
@@ -42,8 +42,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	private Player owner;
 	private int carbonStock;
 	private final Map<Class<? extends ABuilding>, ABuilding> buildings;
-	private final Map<String, Fleet> unasignedFleets;
-	
+	private final Map<String, Fleet> unasignedFleets;	
 	private int lastBuildDate = -1;
 	
 	// Views
@@ -53,6 +52,9 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	private PlayerDatedView<Player> playersOwnerView = new PlayerDatedView<Player>();
 	private PlayerDatedView<HashSet<common.IBuilding>> playersBuildingsView = new PlayerDatedView<HashSet<common.IBuilding>>();
 	private Map<String, PlayerDatedView<common.Fleet>> playersUnasignedFleetsView = new HashMap<String, PlayerDatedView<common.Fleet>>();
+	
+	// Turn resolution variables
+	private final Stack<String> conflictInitiators = new Stack<String>();
 	
 	public static class CelestialBodyBuildException extends Exception
 	{
@@ -275,33 +277,43 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		return result;
 	}
 	
-	protected Map<Class<? extends IStarship>, Integer> getUnasignedFleetComposition(String playerLogin)
+	protected Map<common.StarshipTemplate, Integer> getUnasignedFleetStarships(String playerLogin)
 	{
 		if (!unasignedFleets.containsKey(playerLogin))
 		{
 			return null;
 		}
 		
-		return unasignedFleets.get(playerLogin).getComposition();
+		return unasignedFleets.get(playerLogin).getStarships();
 	}
 	
-	public void mergeToUnasignedFleet(Player player, Map<Class<? extends IStarship>, Integer> starshipsToMake)
+	protected Set<common.ISpecialUnit> getUnasignedFleetSpecialUnits(String playerLogin)
+	{
+		if (!unasignedFleets.containsKey(playerLogin))
+		{
+			return null;
+		}
+		
+		return unasignedFleets.get(playerLogin).getSpecialUnits();
+	}
+	
+	public void mergeToUnasignedFleet(Player player, Map<common.StarshipTemplate, Integer> starshipsToMake, Set<common.ISpecialUnit> specialUnitsToMake)
 	{
 		if (!unasignedFleets.containsKey(player.getName()))
 		{
-			unasignedFleets.put(player.getName(), new Fleet("Unasigned fleet", player, null, starshipsToMake, true));
+			unasignedFleets.put(player.getName(), new Fleet("Unasigned fleet", player, null, starshipsToMake, specialUnitsToMake, true));
 		}
 		else
 		{
-			unasignedFleets.get(player.getName()).merge(starshipsToMake);
+			unasignedFleets.get(player.getName()).merge(starshipsToMake, specialUnitsToMake);
 		}		
 	}	
 	
-	public void removeFromUnasignedFleet(Player player, Map<Class<? extends IStarship>, Integer> fleetToForm)
+	public void removeFromUnasignedFleet(Player player, Map<common.StarshipTemplate, Integer> fleetToForm, Set<common.ISpecialUnit> specialUnitsToForm)
 	{
 		if (unasignedFleets.get(player.getName()) == null) throw new Error("Tried to remove starships from an empty unasigned fleet.");
 		
-		unasignedFleets.get(player.getName()).remove(fleetToForm);
+		unasignedFleets.get(player.getName()).remove(fleetToForm, specialUnitsToForm);
 	}
 	
 	public Fleet getUnasignedFleet(String playerLogin)
@@ -378,5 +390,21 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	public String getOwnerName()
 	{
 		return owner == null ? null : owner.getName();
+	}
+
+	public void addConflictInititor(String initiatorLogin)
+	{
+		conflictInitiators.add(initiatorLogin);
+	}
+	
+	public Stack<String> getConflictInitiators()
+	{
+		return conflictInitiators;
+	}
+
+	public Fleet getDefenseFleet()
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

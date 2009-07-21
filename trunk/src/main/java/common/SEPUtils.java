@@ -17,6 +17,8 @@ import java.util.TreeSet;
 
 import org.axan.eplib.utils.Basic;
 
+import common.StarshipTemplate.eClass;
+
 /**
  * 
  */
@@ -173,27 +175,22 @@ public abstract class SEPUtils
 		buildingTypes = Collections.unmodifiableSet(buildingsTypesSet);
 	}
 	
-	public static final Set<Class<? extends IStarship>> starshipTypes;
+	public static final Set<StarshipTemplate> starshipTypes;
 	
 	static
 	{
-		Set<Class<? extends IStarship>> starshipTypesSet = new TreeSet<Class<? extends IStarship>>(new Comparator<Class<? extends IStarship>>()
-		{
-			public int compare(Class<? extends IStarship> o1, Class<? extends IStarship> o2)
-			{
-				return o1.toString().compareTo(o2.toString());
-			}
-		});
+		Set<StarshipTemplate> starshipTypesSet = new TreeSet<StarshipTemplate>();
 		
-		starshipTypesSet.add(LightFighter.class);
-		starshipTypesSet.add(LightDestroyer.class);
-		starshipTypesSet.add(LightArtillery.class);
-		starshipTypesSet.add(MediumFighter.class);
-		starshipTypesSet.add(MediumDestroyer.class);
-		starshipTypesSet.add(MediumArtillery.class);
-		starshipTypesSet.add(HeavyFighter.class);
-		starshipTypesSet.add(HeavyDestroyer.class);
-		starshipTypesSet.add(HeavyArtillery.class);
+		StarshipTemplate[] gabarits = {new StarshipTemplate("Light", 10, 10, eClass.FIGHTER, 0.1, 0.1, 3, 100, 100), new StarshipTemplate("Medium", 50, 50, eClass.FIGHTER, 0.3, 0.3, 2, 300, 300), new StarshipTemplate("Heavy", 100, 100, eClass.FIGHTER, 0.8, 0.8, 1, 600, 600)};
+		
+		for(StarshipTemplate gabarit : gabarits)
+		{
+			for(eClass specializationClass : eClass.values())
+			{
+				starshipTypesSet.add(new StarshipTemplate(gabarit.getName()+specializationClass.toString(), gabarit.getDefense(), gabarit.getAttack(), specializationClass, gabarit.getAttackSpecializationBonus(), gabarit.getDefenseSpecializationBonus(), gabarit.getSpeed(), gabarit.getCarbonPrice(), gabarit.getPopulationPrice()));				
+			}
+		}
+				
 		starshipTypes = Collections.unmodifiableSet(starshipTypesSet);
 	}
 	

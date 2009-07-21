@@ -7,6 +7,7 @@ package common;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,12 +41,13 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 
 	private final Player			owner;
 	
-	private final Map<Class<? extends IStarship>, Integer>				unasignedFleet; // For viewer point of view, not owner.
+	private final Map<StarshipTemplate, Integer>				unasignedFleetStarships; // For viewer point of view, not owner.
+	private final Set<ISpecialUnit>								unasignedFleetSpecialUnits;
 
 	/**
 	 * Full constructor.
 	 */
-	public ProductiveCelestialBody(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, Player owner, Map<Class<? extends IStarship>, Integer> unasignedFleet)
+	public ProductiveCelestialBody(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, Player owner, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits)
 	{
 		this.isVisible = isVisible;
 		this.lastObservation = lastObservation;
@@ -56,13 +58,22 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 		this.slots = slots;
 		this.buildings = buildings;
 		this.owner = owner;
-		if (unasignedFleet == null)
+		if (unasignedFleetStarships == null)
 		{
-			this.unasignedFleet = new HashMap<Class<? extends IStarship>, Integer>();
+			this.unasignedFleetStarships = new HashMap<StarshipTemplate, Integer>();
 		}
 		else
 		{
-			this.unasignedFleet = unasignedFleet;
+			this.unasignedFleetStarships = unasignedFleetStarships;
+		}
+		
+		if (unasignedFleetSpecialUnits == null)
+		{
+			this.unasignedFleetSpecialUnits = new HashSet<ISpecialUnit>();
+		}
+		else
+		{
+			this.unasignedFleetSpecialUnits = unasignedFleetSpecialUnits;
 		}
 	}
 
@@ -180,9 +191,14 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 		return slots - getBuildSlotsCount();
 	}
 	
-	public Map<Class<? extends IStarship>, Integer> getUnasignedStarships()
+	public Map<StarshipTemplate, Integer> getUnasignedStarships()
 	{
-		return unasignedFleet;
+		return unasignedFleetStarships;
+	}
+	
+	public Set<ISpecialUnit> getUnasignedSpecialUnits()
+	{
+		return unasignedFleetSpecialUnits;
 	}
 	
 	public abstract boolean canBuildType(Class<? extends IBuilding> buildingType);
