@@ -199,7 +199,7 @@ public class Area implements IObservable, Serializable
 			sb.append("Units :\n");
 			for(Unit u : units)
 			{
-				sb.append("   ["+u.getOwner().getName()+"] "+u.getName()+"\n");
+				sb.append("   ["+u.getOwnerName()+"] "+u.getName()+"\n");
 			}
 		}
 		

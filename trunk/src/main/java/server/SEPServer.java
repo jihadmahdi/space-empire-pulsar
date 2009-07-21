@@ -551,14 +551,13 @@ public class SEPServer implements IServer, GameServerListener
 		public boolean canSettleGovernment(String planetName) throws RpcException, StateMachineNotExpectedEventException
 		{
 			if (getGameMove().isTurnEnded()) return false;
-			return getGameBoard().canSettleGovernment(getPlayer(), planetName);
+			return getGameBoard().canSettleGovernment(getLogin(), planetName);
 		}
 
 		@Override
-		public void settleGovernment() throws RpcException, StateMachineNotExpectedEventException
+		public void settleGovernment(String planetName) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			getGameMove().addSettleGovernmentCommand(planetName);
 		}		
 		
 		@Override

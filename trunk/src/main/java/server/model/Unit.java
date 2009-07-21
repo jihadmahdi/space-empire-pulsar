@@ -199,6 +199,6 @@ abstract class Unit implements Serializable
 
 	public String getOwnerName()
 	{
-		return (owner == null?null:owner.getName());
+		return Player.getName(owner);
 	}	
 }

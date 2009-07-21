@@ -389,7 +389,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	
 	public String getOwnerName()
 	{
-		return owner == null ? null : owner.getName();
+		return Player.getName(owner);
 	}
 
 	public void addConflictInititor(String initiatorLogin)
@@ -402,9 +402,13 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		return conflictInitiators;
 	}
 
-	public Fleet getDefenseFleet()
+	public void changeOwner(Player newOwner)
 	{
-		// TODO Auto-generated method stub
-		return null;
+		this.owner = newOwner;
+	}
+
+	public void endConflict()
+	{
+		conflictInitiators.clear();
 	}
 }

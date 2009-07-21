@@ -55,4 +55,9 @@ public class Player implements Serializable
 	{
 		return name.compareTo(playerLogin) == 0;
 	}
+
+	public static String getName(Player player)
+	{
+		return (player == null ? "Unknown" : player.getName());
+	}
 }

@@ -606,7 +606,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				public Component getListCellRendererComponent(JList list, Unit unit, int index, boolean isSelected, boolean cellHasFocus)
 				{
 					super.getListCellRendererComponent(list, unit, index, isSelected, cellHasFocus);
-					label.setText(unit.getClass().getSimpleName() + " [" + ((unit.getOwner() != null) ? unit.getOwner().getName() : "unknown") + "] " + unit.getName());
+					label.setText(unit.getClass().getSimpleName() + " [" + ((unit.getOwner() != null) ? unit.getOwnerName() : "unknown") + "] " + unit.getName());
 					return label;
 				}
 			});
@@ -953,7 +953,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		if (area == null) return;		
 
-		ICelestialBody celestialBody = area.getCelestialBody();
+		final ICelestialBody celestialBody = area.getCelestialBody();
 
 		ProductiveCelestialBody productiveCelestialBody = null;
 
@@ -1035,7 +1035,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						{
 							try
 							{
-								client.getRunningGameInterface().settleGovernment();
+								client.getRunningGameInterface().settleGovernment(celestialBody.getName());
 								refreshGameBoard();
 							}
 							catch(StateMachineNotExpectedEventException e1)
@@ -1045,6 +1045,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 							catch(RpcException e1)
 							{
 								e1.printStackTrace();
+							}
+							catch(RunningGameCommandException e1)
+							{
+								showRunningGameCommandExceptionMsg(e1);
 							}
 						}
 					});
@@ -1458,7 +1462,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 								{
 									try
 									{
-										client.getRunningGameInterface().settleGovernment();
+										client.getRunningGameInterface().settleGovernment(productiveCelestialBody.getName());
 										refreshGameBoard();
 									}
 									catch(StateMachineNotExpectedEventException e1)
@@ -1468,6 +1472,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 									catch(RpcException e1)
 									{
 										e1.printStackTrace();
+									}
+									catch(RunningGameCommandException e1)
+									{
+										showRunningGameCommandExceptionMsg(e1);
 									}
 								}
 							});

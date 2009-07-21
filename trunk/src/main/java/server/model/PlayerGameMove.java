@@ -300,6 +300,33 @@ public class PlayerGameMove
 		}
 	}
 	
+	static class SettleGovernmentCommand extends GameMoveCommand
+	{
+		private final String planetName;
+		
+		public SettleGovernmentCommand(String playerLogin, String planetName)
+		{
+			super(playerLogin);
+			this.planetName = planetName;
+		}
+		
+		@Override
+		protected GameBoard apply(GameBoard originalGameBoard)
+		{
+			GameBoard newGameBoard = Basic.clone(originalGameBoard);
+			try
+			{
+				newGameBoard.settleGovernment(playerLogin, planetName);
+			}
+			catch(RunningGameCommandException e)
+			{
+				e.printStackTrace();
+				return originalGameBoard;
+			}
+			return newGameBoard;
+		}
+	}
+	
 	static class LaunchProbeCommand extends GameMoveCommand
 	{
 		private final String probeName;
@@ -557,6 +584,18 @@ public class PlayerGameMove
 		}
 		
 		addGameMoveCommand(new MoveFleetCommand(playerLogin, fleetName, checkpoints));
+	}
+	
+	public void addSettleGovernmentCommand(String planetName) throws RunningGameCommandException
+	{
+		checkTurnIsNotEnded();
+		
+		if (!getGameBoard().canSettleGovernment(playerLogin, planetName))
+		{
+			throw new RunningGameCommandException(playerLogin+" cannot settle its government on '"+planetName+"'");
+		}
+		
+		addGameMoveCommand(new SettleGovernmentCommand(playerLogin, planetName));
 	}
 	
 	public void addChangeDiplomacyCommand(Diplomacy newDiplomacy) throws RunningGameCommandException
