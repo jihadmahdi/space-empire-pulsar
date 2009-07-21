@@ -21,7 +21,6 @@ import server.model.Area.AreaIllegalDefinitionException;
 import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 
 import common.GovernmentStarship;
-import common.IStarship;
 import common.Player;
 import common.SEPUtils;
 import common.TravellingLogEntryUnitSeen;
@@ -678,10 +677,7 @@ public class GameBoard implements Serializable
 
 				area.removeUnit(AntiProbeMissile.class, apm.getOwnerName(), apm.getName());
 			}
-		}
-		
-		// Conflicts
-		
+		}				
 
 		// Carbon & Population generation
 		for(ICelestialBody celestialBody : celestialBodies)
@@ -734,10 +730,84 @@ public class GameBoard implements Serializable
 				}
 			}
 		}
+		
+		// Conflicts
+		for(ICelestialBody celestialBody : celestialBodies)
+		{
+			if (!ProductiveCelestialBody.class.isInstance(celestialBody)) continue;
+			ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
+			
+			if (!productiveCelestialBody.getConflictInitiators().isEmpty())
+			{
+				resolveConflict(productiveCelestialBody);
+			}
+		}
 
 		++date;
 	}
 
+	public void resolveConflict(ProductiveCelestialBody productiveCelestialBody)
+	{
+		// Initiate conflicts table
+		Map<String, Map<String, Boolean>> conflicts = new Hashtable<String, Map<String,Boolean>>();
+		for(Player p1 : players)
+		{
+			Map<String, Boolean> playerConflicts = new Hashtable<String, Boolean>();
+			for(Player p2 : players)
+			{
+				boolean p1Policy = false;
+				
+				if (p1.isNamed(productiveCelestialBody.getOwnerName()))
+				{
+					p1Policy = !playersPolicies.get(p1.getName()).getPolicies(p2.getName()).isAllowedToLandFleetInHomeTerritory();					
+				}
+				else
+				{
+					p1Policy = productiveCelestialBody.getConflictInitiators().contains(p1.getName()) ? true : playersPolicies.get(p1.getName()).getPolicies(p2.getName()).isAlwaysEngagedInConflictOnStrangerTerritory();
+				}
+				
+				boolean p2Policy = conflicts.containsKey(p2.getName()) ? conflicts.get(p2.getName()).get(p1.getName()) : false;
+				
+				boolean finalPolicy = p1Policy || p2Policy;
+				playerConflicts.put(p2.getName(), finalPolicy);
+				if (conflicts.containsKey(p2.getName())) conflicts.get(p2.getName()).put(p1.getName(), finalPolicy);
+			}
+			
+			conflicts.put(p1.getName(), playerConflicts);
+		}
+		
+		// List merged (unassigned fleets + fleets) forces for each players
+		Map<String, Fleet> fleets = new Hashtable<String, Fleet>();		
+		
+		RealLocation location = getCelestialBodyLocation(productiveCelestialBody.getName());
+		
+		for(Player p : players)
+		{
+			if (productiveCelestialBody.getUnasignedFleet(p.getName()) != null)
+			{
+				fleets.put(p.getName(), new Fleet(p.getName()+" forces in conflict on "+productiveCelestialBody.getName()+" at turn "+date, p, location, productiveCelestialBody.getUnasignedFleetStarships(p.getName()), productiveCelestialBody.getUnasignedFleetSpecialUnits(p.getName()), false));
+			}
+		}
+		
+		for(Unit u : getArea(location).getUnits())
+		{
+			if (!Fleet.class.isInstance(u)) continue;
+			Fleet f = Fleet.class.cast(u);
+			
+			if (!fleets.containsKey(f.getOwnerName()))
+			{
+				fleets.put(f.getOwnerName(), new Fleet(f.getOwnerName()+" forces in conflict on "+productiveCelestialBody.getName()+" at turn "+date, f.getOwner(), location, f.getStarships(), f.getSpecialUnits(), false));
+			}
+			else
+			{
+				fleets.get(f.getOwnerName()).merge(f.getStarships(), f.getSpecialUnits());
+			}
+		}
+		
+		// TODO : fake resolution, implement a true one
+		
+	}
+	
 	public void demolish(String playerLogin, String celestialBodyName, Class<? extends common.IBuilding> buildingType) throws RunningGameCommandException
 	{
 		DemolishCheckResult demolishCheckResult = checkDemolish(playerLogin, celestialBodyName, buildingType);
@@ -795,9 +865,9 @@ public class GameBoard implements Serializable
 	{
 		EmbarkGovernmentCheckResult embarkGovernmentCheckResult = checkEmbarkGovernment(playerLogin);
 		embarkGovernmentCheckResult.planet.removeBuilding(GovernmentModule.class);
-		Map<Class<? extends IStarship>, Integer> starshipToMake = new HashMap<Class<? extends IStarship>, Integer>();
-		starshipToMake.put(GovernmentStarship.class, 1);
-		embarkGovernmentCheckResult.planet.mergeToUnasignedFleet(getPlayer(playerLogin), starshipToMake);
+		Set<common.ISpecialUnit> specialUnitsToMake = new HashSet<common.ISpecialUnit>();
+		specialUnitsToMake.add(new common.GovernmentStarship(playerLogin+" government starship"));		
+		embarkGovernmentCheckResult.planet.mergeToUnasignedFleet(getPlayer(playerLogin), null, specialUnitsToMake);
 		embarkGovernmentCheckResult.planet.setCarbon(embarkGovernmentCheckResult.planet.getCarbon() - embarkGovernmentCheckResult.carbonCost);
 		embarkGovernmentCheckResult.planet.setPopulation(embarkGovernmentCheckResult.planet.getPopulation() - embarkGovernmentCheckResult.populationCost);
 	}
@@ -860,14 +930,14 @@ public class GameBoard implements Serializable
 		// If starship has just been build this turn.
 		if (starshipPlant.getLastBuildDate() >= date) throw new RunningGameCommandException("Starship plant is still in construction.");
 
-		int carbonCost = common.GovernmentStarship.PRICE_CARBON;
-		int populationCost = common.GovernmentStarship.PRICE_POPULATION;
+		int carbonCost = config.getGovernmentStarshipCarbonPrice();
+		int populationCost = config.getGovernmentStarshipPopulationPrice();
 
 		if (carbonCost > planet.getCarbon()) throw new RunningGameCommandException("Not enough carbon.");
-		;
+		
 		if (populationCost > planet.getPopulation()) throw new RunningGameCommandException("Not enough population.");
-		;
-		;
+		
+		
 
 		return new EmbarkGovernmentCheckResult(planet, governmentModule, starshipPlant, carbonCost, populationCost);
 	}
@@ -1233,11 +1303,11 @@ public class GameBoard implements Serializable
 		return new MoveFleetCheckResult(area, fleet, locatedCheckpoints);
 	}
 
-	public boolean canFormFleet(String playerLogin, String planetName, String fleetName, Map<Class<? extends IStarship>, Integer> fleetToForm)
+	public boolean canFormFleet(String playerLogin, String planetName, String fleetName, Map<common.StarshipTemplate, Integer> fleetToFormStarships, Set<common.ISpecialUnit> fleetToFormSpecialUnits)
 	{
 		try
 		{
-			checkFormFleet(playerLogin, planetName, fleetName, fleetToForm);
+			checkFormFleet(playerLogin, planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits);
 		}
 		catch(Throwable t)
 		{
@@ -1246,11 +1316,11 @@ public class GameBoard implements Serializable
 		return true;
 	}
 
-	public void formFleet(String playerLogin, String planetName, String fleetName, Map<Class<? extends IStarship>, Integer> fleetToForm) throws RunningGameCommandException
+	public void formFleet(String playerLogin, String planetName, String fleetName, Map<common.StarshipTemplate, Integer> fleetToFormStarships, Set<common.ISpecialUnit> fleetToFormSpecialUnits) throws RunningGameCommandException
 	{
-		FormFleetCheckResult formFleetCheckResult = checkFormFleet(playerLogin, planetName, fleetName, fleetToForm);
+		FormFleetCheckResult formFleetCheckResult = checkFormFleet(playerLogin, planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits);
 		formFleetCheckResult.area.updateUnit(formFleetCheckResult.newFleet);
-		formFleetCheckResult.productiveCelestialBody.removeFromUnasignedFleet(getPlayer(playerLogin), fleetToForm);
+		formFleetCheckResult.productiveCelestialBody.removeFromUnasignedFleet(getPlayer(playerLogin), fleetToFormStarships, fleetToFormSpecialUnits);
 	}
 
 	private static class FormFleetCheckResult
@@ -1267,7 +1337,7 @@ public class GameBoard implements Serializable
 		}
 	}
 
-	private FormFleetCheckResult checkFormFleet(String playerLogin, String planetName, String fleetName, Map<Class<? extends common.IStarship>, Integer> fleetToForm) throws RunningGameCommandException
+	private FormFleetCheckResult checkFormFleet(String playerLogin, String planetName, String fleetName, Map<common.StarshipTemplate, Integer> fleetToFormStarships, Set<common.ISpecialUnit> fleetToFormSpecialUnits) throws RunningGameCommandException
 	{
 		RealLocation location = getCelestialBodyLocation(planetName);
 		Area area = getNullArea(location);
@@ -1288,19 +1358,27 @@ public class GameBoard implements Serializable
 		if (fleet != null) throw new RunningGameCommandException("Fleet named '" + fleetName + "' already exist.");
 
 		// Starship availability check		
-		for(Entry<Class<? extends IStarship>, Integer> e : fleetToForm.entrySet())
+		for(Entry<common.StarshipTemplate, Integer> e : fleetToFormStarships.entrySet())
 		{
 			if (e.getValue() <= 0) continue;
 
 			int qt = e.getValue();
-			if (!unasignedFleet.getComposition().containsKey(e.getKey())) throw new RunningGameCommandException("Unasigned fleet does not have required starship type '" + e.getKey().getSimpleName() + "'");
-			if (unasignedFleet.getComposition().get(e.getKey()) < qt) throw new RunningGameCommandException("Unasigned flee does not have enough starship type '" + e.getKey() + "'");
+			if (!unasignedFleet.getStarships().containsKey(e.getKey())) throw new RunningGameCommandException("Unasigned fleet does not have required starship type '" + e.getKey().getName() + "'");
+			if (unasignedFleet.getStarships().get(e.getKey()) < qt) throw new RunningGameCommandException("Unasigned flee does not have enough starship type '" + e.getKey() + "'");
 		}
 
+		// Special units availability check
+		for(common.ISpecialUnit u : fleetToFormSpecialUnits)
+		{
+			if (u == null) continue;
+			
+			if (!unasignedFleet.getSpecialUnits().contains(u)) throw new RunningGameCommandException("Unasigned fleet does not have require special unit '"+u.toString()+"'");
+		}
+		
 		Player owner = getPlayer(playerLogin);
 		if (owner == null) throw new RunningGameCommandException("Unknown player name '" + playerLogin + "'");
 
-		Fleet newFleet = new Fleet(fleetName, owner, location, fleetToForm, false);
+		Fleet newFleet = new Fleet(fleetName, owner, location, fleetToFormStarships, fleetToFormSpecialUnits, false);
 
 		return new FormFleetCheckResult(area, productiveCelestialBody, newFleet);
 	}
@@ -1322,7 +1400,7 @@ public class GameBoard implements Serializable
 	{
 		DismantleFleetCheckResult dismantleFleetCheckResult = checkDismantleFleet(playerLogin, fleetName);
 		dismantleFleetCheckResult.area.removeUnit(dismantleFleetCheckResult.fleet.getClass(), dismantleFleetCheckResult.fleet.getOwnerName(), dismantleFleetCheckResult.fleet.getName());
-		dismantleFleetCheckResult.productiveCelestialBody.mergeToUnasignedFleet(getPlayer(playerLogin), dismantleFleetCheckResult.fleet.getComposition());
+		dismantleFleetCheckResult.productiveCelestialBody.mergeToUnasignedFleet(getPlayer(playerLogin), dismantleFleetCheckResult.fleet.getStarships(), dismantleFleetCheckResult.fleet.getSpecialUnits());
 	}
 
 	private static class DismantleFleetCheckResult
@@ -1551,7 +1629,7 @@ public class GameBoard implements Serializable
 		return new MakeAntiProbeMissilesCheckResult(area, planet, carbonCost, populationCost, starshipPlant, newAntiProbeMissiles);
 	}
 
-	public boolean canMakeStarships(String playerLogin, String planetName, Map<Class<? extends IStarship>, Integer> starshipsToMake)
+	public boolean canMakeStarships(String playerLogin, String planetName, Map<common.StarshipTemplate, Integer> starshipsToMake)
 	{
 		try
 		{
@@ -1564,12 +1642,12 @@ public class GameBoard implements Serializable
 		return true;
 	}
 
-	public void makeStarships(String playerLogin, String planetName, Map<Class<? extends IStarship>, Integer> starshipsToMake) throws RunningGameCommandException
+	public void makeStarships(String playerLogin, String planetName, Map<common.StarshipTemplate, Integer> starshipsToMake) throws RunningGameCommandException
 	{
 		MakeStarshipsCheckResult makeStarshipsCheckResult = checkMakeStarships(playerLogin, planetName, starshipsToMake);
 
 		Fleet unassignedFleet = makeStarshipsCheckResult.planet.getUnasignedFleet(playerLogin);
-		makeStarshipsCheckResult.planet.mergeToUnasignedFleet(getPlayer(playerLogin), starshipsToMake);
+		makeStarshipsCheckResult.planet.mergeToUnasignedFleet(getPlayer(playerLogin), starshipsToMake, null);
 
 		makeStarshipsCheckResult.planet.setCarbon(makeStarshipsCheckResult.planet.getCarbon() - makeStarshipsCheckResult.carbonCost);
 		makeStarshipsCheckResult.planet.setPopulation(makeStarshipsCheckResult.planet.getPopulation() - makeStarshipsCheckResult.populationCost);
@@ -1591,7 +1669,7 @@ public class GameBoard implements Serializable
 		}
 	}
 
-	private MakeStarshipsCheckResult checkMakeStarships(String playerLogin, String planetName, Map<Class<? extends common.IStarship>, Integer> starshipsToMake) throws RunningGameCommandException
+	private MakeStarshipsCheckResult checkMakeStarships(String playerLogin, String planetName, Map<common.StarshipTemplate, Integer> starshipsToMake) throws RunningGameCommandException
 	{
 		ICelestialBody celestialBody = getCelestialBody(planetName);
 
@@ -1616,34 +1694,19 @@ public class GameBoard implements Serializable
 		int carbonCost = 0;
 		int populationCost = 0;
 
-		for(Entry<Class<? extends IStarship>, Integer> e : starshipsToMake.entrySet())
+		for(Entry<common.StarshipTemplate, Integer> e : starshipsToMake.entrySet())
 		{
 			if (e.getValue() <= 0) continue;
 
 			int carbonPrice = 0;
 			int populationPrice = 0;
 
-			try
-			{
-				carbonPrice = e.getKey().getField("PRICE_CARBON").getInt(null);
-			}
-			catch(Throwable t)
-			{
-				carbonPrice = 0;
-			}
-
-			try
-			{
-				populationPrice = e.getKey().getField("PRICE_POPULATION").getInt(null);
-			}
-			catch(Throwable t)
-			{
-				populationPrice = 0;
-			}
-
+			carbonPrice = e.getKey().getCarbonPrice();			
+			populationPrice = e.getKey().getPopulationPrice();
+			
 			if (carbonPrice == 0 && populationPrice == 0)
 			{
-				throw new RunningGameCommandException("Implementation error : Price are not defined for Starship class '" + e.getKey().getSimpleName() + "'");
+				throw new RunningGameCommandException("Implementation error : Price are not defined for Starship template '" + e.getKey().getName() + "'");
 			}
 
 			carbonCost += carbonPrice * e.getValue();
@@ -1692,5 +1755,13 @@ public class GameBoard implements Serializable
 	{
 		if (newDiplomacy.getPolicies(playerLogin) != null) throw new RunningGameCommandException("Cannot have a diplomacy toward ourselves.");
 		return new ChangeDiplomacyCheckResult();
+	}
+	
+	void initiateConflict(RealLocation location, String initiatorLogin)
+	{
+		ICelestialBody celestialBody = getArea(location).getCelestialBody();
+		if (celestialBody == null || !ProductiveCelestialBody.class.isInstance(celestialBody)) throw new SEPServer.SEPImplementationException("Cannot set conflict on location '"+location+"', no ProductiveCelestialBody found there.");
+		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
+		productiveCelestialBody.addConflictInititor(initiatorLogin);
 	}
 }

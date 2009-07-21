@@ -6,6 +6,7 @@
 package server.model;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
 import org.axan.eplib.utils.Basic;
@@ -16,7 +17,6 @@ import client.gui.RunningGamePanel;
 
 import common.Diplomacy;
 import common.IBuilding;
-import common.IStarship;
 import common.Player;
 import common.PlayerGameBoard;
 import common.Protocol;
@@ -96,14 +96,16 @@ public class PlayerGameMove
 	{
 		private final String planetName;
 		private final String fleetName;
-		private final Map<Class<? extends IStarship>, Integer> fleetToForm;
+		private final Map<common.StarshipTemplate, Integer> fleetToFormStarships;
+		private final Set<common.ISpecialUnit> fleetToFormSpecialUnits;
 		
-		public FormFleetCommand(String playerLogin, String planetName, String fleetName, Map<Class<? extends IStarship>, Integer> fleetToForm)
+		public FormFleetCommand(String playerLogin, String planetName, String fleetName, Map<common.StarshipTemplate, Integer> fleetToFormStarships, Set<common.ISpecialUnit> fleetToFormSpecialUnits)
 		{
 			super(playerLogin);
 			this.planetName = planetName;
 			this.fleetName = fleetName;
-			this.fleetToForm = fleetToForm;
+			this.fleetToFormStarships = fleetToFormStarships;
+			this.fleetToFormSpecialUnits = fleetToFormSpecialUnits;
 		}
 
 		@Override
@@ -112,7 +114,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.formFleet(playerLogin, planetName, fleetName, fleetToForm);
+				newGameBoard.formFleet(playerLogin, planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -155,9 +157,9 @@ public class PlayerGameMove
 	static class MakeStarshipsCommand extends GameMoveCommand
 	{
 		private final String planetName;
-		private final Map<Class<? extends IStarship>, Integer> starshipsToMake;
+		private final Map<common.StarshipTemplate, Integer> starshipsToMake;
 		
-		public MakeStarshipsCommand(String playerLogin, String planetName, Map<Class<? extends IStarship>, Integer> starshipsToMake)
+		public MakeStarshipsCommand(String playerLogin, String planetName, Map<common.StarshipTemplate, Integer> starshipsToMake)
 		{
 			super(playerLogin);
 			this.planetName = planetName;
@@ -449,16 +451,16 @@ public class PlayerGameMove
 		addGameMoveCommand(new DemolishCommand(playerLogin, celestialBodyName, buildingType));
 	}
 	
-	public void addFormFleetCommand(String planetName, String fleetName, Map<Class<? extends IStarship>, Integer> fleetToForm) throws RunningGameCommandException
+	public void addFormFleetCommand(String planetName, String fleetName, Map<common.StarshipTemplate, Integer> fleetToFormStarships, Set<common.ISpecialUnit> fleetToFormSpecialUnits) throws RunningGameCommandException
 	{
 		checkTurnIsNotEnded();
 		
-		if (!getGameBoard().canFormFleet(playerLogin, planetName, fleetName, fleetToForm))
+		if (!getGameBoard().canFormFleet(playerLogin, planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits))
 		{
 			throw new RunningGameCommandException(playerLogin+" cannot form fleet '"+fleetName+"' on "+planetName);
 		}
 		
-		addGameMoveCommand(new FormFleetCommand(playerLogin, planetName, fleetName, fleetToForm));
+		addGameMoveCommand(new FormFleetCommand(playerLogin, planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits));
 	}
 	
 	public void addDismantleFleetCommand(String fleetName) throws RunningGameCommandException
@@ -473,7 +475,7 @@ public class PlayerGameMove
 		addGameMoveCommand(new DismantleFleetCommand(playerLogin, fleetName));
 	}
 	
-	public void addMakeStarshipsCommand(String planetName, Map<Class<? extends IStarship>, Integer> starshipsToMake) throws RunningGameCommandException
+	public void addMakeStarshipsCommand(String planetName, Map<common.StarshipTemplate, Integer> starshipsToMake) throws RunningGameCommandException
 	{
 		checkTurnIsNotEnded();
 		

@@ -42,7 +42,9 @@ Reste à voir si en cas de success les 2 politiques (intérieure & de conquète)
 // Notes visibilités
 Des unités d'un même joueur peuvent être amené à ne pas avoir de visibilité sur les éléments globaux du joueur (ex: sa diplomatie, lorsqu'une flotte est prise dans une pulsar)
 Les unités devraient noter et pouvoir se référer à leur dernière vue de ces éléments.
-
+	=> Une flotte devrait avoir un instantané de la diplomatie à sa date de départ, et le rafraichir à chaque checkpoint (ce qui peut éventuellement annuler son plan de vol si un attaque prévue n'est plus valide).
+	=> Lors d'un ordre d'attaque, si le owner de la cible change entre temps, et que le nouvau est neutre, par défaut doit on annuler l'attaque ou la poursuivre ?
+		=> Actuellement, priorité à l'ordre d'attaque, qui outrepasse la poltique de conquète de la date de départ comme d'arrivé.
 ====
 
 /OK/ Thèorie Pulsar 27.05.09 :

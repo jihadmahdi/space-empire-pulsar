@@ -39,7 +39,6 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import common.GameConfig;
 import common.IBuilding;
-import common.IStarship;
 import common.PlayerGameBoard;
 import common.Player;
 import common.PlayerConfig;
@@ -442,16 +441,16 @@ public class SEPServer implements IServer, GameServerListener
 		}
 		
 		@Override
-		public boolean canFormFleet(String planetName, String fleetName, Map<Class<? extends IStarship>, Integer> fleetToForm) throws RpcException, StateMachineNotExpectedEventException
+		public boolean canFormFleet(String planetName, String fleetName, Map<common.StarshipTemplate, Integer> fleetToFormStarships, Set<common.ISpecialUnit> fleetToFormSpecialUnits) throws RpcException, StateMachineNotExpectedEventException
 		{
 			if (getGameMove().isTurnEnded()) return false;
-			return getGameBoard().canFormFleet(getLogin(), planetName, fleetName, fleetToForm);
+			return getGameBoard().canFormFleet(getLogin(), planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits);
 		}
 
 		@Override
-		public void formFleet(String planetName, String fleetName, Map<Class<? extends IStarship>, Integer> composition) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
+		public void formFleet(String planetName, String fleetName, Map<common.StarshipTemplate, Integer> fleetToFormStarships, Set<common.ISpecialUnit> fleetToFormSpecialUnits) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
-			getGameMove().addFormFleetCommand(planetName, fleetName, composition);
+			getGameMove().addFormFleetCommand(planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits);
 		}
 
 		@Override
@@ -481,14 +480,14 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canMakeStarships(String planetName, Map<Class<? extends IStarship>, Integer> starshipsToMake) throws RpcException, StateMachineNotExpectedEventException
+		public boolean canMakeStarships(String planetName, Map<common.StarshipTemplate, Integer> starshipsToMake) throws RpcException, StateMachineNotExpectedEventException
 		{
 			if (getGameMove().isTurnEnded()) return false;
 			return getGameBoard().canMakeStarships(getLogin(), planetName, starshipsToMake);
 		}
 
 		@Override
-		public void makeStarships(String planetName, Map<Class<? extends IStarship>, Integer> starshipsToMake) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
+		public void makeStarships(String planetName, Map<common.StarshipTemplate, Integer> starshipsToMake) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
 			getGameMove().addMakeStarshipsCommand(planetName, starshipsToMake);
 		}

@@ -162,7 +162,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		boolean canMakeStarships(String planetName, Map<Class<? extends IStarship>, Integer> starshipsToMake) throws RpcException, StateMachineNotExpectedEventException;
+		boolean canMakeStarships(String planetName, Map<StarshipTemplate, Integer> starshipsToMake) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Make given starships on the given planet.
@@ -173,7 +173,7 @@ public interface Protocol
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 * @throws RunningGameCommandException If command is not expected or arguments are not corrects.
 		 */
-		void makeStarships(String planetName, Map<Class<? extends IStarship>, Integer> starshipsToMake) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
+		void makeStarships(String planetName, Map<StarshipTemplate, Integer> starshipsToMake) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
 		
 		/**
 		 * Test if probe can be made on the selected planet with given name.
@@ -225,7 +225,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		boolean canFormFleet(String planetName, String fleetName, Map<Class<? extends IStarship>, Integer> fleetToForm) throws RpcException, StateMachineNotExpectedEventException;
+		boolean canFormFleet(String planetName, String fleetName, Map<StarshipTemplate, Integer> fleetToFormStarships, Set<ISpecialUnit> fleetToFormSpecialUnits) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Form a new fleet from the given starships composition.
@@ -236,7 +236,7 @@ public interface Protocol
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 * @throws RunningGameCommandException If command is not expected or arguments are not corrects.
 		 */
-		void formFleet(String planetName, String fleetName, Map<Class<? extends IStarship>, Integer> composition) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
+		void formFleet(String planetName, String fleetName, Map<StarshipTemplate, Integer> fleetToFormStarships, Set<ISpecialUnit> fleetToFormSpeciaUnits) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
 		
 		/**
 		 * Test if the given fleet can be dismantled.

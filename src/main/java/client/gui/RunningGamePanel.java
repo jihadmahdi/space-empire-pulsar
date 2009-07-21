@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
+import java.util.TreeSet;
 import java.util.Vector;
 import java.util.logging.Level;
 
@@ -107,7 +108,7 @@ import common.GovernmentStarship;
 import common.IBuilding;
 import common.ICelestialBody;
 import common.IMarker;
-import common.IStarship;
+import common.ISpecialUnit;
 import common.LaunchedPulsarMissile;
 import common.Planet;
 import common.Player;
@@ -119,6 +120,7 @@ import common.PulsarLauchingPad;
 import common.SEPUtils;
 import common.SpaceCounter;
 import common.StarshipPlant;
+import common.StarshipTemplate;
 import common.Unit;
 import common.UnitMarker;
 import common.Fleet.Move;
@@ -1406,7 +1408,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 						JButton buildBtn = new JButton();
 						buildBtn.setText("Embark");
-						buildBtn.setToolTipText("Embark the government on a government starship for " + GovernmentStarship.PRICE_POPULATION + "pop. and " + GovernmentStarship.PRICE_CARBON + "c.");
+						buildBtn.setToolTipText("Embark the government on a government starship for " + GovernmentStarship.POPULATION_PRICE + "pop. and " + GovernmentStarship.CARBON_PRICE + "c.");
 						buildBtn.setEnabled(client.getRunningGameInterface().canEmbarkGovernment());
 						buildBtn.addActionListener(new ActionListener()
 						{
@@ -1611,10 +1613,15 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		int makeCarbonPrice = 0, makePopulationPrice = 0;
 		int carbonPrice, populationPrice;
 
-		Map<Class<? extends IStarship>, Integer> starshipsToMake = new HashMap<Class<? extends IStarship>, Integer>();
-		Map<Class<? extends IStarship>, Integer> fleetToForm = new HashMap<Class<? extends IStarship>, Integer>();
+		Map<StarshipTemplate, Integer> starshipsToMake = new HashMap<StarshipTemplate, Integer>();
+		Map<StarshipTemplate, Integer> fleetToFormStarships = new HashMap<StarshipTemplate, Integer>();
+		Set<ISpecialUnit> fleetToFormSpecialUnits = new HashSet<ISpecialUnit>();
 
-		for(Class<? extends IStarship> starshipType : SEPUtils.starshipTypes)
+		Set<StarshipTemplate> starshipTemplates = new TreeSet<StarshipTemplate>();
+		starshipTemplates.addAll(SEPUtils.starshipTypes);
+		if (infos.productiveCelestialBody.getUnasignedStarships() != null) starshipTemplates.addAll(infos.productiveCelestialBody.getUnasignedStarships().keySet());
+		
+		for(StarshipTemplate starshipType : starshipTemplates)
 		{
 			if (infos.productiveCelestialBody.getUnasignedStarships() == null)
 			{
@@ -1628,21 +1635,14 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			toMake = Basic.intValueOf(getStarshipPlantWorkshopStarshipQtToMakeTextField(starshipType).getText(), 0);
 			toFleet = Basic.intValueOf(getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).getText(), 0);
 
-			try
-			{
-				carbonPrice = starshipType.getField("PRICE_CARBON").getInt(null);
-				populationPrice = starshipType.getField("PRICE_POPULATION").getInt(null);
-			}
-			catch(Throwable t)
-			{
-				throw new Error("Static constants PRICE_CARBON and PRICE_POPULATION not defined for class " + starshipType.getName(), t);
-			}
+			carbonPrice = starshipType.getCarbonPrice();
+			populationPrice = starshipType.getPopulationPrice();
 
 			makeCarbonPrice += toMake * carbonPrice;
 			makePopulationPrice += toMake * populationPrice;
 
 			starshipsToMake.put(starshipType, toMake);
-			fleetToForm.put(starshipType, toFleet);
+			fleetToFormStarships.put(starshipType, toFleet);
 
 			// Update display			
 			getStarshipPlantWorkshopStarshipQtLabel(starshipType).setText(String.format("%d (%d)", availableQt, availableQt - toFleet));
@@ -1651,20 +1651,24 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		}
 
-		if (infos.productiveCelestialBody.getUnasignedStarships() != null) for(Class<? extends IStarship> starshipType : infos.productiveCelestialBody.getUnasignedStarships().keySet())
+		if (infos.productiveCelestialBody.getUnasignedSpecialUnits() != null)
+		for(ISpecialUnit specialUnit : infos.productiveCelestialBody.getUnasignedSpecialUnits())
 		{
-			if (!SEPUtils.starshipTypes.contains(starshipType))
+			if (specialUnit == null) continue;
+			
+			availableQt = 1;
+
+			toFleet = Basic.intValueOf(getStarshipPlantWorkshopSpecialUnitNewFleetQtTextField(specialUnit).getText(), 0);
+			
+			if (toFleet > 0)
 			{
-				availableQt = infos.productiveCelestialBody.getUnasignedStarships().get(starshipType);
-
-				toFleet = Basic.intValueOf(getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).getText(), 0);
-
-				fleetToForm.put(starshipType, toFleet);
-
-				// Update display			
-				getStarshipPlantWorkshopStarshipQtLabel(starshipType).setText(String.format("%d (%d)", availableQt, availableQt - toFleet));
-				getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).setText(String.valueOf(toFleet));
+				toFleet = 1;
+				fleetToFormSpecialUnits.add(specialUnit);
 			}
+
+			// Update display			
+			getStarshipPlantWorkshopSpecialUnitQtLabel(specialUnit).setText(String.format("%d (%d)", availableQt, availableQt - toFleet));
+			getStarshipPlantWorkshopSpecialUnitNewFleetQtTextField(specialUnit).setText(String.valueOf(toFleet));
 		}
 
 		int probeToMake = Basic.intValueOf(getProbeMakeQtTextField().getText(), 0);
@@ -1695,7 +1699,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		try
 		{
 			getStarshipPlantWorkshopMakeStarshipBtn().setEnabled(client.getRunningGameInterface().canMakeStarships(infos.productiveCelestialBody.getName(), starshipsToMake));
-			getStarshipPlantFormFleetBtn().setEnabled(client.getRunningGameInterface().canFormFleet(infos.productiveCelestialBody.getName(), fleetName, fleetToForm));
+			getStarshipPlantFormFleetBtn().setEnabled(client.getRunningGameInterface().canFormFleet(infos.productiveCelestialBody.getName(), fleetName, fleetToFormStarships, fleetToFormSpecialUnits));
 
 			getStarshipPlantWorkshopMakeProbeBtn().setEnabled(infos.building != null && client.getRunningGameInterface().canMakeProbes(infos.productiveCelestialBody.getName(), probeName, probeToMake));
 			getStarshipPlantWorkshopMakeAntiProbeMissileBtn().setEnabled(infos.building != null && client.getRunningGameInterface().canMakeAntiProbeMissiles(infos.productiveCelestialBody.getName(), antiProbeMissileName, antiProbeMissileToMake));
@@ -1756,41 +1760,40 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					SelectedBuildingInfos<StarshipPlant> infos = getSelectedBuildingInfos(StarshipPlant.class);
 					if (infos == null || infos.productiveCelestialBody == null) return;
 
-					Map<Class<? extends IStarship>, Integer> fleetToForm = new HashMap<Class<? extends IStarship>, Integer>();
+					Map<StarshipTemplate, Integer> fleetToFormStarships = new HashMap<StarshipTemplate, Integer>();
+					Set<ISpecialUnit> fleetToFormSpecialUnits = new HashSet<ISpecialUnit>();
 
-					for(Class<? extends IStarship> starshipType : SEPUtils.starshipTypes)
+					Set<StarshipTemplate> starshipTemplates = new TreeSet<StarshipTemplate>();
+					starshipTemplates.addAll(SEPUtils.starshipTypes);
+					if (infos.productiveCelestialBody.getUnasignedStarships() != null) starshipTemplates.addAll(infos.productiveCelestialBody.getUnasignedStarships().keySet());
+					
+					for(StarshipTemplate starshipType : starshipTemplates)
 					{
 						int fleetToFormQt = Basic.intValueOf(getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).getText(), 0);
-						if (fleetToFormQt > 0) fleetToForm.put(starshipType, fleetToFormQt);
+						if (fleetToFormQt > 0) fleetToFormStarships.put(starshipType, fleetToFormQt);
 					}
 
-					if (infos.productiveCelestialBody.getUnasignedStarships() != null) for(Class<? extends IStarship> starshipType : infos.productiveCelestialBody.getUnasignedStarships().keySet())
+					if (infos.productiveCelestialBody.getUnasignedSpecialUnits() != null) for(ISpecialUnit specialUnit : infos.productiveCelestialBody.getUnasignedSpecialUnits())
 					{
-						if (!SEPUtils.starshipTypes.contains(starshipType))
-						{
-							int fleetToFormQt = Basic.intValueOf(getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).getText(), 0);
-							if (fleetToFormQt > 0) fleetToForm.put(starshipType, fleetToFormQt);
-						}
+						int fleetToFormQt = Basic.intValueOf(getStarshipPlantWorkshopSpecialUnitNewFleetQtTextField(specialUnit).getText(), 0);
+						if (fleetToFormQt > 0) fleetToFormSpecialUnits.add(specialUnit);	
 					}
 
 					try
 					{
-						client.getRunningGameInterface().formFleet(infos.productiveCelestialBody.getName(), getStarshipPlantNewFleetNameTextField().getText(), fleetToForm);
+						client.getRunningGameInterface().formFleet(infos.productiveCelestialBody.getName(), getStarshipPlantNewFleetNameTextField().getText(), fleetToFormStarships, fleetToFormSpecialUnits);
 
-						for(Class<? extends IStarship> starshipType : SEPUtils.starshipTypes)
+						for(StarshipTemplate starshipType : starshipTemplates)
 						{
-							getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).setText("0");
-							getStarshipPlantNewFleetNameTextField().setText(Unit.generateName());
+							getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).setText("0");							
 						}
 
-						if (infos.productiveCelestialBody.getUnasignedStarships() != null) for(Class<? extends IStarship> starshipType : infos.productiveCelestialBody.getUnasignedStarships().keySet())
+						if (infos.productiveCelestialBody.getUnasignedSpecialUnits() != null) for(ISpecialUnit specialUnit : infos.productiveCelestialBody.getUnasignedSpecialUnits())
 						{
-							if (!SEPUtils.starshipTypes.contains(starshipType))
-							{
-								getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).setText("0");
-								getStarshipPlantNewFleetNameTextField().setText(Unit.generateName());
-							}
+							getStarshipPlantWorkshopSpecialUnitNewFleetQtTextField(specialUnit).setText("0");							
 						}
+						
+						getStarshipPlantNewFleetNameTextField().setText(Unit.generateName());
 
 						refreshGameBoard();
 					}
@@ -1925,9 +1928,9 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					SelectedBuildingInfos<StarshipPlant> infos = getSelectedBuildingInfos(StarshipPlant.class);
 					if (infos == null || infos.building == null) return;
 
-					Map<Class<? extends IStarship>, Integer> starshipsToMake = new HashMap<Class<? extends IStarship>, Integer>();
+					Map<StarshipTemplate, Integer> starshipsToMake = new HashMap<StarshipTemplate, Integer>();
 
-					for(Class<? extends IStarship> starshipType : SEPUtils.starshipTypes)
+					for(StarshipTemplate starshipType : SEPUtils.starshipTypes)
 					{
 						int toMake = Basic.intValueOf(getStarshipPlantWorkshopStarshipQtToMakeTextField(starshipType).getText(), 0);
 						if (toMake > 0) starshipsToMake.put(starshipType, toMake);
@@ -1937,7 +1940,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					{
 						client.getRunningGameInterface().makeStarships(infos.planet.getName(), starshipsToMake);
 
-						for(Class<? extends IStarship> starshipType : SEPUtils.starshipTypes)
+						for(StarshipTemplate starshipType : SEPUtils.starshipTypes)
 						{
 							getStarshipPlantWorkshopStarshipQtToMakeTextField(starshipType).setText("0");
 						}
@@ -3161,55 +3164,54 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		starshipPlantActionPanel.add(getStarshipPlantWorkshopColumnLabel());
 		int y = getStarshipPlantWorkshopColumnLabel().getY() + getStarshipPlantWorkshopColumnLabel().getHeight() + 5;
 
-		for(Class<? extends IStarship> basicStarshipType : SEPUtils.starshipTypes)
+		Set<StarshipTemplate> starshipTemplates = new TreeSet<StarshipTemplate>();
+		starshipTemplates.addAll(SEPUtils.starshipTypes);
+		if (infos.productiveCelestialBody.getUnasignedStarships() != null) starshipTemplates.addAll(infos.productiveCelestialBody.getUnasignedStarships().keySet());
+		
+		for(StarshipTemplate starshipType : starshipTemplates)
 		{
-			JLabel typeLabel = getStarshipPlantWorkshopStarshipTypeLabel(basicStarshipType);
+			JLabel typeLabel = getStarshipPlantWorkshopStarshipTypeLabel(starshipType);
 			typeLabel.setBounds(0, y, 200, 20);
 			starshipPlantActionPanel.add(typeLabel);
 
-			JLabel qtLabel = getStarshipPlantWorkshopStarshipQtLabel(basicStarshipType);
-			int qt = infos.productiveCelestialBody.getUnasignedStarships().containsKey(basicStarshipType) ? infos.productiveCelestialBody.getUnasignedStarships().get(basicStarshipType) : 0;
+			JLabel qtLabel = getStarshipPlantWorkshopStarshipQtLabel(starshipType);
+			int qt = infos.productiveCelestialBody.getUnasignedStarships().containsKey(starshipType) ? infos.productiveCelestialBody.getUnasignedStarships().get(starshipType) : 0;
 			qtLabel.setText(qt + " (" + qt + ")");
 			qtLabel.setBounds(200, y, 100, 20);
 			starshipPlantActionPanel.add(qtLabel);
 
-			JTextField makeQt = getStarshipPlantWorkshopStarshipQtToMakeTextField(basicStarshipType);
+			JTextField makeQt = getStarshipPlantWorkshopStarshipQtToMakeTextField(starshipType);
 			makeQt.setBounds(300, y, 40, 20);
-			makeQt.setEnabled(infos.building != null);
+			makeQt.setEnabled(infos.building != null && SEPUtils.starshipTypes.contains(starshipType));
 			starshipPlantActionPanel.add(makeQt);
 
-			JTextField fleetQt = getStarshipPlantWorkshopStarshipNewFleetQtTextField(basicStarshipType);
+			JTextField fleetQt = getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType);
 			fleetQt.setBounds(400, y, 40, 20);
 			starshipPlantActionPanel.add(fleetQt);
 
 			y += 25;
 		}
-
-		if (infos.productiveCelestialBody.getUnasignedStarships() != null) for(Class<? extends IStarship> starshipType : infos.productiveCelestialBody.getUnasignedStarships().keySet())
+		
+		if (infos.productiveCelestialBody.getUnasignedSpecialUnits() != null)
+		for(ISpecialUnit specialUnit : infos.productiveCelestialBody.getUnasignedSpecialUnits())
 		{
-			if (!SEPUtils.starshipTypes.contains(starshipType))
-			{
-				JLabel typeLabel = getStarshipPlantWorkshopStarshipTypeLabel(starshipType);
-				typeLabel.setBounds(0, y, 200, 20);
-				starshipPlantActionPanel.add(typeLabel);
+			if (specialUnit == null) continue;
+			
+			JLabel typeLabel = getStarshipPlantWorkshopSpecialUnitNameLabel(specialUnit);
+			typeLabel.setBounds(0, y, 200, 20);
+			starshipPlantActionPanel.add(typeLabel);
 
-				JLabel qtLabel = getStarshipPlantWorkshopStarshipQtLabel(starshipType);
-				int qt = infos.productiveCelestialBody.getUnasignedStarships().get(starshipType);
-				qtLabel.setText(qt + " (" + qt + ")");
-				qtLabel.setBounds(200, y, 100, 20);
-				starshipPlantActionPanel.add(qtLabel);
+			JLabel qtLabel = getStarshipPlantWorkshopSpecialUnitQtLabel(specialUnit);
+			int qt = 1;
+			qtLabel.setText(qt + " (" + qt + ")");
+			qtLabel.setBounds(200, y, 100, 20);
+			starshipPlantActionPanel.add(qtLabel);
+			
+			JTextField fleetQt = getStarshipPlantWorkshopSpecialUnitNewFleetQtTextField(specialUnit);
+			fleetQt.setBounds(400, y, 40, 20);
+			starshipPlantActionPanel.add(fleetQt);
 
-				JTextField makeQt = getStarshipPlantWorkshopStarshipQtToMakeTextField(starshipType);
-				makeQt.setEnabled(false);
-				makeQt.setBounds(300, y, 40, 20);
-				starshipPlantActionPanel.add(makeQt);
-
-				JTextField fleetQt = getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType);
-				fleetQt.setBounds(400, y, 40, 20);
-				starshipPlantActionPanel.add(fleetQt);
-
-				y += 25;
-			}
+			y += 25;
 		}
 
 		JButton makeStarshipBtn = getStarshipPlantWorkshopMakeStarshipBtn();
@@ -3343,34 +3345,54 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return starshipPlantWorkshopColumnLabel;
 	}
 
-	private Map<Class<? extends IStarship>, JLabel>	starshipPlantWorkshopStarshipTypeLabel	= new HashMap<Class<? extends IStarship>, JLabel>();
+	private Map<String, JLabel>	starshipPlantWorkshopStarshipTypeLabel	= new HashMap<String, JLabel>();
 
-	JLabel getStarshipPlantWorkshopStarshipTypeLabel(Class<? extends IStarship> starshipType)
+	JLabel getStarshipPlantWorkshopStarshipTypeLabel(StarshipTemplate starshipType)
 	{
-		if (!starshipPlantWorkshopStarshipTypeLabel.containsKey(starshipType))
+		return getStarshipPlantWorkshopLabel(StarshipTemplate.class.getName()+starshipType.getName(), starshipType.getName());
+	}
+	
+	JLabel getStarshipPlantWorkshopSpecialUnitNameLabel(ISpecialUnit specialUnit)
+	{
+		return getStarshipPlantWorkshopLabel(specialUnit.getClass().getName()+specialUnit.getName(), specialUnit.getName());
+	}
+	
+	JLabel getStarshipPlantWorkshopLabel(String id, String text)
+	{
+		if (!starshipPlantWorkshopStarshipTypeLabel.containsKey(id))
 		{
 			JLabel label = new JLabel();
-			label.setText(starshipType.getSimpleName());
-			starshipPlantWorkshopStarshipTypeLabel.put(starshipType, label);
+			label.setText(text);
+			starshipPlantWorkshopStarshipTypeLabel.put(id, label);
 		}
-		return starshipPlantWorkshopStarshipTypeLabel.get(starshipType);
+		return starshipPlantWorkshopStarshipTypeLabel.get(id);
 	}
 
-	private Map<Class<? extends IStarship>, JLabel>	starshipPlantWorkshopStarshipQtLabel	= new HashMap<Class<? extends IStarship>, JLabel>();
+	private Map<String, JLabel>	starshipPlantWorkshopStarshipQtLabel	= new HashMap<String, JLabel>();
 
-	JLabel getStarshipPlantWorkshopStarshipQtLabel(Class<? extends IStarship> starshipType)
+	JLabel getStarshipPlantWorkshopStarshipQtLabel(StarshipTemplate starshipType)
 	{
-		if (!starshipPlantWorkshopStarshipQtLabel.containsKey(starshipType))
+		return getStarshipPlantWorkshopQtLabel(starshipType.getClass().getName()+starshipType.getName());
+	}
+	
+	JLabel getStarshipPlantWorkshopSpecialUnitQtLabel(ISpecialUnit specialUnit)
+	{
+		return getStarshipPlantWorkshopQtLabel(specialUnit.getClass().getName()+specialUnit.getName());
+	}
+	
+	JLabel getStarshipPlantWorkshopQtLabel(String id)
+	{
+		if (!starshipPlantWorkshopStarshipQtLabel.containsKey(id))
 		{
 			JLabel label = new JLabel();
-			starshipPlantWorkshopStarshipQtLabel.put(starshipType, label);
+			starshipPlantWorkshopStarshipQtLabel.put(id, label);
 		}
-		return starshipPlantWorkshopStarshipQtLabel.get(starshipType);
+		return starshipPlantWorkshopStarshipQtLabel.get(id);
 	}
 
-	private Map<Class<? extends IStarship>, JTextField>	starshipPlantWorkshopStarshipQtToMakeTextField	= new HashMap<Class<? extends IStarship>, JTextField>();
+	private Map<StarshipTemplate, JTextField>	starshipPlantWorkshopStarshipQtToMakeTextField	= new HashMap<StarshipTemplate, JTextField>();
 
-	JTextField getStarshipPlantWorkshopStarshipQtToMakeTextField(Class<? extends IStarship> starshipType)
+	JTextField getStarshipPlantWorkshopStarshipQtToMakeTextField(StarshipTemplate starshipType)
 	{
 		if (!starshipPlantWorkshopStarshipQtToMakeTextField.containsKey(starshipType))
 		{
@@ -3381,17 +3403,27 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return starshipPlantWorkshopStarshipQtToMakeTextField.get(starshipType);
 	}
 
-	private Map<Class<? extends IStarship>, JTextField>	starshipPlantWorkshopStarshipNewFleetQtTextField	= new HashMap<Class<? extends IStarship>, JTextField>();
+	private Map<String, JTextField>	starshipPlantWorkshopStarshipNewFleetQtTextField	= new HashMap<String, JTextField>();
 
-	JTextField getStarshipPlantWorkshopStarshipNewFleetQtTextField(Class<? extends IStarship> starshipType)
+	JTextField getStarshipPlantWorkshopStarshipNewFleetQtTextField(StarshipTemplate starshipType)
 	{
-		if (!starshipPlantWorkshopStarshipNewFleetQtTextField.containsKey(starshipType))
+		return getStarshipPlantWorkshopNewFleetQtTextField(starshipType.getClass().getName()+starshipType.getName());
+	}
+	
+	JTextField getStarshipPlantWorkshopSpecialUnitNewFleetQtTextField(ISpecialUnit specialUnit)
+	{
+		return getStarshipPlantWorkshopNewFleetQtTextField(specialUnit.getClass().getName()+specialUnit.getName());
+	}
+	
+	JTextField getStarshipPlantWorkshopNewFleetQtTextField(String id)
+	{
+		if (!starshipPlantWorkshopStarshipNewFleetQtTextField.containsKey(id))
 		{
 			JTextField textField = new JTextField("0");
 			textField.addFocusListener(getStarshipPlantActionFocusListener());
-			starshipPlantWorkshopStarshipNewFleetQtTextField.put(starshipType, textField);
+			starshipPlantWorkshopStarshipNewFleetQtTextField.put(id, textField);
 		}
-		return starshipPlantWorkshopStarshipNewFleetQtTextField.get(starshipType);
+		return starshipPlantWorkshopStarshipNewFleetQtTextField.get(id);
 	}
 
 	private JTextField	starshipPlantNewFleetNameTextField;

@@ -6,7 +6,10 @@ import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
 
+import server.SEPServer;
+
 import common.Player;
+import common.Diplomacy.PlayerPolicies;
 
 /**
  * This class respresent polices of a player at instant time in the game.
@@ -40,6 +43,17 @@ public class Diplomacy implements Serializable
 		}
 	}
 
+	public PlayerPolicies getPolicies(String targetLogin)
+	{
+		if (owner.isNamed(targetLogin)) throw new SEPServer.SEPImplementationException("Cannot have a diplomacy toward ourselves.");
+		if (!policies.containsKey(targetLogin))
+		{			
+			policies.put(targetLogin, new PlayerPolicies(targetLogin, false, false));
+		}
+		
+		return policies.get(targetLogin);
+	}
+	
 	public common.Diplomacy getPlayerView(int date, String playerLogin, boolean isVisible)
 	{
 		if (isVisible || owner.isNamed(playerLogin))

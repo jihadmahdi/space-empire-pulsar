@@ -654,4 +654,16 @@ public class GameConfig implements Serializable
 		// TODO : Add to CTOR
 		return ProductiveCelestialBody.MAX_NATURAL_CARBON;
 	}
+
+	public int getGovernmentStarshipCarbonPrice()
+	{
+		// TODO : Add to CTOR
+		return GovernmentStarship.CARBON_PRICE;
+	}
+	
+	public int getGovernmentStarshipPopulationPrice()
+	{
+		// TODO : Add to CTOR
+		return GovernmentStarship.POPULATION_PRICE;
+	}
 }
