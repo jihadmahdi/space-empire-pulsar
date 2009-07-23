@@ -11,6 +11,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 
+import server.SEPServer;
+
 import common.Player;
 import common.SEPUtils.RealLocation;
 
@@ -27,22 +29,91 @@ class SpaceCounter extends ABuilding implements Serializable
 		
 		// Constants
 		private final int creationDate;
-		private final RealLocation from;
-		private final RealLocation to;
+		private final String source;
+		private final String destination;
 		private final int speed;
 		
-		public SpaceRoad(int creationDate, RealLocation from, RealLocation to, int speed)
+		public SpaceRoad(int creationDate, String source, String destination, int speed)
 		{
 			this.creationDate = creationDate;
-			this.from = from;
-			this.to = to;
+			this.source = source;
+			this.destination = destination;
 			this.speed = speed;
 		}
 		
 		public common.SpaceRoad getPlayerView(int date, String playerLogin)
 		{
-			return new common.SpaceRoad(creationDate, true, from, to, speed);
+			return new common.SpaceRoad(creationDate, true, source, destination, speed);
 		}
+
+		public String getDestination()
+		{
+			return destination;
+		}
+		
+		public String getSource()
+		{
+			return source;
+		}
+	}
+	
+	static class SpaceRoadDeliverer extends Unit implements Serializable
+	{
+		private static final long	serialVersionUID	= 1L;
+		
+		private final String sourceName;
+		private final String destinationName;
+
+		public SpaceRoadDeliverer(String name, Player owner, RealLocation sourceLocation, String sourceName, String destinationName)
+		{
+			super(name, owner, sourceLocation);
+			this.sourceName = sourceName;
+			this.destinationName = destinationName;
+		}
+		
+		@Override
+		public common.SpaceRoadDeliverer getPlayerView(int date, String playerLogin, boolean isVisible)
+		{
+			return new common.SpaceRoadDeliverer(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin));
+		}
+
+		@Override
+		public double getSpeed()
+		{
+			return 1;
+		}
+
+		@Override
+		public boolean startMove(RealLocation currentLocation, GameBoard currentGameBoard)
+		{
+			return (getDestinationLocation() != null && super.startMove(currentLocation, currentGameBoard));		
+		}
+		
+		@Override
+		public void endMove(RealLocation currentLocation, GameBoard gameBoard)
+		{
+			setDestinationLocation(null);
+			super.endMove(currentLocation, gameBoard);
+			gameBoard.tryToLinkSpaceRoad(this);						
+		}
+		
+		public void launch(RealLocation sourceLocation, RealLocation destinationLocation)
+		{
+			setSourceLocation(sourceLocation);
+			setDestinationLocation(destinationLocation);
+			setTravellingProgress(0);
+		}
+		
+		public String getSourceName()
+		{
+			return sourceName;
+		}
+		
+		public String getDestinationName()
+		{
+			return destinationName;
+		}
+		
 	}
 	
 	static class CarbonCarrier extends Unit implements Serializable
@@ -114,7 +185,8 @@ class SpaceCounter extends ABuilding implements Serializable
 	// Variables
 	private int nbBuild;
 	// assert Sets.size() == nbBuild
-	private final Set<SpaceRoad> spaceRoads;
+	private final Set<SpaceRoad> spaceRoadsBuilt;
+	private final Set<SpaceRoad> spaceRoadsLinked;
 	private final Set<CarbonOrder> ordersToReceive;
 	private final Set<CarbonOrder> currentSentOrder;
 	private final Stack<CarbonOrder> nextOrders;
@@ -134,17 +206,19 @@ class SpaceCounter extends ABuilding implements Serializable
 	public SpaceCounter(int lastBuildDate, int nbBuild)
 	{
 		this.nbBuild = nbBuild;
-		this.spaceRoads = new HashSet<SpaceRoad>();
+		this.spaceRoadsBuilt = new HashSet<SpaceRoad>();
+		this.spaceRoadsLinked = new HashSet<SpaceRoad>();
 		this.ordersToReceive = new HashSet<CarbonOrder>();
 		this.currentSentOrder = new HashSet<CarbonOrder>();
 		this.nextOrders = new Stack<CarbonOrder>();
 		this.lastBuildDate = lastBuildDate;
 	}
 	
-	private SpaceCounter(int lastBuildDate, int nbBuild, Set<SpaceRoad> spaceRoads, Set<CarbonOrder> ordersToReceive, Set<CarbonOrder> currentSentOrder, Stack<CarbonOrder> nextOrders)
+	private SpaceCounter(int lastBuildDate, int nbBuild, Set<SpaceRoad> spaceRoadsBuilt, Set<SpaceRoad> spaceRoadsLinked, Set<CarbonOrder> ordersToReceive, Set<CarbonOrder> currentSentOrder, Stack<CarbonOrder> nextOrders)
 	{
 		this.nbBuild = nbBuild;
-		this.spaceRoads = spaceRoads;
+		this.spaceRoadsBuilt = spaceRoadsBuilt;
+		this.spaceRoadsLinked = spaceRoadsLinked;
 		this.ordersToReceive = ordersToReceive;
 		this.currentSentOrder = currentSentOrder;
 		this.nextOrders = nextOrders;
@@ -157,10 +231,16 @@ class SpaceCounter extends ABuilding implements Serializable
 	@Override
 	public common.SpaceCounter getPlayerView(int date, String playerLogin)
 	{
-		Set<common.SpaceRoad> spaceRoadsSet = new HashSet<common.SpaceRoad>();
-		for(SpaceRoad r : spaceRoads)
+		Set<common.SpaceRoad> spaceRoadsBuiltSet = new HashSet<common.SpaceRoad>();
+		for(SpaceRoad r : spaceRoadsBuilt)
 		{
-			spaceRoadsSet.add(r.getPlayerView(date, playerLogin));
+			spaceRoadsBuiltSet.add(r.getPlayerView(date, playerLogin));
+		}
+		
+		Set<common.SpaceRoad> spaceRoadsLinkedSet = new HashSet<common.SpaceRoad>();
+		for(SpaceRoad r : spaceRoadsLinked)
+		{
+			spaceRoadsLinkedSet.add(r.getPlayerView(date, playerLogin));
 		}
 		
 		Set<common.CarbonOrder> ordersToReceiveSet = new HashSet<common.CarbonOrder>();
@@ -181,7 +261,7 @@ class SpaceCounter extends ABuilding implements Serializable
 			nextOrdersSet.push(o.getPlayerView(date, playerLogin));
 		}
 		
-		return new common.SpaceCounter(nbBuild, spaceRoadsSet, ordersToReceiveSet, currentSentOrderSet, nextOrdersSet, getMaxCarbonFreight(), getCurrentCarbonFreight());
+		return new common.SpaceCounter(nbBuild, spaceRoadsBuiltSet, spaceRoadsLinkedSet, ordersToReceiveSet, currentSentOrderSet, nextOrdersSet, getMaxCarbonFreight(), getCurrentCarbonFreight());
 	}
 
 	@Override
@@ -228,19 +308,82 @@ class SpaceCounter extends ABuilding implements Serializable
 	@Override
 	SpaceCounter getUpgraded(int date)
 	{
-		return new SpaceCounter(date, nbBuild+1, spaceRoads, ordersToReceive, currentSentOrder, nextOrders);
+		return new SpaceCounter(date, nbBuild+1, spaceRoadsBuilt, spaceRoadsLinked, ordersToReceive, currentSentOrder, nextOrders);
 	}
 	
 	@Override
 	SpaceCounter getDowngraded()
 	{
 		if (!canDowngrade()) throw new Error("Cannot currently downgrade this SpaceCounter.");		
-		return new SpaceCounter(lastBuildDate, Math.max(0, nbBuild-1), spaceRoads, ordersToReceive, currentSentOrder, nextOrders);
+		return new SpaceCounter(lastBuildDate, Math.max(0, nbBuild-1), spaceRoadsBuilt, spaceRoadsLinked, ordersToReceive, currentSentOrder, nextOrders);
 	}
 
 	@Override
 	boolean canDowngrade()
 	{
-		return spaceRoads.size() <= Math.max(0,nbBuild-1);
+		return spaceRoadsBuilt.size() <= Math.max(0,nbBuild-1);
+	}
+
+	public int getAvailableRoadsBuilder()
+	{
+		return nbBuild - spaceRoadsBuilt.size();
+	}
+
+	public void buildSpaceRoad(SpaceRoad spaceRoad)
+	{
+		if (getAvailableRoadsBuilder() <= 0) throw new SEPServer.SEPImplementationException("Cannot build space road");
+		spaceRoadsBuilt.add(spaceRoad);
+	}
+
+	public void linkSpaceRoad(SpaceRoad spaceRoad)
+	{
+		spaceRoadsLinked.add(spaceRoad);
+	}
+
+	public boolean hasSpaceRoadTo(String destinationName)
+	{
+		for(SpaceRoad r : spaceRoadsBuilt)
+		{
+			if (r.getDestination().compareTo(destinationName) == 0)
+			{
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	public boolean hasSpaceRoadLinkedFrom(String sourceName)
+	{
+		for(SpaceRoad r : spaceRoadsLinked)
+		{
+			if (r.getSource().compareTo(sourceName) == 0)
+			{
+				return true;
+			}
+		}
+		
+		return false;
+	}
+
+	public void cutSpaceRoadLinkWith(String destinationName)
+	{
+		for(SpaceRoad r : spaceRoadsBuilt)
+		{
+			if (r.getDestination().compareTo(destinationName) == 0)
+			{
+				spaceRoadsBuilt.remove(r);
+				break;
+			}
+		}
+		
+		for(SpaceRoad r : spaceRoadsLinked)
+		{
+			if (r.getSource().compareTo(destinationName) == 0)
+			{
+				spaceRoadsLinked.remove(r);
+				break;
+			}
+		}
 	}
 }

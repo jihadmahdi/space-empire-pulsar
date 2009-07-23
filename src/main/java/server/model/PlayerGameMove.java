@@ -413,6 +413,91 @@ public class PlayerGameMove
 			return newGameBoard;
 		}
 	}
+		
+	static class AttackEnemiesFleetCommand extends GameMoveCommand
+	{
+		private final String celestialBodyName;
+		
+		public AttackEnemiesFleetCommand(String playerLogin, String celestialBodyName)
+		{
+			super(playerLogin);
+			this.celestialBodyName = celestialBodyName;
+		}
+		
+		@Override
+		protected GameBoard apply(GameBoard originalGameBoard)
+		{
+			GameBoard newGameBoard = Basic.clone(originalGameBoard);
+			try
+			{
+				newGameBoard.attackEnemiesFleet(playerLogin, celestialBodyName);
+			}
+			catch(RunningGameCommandException e)
+			{
+				e.printStackTrace();
+				return originalGameBoard;
+			}
+			return newGameBoard;
+		}
+	}
+		
+	static class BuildSpaceRoadCommand extends GameMoveCommand
+	{
+		private final String productiveCelestialBodyNameA;
+		private final String productiveCelestialBodyNameB;
+		
+		public BuildSpaceRoadCommand(String playerLogin, String productiveCelestialBodyNameA, String productiveCelestialBodyNameB)
+		{
+			super(playerLogin);
+			this.productiveCelestialBodyNameA = productiveCelestialBodyNameA;
+			this.productiveCelestialBodyNameB = productiveCelestialBodyNameB;
+		}
+		
+		@Override
+		protected GameBoard apply(GameBoard originalGameBoard)
+		{
+			GameBoard newGameBoard = Basic.clone(originalGameBoard);
+			try
+			{
+				newGameBoard.buildSpaceRoad(playerLogin, productiveCelestialBodyNameA, productiveCelestialBodyNameB);
+			}
+			catch(RunningGameCommandException e)
+			{
+				e.printStackTrace();
+				return originalGameBoard;
+			}
+			return newGameBoard;
+		}
+	}
+	
+	static class DemolishSpaceRoadCommand extends GameMoveCommand
+	{
+		private final String productiveCelestialBodyNameA;
+		private final String productiveCelestialBodyNameB;
+		
+		public DemolishSpaceRoadCommand(String playerLogin, String productiveCelestialBodyNameA, String productiveCelestialBodyNameB)
+		{
+			super(playerLogin);
+			this.productiveCelestialBodyNameA = productiveCelestialBodyNameA;
+			this.productiveCelestialBodyNameB = productiveCelestialBodyNameB;
+		}
+		
+		@Override
+		protected GameBoard apply(GameBoard originalGameBoard)
+		{
+			GameBoard newGameBoard = Basic.clone(originalGameBoard);
+			try
+			{
+				newGameBoard.demolishSpaceRoad(playerLogin, productiveCelestialBodyNameA, productiveCelestialBodyNameB);
+			}
+			catch(RunningGameCommandException e)
+			{
+				e.printStackTrace();
+				return originalGameBoard;
+			}
+			return newGameBoard;
+		}
+	}
 	
 	//////////////////
 	
@@ -614,6 +699,42 @@ public class PlayerGameMove
 		
 		
 		addGameMoveCommand(new ChangeDiplomacyCommand(playerLogin, newDiplomacy));
+	}
+	
+	public void addAttackEnemiesFleetCommand(String celestialBodyName) throws RunningGameCommandException
+	{
+		checkTurnIsNotEnded();
+		
+		if (!getGameBoard().canAttackEnemiesFleet(playerLogin, celestialBodyName))
+		{
+			throw new RunningGameCommandException(playerLogin+" cannot attack enemies fleet from celestial body '"+celestialBodyName+"'");
+		}
+		
+		addGameMoveCommand(new AttackEnemiesFleetCommand(playerLogin, celestialBodyName));
+	}
+	
+	public void addBuildSpaceRoadCommand(String sourceName, String destinationName) throws RunningGameCommandException
+	{
+		checkTurnIsNotEnded();
+		
+		if (!getGameBoard().canBuildSpaceRoad(playerLogin, sourceName, destinationName))
+		{
+			throw new RunningGameCommandException(playerLogin+" cannot build space road between '"+sourceName+"' and '"+destinationName+"'");
+		}
+		
+		addGameMoveCommand(new BuildSpaceRoadCommand(playerLogin, sourceName, destinationName));
+	}
+	
+	public void addDemolishSpaceRoadCommand(String sourceName, String destinationName) throws RunningGameCommandException
+	{
+		checkTurnIsNotEnded();
+		
+		if (!getGameBoard().canDemolishSpaceRoad(playerLogin, sourceName, destinationName))
+		{
+			throw new RunningGameCommandException(playerLogin+" cannot build space road between '"+sourceName+"' and '"+destinationName+"'");
+		}
+		
+		addGameMoveCommand(new DemolishSpaceRoadCommand(playerLogin, sourceName, destinationName));
 	}
 	
 	private void addGameMoveCommand(GameMoveCommand command) throws RunningGameCommandException

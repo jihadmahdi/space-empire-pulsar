@@ -20,6 +20,8 @@ import org.axan.eplib.utils.Basic;
 import server.SEPServer;
 import server.model.Area.AreaIllegalDefinitionException;
 import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
+import server.model.SpaceCounter.SpaceRoad;
+import server.model.SpaceCounter.SpaceRoadDeliverer;
 
 import common.GovernmentStarship;
 import common.ISpecialUnit;
@@ -797,6 +799,7 @@ public class GameBoard implements Serializable
 			}
 		}
 		
+		Set<Unit> unitsToRemove = new HashSet<Unit>();
 		for(Unit u : getArea(location).getUnits())
 		{
 			if (!Fleet.class.isInstance(u)) continue;
@@ -811,7 +814,12 @@ public class GameBoard implements Serializable
 				fleets.get(f.getOwnerName()).merge(f.getStarships(), f.getSpecialUnits());
 			}
 			
-			getArea(location).removeUnit(f.getClass(), f.getOwnerName(), f.getName());
+			unitsToRemove.add(f);			
+		}
+		
+		for(Unit u : unitsToRemove)
+		{
+			getArea(location).removeUnit(u.getClass(), u.getOwnerName(), u.getName());
 		}
 		
 		// TODO : fake resolution, implement a true one
@@ -1860,11 +1868,286 @@ public class GameBoard implements Serializable
 		return new ChangeDiplomacyCheckResult();
 	}
 	
+	public boolean canAttackEnemiesFleet(String playerLogin, String celestialBodyName)
+	{
+		try
+		{
+			checkAttackEnemiesFleet(playerLogin, celestialBodyName);
+		}
+		catch(Throwable t)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	public void attackEnemiesFleet(String playerLogin, String celestialBodyName) throws RunningGameCommandException
+	{
+		AttackEnemiesFleetCheckResult attackEnemiesFleetCheckResult = checkAttackEnemiesFleet(playerLogin, celestialBodyName);
+		attackEnemiesFleetCheckResult.productiveCelestialBody.addConflictInititor(playerLogin);
+	}
+
+	private static class AttackEnemiesFleetCheckResult
+	{
+		final ProductiveCelestialBody productiveCelestialBody;
+		public AttackEnemiesFleetCheckResult(ProductiveCelestialBody productiveCelestialBody)
+		{
+			this.productiveCelestialBody = productiveCelestialBody;
+		}
+	}
+
+	private AttackEnemiesFleetCheckResult checkAttackEnemiesFleet(String playerLogin, String celestialBodyName) throws RunningGameCommandException
+	{
+		RealLocation location = getCelestialBodyLocation(celestialBodyName);
+		if (location == null) throw new RunningGameCommandException("Unknown celestial body '"+celestialBodyName+"'");
+		
+		Area area = getArea(location);
+		if (area == null || area.getCelestialBody() == null || !ProductiveCelestialBody.class.isInstance(area.getCelestialBody())) throw new RunningGameCommandException("Celestial body '"+celestialBodyName+"' is not a productive celestial body.");
+		
+		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(area.getCelestialBody());
+		
+		if (productiveCelestialBody.getOwner() == null || !productiveCelestialBody.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException(playerLogin+" is not '"+celestialBodyName+"' owner.");
+		
+		return new AttackEnemiesFleetCheckResult(productiveCelestialBody);			
+	}
+	
+	/////
+	
+	public boolean canBuildSpaceRoad(String playerLogin, String productiveCelestialBodyNameA, String productiveCelestialBodyNameB)
+	{
+		try
+		{
+			checkBuildSpaceRoad(playerLogin, productiveCelestialBodyNameA, productiveCelestialBodyNameB);
+		}
+		catch(Throwable t)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	public void buildSpaceRoad(String playerLogin, String productiveCelestialBodyNameA, String productiveCelestialBodyNameB) throws RunningGameCommandException
+	{
+		BuildSpaceRoadCheckResult buildSpaceRoadCheckResult = checkBuildSpaceRoad(playerLogin, productiveCelestialBodyNameA, productiveCelestialBodyNameB);
+		
+		buildSpaceRoadCheckResult.area.updateUnit(buildSpaceRoadCheckResult.deliverer);
+		buildSpaceRoadCheckResult.deliverer.launch(buildSpaceRoadCheckResult.sourceLocation, buildSpaceRoadCheckResult.destinationLocation);		
+		buildSpaceRoadCheckResult.payer.setCarbon(buildSpaceRoadCheckResult.payer.getCarbon() - buildSpaceRoadCheckResult.price);
+	}
+
+	private static class BuildSpaceRoadCheckResult
+	{
+		final Area area;
+		final SpaceRoadDeliverer deliverer;
+		final RealLocation sourceLocation;
+		final RealLocation destinationLocation;
+		final ProductiveCelestialBody payer;
+		final int price;
+		
+		public BuildSpaceRoadCheckResult(Area area, ProductiveCelestialBody payer, int price, SpaceRoadDeliverer deliverer, RealLocation sourceLocation, RealLocation destinationLocation)
+		{
+			this.area = area;
+			this.payer = payer;
+			this.price = price;
+			this.deliverer = deliverer;
+			this.sourceLocation = sourceLocation;
+			this.destinationLocation = destinationLocation;
+		}
+	}
+
+	private BuildSpaceRoadCheckResult checkBuildSpaceRoad(String playerLogin, String sourceName, String destinationName) throws RunningGameCommandException
+	{
+		if (sourceName.compareTo(destinationName) == 0) throw new RunningGameCommandException("Cannot build space road locally.");
+		
+		RealLocation sourceLocation = getCelestialBodyLocation(sourceName);
+		if (sourceLocation == null) throw new RunningGameCommandException("Unknown celestial body '"+sourceName+"'");
+		
+		Area sourceArea = getNullArea(sourceLocation);
+		if (sourceArea == null || sourceArea.getCelestialBody() == null || !ProductiveCelestialBody.class.isInstance(sourceArea.getCelestialBody())) throw new RunningGameCommandException("Celestial body '"+sourceName+"' is not a productive celestial body.");
+		
+		ProductiveCelestialBody source = ProductiveCelestialBody.class.cast(sourceArea.getCelestialBody());
+		
+		SpaceCounter sourceSpaceCounter = source.getBuilding(SpaceCounter.class);
+		if (sourceSpaceCounter == null) throw new RunningGameCommandException("'"+sourceName+"' has no space counter build.");
+				
+		RealLocation destinationLocation = getCelestialBodyLocation(destinationName);
+		if (destinationLocation == null) throw new RunningGameCommandException("Unknown celestial body '"+destinationName+"'");
+		
+		Area destinationArea = getNullArea(destinationLocation);
+		if (destinationArea == null || destinationArea.getCelestialBody() == null || !ProductiveCelestialBody.class.isInstance(destinationArea.getCelestialBody())) throw new RunningGameCommandException("Celestial body '"+destinationName+"' is not a productive celestial body.");
+		
+		ProductiveCelestialBody destination = ProductiveCelestialBody.class.cast(destinationArea.getCelestialBody());
+		
+		SpaceCounter destinationSpaceCounter = destination.getBuilding(SpaceCounter.class);
+		if (destinationSpaceCounter == null) throw new RunningGameCommandException("'"+destinationName+"' has no space counter build.");		
+	
+		if (sourceSpaceCounter.hasSpaceRoadTo(destinationName))
+		{
+			throw new RunningGameCommandException("'"+sourceName+"' already has a space road to '"+destinationName+"'");
+		}
+		
+		if (sourceSpaceCounter.hasSpaceRoadLinkedFrom(sourceName))
+		{
+			throw new RunningGameCommandException("'"+sourceName+"' already has a space road linked from '"+sourceName+"'");
+		}
+		
+		double distance = SEPUtils.getDistance(sourceLocation, destinationLocation);
+		int price = (int) (config.getSpaceRoadPricePerArea() * distance);
+		
+		if (source.getOwner() == null || !source.getOwner().isNamed(playerLogin) || sourceSpaceCounter == null || sourceSpaceCounter.getAvailableRoadsBuilder() <= 0 || source.getCarbon() < price)
+		{
+			throw new RunningGameCommandException("None of the space road end can pay nor have free builder.");
+		}
+		
+		SpaceRoadDeliverer deliverer = new SpaceRoadDeliverer(sourceName+" to "+destinationName+" space road deliverer", getPlayer(playerLogin), sourceLocation, sourceName, destinationName);
+		
+		return new BuildSpaceRoadCheckResult(sourceArea, source, price, deliverer, sourceLocation, destinationLocation);			
+	}
+	
+	/////
+	
+	public boolean canDemolishSpaceRoad(String playerLogin, String sourceName, String destinationName)
+	{
+		try
+		{
+			checkDemolishSpaceRoad(playerLogin, sourceName, destinationName);
+		}
+		catch(Throwable t)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	public void demolishSpaceRoad(String playerLogin, String sourceName, String destinationName) throws RunningGameCommandException
+	{
+		DemolishSpaceRoadCheckResult demolishSpaceRoadCheckResult = checkDemolishSpaceRoad(playerLogin, sourceName, destinationName);
+		demolishSpaceRoadCheckResult.source.cutSpaceRoadLinkWith(destinationName);
+	}
+
+	private static class DemolishSpaceRoadCheckResult
+	{
+		final SpaceCounter source;
+		
+		public DemolishSpaceRoadCheckResult(SpaceCounter source)
+		{
+			this.source = source;			
+		}
+	}
+
+	private DemolishSpaceRoadCheckResult checkDemolishSpaceRoad(String playerLogin, String sourceName, String destinationName) throws RunningGameCommandException
+	{
+		RealLocation sourceLocation = getCelestialBodyLocation(sourceName);
+		if (sourceLocation == null) throw new RunningGameCommandException("Unknown celestial body '"+sourceName+"'");
+		
+		Area area = getNullArea(sourceLocation);
+		if (area == null || area.getCelestialBody() == null || !ProductiveCelestialBody.class.isInstance(area.getCelestialBody())) throw new RunningGameCommandException("Celestial body '"+sourceName+"' is not a productive celestial body.");
+		
+		ProductiveCelestialBody source = ProductiveCelestialBody.class.cast(area.getCelestialBody());
+		
+		SpaceCounter sourceSpaceCounter = source.getBuilding(SpaceCounter.class);
+		if (sourceSpaceCounter == null) throw new RunningGameCommandException("'"+sourceName+"' has no space counter build.");
+						
+		if (!sourceSpaceCounter.hasSpaceRoadTo(destinationName) && !sourceSpaceCounter.hasSpaceRoadLinkedFrom(sourceName))
+		{
+			throw new RunningGameCommandException("'"+sourceName+"' has no space road link with '"+destinationName+"'");
+		}
+		
+		return new DemolishSpaceRoadCheckResult(sourceSpaceCounter);			
+	}
+	
+	/////
+	
 	void initiateConflict(RealLocation location, String initiatorLogin)
 	{
 		ICelestialBody celestialBody = getArea(location).getCelestialBody();
 		if (celestialBody == null || !ProductiveCelestialBody.class.isInstance(celestialBody)) throw new SEPServer.SEPImplementationException("Cannot set conflict on location '"+location+"', no ProductiveCelestialBody found there.");
 		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
 		productiveCelestialBody.addConflictInititor(initiatorLogin);
+	}
+
+	private static class LinkSpaceRoadCheckResult
+	{
+		final SpaceCounter sourceSpaceCounter;
+		final SpaceCounter destinationSpaceCounter;
+		final SpaceRoad	spaceRoad;
+		
+		public LinkSpaceRoadCheckResult(SpaceCounter sourceSpaceCounter, SpaceCounter destinationSpaceCounter, SpaceRoad spaceRoad)
+		{
+			this.sourceSpaceCounter = sourceSpaceCounter;
+			this.destinationSpaceCounter = destinationSpaceCounter;
+			this.spaceRoad = spaceRoad;
+		}
+	}
+	
+	private LinkSpaceRoadCheckResult checkLinkSpaceRoad(String playerLogin, String sourceName, String destinationName) throws RunningGameCommandException
+	{
+		if (sourceName.compareTo(destinationName) == 0) throw new RunningGameCommandException("Cannot build space road locally.");
+		
+		RealLocation sourceLocation = getCelestialBodyLocation(sourceName);
+		if (sourceLocation == null) throw new RunningGameCommandException("Unknown celestial body '"+sourceName+"'");
+		
+		Area sourceArea = getNullArea(sourceLocation);
+		if (sourceArea == null || sourceArea.getCelestialBody() == null || !ProductiveCelestialBody.class.isInstance(sourceArea.getCelestialBody())) throw new RunningGameCommandException("Celestial body '"+sourceName+"' is not a productive celestial body.");
+		
+		ProductiveCelestialBody source = ProductiveCelestialBody.class.cast(sourceArea.getCelestialBody());
+		
+		if (source.getOwner() == null || !source.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException(playerLogin+" is no longer '"+sourceName+"' owner, space road deliver gave up.");
+		
+		SpaceCounter sourceSpaceCounter = source.getBuilding(SpaceCounter.class);
+		if (sourceSpaceCounter == null) throw new RunningGameCommandException("'"+sourceName+"' has no space counter built.");
+				
+		RealLocation destinationLocation = getCelestialBodyLocation(destinationName);
+		if (destinationLocation == null) throw new RunningGameCommandException("Unknown celestial body '"+destinationName+"'");
+		
+		Area destinationArea = getNullArea(destinationLocation);
+		if (destinationArea == null || destinationArea.getCelestialBody() == null || !ProductiveCelestialBody.class.isInstance(destinationArea.getCelestialBody())) throw new RunningGameCommandException("Celestial body '"+destinationName+"' is not a productive celestial body.");
+		
+		ProductiveCelestialBody destination = ProductiveCelestialBody.class.cast(destinationArea.getCelestialBody());
+		
+		SpaceCounter destinationSpaceCounter = destination.getBuilding(SpaceCounter.class);
+		if (destinationSpaceCounter == null) throw new RunningGameCommandException("'"+destinationName+"' has no space counter built.");		
+	
+		if (sourceSpaceCounter.hasSpaceRoadTo(destinationName))
+		{
+			throw new RunningGameCommandException("'"+sourceName+"' already has a space road to '"+destinationName+"'");
+		}
+		
+		if (sourceSpaceCounter.hasSpaceRoadLinkedFrom(sourceName))
+		{
+			throw new RunningGameCommandException("'"+sourceName+"' already has a space road linked from '"+sourceName+"'");
+		}
+
+		SpaceRoad spaceRoad = new SpaceRoad(date, sourceName, destinationName, config.getSpaceRoadsSpeed());
+		
+		return new LinkSpaceRoadCheckResult(sourceSpaceCounter, destinationSpaceCounter, spaceRoad);
+	}
+	
+	public boolean tryToLinkSpaceRoad(SpaceRoadDeliverer spaceRoadDeliverer)
+	{
+		LinkSpaceRoadCheckResult linkSpaceRoadCheckResult = null;
+		try
+		{
+			linkSpaceRoadCheckResult = checkLinkSpaceRoad(spaceRoadDeliverer.getOwnerName(), spaceRoadDeliverer.getSourceName(), spaceRoadDeliverer.getDestinationName());						
+		}
+		catch(Throwable t)
+		{
+			linkSpaceRoadCheckResult = null;
+		}
+		
+		getArea(spaceRoadDeliverer.getCurrentLocation()).removeUnit(spaceRoadDeliverer.getClass(), spaceRoadDeliverer.getOwnerName(), spaceRoadDeliverer.getName());
+		
+		if (linkSpaceRoadCheckResult == null)
+		{
+			// Log space road link impossibility
+			// spaceRoadDeliverer.addTravelligLogEntry(logEntry)
+			return false;
+		}
+		else
+		{
+			linkSpaceRoadCheckResult.sourceSpaceCounter.buildSpaceRoad(linkSpaceRoadCheckResult.spaceRoad);
+			linkSpaceRoadCheckResult.destinationSpaceCounter.linkSpaceRoad(linkSpaceRoadCheckResult.spaceRoad);
+			return true;
+		}
 	}
 }
