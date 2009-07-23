@@ -119,6 +119,7 @@ import common.ProductiveCelestialBody;
 import common.PulsarLauchingPad;
 import common.SEPUtils;
 import common.SpaceCounter;
+import common.SpaceRoad;
 import common.StarshipPlant;
 import common.StarshipTemplate;
 import common.Unit;
@@ -289,7 +290,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}
-					refreshGameBoard();
+					finally
+					{
+						refreshGameBoard();
+					}
 				}
 			});
 		}
@@ -324,7 +328,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					{
 						e1.printStackTrace();
 					}
-					refreshGameBoard();
+					finally
+					{
+						refreshGameBoard();
+					}
 				}
 			});
 		}
@@ -480,6 +487,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 			runningGameCelestialBodyDetailsPanel.add(getRunningGameCelestialBodyDetailsUnitsListScrollPane());
 
+			runningGameCelestialBodyDetailsPanel.add(getRunningGameCelestialBodyDetailsAttackFleetsBtn());
+			
 			/*
 			runningGameCelestialBodyDetailsPanel.add(getRunningGameCelestialBodyDetailsContentPanel());
 			runningGameCelestialBodyDetailsPanel.add(getRunningGameCelestialBodyDetailsBuildingDetailsPanel());
@@ -493,6 +502,49 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return runningGameCelestialBodyDetailsScrollPanel;
 	}
 
+	private JButton runningGameCelestialBodyDetailsAttackFleetsBtn;
+	private JButton getRunningGameCelestialBodyDetailsAttackFleetsBtn()
+	{
+		if (runningGameCelestialBodyDetailsAttackFleetsBtn == null)
+		{
+			runningGameCelestialBodyDetailsAttackFleetsBtn = new JButton("Attack ennemy fleets");
+			runningGameCelestialBodyDetailsAttackFleetsBtn.addActionListener(new ActionListener()
+			{
+				
+				@Override
+				public void actionPerformed(ActionEvent e)
+				{
+					if (currentSelectedArea == null) return;
+					if (currentSelectedArea.getCelestialBody() == null || !ProductiveCelestialBody.class.isInstance(currentSelectedArea.getCelestialBody())) return;
+					ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(currentSelectedArea.getCelestialBody());
+					if (!currentPlayer.isNamed(productiveCelestialBody.getOwnerName())) return;
+					
+					try
+					{
+						client.getRunningGameInterface().attackEnemiesFleet(productiveCelestialBody.getName());
+					}
+					catch(StateMachineNotExpectedEventException e1)
+					{
+						e1.printStackTrace();
+					}
+					catch(RpcException e1)
+					{
+						e1.printStackTrace();
+					}
+					catch(RunningGameCommandException e1)
+					{
+						showRunningGameCommandExceptionMsg(e1);
+					}
+					finally
+					{
+						refreshGameBoard();
+					}
+				}
+			});
+		}
+		return runningGameCelestialBodyDetailsAttackFleetsBtn;
+	}
+	
 	/*
 	private JPanel	runningGameCelestialBodyDetailsContentPanel;
 
@@ -802,6 +854,23 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				getRunningGameCelestialBodyDetailsBuildingsList().setSelectedValue(lastSelectedValue, true);
 			}
 			getRunningGameCelestialBodyDetailsBuildingsList().setVisible(true);
+			
+			if (currentPlayer.isNamed(productiveCelestialBody.getOwnerName()))
+			{
+				getRunningGameCelestialBodyDetailsAttackFleetsBtn().setVisible(true);
+				try
+				{
+					getRunningGameCelestialBodyDetailsAttackFleetsBtn().setEnabled(client.getRunningGameInterface().canAttackEnemiesFleet(productiveCelestialBody.getName()));
+				}
+				catch(StateMachineNotExpectedEventException e)
+				{
+					e.printStackTrace();
+				}
+				catch(RpcException e)
+				{
+					e.printStackTrace();
+				}				
+			}
 		}
 		else
 		{
@@ -862,8 +931,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			{
 				try
 				{
-					client.getRunningGameInterface().build(productiveCelestialBody.getName(), buildingType);
-					refreshGameBoard();
+					client.getRunningGameInterface().build(productiveCelestialBody.getName(), buildingType);					
 				}
 				catch(RunningGameCommandException e1)
 				{
@@ -876,6 +944,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				catch(RpcException e1)
 				{
 					e1.printStackTrace();
+				}
+				finally
+				{
+					refreshGameBoard();
 				}
 			}
 		});
@@ -893,8 +965,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			{
 				try
 				{
-					client.getRunningGameInterface().demolish(productiveCelestialBody.getName(), buildingType);
-					refreshGameBoard();
+					client.getRunningGameInterface().demolish(productiveCelestialBody.getName(), buildingType);					
 				}
 				catch(StateMachineNotExpectedEventException e1)
 				{
@@ -907,6 +978,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				catch(RunningGameCommandException e1)
 				{
 					showRunningGameCommandExceptionMsg(e1);
+				}
+				finally
+				{
+					refreshGameBoard();
 				}
 			}
 		});
@@ -1004,7 +1079,6 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 							try
 							{
 								client.getRunningGameInterface().dismantleFleet(unit.getName());
-								refreshGameBoard();
 							}
 							catch(StateMachineNotExpectedEventException e1)
 							{
@@ -1017,6 +1091,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 							catch(RunningGameCommandException e1)
 							{
 								showRunningGameCommandExceptionMsg(e1);
+							}
+							finally
+							{
+								refreshGameBoard();
 							}
 						}
 					});
@@ -1036,7 +1114,6 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 							try
 							{
 								client.getRunningGameInterface().settleGovernment(celestialBody.getName());
-								refreshGameBoard();
 							}
 							catch(StateMachineNotExpectedEventException e1)
 							{
@@ -1049,6 +1126,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 							catch(RunningGameCommandException e1)
 							{
 								showRunningGameCommandExceptionMsg(e1);
+							}
+							finally
+							{
+								refreshGameBoard();
 							}
 						}
 					});
@@ -1422,8 +1503,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 							{
 								try
 								{
-									client.getRunningGameInterface().embarkGovernment();
-									refreshGameBoard();
+									client.getRunningGameInterface().embarkGovernment();									
 								}
 								catch(StateMachineNotExpectedEventException e1)
 								{
@@ -1436,6 +1516,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 								catch(RunningGameCommandException e1)
 								{
 									showRunningGameCommandExceptionMsg(e1);
+								}
+								finally
+								{
+									refreshGameBoard();
 								}
 							}
 						});
@@ -1463,7 +1547,6 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 									try
 									{
 										client.getRunningGameInterface().settleGovernment(productiveCelestialBody.getName());
-										refreshGameBoard();
 									}
 									catch(StateMachineNotExpectedEventException e1)
 									{
@@ -1476,6 +1559,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 									catch(RunningGameCommandException e1)
 									{
 										showRunningGameCommandExceptionMsg(e1);
+									}
+									finally
+									{
+										refreshGameBoard();
 									}
 								}
 							});
@@ -1518,7 +1605,6 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 							try
 							{
 								client.getRunningGameInterface().build(productiveCelestialBody.getName(), PulsarLauchingPad.class);
-								refreshGameBoard();
 							}
 							catch(RunningGameCommandException e1)
 							{
@@ -1531,6 +1617,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 							catch(RpcException e1)
 							{
 								e1.printStackTrace();
+							}
+							finally
+							{
+								refreshGameBoard();
 							}
 						}
 					});
@@ -1802,8 +1892,6 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						}
 						
 						getStarshipPlantNewFleetNameTextField().setText(Unit.generateName());
-
-						refreshGameBoard();
 					}
 					catch(StateMachineNotExpectedEventException e1)
 					{
@@ -1816,6 +1904,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					catch(RunningGameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
+					}
+					finally
+					{
+						refreshGameBoard();
 					}
 				}
 			});
@@ -1850,8 +1942,6 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 							client.getRunningGameInterface().makeAntiProbeMissiles(infos.planet.getName(), antiProbeMissileBaseName, antiProbeMissileToMake);
 
 							getAntiProbeMissileMakeQtTextField().setText("0");
-
-							refreshGameBoard();
 						}
 					}
 					catch(RpcException e1)
@@ -1865,6 +1955,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					catch(RunningGameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
+					}
+					finally
+					{
+						refreshGameBoard();
 					}
 				}
 			});
@@ -1899,8 +1993,6 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 							client.getRunningGameInterface().makeProbes(infos.planet.getName(), probeBaseName, probeToMake);
 
 							getProbeMakeQtTextField().setText("0");
-
-							refreshGameBoard();
 						}
 					}
 					catch(RpcException e1)
@@ -1914,6 +2006,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					catch(RunningGameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
+					}
+					finally
+					{
+						refreshGameBoard();
 					}
 				}
 			});
@@ -1952,8 +2048,6 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						{
 							getStarshipPlantWorkshopStarshipQtToMakeTextField(starshipType).setText("0");
 						}
-
-						refreshGameBoard();
 					}
 					catch(StateMachineNotExpectedEventException e1)
 					{
@@ -1966,6 +2060,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					catch(RunningGameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
+					}
+					finally
+					{
+						refreshGameBoard();
 					}
 				}
 			});
@@ -2078,7 +2176,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		spaceCounterActionPanel.add(getSpaceRoadCreateLabel());
 		spaceCounterActionPanel.add(getSpaceRoadDestinationComboBox());
 		spaceCounterActionPanel.add(getSpaceRoadCreateButton());
-		spaceCounterActionPanel.add(getSpaceRoadsRemovButton());
+		spaceCounterActionPanel.add(getSpaceRoadsRemoveButton());
 
 		spaceCounterActionPanel.add(getNextCarbonOrdersLabel());
 		spaceCounterActionPanel.add(getNextCarbonOrdersScrollPane());
@@ -2105,13 +2203,26 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		getRunningGameTabbedPanel().setTitleAt(getRunningGameTabbedPanel().indexOfComponent(getActionPanel()), infos.productiveCelestialBody.getName() + " " + SpaceCounter.class.getSimpleName());
 
-		updateUI();
+		refreshSpaceCounterActionPanel();
+		
 		// TODO
 
 		// client.getRunningGameInterface().buildSpaceRoad(celestialBodyNameA, celestialBodyNameB);
 		// client.getRunningGameInterface().demolishSpaceRoad(celestialBodyNameA, celestialBodyNameB);
 		// client.getRunningGameInterface().modifyCarbonOrder(originCelestialBodyName, destinationCelestialBodyName, amount)
 
+	}
+	
+	private void refreshSpaceCounterActionPanel()
+	{
+		SelectedBuildingInfos<SpaceCounter> infos = getSelectedBuildingInfos(SpaceCounter.class);
+		if (infos == null || infos.building == null) return;
+		
+		getSpaceRoadsList().clear();
+		getSpaceRoadsList().addAll(infos.building.getSpaceRoadsBuilt());
+		getSpaceRoadsList().addAll(infos.building.getSpaceRoadsLinked());				
+				
+		updateUI();
 	}
 
 	private JScrollPane	spaceCounterActionScrollPane;
@@ -2143,65 +2254,80 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	{
 		if (spaceRoadsScrollPane == null)
 		{
-			spaceRoadsScrollPane = new JScrollPane();
-			spaceRoadsScrollPane = new JScrollPane(getSpaceRoadsList());
-			spaceRoadsScrollPane.setPreferredSize(new Dimension(200, getSpaceRoadsList().getPreferredScrollableViewportSize().height));
+			spaceRoadsScrollPane = new JScrollPane(getSpaceRoadsList().getComponent());
+			spaceRoadsScrollPane.setPreferredSize(new Dimension(200, getSpaceRoadsList().getComponent().getPreferredScrollableViewportSize().height));
 			spaceRoadsScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 			spaceRoadsScrollPane.setBounds(getSpaceRoadsLabel().getX(), getSpaceRoadsLabel().getY() + getSpaceRoadsLabel().getHeight(), getSpaceRoadsLabel().getWidth(), 100);
 		}
 		return spaceRoadsScrollPane;
 	}
 
-	private JList	spaceRoadsList;
+	private TypedListWrapper<JList, SpaceRoad>	spaceRoadsList;
 
-	private JList getSpaceRoadsList()
+	private TypedListWrapper<JList, SpaceRoad> getSpaceRoadsList()
 	{
 		if (spaceRoadsList == null)
 		{
-			spaceRoadsList = new JList();
-			spaceRoadsList.setVisibleRowCount(3);
-			spaceRoadsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-			spaceRoadsList.addMouseMotionListener(new MouseMotionAdapter()
+			spaceRoadsList = new TypedListWrapper<JList, SpaceRoad>(SpaceRoad.class, new JList(), new Comparator<SpaceRoad>()
 			{
 				@Override
-				public void mouseMoved(MouseEvent e)
+				public int compare(SpaceRoad o1, SpaceRoad o2)
 				{
-					int index = spaceRoadsList.locationToIndex(e.getPoint());
-					if (index < 0) return;
-
-					String label = spaceRoadsList.getModel().getElementAt(index).toString();
-					if (label == null) return;
-
-					spaceRoadsList.setToolTipText(label);
-
-					super.mouseMoved(e);
+					return o1.getCreationDate() - o2.getCreationDate();
 				}
 			});
+			
+			spaceRoadsList.setCellRenderer(new TypedListWrapper.AbstractTypedJListCellRender());
+			spaceRoadsList.getComponent().setVisibleRowCount(3);
+			spaceRoadsList.getComponent().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);			
 		}
 		return spaceRoadsList;
 	}
 
-	private JButton	SpaceRoadsRemovButton;
+	private JButton	SpaceRoadsRemoveButton;
 
-	private JButton getSpaceRoadsRemovButton()
+	private JButton getSpaceRoadsRemoveButton()
 	{
-		if (SpaceRoadsRemovButton == null)
+		if (SpaceRoadsRemoveButton == null)
 		{
-			SpaceRoadsRemovButton = new JButton("Demolish");
-			SpaceRoadsRemovButton.setBounds(getSpaceRoadsScrollPane().getX(), getSpaceRoadsScrollPane().getY() + getSpaceRoadsScrollPane().getHeight(), getSpaceRoadsScrollPane().getWidth(), getSpaceRoadCreateLabel().getHeight());
-			SpaceRoadsRemovButton.addActionListener(new ActionListener()
+			SpaceRoadsRemoveButton = new JButton("Demolish");
+			SpaceRoadsRemoveButton.setBounds(getSpaceRoadsScrollPane().getX(), getSpaceRoadsScrollPane().getY() + getSpaceRoadsScrollPane().getHeight(), getSpaceRoadsScrollPane().getWidth(), getSpaceRoadCreateLabel().getHeight());
+			SpaceRoadsRemoveButton.addActionListener(new ActionListener()
 			{
 
 				@Override
 				public void actionPerformed(ActionEvent e)
 				{
-					// TODO
-					showTodoMsg();
+					SelectedBuildingInfos<SpaceCounter> infos = getSelectedBuildingInfos(SpaceCounter.class);
+					if (infos == null || infos.productiveCelestialBody == null || infos.building == null) return;
+					
+					SpaceRoad spaceRoad = getSpaceRoadsList().getSelectedElement();
+					if (spaceRoad == null) return;
+					
+					try
+					{
+						client.getRunningGameInterface().demolishSpaceRoad(infos.productiveCelestialBody.getName(), (infos.productiveCelestialBody.getName().compareTo(spaceRoad.getSource()) == 0 ? spaceRoad.getDestination() : spaceRoad.getSource()));
+					}
+					catch(StateMachineNotExpectedEventException e1)
+					{
+						e1.printStackTrace();
+					}
+					catch(RpcException e1)
+					{
+						e1.printStackTrace();
+					}
+					catch(RunningGameCommandException e1)
+					{
+						showRunningGameCommandExceptionMsg(e1);
+					}
+					finally
+					{
+						refreshGameBoard();
+					}
 				}
 			});
 		}
-		return SpaceRoadsRemovButton;
+		return SpaceRoadsRemoveButton;
 	}
 
 	private JLabel	spaceRoadCreateLabel;
@@ -2251,8 +2377,32 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				@Override
 				public void actionPerformed(ActionEvent e)
 				{
-					// TODO
-					showTodoMsg();
+					SelectedBuildingInfos<SpaceCounter> infos = getSelectedBuildingInfos(SpaceCounter.class);
+					if (infos == null || infos.building == null || infos.productiveCelestialBody == null) return;
+					
+					Object obj = getSpaceRoadDestinationComboBox().getSelectedItem();
+					if (obj == null) return;
+					
+					try
+					{
+						client.getRunningGameInterface().buildSpaceRoad(infos.productiveCelestialBody.getName(), obj.toString());
+					}
+					catch(StateMachineNotExpectedEventException e1)
+					{
+						e1.printStackTrace();
+					}
+					catch(RpcException e1)
+					{
+						e1.printStackTrace();
+					}
+					catch(RunningGameCommandException e1)
+					{
+						showRunningGameCommandExceptionMsg(e1);
+					}
+					finally
+					{
+						refreshGameBoard();
+					}
 				}
 			});
 		}
@@ -2266,7 +2416,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (nextCarbonOrdersLabel == null)
 		{
 			nextCarbonOrdersLabel = new JLabel("Next carbon orders");
-			nextCarbonOrdersLabel.setBounds(getSpaceRoadsLabel().getX(), getSpaceRoadsRemovButton().getY() + getSpaceRoadsRemovButton().getHeight() + 10, getSpaceRoadsLabel().getWidth(), getSpaceRoadsLabel().getHeight());
+			nextCarbonOrdersLabel.setBounds(getSpaceRoadsLabel().getX(), getSpaceRoadsRemoveButton().getY() + getSpaceRoadsRemoveButton().getHeight() + 10, getSpaceRoadsLabel().getWidth(), getSpaceRoadsLabel().getHeight());
 		}
 		return nextCarbonOrdersLabel;
 	}
@@ -2970,7 +3120,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				public void actionPerformed(ActionEvent e)
 				{
 					SelectedUnitInfos<Fleet> infos = getSelectedUnitInfos(Fleet.class);
-					if (infos.unit == null) return;
+					if (infos == null || infos.unit == null) return;
 
 					if (!getFleetMoveCheckPointList().isEmpty())
 					{

@@ -6,6 +6,7 @@
 package common;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Set;
 import java.util.Stack;
 
@@ -21,7 +22,9 @@ public class SpaceCounter implements IBuilding, Serializable
 	// Only if visible
 	private final int nbBuild;
 	
-	private final Set<SpaceRoad> spaceRoads;
+	private final Set<SpaceRoad> spaceRoadsBuilt;
+	
+	private final Set<SpaceRoad> spaceRoadsLinked;
 	
 	private final Set<CarbonOrder> carbonToReceive;
 	
@@ -35,10 +38,11 @@ public class SpaceCounter implements IBuilding, Serializable
 	/**
 	 * Full constructor.
 	 */
-	public SpaceCounter(int nbBuild, Set<SpaceRoad> spaceRoads, Set<CarbonOrder> carbonToReceive, Set<CarbonOrder> currentCarbonOrder, Stack<CarbonOrder> nextCarbonOrder, int maxCarbonFreight, int currentCarbonFreight)
+	public SpaceCounter(int nbBuild, Set<SpaceRoad> spaceRoadsBuilt, Set<SpaceRoad> spaceRoadsLinked, Set<CarbonOrder> carbonToReceive, Set<CarbonOrder> currentCarbonOrder, Stack<CarbonOrder> nextCarbonOrder, int maxCarbonFreight, int currentCarbonFreight)
 	{
 		this.nbBuild = nbBuild;
-		this.spaceRoads = spaceRoads;
+		this.spaceRoadsBuilt = spaceRoadsBuilt;
+		this.spaceRoadsLinked = spaceRoadsLinked;
 		this.carbonToReceive = carbonToReceive;
 		this.currentCarbonOrder = currentCarbonOrder;
 		this.nextCarbonOrder = nextCarbonOrder;
@@ -74,10 +78,18 @@ public class SpaceCounter implements IBuilding, Serializable
 		StringBuffer sb = new StringBuffer();
 		
 		sb.append(nbBuild+" space counter(s) build.\n");
-		if (spaceRoads.size() > 0)
+		if (spaceRoadsBuilt.size() > 0)
 		{
-			sb.append("Space Roads :\n");
-			for(SpaceRoad r : spaceRoads)
+			sb.append("Space Roads built :\n");
+			for(SpaceRoad r : spaceRoadsBuilt)
+			{
+				sb.append("  "+r+"\n");
+			}
+		}
+		if (spaceRoadsLinked.size() > 0)
+		{
+			sb.append("Space Roads linked :\n");
+			for(SpaceRoad r : spaceRoadsLinked)
 			{
 				sb.append("  "+r+"\n");
 			}
@@ -108,5 +120,15 @@ public class SpaceCounter implements IBuilding, Serializable
 		}
 		
 		return sb.toString();
+	}
+
+	public Set<SpaceRoad> getSpaceRoadsBuilt()
+	{
+		return spaceRoadsBuilt;
+	}
+	
+	public Set<SpaceRoad> getSpaceRoadsLinked()
+	{
+		return spaceRoadsLinked;
 	}
 }

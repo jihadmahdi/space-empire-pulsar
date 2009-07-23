@@ -38,6 +38,7 @@ Si le gouvernement est dans un vaisseau, l'espionnage devrait être facilité.
 Reste à voir si en cas de success les 2 politiques (intérieure & de conquète) sont rendues visibles, ou une seule des deux.
 => Actuellement, il suffit d'avoir la vue sur le gouvernement (même lorsqu'il est en voyage, s'il est repéré par une sonde) pour que la politique globable du joueur soit dévoilée)
 
+// Routes spaciales : Un comptoir octroie 1 lancement de route spatiale, mais peut recevoir une infinitée de route venues d'ailleurs (pour éviter le problème ou un joueur reçoit une route alors qu'il  déjà envoyé la sienne et n'a plus de comptoir libre), par ailleurs la construction prend le temps de déplacement du véhicule de construction.
 
 // Notes visibilités
 Des unités d'un même joueur peuvent être amené à ne pas avoir de visibilité sur les éléments globaux du joueur (ex: sa diplomatie, lorsqu'une flotte est prise dans une pulsar)
@@ -45,7 +46,35 @@ Les unités devraient noter et pouvoir se référer à leur dernière vue de ces
 	=> Une flotte devrait avoir un instantané de la diplomatie à sa date de départ, et le rafraichir à chaque checkpoint (ce qui peut éventuellement annuler son plan de vol si un attaque prévue n'est plus valide).
 	=> Lors d'un ordre d'attaque, si le owner de la cible change entre temps, et que le nouvau est neutre, par défaut doit on annuler l'attaque ou la poursuivre ?
 		=> Actuellement, priorité à l'ordre d'attaque, qui outrepasse la poltique de conquète de la date de départ comme d'arrivé.
+
+* Afficher le prix des vaisseaux à construire
+* Pouvoir déplacer les sondes avant de les lancer ?
+* Pouvoir déplacer les missiles anti sondes avant de les lancer ?
+* Pouvoir sélectionner la cible d'une sonde en cliquant sur la zone.
+* Dans la liste des unités, pouvoir classer par type d'unité.
+
+
+==== Vieilles ? notes à checker
+
+Envoi de flottes sur cibles non corps-céleste (sondes, vortex, ...) :
+Lors de l'envoi, on a le choix de spécifier ou la flotte est rapatriée, par défaut le corps céleste allié (connu à l'envoi) le plus proche.
+
+Une sonde permet de rediriger une flotte, (niveau interface on donne un nouvel ordre à la flotte, romance: un message est laissé à son attention sur toute les sondes qui diffuse le nouvel ordre qu'elle prendra si elle passe dans la zone de diffusion de l'une d'entres elles).
+Romance: Pour justufier le fait que  au niveau du gameplay on n'interdit le stationnement des flottes autour des sondes, on explique que le mode hyper-space nécéssite la présence d'un corps céleste (masse conséquente) qui lui permet de s'arrêter.
+
+Pour justifier qu'on ne peut pas cuommuniquer avec les flottes en déplacement on explique que 1erement l'équipement servant a caper au sonde est trrop couteux pour être équipé en série sur les vaisseaux, de plus le déplacement hyper-space des vaisseaux empècherait son utilisation.
+
+// Idée gabarit :
+Le gros chasseur est un cuirassé qui a a son bord pleins de petit fighter cheap et qu'il peut reconstituer entre deux batailles (ce qui justifie qu'au niveaux des points de vie )on le considère en une seule unité), et que le gabarit du gros chasseur est comparable aux autres classes de même gabarit.
+
+Légitimité du boost de vitesse apporté par les Fufu quelque soit la composition de la flotte (différents gabarits):
+1) La vitesse des vaiseaux en hyper-space est indexée sur leur vitesse initiale.
+2) Pour justifier le boost des fufu quelque soit la compo, ils tractent les autres vaisseaux avec un rayon d'énergie (un gros rayon par le gros fufu, et un gros rayon commun généré par une horde de petit fufu)
+
+TODO: Es-ce que dans le cône d'un pulsar les perturbations sont dans tout le volume ou seulement sur sa périphérie (chercher sur Wiki). Si ce n'est que la périphérie alors le gouvernement pris dans un pulsar devrait pouvoir comuniquer avec les autres corps dans le cône.
+
 ====
+
 
 /OK/ Thèorie Pulsar 27.05.09 :
 L'effet pulsar est produit sur le soleil, par l'envoi d'un missile depuis le corps céleste producteur.

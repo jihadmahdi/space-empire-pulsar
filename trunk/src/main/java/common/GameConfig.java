@@ -666,4 +666,16 @@ public class GameConfig implements Serializable
 		// TODO : Add to CTOR
 		return GovernmentStarship.POPULATION_PRICE;
 	}
+
+	public double getSpaceRoadPricePerArea()
+	{
+		// TODO : Add to CTOR
+		return 200;
+	}
+
+	public int getSpaceRoadsSpeed()
+	{
+		// TODO : Add to CTOR
+		return 3;
+	}
 }

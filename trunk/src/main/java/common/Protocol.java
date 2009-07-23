@@ -305,7 +305,7 @@ public interface Protocol
 		/**
 		 * Test if player can build a space road.
 		 */
-		void canBuildSpaceRoad() throws RpcException, StateMachineNotExpectedEventException;
+		boolean canBuildSpaceRoad(String sourceName, String destinationName) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order to build a space road between the given celestial bodies.
@@ -313,15 +313,16 @@ public interface Protocol
 		 * @param celestialBodyNameB
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 * @throws RunningGameCommandException 
 		 */
-		void buildSpaceRoad(String celestialBodyNameA, String celestialBodyNameB) throws RpcException, StateMachineNotExpectedEventException;
+		void buildSpaceRoad(String sourceName, String destinationName) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
 		
 		/**
 		 * Test if player can demolish a space road.
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void canDemolishSpaceRoad() throws RpcException, StateMachineNotExpectedEventException;
+		boolean canDemolishSpaceRoad(String sourceName, String destinationName) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order to demolish a space road.
@@ -329,8 +330,9 @@ public interface Protocol
 		 * @param celestialBodyNameB
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 * @throws RunningGameCommandException 
 		 */
-		void demolishSpaceRoad(String celestialBodyNameA, String celestialBodyNameB) throws RpcException, StateMachineNotExpectedEventException;
+		void demolishSpaceRoad(String celestialBodyNameA, String celestialBodyNameB) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
 		
 		/**
 		 * Test if player can modify a carbon order.
@@ -409,15 +411,16 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void canAttackEnemiesFleet() throws RpcException, StateMachineNotExpectedEventException;
+		boolean canAttackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order a celestial body to attack enemies fleet.
 		 * @param celestialBodyName
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 * @throws RunningGameCommandException 
 		 */
-		void attackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException;
+		void attackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
 		
 		/**
 		 * Test if player can change its diplomaty.

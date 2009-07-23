@@ -317,18 +317,16 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public void canAttackEnemiesFleet() throws RpcException, StateMachineNotExpectedEventException
+		public boolean canAttackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException
 		{
-			// if (getGameMove().isTurnEnded()) return false;
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canAttackEnemiesFleet(getLogin(), celestialBodyName);
 		}
 
 		@Override
-		public void attackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException
+		public void attackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			getGameMove().addAttackEnemiesFleetCommand(celestialBodyName);
 		}
 
 		@Override
@@ -345,18 +343,16 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public void canBuildSpaceRoad() throws RpcException, StateMachineNotExpectedEventException
+		public boolean canBuildSpaceRoad(String sourceName, String destinationName) throws RpcException, StateMachineNotExpectedEventException
 		{
-			// if (getGameMove().isTurnEnded()) return false;
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canBuildSpaceRoad(getLogin(), sourceName, destinationName);
 		}
 
 		@Override
-		public void buildSpaceRoad(String celestialBodyNameA, String celestialBodyNameB) throws RpcException, StateMachineNotExpectedEventException
+		public void buildSpaceRoad(String sourceName, String destinationName) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			getGameMove().addBuildSpaceRoadCommand(sourceName, destinationName);
 		}
 
 		@Override
@@ -386,18 +382,16 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public void canDemolishSpaceRoad() throws RpcException, StateMachineNotExpectedEventException
+		public boolean canDemolishSpaceRoad(String sourceName, String destinationName) throws RpcException, StateMachineNotExpectedEventException
 		{
-			// if (getGameMove().isTurnEnded()) return false;
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canDemolishSpaceRoad(getLogin(), sourceName, destinationName);
 		}
 
 		@Override
-		public void demolishSpaceRoad(String celestialBodyNameA, String celestialBodyNameB) throws RpcException, StateMachineNotExpectedEventException
+		public void demolishSpaceRoad(String sourceName, String destinationName) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			getGameMove().addDemolishSpaceRoadCommand(sourceName, destinationName);
 		}
 
 		@Override

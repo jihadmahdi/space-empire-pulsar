@@ -20,20 +20,20 @@ public class SpaceRoad implements IMarker, Serializable
 	private final int creationDate;
 	private final boolean isVisible;
 	
-	private final RealLocation pointALocation;
-	private final RealLocation pointBLocation;
+	private final String source;
+	private final String destination;
 	private final int speed;
 	
 	/**
 	 * Full constructor. 
 	 */
-	public SpaceRoad(int creationDate, boolean isVisible, RealLocation pointALocation, RealLocation pointBLocation, int speed)
+	public SpaceRoad(int creationDate, boolean isVisible, String source, String destination, int speed)
 	{
 		this.creationDate = creationDate;
 		this.isVisible = isVisible;
 		
-		this.pointALocation = pointALocation;
-		this.pointBLocation = pointBLocation;
+		this.source = source;
+		this.destination = destination;
 		this.speed = speed;
 	}
 
@@ -55,12 +55,29 @@ public class SpaceRoad implements IMarker, Serializable
 		return isVisible;
 	}
 	
+	
+	
+	public String getDestination()
+	{
+		return destination;
+	}
+
+	public String getSource()
+	{
+		return source;
+	}
+
+	public int getSpeed()
+	{
+		return speed;
+	}
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */
 	@Override
 	public String toString()
 	{
-		return pointALocation+" to "+pointBLocation+" at speed "+speed;
+		return source+" to "+destination+" at speed "+speed;
 	}
 }
