@@ -21,7 +21,7 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	
 	// Only if visible	
 	private final String name;
-	private final Player owner;
+	private final String ownerName;
 	private final RealLocation currentLocation;
 	
 	// Only if owner
@@ -32,12 +32,12 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	/**
 	 * Full constructor.
 	 */
-	public Unit(boolean isVisible, int lastObervation, String name, Player owner, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress)
+	public Unit(boolean isVisible, int lastObervation, String name, String ownerName, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress)
 	{
 		this.isVisible = isVisible;
 		this.lastObservation = lastObervation;
 		this.name = name;
-		this.owner = owner;
+		this.ownerName = ownerName;
 		this.sourceLocation = sourceLocation;
 		this.destinationLocation = destinationLocation;
 		this.currentLocation = currentLocation;
@@ -66,9 +66,9 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 		return name;
 	}
 	
-	public Player getOwner()
+	public String getOwnerName()
 	{
-		return owner;
+		return ownerName;
 	}
 	
 	/* (non-Javadoc)
@@ -115,7 +115,7 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	{
 		StringBuffer sb = new StringBuffer();
 		
-		if (owner != null) sb.append("["+owner.getName()+"] ");
+		if (ownerName != null) sb.append("["+ownerName+"] ");
 		sb.append(name);
 		
 		if (sourceLocation != null && destinationLocation != null)
@@ -142,10 +142,5 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 		if (travellingProgress < 0 || sourceLocation == null || destinationLocation == null) return false;
 		
 		return (travellingProgress != 0 && travellingProgress != 1);		
-	}
-
-	public String getOwnerName()
-	{
-		return Player.getName(owner);
 	}
 }

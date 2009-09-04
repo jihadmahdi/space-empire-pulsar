@@ -42,6 +42,13 @@
 			<scope>test</scope>
 			<optional>true</optional>
 		</dependency>
+		<!-- BerkeleyDB
+		<dependency>
+      		<groupId>com.sleepycat</groupId>
+      		<artifactId>je</artifactId>
+      		<version>3.3.87</version>
+    	</dependency>
+    	-->	
 	</dependencies>
 	<!-- <parent></parent> -->
 	<!-- <dependencyManagement></dependencyManagement> -->
@@ -904,6 +911,14 @@
 	</scm>
 	<!-- <prerequisites></prerequisites> -->
 	<repositories>
+		<!-- For BerkeleyDB
+		<repository>
+      		<id>oracleReleases</id>
+      		<name>Oracle Released Java Packages</name>
+      		<url>http://download.oracle.com/maven</url>
+      		<layout>default</layout>
+    	</repository>
+    	-->
 		<repository>
 			<id>codehaus-repository</id>
 			<name>Codehaus Repository</name>

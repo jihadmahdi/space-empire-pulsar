@@ -22,9 +22,9 @@ public class AntiProbeMissile extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public AntiProbeMissile(String name, Player owner, RealLocation sourceLocation, boolean fired)
+	public AntiProbeMissile(GameBoard gameBoard, String name, String ownerName, RealLocation sourceLocation, boolean fired)
 	{
-		super(name, owner, sourceLocation);
+		super(gameBoard, name, ownerName, sourceLocation);
 		this.fired = fired;
 	}
 
@@ -47,7 +47,7 @@ public class AntiProbeMissile extends Unit implements Serializable
 			playersFiredView.updateView(playerLogin, fired, date);			
 		}
 		
-		return new common.AntiProbeMissile(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), playersFiredView.getLastValue(playerLogin, false)); 
+		return new common.AntiProbeMissile(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), playersFiredView.getLastValue(playerLogin, false)); 
 	}	
 
 	@Override
@@ -58,16 +58,16 @@ public class AntiProbeMissile extends Unit implements Serializable
 	}
 
 	@Override
-	public boolean startMove(RealLocation currentLocation, GameBoard currentGameBoard)
+	public boolean startMove()
 	{
-		return (fired && super.startMove(currentLocation, currentGameBoard));		
+		return (fired && super.startMove());		
 	}
 	
 	@Override
-	public void endMove(RealLocation currentLocation, GameBoard gameBoard)
+	public void endMove()
 	{
 		setDestinationLocation(null);
-		super.endMove(currentLocation, gameBoard);
+		super.endMove();
 	}
 
 	public void fire(String targetProbeOwnerName, String targetProbeName, RealLocation source, RealLocation destination)

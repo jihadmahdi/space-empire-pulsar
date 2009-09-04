@@ -30,15 +30,15 @@ public class Diplomacy implements Serializable
 	 * @param owner
 	 * @param players
 	 */
-	public Diplomacy(Player owner, Set<Player> players)
+	public Diplomacy(Player owner, Set<String> playersNames)
 	{
 		this.owner = owner;
 		
-		for(Player player : players)
+		for(String player : playersNames)
 		{
-			if (!player.isNamed(owner.getName()))
+			if (player.compareTo(owner.getName()) == 0)
 			{
-				policies.put(player.getName(), new common.Diplomacy.PlayerPolicies(player.getName(), false, false));
+				policies.put(player, new common.Diplomacy.PlayerPolicies(player, false, false));
 			}
 		}
 	}

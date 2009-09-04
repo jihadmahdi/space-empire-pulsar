@@ -15,6 +15,16 @@ import common.SEPUtils.RealLocation;
 
 public class Fleet extends Unit implements Serializable
 {
+	public static class Key extends Unit.Key implements Serializable
+	{		
+		private static final long	serialVersionUID	= 1L;
+
+		public Key(String name, String ownerName)
+		{
+			super(name, ownerName);
+		}
+	}
+	
 	private static final long										serialVersionUID		= 1L;
 
 	private final boolean isUnassigned;
@@ -29,9 +39,14 @@ public class Fleet extends Unit implements Serializable
 	PlayerDatedView<HashMap<common.StarshipTemplate, Integer>>	playersStarshipsView	= new PlayerDatedView<HashMap<common.StarshipTemplate, Integer>>();
 	PlayerDatedView<HashSet<common.ISpecialUnit>> playersSpecialUnitsView = new PlayerDatedView<HashSet<common.ISpecialUnit>>();
 
-	public Fleet(String name, Player owner, RealLocation sourceLocation, Map<common.StarshipTemplate, Integer> starships, Set<common.ISpecialUnit> specialUnits, boolean isUnassigned)
+	public Fleet(GameBoard gameBoard, String name, String ownerName, RealLocation sourceLocation, Map<common.StarshipTemplate, Integer> starships, Set<common.ISpecialUnit> specialUnits, boolean isUnassigned)
 	{
-		super(name, owner, sourceLocation);
+		this(gameBoard, new Key(name, ownerName), sourceLocation, starships, specialUnits, isUnassigned);		
+	}
+	
+	public Fleet(GameBoard gameBoard, Key key, RealLocation sourceLocation, Map<common.StarshipTemplate, Integer> starships, Set<common.ISpecialUnit> specialUnits, boolean isUnassigned)
+	{
+		super(gameBoard, key, sourceLocation);
 		
 		if (starships != null)
 		{
@@ -53,7 +68,7 @@ public class Fleet extends Unit implements Serializable
 		
 		this.checkpoints = new Stack<common.Fleet.Move>();
 		this.isUnassigned = isUnassigned;
-	}
+	}	
 
 	@Override
 	public common.Fleet getPlayerView(int date, String playerLogin, boolean isVisible)
@@ -65,7 +80,7 @@ public class Fleet extends Unit implements Serializable
 			playersSpecialUnitsView.updateView(playerLogin, specialUnits, date);
 		}				
 		
-		return new common.Fleet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), playersStarshipsView.getLastValue(playerLogin, null), playersSpecialUnitsView.getLastValue(playerLogin, null), (getOwner()!=null&&getOwner().isNamed(playerLogin)?currentMove:null) ,(getOwner()!=null&&getOwner().isNamed(playerLogin)?checkpoints:null), isUnassigned);
+		return new common.Fleet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), playersStarshipsView.getLastValue(playerLogin, null), playersSpecialUnitsView.getLastValue(playerLogin, null), (getOwnerName().compareTo(playerLogin) == 0?currentMove:null) ,(getOwnerName().compareTo(playerLogin)==0?checkpoints:null), isUnassigned);
 	}
 
 	public boolean isGovernmentFleet()
@@ -168,11 +183,11 @@ public class Fleet extends Unit implements Serializable
 	}
 	
 	@Override
-	public boolean startMove(RealLocation currentLocation, GameBoard currentGameBoard)
-	{
-		if ((currentMove == null || currentMove.getDestinationLocation().equals(currentLocation)) && checkpoints.size() > 0)
+	public boolean startMove()
+	{		
+		if ((currentMove == null || currentMove.getDestinationLocation().equals(getRealLocation())) && checkpoints.size() > 0)
 		{
-			if (super.startMove(currentLocation, currentGameBoard))
+			if (super.startMove())
 			{
 				currentMove = checkpoints.firstElement();
 				checkpoints.removeElementAt(0);												
@@ -183,7 +198,7 @@ public class Fleet extends Unit implements Serializable
 		{
 			if (currentMove.getDelay() == 0)
 			{
-				setDestinationLocation(currentGameBoard.getCelestialBodyLocation(currentMove.getDestinationName()));
+				setDestinationLocation(gameBoard.getCelestialBody(currentMove.getDestinationName()).getLocation().asRealLocation());
 				return true;
 			}
 			else
@@ -196,15 +211,15 @@ public class Fleet extends Unit implements Serializable
 	}
 	
 	@Override
-	public void endMove(RealLocation currentLocation, GameBoard gameBoard)
+	public void endMove()
 	{
 		setDestinationLocation(null);
 		if (currentMove.isAnAttack())
 		{
-			gameBoard.initiateConflict(currentLocation, getOwnerName());
+			gameBoard.initiateConflict(getRealLocation(), getOwnerName());
 		}		
 		currentMove = null; // Needed for the next startMove call.
-		super.endMove(currentLocation, gameBoard);
+		super.endMove();
 	}
 	
 	@Override

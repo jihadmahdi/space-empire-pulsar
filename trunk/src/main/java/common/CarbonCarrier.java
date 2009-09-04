@@ -19,8 +19,8 @@ public class CarbonCarrier extends Unit implements Serializable
 	/**
 	 * 
 	 */
-	public CarbonCarrier(boolean isVisible, int lastObervation, String name, Player owner, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress)
+	public CarbonCarrier(boolean isVisible, int lastObervation, String name, String ownerName, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress)
 	{
-		super(isVisible, lastObervation, name, owner, sourceLocation, destinationLocation, currentLocation, travellingProgress);
+		super(isVisible, lastObervation, name, ownerName, sourceLocation, destinationLocation, currentLocation, travellingProgress);
 	}
 }

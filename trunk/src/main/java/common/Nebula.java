@@ -29,9 +29,9 @@ public class Nebula extends ProductiveCelestialBody implements Serializable
 	/**
 	 * Full constructor.
 	 */
-	public Nebula(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, Player owner, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits)
+	public Nebula(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, String ownerName, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits)
 	{
-		super(isVisible, lastObservation, name, startingCarbonStock, carbonStock, carbon, slots, buildings, owner, unasignedFleetStarships, unasignedFleetSpecialUnits);
+		super(isVisible, lastObservation, name, startingCarbonStock, carbonStock, carbon, slots, buildings, ownerName, unasignedFleetStarships, unasignedFleetSpecialUnits);
 	}
 
 	/* (non-Javadoc)

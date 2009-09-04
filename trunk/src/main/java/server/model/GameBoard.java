@@ -11,6 +11,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,10 +29,10 @@ import common.ISpecialUnit;
 import common.Player;
 import common.SEPUtils;
 import common.TravellingLogEntryUnitSeen;
-import common.UnitMarker;
 import common.Protocol.ServerRunningGame.RunningGameCommandException;
 
 import common.SEPUtils.RealLocation;
+import common.SEPUtils.Location;
 
 public class GameBoard implements Serializable
 {
@@ -41,11 +42,17 @@ public class GameBoard implements Serializable
 
 	private static final Random			rnd					= new Random();
 
-	private final Set<common.Player>	players;
+	private final Hashtable<String, common.Player> players;
 	
 	private final Map<String, Diplomacy>	playersPolicies;
 
-	private final Area[][][]			universe;
+	private final Hashtable<Location, Area>	areas;
+	
+	private final Hashtable<ICelestialBody.Key, ICelestialBody> celestialBodies;
+	
+	private final Hashtable<Unit.Key, Unit> units;
+	
+	private final Hashtable<String, Hashtable<IMarker.Key, IMarker>> playersMarkers;
 
 	private final RealLocation			sunLocation;							// Sun center location : [0] x; [1] y; [2] z. Sun is always fill 9 area.
 
@@ -53,12 +60,15 @@ public class GameBoard implements Serializable
 
 	private int							date;
 
-	private GameBoard(Set<common.Player> players, common.GameConfig config, int date, Area[][][] universe, RealLocation sunLocation, Map<String, Diplomacy> playersPolicies)
+	private GameBoard(Hashtable<String, common.Player> players, common.GameConfig config, int date, Hashtable<Location, Area> areas, Hashtable<ICelestialBody.Key, ICelestialBody> celestialBodies, Hashtable<String, Hashtable<IMarker.Key, IMarker>> playersMarkers, RealLocation sunLocation, Hashtable<Unit.Key, Unit> units, Map<String, Diplomacy> playersPolicies)
 	{
 		this.players = players;
 		this.config = config;
 		this.date = date;
-		this.universe = universe;
+		this.areas = areas;
+		this.celestialBodies = celestialBodies;
+		this.units = units;
+		this.playersMarkers = playersMarkers;
 		this.sunLocation = sunLocation;
 		this.playersPolicies = playersPolicies;
 	}
@@ -71,12 +81,24 @@ public class GameBoard implements Serializable
 	 */
 	public GameBoard(Set<common.Player> players, common.GameConfig config, int date)
 	{
+		this.players = new Hashtable<String, common.Player>(players.size());
+		for(common.Player player : players)
+		{
+			this.players.put(player.getName(), player);
+		}
+		
 		this.config = config;
-		this.players = players;
 		this.date = date;
 
 		// Create a blank universe.
-		universe = new Area[config.getDimX()][config.getDimY()][config.getDimZ()];
+		areas = new Hashtable<Location, Area>(players.size()*2);
+		celestialBodies = new Hashtable<ICelestialBody.Key, ICelestialBody>(players.size()*2);
+		units = new Hashtable<Unit.Key, Unit>();
+		playersMarkers = new Hashtable<String, Hashtable<IMarker.Key, IMarker>>(players.size());
+		for(String playerName : this.players.keySet())
+		{
+			playersMarkers.put(playerName, new Hashtable<IMarker.Key, IMarker>());
+		}
 
 		// Make the sun
 		sunLocation = new RealLocation(Double.valueOf(config.getDimX()) / 2.0, Double.valueOf(config.getDimY()) / 2.0, Double.valueOf(config.getDimZ()) / 2.0);
@@ -93,31 +115,32 @@ public class GameBoard implements Serializable
 				}
 
 		// Add the players starting planets.
-		Set<RealLocation> playersPlanetLocations = new HashSet<RealLocation>();
+		Set<Location> playersPlanetLocations = new HashSet<Location>();
 		
 		this.playersPolicies = new Hashtable<String, Diplomacy>();
 
 		for(common.Player player : players)
-		{
-			this.playersPolicies.put(player.getName(), new Diplomacy(player, players));
+		{			
+			this.playersPolicies.put(player.getName(), new Diplomacy(player, this.players.keySet()));
 			
 			// Found a location to pop the planet.
-			RealLocation planetLocation;
+			Location planetLocation;
 			boolean locationOk;
 			do
 			{
 				locationOk = false;
-				planetLocation = new RealLocation(rnd.nextInt(config.getDimX()) + 0.5, rnd.nextInt(config.getDimY()) + 0.5, rnd.nextInt(config.getDimZ()) + 0.5);
+				planetLocation = new Location(rnd.nextInt(config.getDimX()), rnd.nextInt(config.getDimY()), rnd.nextInt(config.getDimZ()));
 
-				if (getNullArea(planetLocation) != null && !getNullArea(planetLocation).isEmpty()) continue;
+				Area a = getNullArea(planetLocation);
+				if (a != null && !a.isEmpty()) continue;
 
 				locationOk = true;
-				for(RealLocation l : playersPlanetLocations)
+				for(Location l : playersPlanetLocations)
 				{
-					Stack<RealLocation> path = common.SEPUtils.getAllPathLoc(planetLocation, l);
+					Stack<RealLocation> path = common.SEPUtils.getAllPathLoc(planetLocation.asRealLocation(), l.asRealLocation());
 					for(RealLocation pl : path)
 					{
-						Area a = getNullArea(pl);
+						a = getNullArea(pl);
 						if (a != null && a.isSun())
 						{
 							locationOk = false;
@@ -129,10 +152,12 @@ public class GameBoard implements Serializable
 				}
 			} while(!locationOk);
 
-			Planet planet = Planet.newStartingPlanet(generateCelestialBodyName(), player, config);
+			Planet planet = Planet.newStartingPlanet(this, generateCelestialBodyName(), planetLocation, player.getName(), config);
+			celestialBodies.put(planet.getKey(), planet);
+			
 			try
 			{
-				getArea(planetLocation).setCelestialBody(planet);
+				getArea(planetLocation).setCelestialBody(planet.getName());
 				playersPlanetLocations.add(planetLocation);
 			}
 			catch(AreaIllegalDefinitionException e)
@@ -145,11 +170,13 @@ public class GameBoard implements Serializable
 		for(int i = 0; i < config.getNeutralCelestialBodiesCount(); ++i)
 		{
 			// Found a location to pop the celestial body
-			RealLocation celestialBodyLocation;
+			Location celestialBodyLocation;
+			Area a;
 			do
 			{
-				celestialBodyLocation = new RealLocation(rnd.nextInt(config.getDimX()) + 0.5, rnd.nextInt(config.getDimY()) + 0.5, rnd.nextInt(config.getDimZ()) + 0.5);
-			} while(getNullArea(celestialBodyLocation) != null && !getNullArea(celestialBodyLocation).isEmpty());
+				celestialBodyLocation = new Location(rnd.nextInt(config.getDimX()), rnd.nextInt(config.getDimY()), rnd.nextInt(config.getDimZ()));
+				a = getNullArea(celestialBodyLocation);
+			} while(a != null && !a.isEmpty());
 
 			Class<? extends common.ICelestialBody> celestialBodyType = Basic.getKeyFromRandomTable(config.getNeutralCelestialBodiesGenerationTable());
 
@@ -158,9 +185,11 @@ public class GameBoard implements Serializable
 			try
 			{
 				serverCelestialBodyType = Class.forName("server.model." + celestialBodyType.getSimpleName()).asSubclass(ICelestialBody.class);
-				Constructor<? extends ICelestialBody> ctor = serverCelestialBodyType.getConstructor(String.class, common.GameConfig.class);
-				ICelestialBody celestialBody = ctor.newInstance(nextName, config);
-				getArea(celestialBodyLocation).setCelestialBody(celestialBody);
+				Constructor<? extends ICelestialBody> ctor = serverCelestialBodyType.getConstructor(GameBoard.class, String.class, Location.class, common.GameConfig.class);
+				ICelestialBody celestialBody = ctor.newInstance(this, nextName, celestialBodyLocation, config);
+				
+				celestialBodies.put(celestialBody.getKey(), celestialBody);
+				getArea(celestialBodyLocation).setCelestialBody(celestialBody.getName());
 			}
 			catch(Exception e)
 			{
@@ -171,25 +200,31 @@ public class GameBoard implements Serializable
 
 	private Player getPlayer(String playerLogin)
 	{
-		for(Player p : players)
-		{
-			if (p.isNamed(playerLogin)) return p;
-		}
-		return null;
+		return players.get(playerLogin);
 	}
 
-	private Area getNullArea(RealLocation location)
+	private Area getArea(RealLocation realLocation)
 	{
-		return universe[(int) location.x][(int) location.y][(int) location.z];
+		return getArea(realLocation.asLocation());
 	}
-
-	private Area getArea(RealLocation location)
+	
+	private Area getNullArea(RealLocation realLocation)
 	{
-		if (universe[(int) location.x][(int) location.y][(int) location.z] == null)
+		return getNullArea(realLocation.asLocation());
+	}
+	
+	private Area getArea(Location location)
+	{
+		if (areas.get(location) == null)
 		{
-			universe[(int) location.x][(int) location.y][(int) location.z] = new Area();
+			areas.put(location, new Area(this, location));
 		}
-		return universe[(int) location.x][(int) location.y][(int) location.z];
+		return areas.get(location);
+	}
+	
+	private Area getNullArea(Location location)
+	{
+		return areas.get(location);
 	}
 
 	public int getDate()
@@ -215,25 +250,25 @@ public class GameBoard implements Serializable
 			for(int y = 0; y < config.getDimY(); ++y)
 				for(int z = 0; z < config.getDimZ(); ++z)
 				{
-					Area area = universe[x][y][z];
-					RealLocation location = new RealLocation(x + 0.5, y + 0.5, z + 0.5);
+					Location location = new Location(x, y, z);
+					Area area = getNullArea(location);
 
 					// Check for Area visibility (default to false)
 					isVisible = false;
 
 					ICelestialBody celestialBody = (area != null ? area.getCelestialBody() : null);
 					ProductiveCelestialBody productiveCelestialBody = (celestialBody != null && ProductiveCelestialBody.class.isInstance(celestialBody) ? ProductiveCelestialBody.class.cast(celestialBody) : null);
-					Player celestialBodyOwner = (celestialBody != null ? celestialBody.getOwner() : null);
+					String celestialBodyOwnerName = (celestialBody != null ? celestialBody.getOwnerName() : null);
 					Fleet unassignedFleet = (productiveCelestialBody != null ? productiveCelestialBody.getUnasignedFleet(playerLogin) : null);
 
 					// Visible if area celestial body is owned by the player.
-					if (!isVisible && celestialBodyOwner != null && celestialBodyOwner.isNamed(playerLogin))
+					if (!isVisible && celestialBodyOwnerName != null && celestialBodyOwnerName.compareTo(playerLogin) == 0)
 					{
 						isVisible = true;
 					}
 
 					// Visible if area contains a celestial body and player has a unit on it.
-					if (!isVisible && ((unassignedFleet != null && !unassignedFleet.isEmpty()) || (productiveCelestialBody != null && !getUnits(area, playerLogin).isEmpty())))
+					if (!isVisible && ((unassignedFleet != null && !unassignedFleet.isEmpty()) || (productiveCelestialBody != null && !getUnits(location, playerLogin).isEmpty())))
 					{
 						isVisible = true;
 					}
@@ -241,7 +276,7 @@ public class GameBoard implements Serializable
 					// Area is under a player probe scope.
 					if (!isVisible) for(Probe p : playerProbes)
 					{
-						if (common.SEPUtils.getDistance(location, p.getCurrentLocation()) > config.getProbeScope()) continue;
+						if (common.SEPUtils.getDistance(location.asRealLocation(), p.getRealLocation()) > config.getProbeScope()) continue;
 
 						if (p.isDeployed())
 						{
@@ -262,7 +297,7 @@ public class GameBoard implements Serializable
 						}
 						
 						// If governmental fleets are located in this area
-						for(Fleet fleet : getUnits(area, Fleet.class, null))
+						for(Fleet fleet : getUnits(location, Fleet.class, null))
 						{
 							if (fleet.isGovernmentFleet())
 							{
@@ -274,31 +309,49 @@ public class GameBoard implements Serializable
 					}
 				}
 		
-		for(Player player : players)
+		for(String player : players.keySet())
 		{
-			if (playersPoliciesView.containsKey(player.getName())) continue;
-			playersPoliciesView.put(player.getName(), playersPolicies.get(player.getName()).getPlayerView(date, playerLogin, false));
+			if (playersPoliciesView.containsKey(player)) continue;
+			playersPoliciesView.put(player, playersPolicies.get(player).getPlayerView(date, playerLogin, false));
 		}
 		
 		return new common.PlayerGameBoard(playerUniverseView, sunLocation, date, playersPoliciesView);
 	}
-
-	private UnitMarker getUnitMarker(String playerLogin, String ownerName, String unitName)
+	
+	private UnitMarker getUnitMarker(String observerName, String ownerName, String unitName)
 	{
-		for(int x = 0; x < config.getDimX(); ++x)
-			for(int y = 0; y < config.getDimY(); ++y)
-				for(int z = 0; z < config.getDimZ(); ++z)
-				{
-					Area area = universe[x][y][z];
-					if (area == null) continue;
-
-					UnitMarker um = area.getUnitMarker(playerLogin, ownerName, unitName);
-					if (um != null) return um;
-				}
-
+		for(UnitMarker um : getMarkers(observerName, UnitMarker.class))
+		{
+			common.Unit u = um.getUnit();
+			
+			// Owner filter
+			if (!((ownerName == null && u.getOwnerName() == null) || (ownerName != null && u.getOwnerName() != null && u.getOwnerName().compareTo(ownerName) == 0))) continue;
+			
+			// Name filter
+			if (u.getName().compareTo(unitName) == 0) return um;
+		}
+		
 		return null;
 	}
+	
+	private <M extends IMarker> Set<M> getMarkers(String observerName, Class<M> markerType)
+	{
+		Set<M> result = new TreeSet<M>();
+		if (playersMarkers.containsKey(observerName)) for(IMarker m : playersMarkers.get(observerName).values())
+		{
+			if (markerType.isInstance(m)) result.add(markerType.cast(m));
+		}
+		
+		return result;
+	}
 
+	protected <U extends Unit> U getUnit(Location location, Class<U> unitType, String ownerName, String unitName)
+	{
+		U unit = getUnit(unitType, ownerName, unitName);
+		if (unit == null || !unit.getRealLocation().asLocation().equals(location)) return null;
+		return unit;
+	}
+	
 	/**
 	 * Return the unit by its name, type, and owner.
 	 * 
@@ -308,13 +361,14 @@ public class GameBoard implements Serializable
 	 * @param unitName
 	 * @return
 	 */
-	private <U extends Unit> U getUnit(Class<U> unitType, String ownerName, String unitName)
+	protected <U extends Unit> U getUnit(Class<U> unitType, String ownerName, String unitName)
 	{
-		for(U unit : getUnits(unitType, ownerName))
+		Unit u = units.get(new Unit.Key(unitName, ownerName));
+		if (u != null && unitType.isInstance(u))
 		{
-			if (unit.getName().compareTo(unitName) == 0) return unit;
+			return unitType.cast(u);
 		}
-
+		
 		return null;
 	}
 
@@ -333,21 +387,15 @@ public class GameBoard implements Serializable
 	private <U extends Unit> Set<U> getUnits(Class<U> unitType, String playerLogin)
 	{
 		Set<U> filteredUnits = new HashSet<U>();
-		Set<U> currentLocationUnits;
 
-		for(int x = 0; x < config.getDimX(); ++x)
-			for(int y = 0; y < config.getDimY(); ++y)
-				for(int z = 0; z < config.getDimZ(); ++z)
-				{
-					Area area = universe[x][y][z];
-					if (area == null) continue;
-
-					currentLocationUnits = getUnits(area, unitType, playerLogin);
-
-					if (currentLocationUnits.isEmpty()) continue;
-
-					filteredUnits.addAll(currentLocationUnits);
-				}
+		for(Unit unit : units.values())
+		{
+			// TODO : remplacer getOwnerName().compareTo(...) par une méthode directe, nettoyer de même le reste du code.
+			if (unit.getOwnerName().compareTo(playerLogin) == 0 && unitType.isInstance(unit))
+			{
+				filteredUnits.add(unitType.cast(unit));
+			}
+		}
 
 		return filteredUnits;
 	}
@@ -366,16 +414,18 @@ public class GameBoard implements Serializable
 	 * @return Set<Unit> filtered unit for the given location.
 	 * @see #getUnits(String, Class)
 	 */
-	private <U extends Unit> Set<U> getUnits(Area area, Class<U> unitTypeFilter, String playerLoginFilter)
+	private <U extends Unit> Set<U> getUnits(Location location, Class<U> unitTypeFilter, String playerLoginFilter)
 	{
 		Set<U> filteredUnits = new HashSet<U>();
-		for(Unit u : getUnits(area, playerLoginFilter))
+		
+		for(U u : getUnits(unitTypeFilter, playerLoginFilter))
 		{
-			if (unitTypeFilter.isInstance(u))
+			if (u.getRealLocation().asLocation().equals(location))
 			{
-				filteredUnits.add(unitTypeFilter.cast(u));
+				filteredUnits.add(u);
 			}
 		}
+		
 		return filteredUnits;
 	}
 
@@ -388,24 +438,55 @@ public class GameBoard implements Serializable
 	 *            if not null, return only units owned by this player.
 	 * @return
 	 */
-	private Set<Unit> getUnits(Area area, String ownerName)
+	private Set<Unit> getUnits(Location location, String ownerName)
 	{
 		Set<Unit> filteredUnits = new HashSet<Unit>();
 
-		if (area == null) return filteredUnits;
-
-		Set<Unit> units = area.getUnits();
-
-		for(Unit u : units)
+		for(Unit u : getUnits(location))
 		{
-			// Owner filter (if ownerName == null then no filter)
-			if (ownerName != null && (u.getOwner() == null || !u.getOwner().isNamed(ownerName))) continue;
-
-			filteredUnits.add(u);
+			// If ownerName == null, no ownerName filter.
+			if (ownerName == null || ownerName.compareTo(u.getOwnerName()) == 0)
+			{
+				filteredUnits.add(u);
+			}
 		}
-
+		
 		return filteredUnits;
 	}
+	
+	protected Set<Unit> getUnits(Location location)
+	{
+		Set<Unit> filteredUnits = new HashSet<Unit>();
+		
+		for(Unit u : units.values())
+		{
+			if (u.getRealLocation().asLocation().equals(location))
+			{
+				filteredUnits.add(u);
+			}
+		}
+		
+		return filteredUnits;
+	}
+	
+	/// UPDATE
+	
+	protected void mergeToUnasignedFleet(ProductiveCelestialBody productiveCelestialBody, String playerName, Map<common.StarshipTemplate, Integer> starshipsToMerge, Set<common.ISpecialUnit> specialUnitsToMerge)
+	{
+		Fleet unasignedFleet = getUnit(productiveCelestialBody.getLocation(), Fleet.class, playerName, "Unasigned fleet on "+productiveCelestialBody.getName());
+		
+		if (unasignedFleet == null)
+		{
+			Fleet.Key key = new Fleet.Key("Unasigned fleet on "+productiveCelestialBody.getName(), playerName);
+			units.put(key, new Fleet(this, key, productiveCelestialBody.getLocation().asRealLocation(), starshipsToMerge, specialUnitsToMerge, true));  
+		}
+		else
+		{
+			unasignedFleet.merge(starshipsToMerge, specialUnitsToMerge);
+		}		
+	}
+	
+	///
 
 	private String	nextCelestialBodyName	= "A";
 
@@ -423,33 +504,9 @@ public class GameBoard implements Serializable
 		return result;
 	}
 
-	/**
-	 * Return the celestial body with the given name.
-	 * 
-	 * @param celestialBodyName
-	 * @return
-	 */
-	public RealLocation getCelestialBodyLocation(String celestialBodyName)
+	protected ICelestialBody getCelestialBody(String celestialBodyName)
 	{
-		for(int x = 0; x < config.getDimX(); ++x)
-			for(int y = 0; y < config.getDimY(); ++y)
-				for(int z = 0; z < config.getDimZ(); ++z)
-				{
-					Area area = universe[x][y][z];
-					if (area == null) continue;
-					ICelestialBody celestialBody = area.getCelestialBody();
-					if (celestialBody == null) continue;
-
-					if (celestialBody.getName().compareTo(celestialBodyName) == 0) return new RealLocation(x + 0.5, y + 0.5, z + 0.5);
-				}
-		return null;
-	}
-
-	private ICelestialBody getCelestialBody(String celestialBodyName)
-	{
-		RealLocation location = getCelestialBodyLocation(celestialBodyName);
-		if (location == null) return null;
-		return getNullArea(location).getCelestialBody();
+		return celestialBodies.get(new ICelestialBody.Key(celestialBodyName));
 	}
 
 	/**
@@ -458,26 +515,17 @@ public class GameBoard implements Serializable
 	 * @param playerLogin
 	 * @return
 	 */
-	private Area locateGovernmentModule(String playerLogin)
+	private Planet locateGovernmentModule(String playerLogin)
 	{
-		for(int x = 0; x < config.getDimX(); ++x)
-			for(int y = 0; y < config.getDimY(); ++y)
-				for(int z = 0; z < config.getDimZ(); ++z)
-				{
-					if (universe[x][y][z] == null) continue;
+		for(ICelestialBody celestialBody : celestialBodies.values())
+		{
+			if (!Planet.class.isInstance(celestialBody)) continue;
+			Planet planet = Planet.class.cast(celestialBody);
 
-					Area area = universe[x][y][z];
+			if (planet.getOwnerName() == null || planet.getOwnerName().compareTo(playerLogin) != 0) continue;
 
-					ICelestialBody celestialBody = area.getCelestialBody();
-					if (celestialBody == null) continue;
-
-					if (!Planet.class.isInstance(celestialBody)) continue;
-					Planet planet = Planet.class.cast(celestialBody);
-
-					if (planet.getOwner() == null || !planet.getOwner().isNamed(playerLogin)) continue;
-
-					if (planet.isGovernmentSettled()) return area;
-				}
+			if (planet.isGovernmentSettled()) return planet;
+		}
 
 		return null;
 	}
@@ -508,30 +556,19 @@ public class GameBoard implements Serializable
 		return null;
 	}
 
-	private Map<Probe, RealLocation> getDeployedProbesLocations()
+	private Set<Probe> getDeployedProbes()
 	{
-		Map<Probe, RealLocation> result = new HashMap<Probe, RealLocation>();
+		Set<Probe> result = new TreeSet<Probe>();
 
-		for(int x = 0; x < config.getDimX(); ++x)
-			for(int y = 0; y < config.getDimY(); ++y)
-				for(int z = 0; z < config.getDimZ(); ++z)
-				{
-					Area area = universe[x][y][z];
-					if (area == null) continue;
-
-					Set<Unit> units = area.getUnits();
-					if (units != null) for(Unit u : units)
-					{
-						if (Probe.class.isInstance(u))
-						{
-							Probe p = Probe.class.cast(u);
-							if (p.isDeployed())
-							{
-								result.put(p, p.getCurrentLocation());
-							}
-						}
-					}
-				}
+		for(Unit u : units.values())
+		{
+			if (!Probe.class.isInstance(u)) continue;
+			Probe p = Probe.class.cast(u);
+			if (p.isDeployed())
+			{
+				result.add(p);
+			}			
+		}
 
 		return result;
 	}
@@ -540,69 +577,49 @@ public class GameBoard implements Serializable
 	{
 		// TODO : Résolve mobile units movement, attacks, etc... On Current instance.
 
-		Set<ICelestialBody> celestialBodies = new HashSet<ICelestialBody>();
 		Set<Unit> movingUnits = new HashSet<Unit>();
 		double maxSpeed = Double.MIN_VALUE;
 
-		for(int x = 0; x < config.getDimX(); ++x)
-			for(int y = 0; y < config.getDimY(); ++y)
-				for(int z = 0; z < config.getDimZ(); ++z)
-				{
-					Area area = universe[x][y][z];
-					if (area == null) continue;
-
-					if (area.getCelestialBody() != null)
-					{
-						celestialBodies.add(area.getCelestialBody());
-					}
-
-					RealLocation location = new RealLocation(x + 0.5, y + 0.5, z + 0.5);
-
-					for(Unit unit : area.getUnits())
-					{
-						if (unit.isMoving() || unit.startMove(location, this))
-						{
-							movingUnits.add(unit);
-							maxSpeed = Math.max(maxSpeed, unit.getSpeed());
-						}
-
-					}
-
-				}
+		for(Unit unit : units.values())
+		{
+			if (unit.isMoving() || unit.startMove())
+			{
+				movingUnits.add(unit);
+				maxSpeed = Math.max(maxSpeed, unit.getSpeed());
+			}
+		}
 
 		// Unit moves
 
-		// Detect units met.
-
-		Map<Unit, RealLocation> currentStepRealLocations = new HashMap<Unit, RealLocation>();
-		Map<Probe, RealLocation> deployedProbes = getDeployedProbesLocations();
-
+		Set<Unit> currentStepMovedUnits = new TreeSet<Unit>();
+		Set<Probe> deployedProbes = getDeployedProbes();
+		
 		double step = 1 / maxSpeed;
 		for(float currentStep = 0; currentStep <= 1; currentStep += step)
 		{
-			currentStepRealLocations.clear();
-
+			currentStepMovedUnits.clear();
+			
 			for(Unit u : movingUnits)
 			{
 				double distance = SEPUtils.getDistance(u.getSourceLocation(), u.getDestinationLocation());
-				double progressInOneTurn = (distance != 0 ? (Double.valueOf(1) / distance) * u.getSpeed() : 1);
-				RealLocation currentStepLocation = SEPUtils.getMobileLocation(u.getSourceLocation(), u.getDestinationLocation(), u.getTravellingProgress() + progressInOneTurn * currentStep, true);
-
-				for(Unit seenUnit : currentStepRealLocations.keySet())
+				double progressInOneStep = (distance != 0 ? (u.getSpeed() / distance) : 1);
+				u.setTravellingProgress(Math.min(1, u.getTravellingProgress() + progressInOneStep));
+				RealLocation currentStepLocation = u.getRealLocation();
+				
+				for(Unit movedUnit : currentStepMovedUnits)
 				{
-					RealLocation loc = currentStepRealLocations.get(seenUnit);
-
-					if (SEPUtils.getDistance(loc, currentStepLocation) <= 1)
+					RealLocation movedUnitCurrentLocation = movedUnit.getRealLocation();
+					if (SEPUtils.getDistance(currentStepLocation, movedUnitCurrentLocation) <= 1)
 					{
-						seenUnit.addTravelligLogEntry(new TravellingLogEntryUnitSeen("Unit seen", date, currentStep, currentStepLocation, u.getPlayerView(date, seenUnit.getOwnerName(), true)));
-						u.addTravelligLogEntry(new TravellingLogEntryUnitSeen("Unit seen", date, currentStep, loc, seenUnit.getPlayerView(date, u.getOwnerName(), true)));
+						u.addTravelligLogEntry(new TravellingLogEntryUnitSeen("Unit seen", date, currentStep, movedUnitCurrentLocation, movedUnit.getPlayerView(date, u.getOwnerName(), true)));
+						movedUnit.addTravelligLogEntry(new TravellingLogEntryUnitSeen("Unit seen", date, currentStep, currentStepLocation, u.getPlayerView(date, movedUnit.getOwnerName(), true)));
 					}
 				}
-
-				for(Probe probe : deployedProbes.keySet())
+				
+				for(Probe probe : deployedProbes)
 				{
-					RealLocation loc = deployedProbes.get(probe);
-					distance = SEPUtils.getDistance(loc, currentStepLocation);
+					RealLocation probeLocation = probe.getRealLocation();
+					distance = SEPUtils.getDistance(probeLocation, currentStepLocation);
 
 					if (distance <= config.getProbeScope())
 					{
@@ -611,80 +628,57 @@ public class GameBoard implements Serializable
 
 					if (distance <= 1)
 					{
-						u.addTravelligLogEntry(new TravellingLogEntryUnitSeen("Probe seen", date, currentStep, loc, probe.getPlayerView(date, u.getOwnerName(), true)));
+						u.addTravelligLogEntry(new TravellingLogEntryUnitSeen("Probe seen", date, currentStep, probeLocation, probe.getPlayerView(date, u.getOwnerName(), true)));
 					}
 				}
 
-				currentStepRealLocations.put(u, currentStepLocation);
+				currentStepMovedUnits.add(u);
 			}
 		}
-
-		Map<Area, Set<AntiProbeMissile>> explodingAntiProbeMissiles = new HashMap<Area, Set<AntiProbeMissile>>();
-
-		// Move units.
-		for(Unit movingUnit : movingUnits)
+		
+		Set<AntiProbeMissile> explodingAntiProbeMissiles = new TreeSet<AntiProbeMissile>();
+		
+		for(Unit u : movingUnits)
 		{
-			double distance = SEPUtils.getDistance(movingUnit.getSourceLocation(), movingUnit.getDestinationLocation());
-			double progressInOneTurn = (distance != 0 ? (Double.valueOf(1) / distance) * movingUnit.getSpeed() : 1);			
-			double newTravellingProgress = movingUnit.getTravellingProgress() + progressInOneTurn;
-			RealLocation endTurnLocation = SEPUtils.getMobileLocation(movingUnit.getSourceLocation(), movingUnit.getDestinationLocation(), newTravellingProgress, true).asLocation();
-
-			String playerLogin = movingUnit.getOwnerName();
-			Area startingArea = getNullArea(movingUnit.getCurrentLocation().asLocation());
-			startingArea.removeUnit(movingUnit.getClass(), movingUnit.getOwnerName(), movingUnit.getName());
-			UnitMarker unitMarker = startingArea.getUnitMarker(playerLogin, movingUnit.getOwnerName(), movingUnit.getName());
-			if (unitMarker != null)
+			RealLocation endTurnLocation = u.getRealLocation();
+			
+			IMarker.Key key = new IMarker.Key("own unit("+u.getName()+") travelling marker", UnitMarker.class, u.getOwnerName());
+			
+			playersMarkers.remove(key);
+			
+			if (endTurnLocation.asLocation().equals(u.getDestinationLocation().asLocation()))
 			{
-				startingArea.removeUnitMarker(playerLogin, movingUnit.getOwnerName(), movingUnit.getName());
-			}
-			else
-			{
-				unitMarker = new UnitMarker(date, true, movingUnit.getPlayerView(date, playerLogin, true));
-			}
-
-			Area endingArea = getArea(endTurnLocation);
-
-			endingArea.updateUnit(movingUnit);
-			movingUnit.setTravellingProgress(newTravellingProgress);
-
-			if (endTurnLocation.equals(movingUnit.getDestinationLocation().asLocation()))
-			{
-				movingUnit.endMove(new RealLocation(endTurnLocation.x + 0.5, endTurnLocation.y + 0.5, endTurnLocation.z + 0.5), this);
-				if (AntiProbeMissile.class.isInstance(movingUnit))
+				u.endMove();
+				
+				if (AntiProbeMissile.class.isInstance(u))
 				{
-					if (!explodingAntiProbeMissiles.containsKey(endingArea))
-					{
-						explodingAntiProbeMissiles.put(endingArea, new HashSet<AntiProbeMissile>());
-					}
-
-					explodingAntiProbeMissiles.get(endingArea).add(AntiProbeMissile.class.cast(movingUnit));
+					explodingAntiProbeMissiles.add(AntiProbeMissile.class.cast(u));
 				}
 			}
 			else
 			{
-				endingArea.updateUnitMarker(playerLogin, unitMarker);
-			}
+				playersMarkers.get(u.getOwnerName()).put(key, new UnitMarker(date, key, u.getPlayerView(date, u.getOwnerName(), true)));
+			}			
 		}
-
+		
 		// Explode anti-probe missiles.
-		for(Area area : explodingAntiProbeMissiles.keySet())
+		for(AntiProbeMissile apm : explodingAntiProbeMissiles)
 		{
-			if (explodingAntiProbeMissiles.get(area) == null) continue;
-			for(AntiProbeMissile apm : explodingAntiProbeMissiles.get(area))
+			Probe targetProbe = getUnit(Probe.class, apm.getTargetOwnerName(), apm.getTargetName());
+			if (targetProbe != null && SEPUtils.getDistance(apm.getRealLocation(), targetProbe.getRealLocation()) <= 1)
 			{
-				Probe targetProbe = area.getUnit(Probe.class, apm.getTargetOwnerName(), apm.getTargetName());
-				if (targetProbe != null)
-				{
-					// TODO : New event for targetProbe owner (probe destroyed)
-					area.removeUnit(Probe.class, targetProbe.getOwnerName(), targetProbe.getName());
-				}
-
-				area.removeUnit(AntiProbeMissile.class, apm.getOwnerName(), apm.getName());
+				// TODO: New event for targetProbe owner (probe destroyed)
+				units.remove(targetProbe.getKey());
 			}
-		}				
+			
+			// TODO: New event for apm owner, destroy probe marker.
+			units.remove(apm.getKey());
+		}
+		
+		//////////////////////////////////					
 
 		// Carbon & Population generation
-		for(ICelestialBody celestialBody : celestialBodies)
+		for(ICelestialBody celestialBody : celestialBodies.values())
 		{
 			if (ProductiveCelestialBody.class.isInstance(celestialBody))
 			{
@@ -738,7 +732,7 @@ public class GameBoard implements Serializable
 		}
 		
 		// Conflicts
-		for(ICelestialBody celestialBody : celestialBodies)
+		for(ICelestialBody celestialBody : celestialBodies.values())
 		{
 			if (!ProductiveCelestialBody.class.isInstance(celestialBody)) continue;
 			ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
@@ -756,58 +750,58 @@ public class GameBoard implements Serializable
 	{
 		// Initiate conflicts table
 		Map<String, Map<String, Boolean>> conflicts = new Hashtable<String, Map<String,Boolean>>();
-		for(Player p1 : players)
+		for(String p1 : players.keySet())
 		{
 			Map<String, Boolean> playerConflicts = new Hashtable<String, Boolean>();
-			for(Player p2 : players)
+			for(String p2 : players.keySet())
 			{
-				if (p1.isNamed(p2.getName())) continue;
+				if (p1.compareTo(p2) == 0) continue;
 				
 				boolean p1Policy = false;
 				
-				if (p1.isNamed(productiveCelestialBody.getOwnerName()))
+				if (p1.compareTo(productiveCelestialBody.getOwnerName()) == 0)
 				{
-					p1Policy = !playersPolicies.get(p1.getName()).getPolicies(p2.getName()).isAllowedToLandFleetInHomeTerritory();					
+					p1Policy = !playersPolicies.get(p1).getPolicies(p2).isAllowedToLandFleetInHomeTerritory();					
 				}
 				else
 				{
-					p1Policy = productiveCelestialBody.getConflictInitiators().contains(p1.getName()) ? true : playersPolicies.get(p1.getName()).getPolicies(p2.getName()).isAlwaysEngagedInConflictOnStrangerTerritory();
+					p1Policy = productiveCelestialBody.getConflictInitiators().contains(p1) ? true : playersPolicies.get(p1).getPolicies(p2).isAlwaysEngagedInConflictOnStrangerTerritory();
 				}
 				
-				boolean p2Policy = conflicts.containsKey(p2.getName()) ? conflicts.get(p2.getName()).get(p1.getName()) : false;
+				boolean p2Policy = conflicts.containsKey(p2) ? conflicts.get(p2).get(p1) : false;
 				
 				boolean finalPolicy = p1Policy || p2Policy;
-				playerConflicts.put(p2.getName(), finalPolicy);
-				if (conflicts.containsKey(p2.getName())) conflicts.get(p2.getName()).put(p1.getName(), finalPolicy);
+				playerConflicts.put(p2, finalPolicy);
+				if (conflicts.containsKey(p2)) conflicts.get(p2).put(p1, finalPolicy);
 			}
 			
-			conflicts.put(p1.getName(), playerConflicts);
+			conflicts.put(p1, playerConflicts);
 		}
 		
 		// List merged (unassigned fleets + fleets) forces for each players
 		Map<String, Fleet> fleets = new Hashtable<String, Fleet>();		
 		
-		RealLocation location = getCelestialBodyLocation(productiveCelestialBody.getName());
+		Location location = productiveCelestialBody.getLocation();
 		
-		for(Player p : players)
+		for(String p : players.keySet())
 		{
-			if (productiveCelestialBody.getUnasignedFleet(p.getName()) != null)
+			if (productiveCelestialBody.getUnasignedFleet(p) != null)
 			{
-				productiveCelestialBody.removeFromUnasignedFleet(p, productiveCelestialBody.getUnasignedFleetStarships(p.getName()), productiveCelestialBody.getUnasignedFleetSpecialUnits(p.getName()));				
+				productiveCelestialBody.removeFromUnasignedFleet(p, productiveCelestialBody.getUnasignedFleetStarships(p), productiveCelestialBody.getUnasignedFleetSpecialUnits(p));				
 				
-				fleets.put(p.getName(), new Fleet(p.getName()+" forces in conflict on "+productiveCelestialBody.getName()+" at turn "+date, p, location, productiveCelestialBody.getUnasignedFleetStarships(p.getName()), productiveCelestialBody.getUnasignedFleetSpecialUnits(p.getName()), false));
+				fleets.put(p, new Fleet(this, p+" forces in conflict on "+productiveCelestialBody.getName()+" at turn "+date, p, location.asRealLocation(), productiveCelestialBody.getUnasignedFleetStarships(p), productiveCelestialBody.getUnasignedFleetSpecialUnits(p), false));
 			}
 		}
 		
 		Set<Unit> unitsToRemove = new HashSet<Unit>();
-		for(Unit u : getArea(location).getUnits())
+		for(Unit u : getUnits(location))
 		{
 			if (!Fleet.class.isInstance(u)) continue;
 			Fleet f = Fleet.class.cast(u);
 			
 			if (!fleets.containsKey(f.getOwnerName()))
 			{
-				fleets.put(f.getOwnerName(), new Fleet(f.getOwnerName()+" forces in conflict on "+productiveCelestialBody.getName()+" at turn "+date, f.getOwner(), location, f.getStarships(), f.getSpecialUnits(), false));
+				fleets.put(f.getOwnerName(), new Fleet(this, f.getOwnerName()+" forces in conflict on "+productiveCelestialBody.getName()+" at turn "+date, f.getOwnerName(), location.asRealLocation(), f.getStarships(), f.getSpecialUnits(), false));
 			}
 			else
 			{
@@ -819,7 +813,7 @@ public class GameBoard implements Serializable
 		
 		for(Unit u : unitsToRemove)
 		{
-			getArea(location).removeUnit(u.getClass(), u.getOwnerName(), u.getName());
+			units.remove(u.getKey());
 		}
 		
 		// TODO : fake resolution, implement a true one
@@ -842,7 +836,7 @@ public class GameBoard implements Serializable
 			tempFleets.remove(winnerKey);
 			winners.push(winnerKey);
 			
-			for(Player p : players)
+			for(Player p : players.values())
 			{
 				if (p.isNamed(winnerKey)) continue; 
 				if (conflicts.get(winnerKey).get(p.getName()))
@@ -855,12 +849,12 @@ public class GameBoard implements Serializable
 		
 		for(Map.Entry<String, Fleet> e : fleets.entrySet())
 		{
-			productiveCelestialBody.mergeToUnasignedFleet(getPlayer(e.getKey()), e.getValue().getStarships(), e.getValue().getSpecialUnits());
+			mergeToUnasignedFleet(productiveCelestialBody, e.getKey(), e.getValue().getStarships(), e.getValue().getSpecialUnits());
 		}
 		
 		if (!winners.contains(productiveCelestialBody.getOwnerName()))
 		{
-			productiveCelestialBody.changeOwner(getPlayer(winners.firstElement()));
+			productiveCelestialBody.changeOwner(winners.firstElement());
 		}
 		
 		productiveCelestialBody.endConflict();
@@ -907,7 +901,7 @@ public class GameBoard implements Serializable
 		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
 
 		// If player is not the celestial body owner.
-		if (productiveCelestialBody.getOwner() == null || !productiveCelestialBody.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Player '" + playerLogin + "' is not the '" + celestialBodyName + "' celestial body owner.");
+		if (productiveCelestialBody.getOwnerName() == null || productiveCelestialBody.getOwnerName().compareTo(playerLogin) != 0) throw new RunningGameCommandException("Player '" + playerLogin + "' is not the '" + celestialBodyName + "' celestial body owner.");
 
 		ABuilding building = getBuildingFromClientType(productiveCelestialBody, buildingType);
 
@@ -919,13 +913,13 @@ public class GameBoard implements Serializable
 		return new DemolishCheckResult(productiveCelestialBody, building);
 	}
 
-	public void embarkGovernment(String playerLogin) throws RunningGameCommandException
+	public void embarkGovernment(String playerName) throws RunningGameCommandException
 	{
-		EmbarkGovernmentCheckResult embarkGovernmentCheckResult = checkEmbarkGovernment(playerLogin);
+		EmbarkGovernmentCheckResult embarkGovernmentCheckResult = checkEmbarkGovernment(playerName);
 		embarkGovernmentCheckResult.planet.removeBuilding(GovernmentModule.class);
 		Set<common.ISpecialUnit> specialUnitsToMake = new HashSet<common.ISpecialUnit>();
-		specialUnitsToMake.add(new common.GovernmentStarship(playerLogin+" government starship"));		
-		embarkGovernmentCheckResult.planet.mergeToUnasignedFleet(getPlayer(playerLogin), null, specialUnitsToMake);
+		specialUnitsToMake.add(new common.GovernmentStarship(playerName+" government starship"));		
+		mergeToUnasignedFleet(embarkGovernmentCheckResult.planet, playerName, null, specialUnitsToMake);
 		embarkGovernmentCheckResult.planet.setCarbon(embarkGovernmentCheckResult.planet.getCarbon() - embarkGovernmentCheckResult.carbonCost);
 		embarkGovernmentCheckResult.planet.setPopulation(embarkGovernmentCheckResult.planet.getPopulation() - embarkGovernmentCheckResult.populationCost);
 	}
@@ -963,18 +957,13 @@ public class GameBoard implements Serializable
 
 	public EmbarkGovernmentCheckResult checkEmbarkGovernment(String playerLogin) throws RunningGameCommandException
 	{
-		Area area = locateGovernmentModule(playerLogin);
+		Planet planet = locateGovernmentModule(playerLogin);
 
 		// If player has no government module.
-		if (area == null) throw new RunningGameCommandException("Cannot locate '" + playerLogin + "' government module.");
-
-		ICelestialBody celestialBody = area.getCelestialBody();
-		if (celestialBody == null) throw new RunningGameCommandException("Cannot locate '" + playerLogin + "' government module celestial body (unexpected error).");
-		if (!Planet.class.isInstance(celestialBody)) throw new RunningGameCommandException("Cannot locate '" + playerLogin + "' government module planet (unexpected error).");
-		Planet planet = Planet.class.cast(celestialBody);
+		if (planet == null) throw new RunningGameCommandException("Cannot locate '" + playerLogin + "' government module.");		
 
 		// If player is not the celestial body owner.
-		if (planet.getOwner() == null || !planet.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Player '" + playerLogin + "' is not the planet owner (unexpected error).");
+		if (planet.getOwnerName() == null || planet.getOwnerName().compareTo(playerLogin) != 0) throw new RunningGameCommandException("Player '" + playerLogin + "' is not the planet owner (unexpected error).");
 
 		GovernmentModule governmentModule = getBuilding(planet, GovernmentModule.class);
 
@@ -1010,7 +999,7 @@ public class GameBoard implements Serializable
 		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
 
 		// If player is not the celestial body owner.
-		if (productiveCelestialBody.getOwner() == null || !productiveCelestialBody.getOwner().isNamed(player.getName())) return false;
+		if (productiveCelestialBody.getOwnerName() == null || productiveCelestialBody.getOwnerName().compareTo(player.getName()) != 0) return false;
 
 		ABuilding building = getBuildingFromClientType(productiveCelestialBody, common.PulsarLauchingPad.class);
 
@@ -1059,23 +1048,19 @@ public class GameBoard implements Serializable
 	}
 	
 	public SettleGovernmentCheckResult checkSettleGovernment(String playerLogin, String planetName) throws RunningGameCommandException
-	{				
-		RealLocation celestialBodyLocation = getCelestialBodyLocation(planetName);
-		if (celestialBodyLocation == null) throw new RunningGameCommandException("Celestial body '" + planetName + "' does not exist.");
-
-		Area area = getNullArea(celestialBodyLocation);
-		ICelestialBody celestialBody = area.getCelestialBody();
-
+	{
+		ICelestialBody celestialBody = getCelestialBody(planetName);
+				
 		// If celestial body is not a productive one.
 		if (!Planet.class.isInstance(celestialBody)) throw new RunningGameCommandException("Can only settle on planets, '"+planetName+"' is not a planet.");
 		Planet planet = Planet.class.cast(celestialBody);
 
 		// If player is not the celestial body owner.
-		if (planet.getOwner() == null || !planet.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("'"+planetName+"' is not '"+planetName+"' owner.");
+		if (planet.getOwnerName() == null || planet.getOwnerName().compareTo(playerLogin) != 0) throw new RunningGameCommandException("'"+planetName+"' is not '"+planetName+"' owner.");
 
 		// Check if government fleet is on the planet.
 		Fleet governmentalFleet = null;
-		for(Fleet f : getUnits(area, Fleet.class, playerLogin))
+		for(Fleet f : getUnits(planet.getLocation(), Fleet.class, playerLogin))
 		{
 			if (f.isGovernmentFleet())
 			{
@@ -1159,7 +1144,7 @@ public class GameBoard implements Serializable
 		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
 
 		// If player is not the celestial body owner.
-		if (productiveCelestialBody.getOwner() == null || !productiveCelestialBody.getOwner().isNamed(playerLogin)) throw new CelestialBodyBuildException("Player '" + playerLogin + "' is not the '" + celestialBodyName + "' celestial body owner.");
+		if (productiveCelestialBody.getOwnerName() == null || productiveCelestialBody.getOwnerName().compareTo(playerLogin) != 0) throw new CelestialBodyBuildException("Player '" + playerLogin + "' is not the '" + celestialBodyName + "' celestial body owner.");
 
 		// If this productive celestial body build was already used this turn.
 		if (productiveCelestialBody.getLastBuildDate() >= date) throw new CelestialBodyBuildException("Celestial body '" + celestialBodyName + "' already in work for this turn.");
@@ -1241,10 +1226,10 @@ public class GameBoard implements Serializable
 		AntiProbeMissile antiProbeMissile = getUnit(AntiProbeMissile.class, playerLogin, antiProbeMissileName);
 		if (antiProbeMissile == null) throw new RunningGameCommandException("AntiProbeMissile '" + antiProbeMissileName + "' does not exist.");
 
-		Area area = getNullArea(antiProbeMissile.getCurrentLocation());
+		Area area = getNullArea(antiProbeMissile.getRealLocation());
 		if (area == null) throw new RunningGameCommandException("AntiProbeMissile '" + antiProbeMissileName + "' does not exist.");
 
-		if (!antiProbeMissile.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Unexpected error : " + playerLogin + " is not '" + antiProbeMissileName + "' anti-probe missile owner");
+		if (antiProbeMissile.getOwnerName().compareTo(playerLogin) != 0) throw new RunningGameCommandException("Unexpected error : " + playerLogin + " is not '" + antiProbeMissileName + "' anti-probe missile owner");
 
 		if (antiProbeMissile.isMoving()) throw new RunningGameCommandException("AntiProbeMissile '" + antiProbeMissileName + "' has already been fired.");
 
@@ -1276,7 +1261,7 @@ public class GameBoard implements Serializable
 		Area destinationArea = getNullArea(destination);
 		if (destinationArea == null) throw new RunningGameCommandException("AntiProbeMissile '" + antiProbeMissileName + "' target '" + targetProbeName + "' does not exist.");
 
-		return new FireAntiProbeMissileCheckResult(area, antiProbeMissile, targetProbeName, antiProbeMissile.getCurrentLocation(), destination);
+		return new FireAntiProbeMissileCheckResult(area, antiProbeMissile, targetProbeName, antiProbeMissile.getRealLocation(), destination);
 	}
 
 	public boolean canLaunchProbe(String playerLogin, String probeName, RealLocation destination)
@@ -1319,13 +1304,13 @@ public class GameBoard implements Serializable
 		Probe probe = getUnit(Probe.class, playerLogin, probeName);
 		if (probe == null) throw new RunningGameCommandException("Probe '" + probeName + "' does not exist.");
 
-		RealLocation location = probe.getCurrentLocation();
+		RealLocation location = probe.getRealLocation();
 		if (location == null) throw new RunningGameCommandException("Probe '" + probeName + "' does not exist.");
 
 		Area area = getNullArea(location);
 		if (area == null) throw new RunningGameCommandException("Probe '" + probeName + "' does not exist.");
 
-		if (!probe.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Unexpected error : " + playerLogin + " is not '" + probeName + "' probe owner");
+		if (probe.getOwnerName().compareTo(playerLogin) != 0) throw new RunningGameCommandException("Unexpected error : " + playerLogin + " is not '" + probeName + "' probe owner");
 
 		if (probe.isMoving()) throw new RunningGameCommandException("Probe '" + probeName + "' has already been launched.");
 
@@ -1384,13 +1369,13 @@ public class GameBoard implements Serializable
 		Fleet fleet = getUnit(Fleet.class, playerLogin, fleetName);
 		if (fleet == null) throw new RunningGameCommandException("Fleet '" + fleetName + "' does not exist.");
 
-		RealLocation location = fleet.getCurrentLocation();
+		RealLocation location = fleet.getRealLocation();
 		if (location == null) throw new RunningGameCommandException("Fleet '" + fleetName + "' does not exist.");
 
 		Area area = getNullArea(location);
 		if (area == null) throw new RunningGameCommandException("Fleet '" + fleetName + "' does not exist.");
 
-		if (!fleet.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Unexpected error : " + playerLogin + " is not '" + fleetName + "' fleet owner");
+		if (fleet.getOwnerName().compareTo(playerLogin) != 0) throw new RunningGameCommandException("Unexpected error : " + playerLogin + " is not '" + fleetName + "' fleet owner");
 
 		// Check paths
 		Stack<common.Fleet.Move> locatedCheckpoints = new Stack<common.Fleet.Move>();
@@ -1398,17 +1383,17 @@ public class GameBoard implements Serializable
 		RealLocation currentStart = (fleet.isMoving() ? fleet.getDestinationLocation() : location);
 		for(common.Fleet.Move move : checkpoints)
 		{
-			RealLocation destinationLocation = getCelestialBodyLocation(move.getDestinationName());
+			Location destinationLocation = getCelestialBody(move.getDestinationName()).getLocation();
 			if (destinationLocation == null) throw new RunningGameCommandException("Unexpected error : checkpoint destination '" + move.getDestinationName() + "' not found.");
 
-			for(RealLocation pathStep : SEPUtils.getAllPathLoc(currentStart, destinationLocation))
+			for(RealLocation pathStep : SEPUtils.getAllPathLoc(currentStart, destinationLocation.asRealLocation()))
 			{
 				if (getNullArea(pathStep) != null && getNullArea(pathStep).isSun()) throw new RunningGameCommandException("Impossible path : " + currentStart + " to " + destinationLocation + ", cannot travel the sun.");
 			}
 
-			currentStart = destinationLocation;
+			currentStart = destinationLocation.asRealLocation();
 
-			locatedCheckpoints.add(new common.Fleet.Move(move, destinationLocation));
+			locatedCheckpoints.add(new common.Fleet.Move(move, destinationLocation.asRealLocation()));
 		}
 
 		return new MoveFleetCheckResult(area, fleet, locatedCheckpoints);
@@ -1430,19 +1415,17 @@ public class GameBoard implements Serializable
 	public void formFleet(String playerLogin, String planetName, String fleetName, Map<common.StarshipTemplate, Integer> fleetToFormStarships, Set<common.ISpecialUnit> fleetToFormSpecialUnits) throws RunningGameCommandException
 	{
 		FormFleetCheckResult formFleetCheckResult = checkFormFleet(playerLogin, planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits);
-		formFleetCheckResult.area.updateUnit(formFleetCheckResult.newFleet);
-		formFleetCheckResult.productiveCelestialBody.removeFromUnasignedFleet(getPlayer(playerLogin), fleetToFormStarships, fleetToFormSpecialUnits);
+		units.put(formFleetCheckResult.newFleet.getKey(), formFleetCheckResult.newFleet);		
+		formFleetCheckResult.productiveCelestialBody.removeFromUnasignedFleet(playerLogin, fleetToFormStarships, fleetToFormSpecialUnits);
 	}
 
 	private static class FormFleetCheckResult
 	{
-		final Area						area;
 		final ProductiveCelestialBody	productiveCelestialBody;
 		final Fleet						newFleet;
 
-		public FormFleetCheckResult(Area area, ProductiveCelestialBody productiveCelestialBody, Fleet newFleet)
+		public FormFleetCheckResult(ProductiveCelestialBody productiveCelestialBody, Fleet newFleet)
 		{
-			this.area = area;
 			this.productiveCelestialBody = productiveCelestialBody;
 			this.newFleet = newFleet;
 		}
@@ -1450,12 +1433,7 @@ public class GameBoard implements Serializable
 
 	private FormFleetCheckResult checkFormFleet(String playerLogin, String planetName, String fleetName, Map<common.StarshipTemplate, Integer> fleetToFormStarships, Set<common.ISpecialUnit> fleetToFormSpecialUnits) throws RunningGameCommandException
 	{
-		RealLocation location = getCelestialBodyLocation(planetName);
-		Area area = getNullArea(location);
-
-		if (area == null) throw new RunningGameCommandException("Celestial body '" + planetName + "' does not exist.");
-		ICelestialBody celestialBody = area.getCelestialBody();
-
+		ICelestialBody celestialBody = getCelestialBody(planetName);
 		if (celestialBody == null) throw new RunningGameCommandException("Celestial body '" + planetName + "' does not exist.");
 
 		// If celestial body is not a productive one.
@@ -1485,13 +1463,10 @@ public class GameBoard implements Serializable
 			
 			if (!unasignedFleet.getSpecialUnits().contains(u)) throw new RunningGameCommandException("Unasigned fleet does not have require special unit '"+u.toString()+"'");
 		}
-		
-		Player owner = getPlayer(playerLogin);
-		if (owner == null) throw new RunningGameCommandException("Unknown player name '" + playerLogin + "'");
+				
+		Fleet newFleet = new Fleet(this, fleetName, playerLogin, productiveCelestialBody.getLocation().asRealLocation(), fleetToFormStarships, fleetToFormSpecialUnits, false);
 
-		Fleet newFleet = new Fleet(fleetName, owner, location, fleetToFormStarships, fleetToFormSpecialUnits, false);
-
-		return new FormFleetCheckResult(area, productiveCelestialBody, newFleet);
+		return new FormFleetCheckResult(productiveCelestialBody, newFleet);
 	}
 
 	public boolean canDismantleFleet(String playerLogin, String fleetName)
@@ -1507,11 +1482,12 @@ public class GameBoard implements Serializable
 		return true;
 	}
 
-	public void dismantleFleet(String playerLogin, String fleetName) throws RunningGameCommandException
+	public void dismantleFleet(String playerName, String fleetName) throws RunningGameCommandException
 	{
-		DismantleFleetCheckResult dismantleFleetCheckResult = checkDismantleFleet(playerLogin, fleetName);
-		dismantleFleetCheckResult.area.removeUnit(dismantleFleetCheckResult.fleet.getClass(), dismantleFleetCheckResult.fleet.getOwnerName(), dismantleFleetCheckResult.fleet.getName());
-		dismantleFleetCheckResult.productiveCelestialBody.mergeToUnasignedFleet(getPlayer(playerLogin), dismantleFleetCheckResult.fleet.getStarships(), dismantleFleetCheckResult.fleet.getSpecialUnits());
+		DismantleFleetCheckResult dismantleFleetCheckResult = checkDismantleFleet(playerName, fleetName);
+		
+		units.remove(dismantleFleetCheckResult.fleet.getKey());
+		mergeToUnasignedFleet(dismantleFleetCheckResult.productiveCelestialBody, playerName, dismantleFleetCheckResult.fleet.getStarships(), dismantleFleetCheckResult.fleet.getSpecialUnits());
 	}
 
 	private static class DismantleFleetCheckResult
@@ -1533,7 +1509,7 @@ public class GameBoard implements Serializable
 		Fleet fleet = getUnit(Fleet.class, playerLogin, fleetName);
 		if (fleet == null) throw new RunningGameCommandException("Fleet '" + fleetName + "' does not exist.");
 
-		RealLocation location = fleet.getCurrentLocation();
+		RealLocation location = fleet.getRealLocation();
 		Area area = getNullArea(location);
 
 		if (area == null) throw new RunningGameCommandException("Fleet '" + fleetName + "' does not exist.");
@@ -1566,7 +1542,7 @@ public class GameBoard implements Serializable
 		MakeProbesCheckResult makeProbesCheckResult = checkMakeProbes(playerLogin, planetName, probeName, quantity);
 		for(Probe p : makeProbesCheckResult.newProbes)
 		{
-			makeProbesCheckResult.area.updateUnit(p);
+			units.put(p.getKey(), p);
 		}
 		makeProbesCheckResult.planet.setCarbon(makeProbesCheckResult.planet.getCarbon() - makeProbesCheckResult.carbonCost);
 		makeProbesCheckResult.planet.setPopulation(makeProbesCheckResult.planet.getPopulation() - makeProbesCheckResult.populationCost);
@@ -1574,16 +1550,14 @@ public class GameBoard implements Serializable
 
 	private static class MakeProbesCheckResult
 	{
-		final Area			area;
 		final Planet		planet;
 		final int			carbonCost;
 		final int			populationCost;
 		final StarshipPlant	starshipPlant;
 		final Set<Probe>	newProbes;
 
-		public MakeProbesCheckResult(Area area, Planet planet, int carbonCost, int populationCost, StarshipPlant starshipPlant, Set<Probe> newProbes)
+		public MakeProbesCheckResult(Planet planet, int carbonCost, int populationCost, StarshipPlant starshipPlant, Set<Probe> newProbes)
 		{
-			this.area = area;
 			this.planet = planet;
 			this.carbonCost = carbonCost;
 			this.populationCost = populationCost;
@@ -1594,12 +1568,7 @@ public class GameBoard implements Serializable
 
 	private MakeProbesCheckResult checkMakeProbes(String playerLogin, String planetName, String probeName, int quantity) throws RunningGameCommandException
 	{
-		RealLocation location = getCelestialBodyLocation(planetName);
-		Area area = getNullArea(location);
-
-		if (area == null) throw new RunningGameCommandException("Celestial body '" + planetName + "' does not exist.");
-		ICelestialBody celestialBody = area.getCelestialBody();
-
+		ICelestialBody celestialBody = getCelestialBody(planetName);
 		if (celestialBody == null) throw new RunningGameCommandException("Celestial body '" + planetName + "' does not exist.");
 
 		// If celestial body is not a planet.
@@ -1607,7 +1576,7 @@ public class GameBoard implements Serializable
 		Planet planet = Planet.class.cast(celestialBody);
 
 		// If player is not the celestial body owner.
-		if (planet.getOwner() == null || !planet.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Player '" + playerLogin + "' is not the '" + planetName + "' planet owner.");
+		if (planet.getOwnerName() == null || planet.getOwnerName().compareTo(playerLogin) != 0) throw new RunningGameCommandException("Player '" + playerLogin + "' is not the '" + planetName + "' planet owner.");
 
 		StarshipPlant starshipPlant = getBuilding(planet, StarshipPlant.class);
 
@@ -1626,10 +1595,7 @@ public class GameBoard implements Serializable
 
 		if (planet.getCarbon() < carbonCost) throw new RunningGameCommandException("Not enough carbon.");
 		if (planet.getPopulation() < populationCost) throw new RunningGameCommandException("Not enough population.");
-
-		Player owner = getPlayer(playerLogin);
-		if (owner == null) throw new RunningGameCommandException("Unknown player name '" + playerLogin + "'");
-
+		
 		if (getUnit(Probe.class, playerLogin, probeName) != null || getUnit(Probe.class, playerLogin, probeName + "1") != null)
 		{
 			throw new RunningGameCommandException("Probe serial '" + probeName + "' already exist.");
@@ -1638,10 +1604,10 @@ public class GameBoard implements Serializable
 		Set<Probe> newProbes = new HashSet<Probe>();
 		for(int i = 0; i < quantity; ++i)
 		{
-			newProbes.add(new Probe(probeName + i, owner, location, false));
+			newProbes.add(new Probe(this, probeName + i, playerLogin, planet.getLocation().asRealLocation(), false));
 		}
 
-		return new MakeProbesCheckResult(area, planet, carbonCost, populationCost, starshipPlant, newProbes);
+		return new MakeProbesCheckResult(planet, carbonCost, populationCost, starshipPlant, newProbes);
 	}
 
 	public boolean canMakeAntiProbeMissiles(String playerLogin, String planetName, String antiProbeMissileName, int quantity)
@@ -1662,7 +1628,7 @@ public class GameBoard implements Serializable
 		MakeAntiProbeMissilesCheckResult makeAntiProbeMissilesCheckResult = checkMakeAntiProbeMissiles(playerLogin, planetName, antiProbeMissileName, quantity);
 		for(AntiProbeMissile p : makeAntiProbeMissilesCheckResult.newAntiProbeMissiles)
 		{
-			makeAntiProbeMissilesCheckResult.area.updateUnit(p);
+			units.put(p.getKey(), p);
 		}
 		makeAntiProbeMissilesCheckResult.planet.setCarbon(makeAntiProbeMissilesCheckResult.planet.getCarbon() - makeAntiProbeMissilesCheckResult.carbonCost);
 		makeAntiProbeMissilesCheckResult.planet.setPopulation(makeAntiProbeMissilesCheckResult.planet.getPopulation() - makeAntiProbeMissilesCheckResult.populationCost);
@@ -1670,16 +1636,14 @@ public class GameBoard implements Serializable
 
 	private static class MakeAntiProbeMissilesCheckResult
 	{
-		final Area					area;
 		final Planet				planet;
 		final int					carbonCost;
 		final int					populationCost;
 		final StarshipPlant			starshipPlant;
 		final Set<AntiProbeMissile>	newAntiProbeMissiles;
 
-		public MakeAntiProbeMissilesCheckResult(Area area, Planet planet, int carbonCost, int populationCost, StarshipPlant starshipPlant, Set<AntiProbeMissile> newAntiProbeMissiles)
+		public MakeAntiProbeMissilesCheckResult(Planet planet, int carbonCost, int populationCost, StarshipPlant starshipPlant, Set<AntiProbeMissile> newAntiProbeMissiles)
 		{
-			this.area = area;
 			this.planet = planet;
 			this.carbonCost = carbonCost;
 			this.populationCost = populationCost;
@@ -1690,11 +1654,7 @@ public class GameBoard implements Serializable
 
 	private MakeAntiProbeMissilesCheckResult checkMakeAntiProbeMissiles(String playerLogin, String planetName, String antiProbeMissileName, int quantity) throws RunningGameCommandException
 	{
-		RealLocation location = getCelestialBodyLocation(planetName);
-		Area area = getNullArea(location);
-
-		if (area == null) throw new RunningGameCommandException("Celestial body '" + planetName + "' does not exist.");
-		ICelestialBody celestialBody = area.getCelestialBody();
+		ICelestialBody celestialBody = getCelestialBody(planetName);
 
 		if (celestialBody == null) throw new RunningGameCommandException("Celestial body '" + planetName + "' does not exist.");
 
@@ -1703,7 +1663,7 @@ public class GameBoard implements Serializable
 		Planet planet = Planet.class.cast(celestialBody);
 
 		// If player is not the celestial body owner.
-		if (planet.getOwner() == null || !planet.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Player '" + playerLogin + "' is not the '" + planetName + "' planet owner.");
+		if (planet.getOwnerName() == null || planet.getOwnerName().compareTo(playerLogin) != 0) throw new RunningGameCommandException("Player '" + playerLogin + "' is not the '" + planetName + "' planet owner.");
 
 		StarshipPlant starshipPlant = getBuilding(planet, StarshipPlant.class);
 
@@ -1722,10 +1682,7 @@ public class GameBoard implements Serializable
 
 		if (planet.getCarbon() < carbonCost) throw new RunningGameCommandException("Not enough carbon.");
 		if (planet.getPopulation() < populationCost) throw new RunningGameCommandException("Not enough population.");
-
-		Player owner = getPlayer(playerLogin);
-		if (owner == null) throw new RunningGameCommandException("Unknown player name '" + playerLogin + "'");
-
+		
 		if (getUnit(Probe.class, playerLogin, antiProbeMissileName) != null || getUnit(Probe.class, playerLogin, antiProbeMissileName + "1") != null)
 		{
 			throw new RunningGameCommandException("AntiProbeMissile serial '" + antiProbeMissileName + "' already exist.");
@@ -1734,10 +1691,10 @@ public class GameBoard implements Serializable
 		Set<AntiProbeMissile> newAntiProbeMissiles = new HashSet<AntiProbeMissile>();
 		for(int i = 0; i < quantity; ++i)
 		{
-			newAntiProbeMissiles.add(new AntiProbeMissile(antiProbeMissileName + i, owner, location, false));
+			newAntiProbeMissiles.add(new AntiProbeMissile(this, antiProbeMissileName + i, playerLogin, planet.getLocation().asRealLocation(), false));
 		}
 
-		return new MakeAntiProbeMissilesCheckResult(area, planet, carbonCost, populationCost, starshipPlant, newAntiProbeMissiles);
+		return new MakeAntiProbeMissilesCheckResult(planet, carbonCost, populationCost, starshipPlant, newAntiProbeMissiles);
 	}
 
 	public boolean canMakeStarships(String playerLogin, String planetName, Map<common.StarshipTemplate, Integer> starshipsToMake)
@@ -1758,7 +1715,7 @@ public class GameBoard implements Serializable
 		MakeStarshipsCheckResult makeStarshipsCheckResult = checkMakeStarships(playerLogin, planetName, starshipsToMake);
 
 		Fleet unassignedFleet = makeStarshipsCheckResult.planet.getUnasignedFleet(playerLogin);
-		makeStarshipsCheckResult.planet.mergeToUnasignedFleet(getPlayer(playerLogin), starshipsToMake, null);
+		mergeToUnasignedFleet(makeStarshipsCheckResult.planet, playerLogin, starshipsToMake, null);
 
 		makeStarshipsCheckResult.planet.setCarbon(makeStarshipsCheckResult.planet.getCarbon() - makeStarshipsCheckResult.carbonCost);
 		makeStarshipsCheckResult.planet.setPopulation(makeStarshipsCheckResult.planet.getPopulation() - makeStarshipsCheckResult.populationCost);
@@ -1791,7 +1748,7 @@ public class GameBoard implements Serializable
 		Planet planet = Planet.class.cast(celestialBody);
 
 		// If player is not the celestial body owner.
-		if (planet.getOwner() == null || !planet.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException("Player '" + playerLogin + "' is not the '" + planetName + "' planet owner.");
+		if (planet.getOwnerName() == null || planet.getOwnerName().compareTo(playerLogin) != 0) throw new RunningGameCommandException("Player '" + playerLogin + "' is not the '" + planetName + "' planet owner.");
 
 		StarshipPlant starshipPlant = getBuilding(planet, StarshipPlant.class);
 
@@ -1898,15 +1855,12 @@ public class GameBoard implements Serializable
 
 	private AttackEnemiesFleetCheckResult checkAttackEnemiesFleet(String playerLogin, String celestialBodyName) throws RunningGameCommandException
 	{
-		RealLocation location = getCelestialBodyLocation(celestialBodyName);
-		if (location == null) throw new RunningGameCommandException("Unknown celestial body '"+celestialBodyName+"'");
+		ICelestialBody celestialBody = getCelestialBody(celestialBodyName);
+		if (celestialBody == null || !ProductiveCelestialBody.class.isInstance(celestialBody)) throw new RunningGameCommandException("Celestial body '"+celestialBodyName+"' is not a productive celestial body.");
 		
-		Area area = getArea(location);
-		if (area == null || area.getCelestialBody() == null || !ProductiveCelestialBody.class.isInstance(area.getCelestialBody())) throw new RunningGameCommandException("Celestial body '"+celestialBodyName+"' is not a productive celestial body.");
+		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
 		
-		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(area.getCelestialBody());
-		
-		if (productiveCelestialBody.getOwner() == null || !productiveCelestialBody.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException(playerLogin+" is not '"+celestialBodyName+"' owner.");
+		if (productiveCelestialBody.getOwnerName() == null || productiveCelestialBody.getOwnerName().compareTo(playerLogin) != 0) throw new RunningGameCommandException(playerLogin+" is not '"+celestialBodyName+"' owner.");
 		
 		return new AttackEnemiesFleetCheckResult(productiveCelestialBody);			
 	}
@@ -1929,24 +1883,22 @@ public class GameBoard implements Serializable
 	public void buildSpaceRoad(String playerLogin, String productiveCelestialBodyNameA, String productiveCelestialBodyNameB) throws RunningGameCommandException
 	{
 		BuildSpaceRoadCheckResult buildSpaceRoadCheckResult = checkBuildSpaceRoad(playerLogin, productiveCelestialBodyNameA, productiveCelestialBodyNameB);
-		
-		buildSpaceRoadCheckResult.area.updateUnit(buildSpaceRoadCheckResult.deliverer);
-		buildSpaceRoadCheckResult.deliverer.launch(buildSpaceRoadCheckResult.sourceLocation, buildSpaceRoadCheckResult.destinationLocation);		
+				
+		units.put(buildSpaceRoadCheckResult.deliverer.getKey(), buildSpaceRoadCheckResult.deliverer);
+		buildSpaceRoadCheckResult.deliverer.launch(buildSpaceRoadCheckResult.sourceLocation.asRealLocation(), buildSpaceRoadCheckResult.destinationLocation.asRealLocation());		
 		buildSpaceRoadCheckResult.payer.setCarbon(buildSpaceRoadCheckResult.payer.getCarbon() - buildSpaceRoadCheckResult.price);
 	}
 
 	private static class BuildSpaceRoadCheckResult
 	{
-		final Area area;
 		final SpaceRoadDeliverer deliverer;
-		final RealLocation sourceLocation;
-		final RealLocation destinationLocation;
+		final Location sourceLocation;
+		final Location destinationLocation;
 		final ProductiveCelestialBody payer;
 		final int price;
 		
-		public BuildSpaceRoadCheckResult(Area area, ProductiveCelestialBody payer, int price, SpaceRoadDeliverer deliverer, RealLocation sourceLocation, RealLocation destinationLocation)
+		public BuildSpaceRoadCheckResult(ProductiveCelestialBody payer, int price, SpaceRoadDeliverer deliverer, Location sourceLocation, Location destinationLocation)
 		{
-			this.area = area;
 			this.payer = payer;
 			this.price = price;
 			this.deliverer = deliverer;
@@ -1957,26 +1909,18 @@ public class GameBoard implements Serializable
 
 	private BuildSpaceRoadCheckResult checkBuildSpaceRoad(String playerLogin, String sourceName, String destinationName) throws RunningGameCommandException
 	{
-		if (sourceName.compareTo(destinationName) == 0) throw new RunningGameCommandException("Cannot build space road locally.");
+		ICelestialBody celestialBody = getCelestialBody(sourceName);
+		if (celestialBody == null || !ProductiveCelestialBody.class.isInstance(celestialBody)) throw new RunningGameCommandException("Celestial body '"+sourceName+"' is not a productive celestial body.");
 		
-		RealLocation sourceLocation = getCelestialBodyLocation(sourceName);
-		if (sourceLocation == null) throw new RunningGameCommandException("Unknown celestial body '"+sourceName+"'");
-		
-		Area sourceArea = getNullArea(sourceLocation);
-		if (sourceArea == null || sourceArea.getCelestialBody() == null || !ProductiveCelestialBody.class.isInstance(sourceArea.getCelestialBody())) throw new RunningGameCommandException("Celestial body '"+sourceName+"' is not a productive celestial body.");
-		
-		ProductiveCelestialBody source = ProductiveCelestialBody.class.cast(sourceArea.getCelestialBody());
+		ProductiveCelestialBody source = ProductiveCelestialBody.class.cast(celestialBody);
 		
 		SpaceCounter sourceSpaceCounter = source.getBuilding(SpaceCounter.class);
 		if (sourceSpaceCounter == null) throw new RunningGameCommandException("'"+sourceName+"' has no space counter build.");
-				
-		RealLocation destinationLocation = getCelestialBodyLocation(destinationName);
-		if (destinationLocation == null) throw new RunningGameCommandException("Unknown celestial body '"+destinationName+"'");
 		
-		Area destinationArea = getNullArea(destinationLocation);
-		if (destinationArea == null || destinationArea.getCelestialBody() == null || !ProductiveCelestialBody.class.isInstance(destinationArea.getCelestialBody())) throw new RunningGameCommandException("Celestial body '"+destinationName+"' is not a productive celestial body.");
+		celestialBody = getCelestialBody(destinationName);
+		if (celestialBody == null || !ProductiveCelestialBody.class.isInstance(celestialBody)) throw new RunningGameCommandException("Celestial body '"+sourceName+"' is not a productive celestial body.");
 		
-		ProductiveCelestialBody destination = ProductiveCelestialBody.class.cast(destinationArea.getCelestialBody());
+		ProductiveCelestialBody destination = ProductiveCelestialBody.class.cast(celestialBody);
 		
 		SpaceCounter destinationSpaceCounter = destination.getBuilding(SpaceCounter.class);
 		if (destinationSpaceCounter == null) throw new RunningGameCommandException("'"+destinationName+"' has no space counter build.");		
@@ -1991,17 +1935,17 @@ public class GameBoard implements Serializable
 			throw new RunningGameCommandException("'"+sourceName+"' already has a space road linked from '"+sourceName+"'");
 		}
 		
-		double distance = SEPUtils.getDistance(sourceLocation, destinationLocation);
+		double distance = SEPUtils.getDistance(source.getLocation().asRealLocation(), destination.getLocation().asRealLocation());
 		int price = (int) (config.getSpaceRoadPricePerArea() * distance);
 		
-		if (source.getOwner() == null || !source.getOwner().isNamed(playerLogin) || sourceSpaceCounter == null || sourceSpaceCounter.getAvailableRoadsBuilder() <= 0 || source.getCarbon() < price)
+		if (source.getOwnerName() == null || source.getOwnerName().compareTo(playerLogin) != 0 || sourceSpaceCounter == null || sourceSpaceCounter.getAvailableRoadsBuilder() <= 0 || source.getCarbon() < price)
 		{
 			throw new RunningGameCommandException("None of the space road end can pay nor have free builder.");
 		}
 		
-		SpaceRoadDeliverer deliverer = new SpaceRoadDeliverer(sourceName+" to "+destinationName+" space road deliverer", getPlayer(playerLogin), sourceLocation, sourceName, destinationName);
+		SpaceRoadDeliverer deliverer = new SpaceRoadDeliverer(this, sourceName+" to "+destinationName+" space road deliverer", playerLogin, source.getLocation().asRealLocation(), sourceName, destinationName);
 		
-		return new BuildSpaceRoadCheckResult(sourceArea, source, price, deliverer, sourceLocation, destinationLocation);			
+		return new BuildSpaceRoadCheckResult(source, price, deliverer, source.getLocation(), destination.getLocation());			
 	}
 	
 	/////
@@ -2037,14 +1981,11 @@ public class GameBoard implements Serializable
 
 	private DemolishSpaceRoadCheckResult checkDemolishSpaceRoad(String playerLogin, String sourceName, String destinationName) throws RunningGameCommandException
 	{
-		RealLocation sourceLocation = getCelestialBodyLocation(sourceName);
-		if (sourceLocation == null) throw new RunningGameCommandException("Unknown celestial body '"+sourceName+"'");
+		ICelestialBody celestialBody = getCelestialBody(sourceName);
+		if (celestialBody == null || !ProductiveCelestialBody.class.isInstance(celestialBody)) throw new RunningGameCommandException("Celestial body '"+sourceName+"' is not a productive celestial body.");
 		
-		Area area = getNullArea(sourceLocation);
-		if (area == null || area.getCelestialBody() == null || !ProductiveCelestialBody.class.isInstance(area.getCelestialBody())) throw new RunningGameCommandException("Celestial body '"+sourceName+"' is not a productive celestial body.");
-		
-		ProductiveCelestialBody source = ProductiveCelestialBody.class.cast(area.getCelestialBody());
-		
+		ProductiveCelestialBody source = ProductiveCelestialBody.class.cast(celestialBody);
+				
 		SpaceCounter sourceSpaceCounter = source.getBuilding(SpaceCounter.class);
 		if (sourceSpaceCounter == null) throw new RunningGameCommandException("'"+sourceName+"' has no space counter build.");
 						
@@ -2084,26 +2025,21 @@ public class GameBoard implements Serializable
 	{
 		if (sourceName.compareTo(destinationName) == 0) throw new RunningGameCommandException("Cannot build space road locally.");
 		
-		RealLocation sourceLocation = getCelestialBodyLocation(sourceName);
-		if (sourceLocation == null) throw new RunningGameCommandException("Unknown celestial body '"+sourceName+"'");
+		ICelestialBody celestialBody = getCelestialBody(sourceName);
+		if (celestialBody == null || !ProductiveCelestialBody.class.isInstance(celestialBody)) throw new RunningGameCommandException("Celestial body '"+sourceName+"' is not a productive celestial body.");
 		
-		Area sourceArea = getNullArea(sourceLocation);
-		if (sourceArea == null || sourceArea.getCelestialBody() == null || !ProductiveCelestialBody.class.isInstance(sourceArea.getCelestialBody())) throw new RunningGameCommandException("Celestial body '"+sourceName+"' is not a productive celestial body.");
+		ProductiveCelestialBody source = ProductiveCelestialBody.class.cast(celestialBody);
 		
-		ProductiveCelestialBody source = ProductiveCelestialBody.class.cast(sourceArea.getCelestialBody());
-		
-		if (source.getOwner() == null || !source.getOwner().isNamed(playerLogin)) throw new RunningGameCommandException(playerLogin+" is no longer '"+sourceName+"' owner, space road deliver gave up.");
+		if (source.getOwnerName() == null || source.getOwnerName().compareTo(playerLogin) != 0) throw new RunningGameCommandException(playerLogin+" is no longer '"+sourceName+"' owner, space road deliver gave up.");
 		
 		SpaceCounter sourceSpaceCounter = source.getBuilding(SpaceCounter.class);
 		if (sourceSpaceCounter == null) throw new RunningGameCommandException("'"+sourceName+"' has no space counter built.");
 				
-		RealLocation destinationLocation = getCelestialBodyLocation(destinationName);
-		if (destinationLocation == null) throw new RunningGameCommandException("Unknown celestial body '"+destinationName+"'");
 		
-		Area destinationArea = getNullArea(destinationLocation);
-		if (destinationArea == null || destinationArea.getCelestialBody() == null || !ProductiveCelestialBody.class.isInstance(destinationArea.getCelestialBody())) throw new RunningGameCommandException("Celestial body '"+destinationName+"' is not a productive celestial body.");
+		celestialBody = getCelestialBody(destinationName);
+		if (celestialBody == null || !ProductiveCelestialBody.class.isInstance(celestialBody)) throw new RunningGameCommandException("Celestial body '"+sourceName+"' is not a productive celestial body.");
 		
-		ProductiveCelestialBody destination = ProductiveCelestialBody.class.cast(destinationArea.getCelestialBody());
+		ProductiveCelestialBody destination = ProductiveCelestialBody.class.cast(celestialBody);
 		
 		SpaceCounter destinationSpaceCounter = destination.getBuilding(SpaceCounter.class);
 		if (destinationSpaceCounter == null) throw new RunningGameCommandException("'"+destinationName+"' has no space counter built.");		
@@ -2135,8 +2071,10 @@ public class GameBoard implements Serializable
 			linkSpaceRoadCheckResult = null;
 		}
 		
-		getArea(spaceRoadDeliverer.getCurrentLocation()).removeUnit(spaceRoadDeliverer.getClass(), spaceRoadDeliverer.getOwnerName(), spaceRoadDeliverer.getName());
+		//SUIS LA : STOP, passer à une solution avec base de donnée intégrée, concevoir le MCD.
 		
+		units.remove(spaceRoadDeliverer.getKey());
+				
 		if (linkSpaceRoadCheckResult == null)
 		{
 			// Log space road link impossibility

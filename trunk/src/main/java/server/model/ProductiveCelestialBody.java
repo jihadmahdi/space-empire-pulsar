@@ -20,6 +20,7 @@ import server.SEPServer;
 
 import common.GameConfig;
 import common.Player;
+import common.SEPUtils.Location;
 
 
 
@@ -32,24 +33,29 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	
 	private static final long	serialVersionUID	= 1L;
 	
+	// Primary Key
+	private final ICelestialBody.Key key;
+	
+	// DB context
+	protected final GameBoard gameBoard;
+	
 	// Constants
-	private final String name;
 	private final int startingCarbonStock;
 	private final int slots;
 	
 	// Variables
 	private int carbon;
-	private Player owner;
+	private String ownerName;
 	private int carbonStock;
-	private final Map<Class<? extends ABuilding>, ABuilding> buildings;
-	private final Map<String, Fleet> unasignedFleets;	
+	private final Hashtable<Class<? extends ABuilding>, ABuilding> buildings;
+	private final Hashtable<String, Fleet.Key> playersUnasignedFleetsKeys;
 	private int lastBuildDate = -1;
 	
 	// Views
 	private PlayerDatedView<Integer> playersLastObservation = new PlayerDatedView<Integer>();
 	private PlayerDatedView<Integer> playersCarbonStockView = new PlayerDatedView<Integer>();
 	private PlayerDatedView<Integer> playersCarbonView = new PlayerDatedView<Integer>();
-	private PlayerDatedView<Player> playersOwnerView = new PlayerDatedView<Player>();
+	private PlayerDatedView<String> playersOwnerNameView = new PlayerDatedView<String>();
 	private PlayerDatedView<HashSet<common.IBuilding>> playersBuildingsView = new PlayerDatedView<HashSet<common.IBuilding>>();
 	private Map<String, PlayerDatedView<common.Fleet>> playersUnasignedFleetsView = new HashMap<String, PlayerDatedView<common.Fleet>>();
 	
@@ -69,23 +75,25 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	/**
 	 * Full constructor.
 	 */
-	public ProductiveCelestialBody(String name, int startingCarbonStock, int slots, Player owner)
+	public ProductiveCelestialBody(GameBoard gameBoard, String name, Location location, int startingCarbonStock, int slots, String ownerName)
 	{
-		this.name = name;
+		this.gameBoard = gameBoard;
+		this.key = new ICelestialBody.Key(name, location);
 		this.startingCarbonStock = startingCarbonStock;
 		this.carbonStock = this.startingCarbonStock;
 		this.slots = slots;
-		this.owner = owner;
-		this.buildings = new HashMap<Class<? extends ABuilding>, ABuilding>();
-		this.unasignedFleets = new HashMap<String, Fleet>();
+		this.ownerName = ownerName;
+		this.buildings = new Hashtable<Class<? extends ABuilding>, ABuilding>();
+		this.playersUnasignedFleetsKeys = new Hashtable<String, Fleet.Key>();
 	}
 	
 	/**
 	 * @param gameConfig
 	 */
-	public ProductiveCelestialBody(String name, GameConfig gameConfig, Class<? extends common.ICelestialBody> celestialBodyType)
+	public ProductiveCelestialBody(GameBoard gameBoard, String name, Location location, GameConfig gameConfig, Class<? extends common.ICelestialBody> celestialBodyType)
 	{
-		this.name = name;
+		this.gameBoard = gameBoard;
+		this.key = new ICelestialBody.Key(name, location);
 		
 		// Fix carbon amount to the mean value.
 		Integer[] carbonAmount = gameConfig.getCelestialBodiesStartingCarbonAmount().get(celestialBodyType);
@@ -98,10 +106,9 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		if (slots <= 0) slots = 1;
 		this.slots = slots;
 		
-		this.buildings = new HashMap<Class<? extends ABuilding>, ABuilding>();
-		this.unasignedFleets = new HashMap<String, Fleet>();
-		
-		this.owner = null;
+		this.buildings = new Hashtable<Class<? extends ABuilding>, ABuilding>();
+		this.playersUnasignedFleetsKeys = new Hashtable<String, Fleet.Key>();		
+		this.ownerName = null;
 	}
 	
 	public int getLastBuildDate()
@@ -160,19 +167,19 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	 * @see server.model.ICelestialBody#getOwner()
 	 */
 	@Override
-	public Player getOwner()
+	public String getOwnerName()
 	{
-		return owner;
+		return ownerName;
 	}
 	
-	protected Player getOwnerView(int date, String playerLogin, boolean isVisible)
+	protected String getOwnerNameView(int date, String playerLogin, boolean isVisible)
 	{
 		if (isVisible)
 		{
-			playersOwnerView.updateView(playerLogin, owner, date);
+			playersOwnerNameView.updateView(playerLogin, ownerName, date);
 		}
 		
-		return playersOwnerView.getLastValue(playerLogin, null);
+		return playersOwnerNameView.getLastValue(playerLogin, null);
 	}
 	
 	protected int getLastObservation(int date, String playerLogin, boolean isVisible)
@@ -187,7 +194,18 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	
 	public String getName()
 	{
-		return name;
+		return key.getName();
+	}
+	
+	public Location getLocation()
+	{
+		return key.getLocation();
+	}
+	
+	@Override
+	public ICelestialBody.Key getKey()
+	{
+		return key;
 	}
 
 	public int getCarbonStock()
@@ -248,20 +266,26 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		return buildingsView;
 	}
 	
+	protected Fleet getUnasignedFleet(String playerName)
+	{
+		if (!playersUnasignedFleetsKeys.containsKey(playerName)) return null;
+		return gameBoard.getUnit(getLocation(), Fleet.class, playerName, playersUnasignedFleetsKeys.get(playerName).getName());
+	}
+	
 	protected Map<String, common.Fleet> getUnasignedFleetView(int date, String playerLogin, boolean isVisible)
 	{
 		Map<String, common.Fleet> result = new HashMap<String, common.Fleet>();
 		
 		if (isVisible)
 		{
-			for(String player : unasignedFleets.keySet())
+			for(String player : playersUnasignedFleetsKeys.keySet())
 			{
 				if ((!playersUnasignedFleetsView.containsKey(player)) || playersUnasignedFleetsView.get(player) == null)
 				{
 					playersUnasignedFleetsView.put(player, new PlayerDatedView<common.Fleet>());
 				}
 				
-				playersUnasignedFleetsView.get(player).updateView(playerLogin, unasignedFleets.get(player).getPlayerView(date, playerLogin, isVisible), date);
+				playersUnasignedFleetsView.get(player).updateView(playerLogin, getUnasignedFleet(player).getPlayerView(date, playerLogin, isVisible), date);
 			}			
 		}
 		
@@ -277,48 +301,29 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		return result;
 	}
 	
-	protected Map<common.StarshipTemplate, Integer> getUnasignedFleetStarships(String playerLogin)
+	protected Map<common.StarshipTemplate, Integer> getUnasignedFleetStarships(String playerName)
 	{
-		if (!unasignedFleets.containsKey(playerLogin))
-		{
-			return null;
-		}
-		
-		return unasignedFleets.get(playerLogin).getStarships();
+		Fleet unasignedFleet = getUnasignedFleet(playerName);
+		return unasignedFleet == null ? null : unasignedFleet.getStarships();
 	}
 	
-	protected Set<common.ISpecialUnit> getUnasignedFleetSpecialUnits(String playerLogin)
+	protected Set<common.ISpecialUnit> getUnasignedFleetSpecialUnits(String playerName)
 	{
-		if (!unasignedFleets.containsKey(playerLogin))
-		{
-			return null;
-		}
-		
-		return unasignedFleets.get(playerLogin).getSpecialUnits();
+		Fleet unasignedFleet = getUnasignedFleet(playerName);
+		return unasignedFleet == null ? null : unasignedFleet.getSpecialUnits();		
 	}
 	
-	public void mergeToUnasignedFleet(Player player, Map<common.StarshipTemplate, Integer> starshipsToMake, Set<common.ISpecialUnit> specialUnitsToMake)
+	public void mergeToUnasignedFleet(String playerName, Map<common.StarshipTemplate, Integer> starshipsToMake, Set<common.ISpecialUnit> specialUnitsToMake)
 	{
-		if (!unasignedFleets.containsKey(player.getName()))
-		{
-			unasignedFleets.put(player.getName(), new Fleet("Unasigned fleet", player, null, starshipsToMake, specialUnitsToMake, true));
-		}
-		else
-		{
-			unasignedFleets.get(player.getName()).merge(starshipsToMake, specialUnitsToMake);
-		}		
+		gameBoard.mergeToUnasignedFleet(this, playerName, starshipsToMake, specialUnitsToMake);			
 	}	
 	
-	public void removeFromUnasignedFleet(Player player, Map<common.StarshipTemplate, Integer> fleetToForm, Set<common.ISpecialUnit> specialUnitsToForm)
+	public void removeFromUnasignedFleet(String playerName, Map<common.StarshipTemplate, Integer> fleetToRemove, Set<common.ISpecialUnit> specialUnitsToRemove)
 	{
-		if (unasignedFleets.get(player.getName()) == null) throw new Error("Tried to remove starships from an empty unasigned fleet.");
+		Fleet unasignedFleet = getUnasignedFleet(playerName);
+		if (unasignedFleet == null) throw new Error("Tried to remove starships from an empty unasigned fleet.");
 		
-		unasignedFleets.get(player.getName()).remove(fleetToForm, specialUnitsToForm);
-	}
-	
-	public Fleet getUnasignedFleet(String playerLogin)
-	{
-		return unasignedFleets.get(playerLogin);
+		unasignedFleet.remove(fleetToRemove, specialUnitsToRemove);
 	}
 	
 	public <B extends ABuilding> B getBuilding(Class<B> buildingType)
@@ -386,11 +391,6 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	{		
 		this.carbonStock -= generatedCarbon;
 	}
-	
-	public String getOwnerName()
-	{
-		return Player.getName(owner);
-	}
 
 	public void addConflictInititor(String initiatorLogin)
 	{
@@ -402,9 +402,9 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		return conflictInitiators;
 	}
 
-	public void changeOwner(Player newOwner)
+	public void changeOwner(String newOwnerName)
 	{
-		this.owner = newOwner;
+		this.ownerName = newOwnerName;
 	}
 
 	public void endConflict()

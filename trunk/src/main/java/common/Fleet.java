@@ -93,9 +93,9 @@ public class Fleet extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public Fleet(boolean isVisible, int lastObservation, String name, Player owner, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress, Map<StarshipTemplate, Integer> starships, Set<ISpecialUnit> specialUnits, Move currentMove, Stack<Move> checkpoints, boolean isUnasignedFleet)
+	public Fleet(boolean isVisible, int lastObservation, String name, String ownerName, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress, Map<StarshipTemplate, Integer> starships, Set<ISpecialUnit> specialUnits, Move currentMove, Stack<Move> checkpoints, boolean isUnasignedFleet)
 	{
-		super(isVisible, lastObservation, name, owner, sourceLocation, destinationLocation, currentLocation, travellingProgress);
+		super(isVisible, lastObservation, name, ownerName, sourceLocation, destinationLocation, currentLocation, travellingProgress);
 		this.starships = starships;
 		this.specialUnits = specialUnits;
 		this.currentMove = currentMove;

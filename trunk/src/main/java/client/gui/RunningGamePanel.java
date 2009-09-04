@@ -658,7 +658,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				public Component getListCellRendererComponent(JList list, Unit unit, int index, boolean isSelected, boolean cellHasFocus)
 				{
 					super.getListCellRendererComponent(list, unit, index, isSelected, cellHasFocus);
-					label.setText(unit.getClass().getSimpleName() + " [" + ((unit.getOwner() != null) ? unit.getOwnerName() : "unknown") + "] " + unit.getName());
+					label.setText(unit.getClass().getSimpleName() + " [" + ((unit.getOwnerName() != null) ? unit.getOwnerName() : "unknown") + "] " + unit.getName());
 					return label;
 				}
 			});
@@ -1046,7 +1046,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		getRunningGameFleetDetailsContent().setText(unit.toString());
 
-		boolean isUnitOwner = (unit.getOwner() != null && unit.getOwner().isNamed(player.getName()));
+		boolean isUnitOwner = (unit.getOwnerName() != null && unit.getOwnerName().compareTo(player.getName()) == 0);
 
 		try
 		{
@@ -1438,7 +1438,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		try
 		{
 			// Specific panel
-			if (productiveCelestialBody.getOwner() != null && productiveCelestialBody.getOwner().isNamed(player.getName()) && (selectedBuildings != null || productiveCelestialBody.canBuildType(selectedBuildingType)))
+			if (productiveCelestialBody.getOwnerName() != null && productiveCelestialBody.getOwnerName().compareTo(player.getName()) == 0 && (selectedBuildings != null || productiveCelestialBody.canBuildType(selectedBuildingType)))
 			{
 				if ((selectedBuildings != null && DefenseModule.class.isInstance(selectedBuildings)) || (selectedBuildingType != null && DefenseModule.class.equals(selectedBuildingType)))
 				{
