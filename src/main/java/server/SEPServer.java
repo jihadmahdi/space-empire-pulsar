@@ -424,7 +424,7 @@ public class SEPServer implements IServer, GameServerListener
 		public boolean canFirePulsarMissile(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException
 		{
 			if (getGameMove().isTurnEnded()) return false;
-			return getGameBoard().canFirePulsarMissile(getPlayer(), celestialBodyName);			
+			return getGameBoard().canFirePulsarMissile(getLogin(), celestialBodyName);			
 		}
 
 		@Override

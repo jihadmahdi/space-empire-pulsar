@@ -14,6 +14,7 @@ import java.util.Stack;
 import server.SEPServer;
 
 import common.Player;
+import common.Protocol.ServerRunningGame.RunningGameCommandException;
 import common.SEPUtils.RealLocation;
 
 /**
@@ -64,9 +65,9 @@ class SpaceCounter extends ABuilding implements Serializable
 		private final String sourceName;
 		private final String destinationName;
 
-		public SpaceRoadDeliverer(GameBoard gameBoard, String name, String ownerName, RealLocation sourceLocation, String sourceName, String destinationName)
+		public SpaceRoadDeliverer(DataBase db, String name, String ownerName, RealLocation sourceLocation, String sourceName, String destinationName)
 		{
-			super(gameBoard, name, ownerName, sourceLocation);
+			super(db, name, ownerName, sourceLocation);
 			this.sourceName = sourceName;
 			this.destinationName = destinationName;
 		}
@@ -94,7 +95,81 @@ class SpaceCounter extends ABuilding implements Serializable
 		{
 			setDestinationLocation(null);
 			super.endMove();
-			gameBoard.tryToLinkSpaceRoad(this);						
+			tryToLinkSpaceRoad();						
+		}
+		
+		private static class LinkSpaceRoadCheckResult
+		{
+			final SpaceCounter sourceSpaceCounter;
+			final SpaceCounter destinationSpaceCounter;
+			final SpaceRoad	spaceRoad;
+			
+			public LinkSpaceRoadCheckResult(SpaceCounter sourceSpaceCounter, SpaceCounter destinationSpaceCounter, SpaceRoad spaceRoad)
+			{
+				this.sourceSpaceCounter = sourceSpaceCounter;
+				this.destinationSpaceCounter = destinationSpaceCounter;
+				this.spaceRoad = spaceRoad;
+			}
+		}
+		
+		private LinkSpaceRoadCheckResult checkLinkSpaceRoad() throws RunningGameCommandException
+		{
+			if (sourceName.compareTo(destinationName) == 0) throw new RunningGameCommandException("Cannot build space road locally.");
+			
+			ProductiveCelestialBody source = db.getCelestialBody(sourceName, ProductiveCelestialBody.class, getOwnerName());
+			if (source == null) throw new RunningGameCommandException("Celestial body '"+sourceName+"' is not a productive celestial body.");
+			
+			SpaceCounter sourceSpaceCounter = source.getBuilding(SpaceCounter.class);
+			if (sourceSpaceCounter == null) throw new RunningGameCommandException("'"+sourceName+"' has no space counter built.");
+					
+			
+			ProductiveCelestialBody destination = db.getCelestialBody(destinationName, ProductiveCelestialBody.class);
+			if (destination == null) throw new RunningGameCommandException("Celestial body '"+sourceName+"' is not a productive celestial body.");
+			
+			SpaceCounter destinationSpaceCounter = destination.getBuilding(SpaceCounter.class);
+			if (destinationSpaceCounter == null) throw new RunningGameCommandException("'"+destinationName+"' has no space counter built.");		
+		
+			if (sourceSpaceCounter.hasSpaceRoadTo(destinationName))
+			{
+				throw new RunningGameCommandException("'"+sourceName+"' already has a space road to '"+destinationName+"'");
+			}
+			
+			if (sourceSpaceCounter.hasSpaceRoadLinkedFrom(sourceName))
+			{
+				throw new RunningGameCommandException("'"+sourceName+"' already has a space road linked from '"+sourceName+"'");
+			}
+
+			SpaceRoad spaceRoad = new SpaceRoad(db.getDate(), sourceName, destinationName, db.getGameConfig().getSpaceRoadsSpeed());
+			
+			return new LinkSpaceRoadCheckResult(sourceSpaceCounter, destinationSpaceCounter, spaceRoad);
+		}
+		
+		private boolean tryToLinkSpaceRoad()
+		{
+			LinkSpaceRoadCheckResult linkSpaceRoadCheckResult = null;
+			try
+			{
+				linkSpaceRoadCheckResult = checkLinkSpaceRoad();						
+			}
+			catch(Throwable t)
+			{
+				linkSpaceRoadCheckResult = null;
+			}
+			
+			db.removeUnit(getKey());
+					
+			if (linkSpaceRoadCheckResult == null)
+			{
+				// TODO: Log space road link impossibility
+				// spaceRoadDeliverer.addTravelligLogEntry(logEntry)
+				return false;
+			}
+			else
+			{
+				linkSpaceRoadCheckResult.sourceSpaceCounter.buildSpaceRoad(linkSpaceRoadCheckResult.spaceRoad);
+				linkSpaceRoadCheckResult.destinationSpaceCounter.linkSpaceRoad(linkSpaceRoadCheckResult.spaceRoad);
+				return true;
+			}
 		}
 		
 		public void launch(RealLocation sourceLocation, RealLocation destinationLocation)
@@ -124,9 +199,9 @@ class SpaceCounter extends ABuilding implements Serializable
 		 * @param name
 		 * @param owner
 		 */
-		public CarbonCarrier(GameBoard gameBoard, String name, String ownerName, RealLocation sourceLocation)
+		public CarbonCarrier(DataBase db, String name, String ownerName, RealLocation sourceLocation)
 		{
-			super(gameBoard, name, ownerName, sourceLocation);			
+			super(db, name, ownerName, sourceLocation);			
 		}
 
 		/* (non-Javadoc)

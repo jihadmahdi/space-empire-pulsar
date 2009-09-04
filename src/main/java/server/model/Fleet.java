@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import server.SEPServer;
+
 import common.GovernmentStarship;
 import common.Player;
 import common.SEPUtils;
@@ -39,14 +41,14 @@ public class Fleet extends Unit implements Serializable
 	PlayerDatedView<HashMap<common.StarshipTemplate, Integer>>	playersStarshipsView	= new PlayerDatedView<HashMap<common.StarshipTemplate, Integer>>();
 	PlayerDatedView<HashSet<common.ISpecialUnit>> playersSpecialUnitsView = new PlayerDatedView<HashSet<common.ISpecialUnit>>();
 
-	public Fleet(GameBoard gameBoard, String name, String ownerName, RealLocation sourceLocation, Map<common.StarshipTemplate, Integer> starships, Set<common.ISpecialUnit> specialUnits, boolean isUnassigned)
+	public Fleet(DataBase db, String name, String ownerName, RealLocation sourceLocation, Map<common.StarshipTemplate, Integer> starships, Set<common.ISpecialUnit> specialUnits, boolean isUnassigned)
 	{
-		this(gameBoard, new Key(name, ownerName), sourceLocation, starships, specialUnits, isUnassigned);		
+		this(db, new Key(name, ownerName), sourceLocation, starships, specialUnits, isUnassigned);		
 	}
 	
-	public Fleet(GameBoard gameBoard, Key key, RealLocation sourceLocation, Map<common.StarshipTemplate, Integer> starships, Set<common.ISpecialUnit> specialUnits, boolean isUnassigned)
+	public Fleet(DataBase db, Key key, RealLocation sourceLocation, Map<common.StarshipTemplate, Integer> starships, Set<common.ISpecialUnit> specialUnits, boolean isUnassigned)
 	{
-		super(gameBoard, key, sourceLocation);
+		super(db, key, sourceLocation);
 		
 		if (starships != null)
 		{
@@ -94,6 +96,11 @@ public class Fleet extends Unit implements Serializable
 		}
 
 		return false;
+	}
+	
+	public boolean isUnassignedFleet()
+	{
+		return isUnassigned;
 	}
 	
 	public Map<common.StarshipTemplate, Integer> getStarships()
@@ -198,7 +205,7 @@ public class Fleet extends Unit implements Serializable
 		{
 			if (currentMove.getDelay() == 0)
 			{
-				setDestinationLocation(gameBoard.getCelestialBody(currentMove.getDestinationName()).getLocation().asRealLocation());
+				setDestinationLocation(db.getCelestialBody(currentMove.getDestinationName()).getLocation().asRealLocation());
 				return true;
 			}
 			else
@@ -216,7 +223,9 @@ public class Fleet extends Unit implements Serializable
 		setDestinationLocation(null);
 		if (currentMove.isAnAttack())
 		{
-			gameBoard.initiateConflict(getRealLocation(), getOwnerName());
+			ProductiveCelestialBody productiveCelestialBody = db.getCelestialBody(getRealLocation().asLocation(), ProductiveCelestialBody.class);
+			if (productiveCelestialBody == null) throw new SEPServer.SEPImplementationException("Cannot set conflict on location '"+getRealLocation()+"', no ProductiveCelestialBody found there.");	
+			productiveCelestialBody.addConflictInititor(getOwnerName());
 		}		
 		currentMove = null; // Needed for the next startMove call.
 		super.endMove();

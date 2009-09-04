@@ -70,7 +70,7 @@ abstract class Unit implements Serializable
 	}
 	
 	// DB context
-	protected final GameBoard gameBoard;
+	protected final DataBase db;
 	
 	// Constants
 	private final Key key;
@@ -88,9 +88,9 @@ abstract class Unit implements Serializable
 	private final PlayerDatedView<Integer>	playersLastObservation	= new PlayerDatedView<Integer>();
 	private final PlayerDatedView<RealLocation> playersCurrentLocationView = new PlayerDatedView<RealLocation>();
 
-	public Unit(GameBoard gameBoard, Key key, RealLocation sourceLocation)
+	public Unit(DataBase db, Key key, RealLocation sourceLocation)
 	{
-		this.gameBoard = gameBoard;
+		this.db = db;
 		this.key = key;
 		this.sourceLocation = sourceLocation;
 	}
@@ -98,9 +98,9 @@ abstract class Unit implements Serializable
 	/**
 	 * Full constructor.
 	 */
-	public Unit(GameBoard gameBoard, String name, String ownerName, RealLocation sourceLocation)
+	public Unit(DataBase db, String name, String ownerName, RealLocation sourceLocation)
 	{
-		this(gameBoard, new Key(name, ownerName), sourceLocation);		
+		this(db, new Key(name, ownerName), sourceLocation);		
 	}
 
 	public Key getKey()

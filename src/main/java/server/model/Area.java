@@ -41,7 +41,7 @@ class Area implements Serializable
 	}
 	
 	// DB context
-	private final GameBoard gameBoard;
+	private final DataBase db;
 	
 	// Primary Key
 	private final common.SEPUtils.Location location;
@@ -59,15 +59,20 @@ class Area implements Serializable
 	// Markers
 	private final Map<String, Set<common.IMarker>> playersMarkers = new HashMap<String, Set<common.IMarker>>();
 	
-	public Area(GameBoard gameBoard, common.SEPUtils.Location location)
+	public Area(DataBase db, common.SEPUtils.Location location)
 	{
-		this.gameBoard = gameBoard;
+		this.db = db;
 		this.location = location;
 	}
 	
-	protected ICelestialBody getCelestialBody()
+	public String getCelestialBodyName()
+	{
+		return celestialBodyName;
+	}
+	
+	public ICelestialBody getCelestialBody()
 	{		
-		return celestialBodyName == null ? null : gameBoard.getCelestialBody(celestialBodyName);
+		return celestialBodyName == null ? null : db.getCelestialBody(celestialBodyName);
 	}
 	
 	/**
@@ -126,7 +131,7 @@ class Area implements Serializable
 			
 			unitsView = new HashSet<common.Unit>();
 			
-			for(Unit u : gameBoard.getUnits(location))
+			for(Unit u : db.getUnits(location))
 			{
 				unitsView.add(u.getPlayerView(date, playerLogin, isVisible));
 			}
@@ -141,7 +146,7 @@ class Area implements Serializable
 				{
 					UnitMarker um = UnitMarker.class.cast(m);
 					
-					Unit unit = gameBoard.getUnit(location, getServerUnitType(um.getUnit().getClass()), um.getUnit().getOwnerName(), um.getUnit().getName());
+					Unit unit = db.getUnit(location, getServerUnitType(um.getUnit().getClass()), um.getUnit().getOwnerName(), um.getUnit().getName());
 					
 					if (unit == null) markersView.add(um);
 					
@@ -164,7 +169,7 @@ class Area implements Serializable
 				{
 					modified = true;
 					
-					Unit unit = gameBoard.getUnit(location, getServerUnitType(u.getClass()), u.getOwnerName(), u.getName());						
+					Unit unit = db.getUnit(location, getServerUnitType(u.getClass()), u.getOwnerName(), u.getName());						
 					if (unit == null) continue;
 					
 					unitsView.add(unit.getPlayerView(date, playerLogin, true));					

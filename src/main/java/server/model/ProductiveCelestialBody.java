@@ -21,6 +21,7 @@ import server.SEPServer;
 import common.GameConfig;
 import common.Player;
 import common.SEPUtils.Location;
+import common.SEPUtils.RealLocation;
 
 
 
@@ -37,7 +38,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	private final ICelestialBody.Key key;
 	
 	// DB context
-	protected final GameBoard gameBoard;
+	protected final DataBase db;
 	
 	// Constants
 	private final int startingCarbonStock;
@@ -75,9 +76,9 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	/**
 	 * Full constructor.
 	 */
-	public ProductiveCelestialBody(GameBoard gameBoard, String name, Location location, int startingCarbonStock, int slots, String ownerName)
+	public ProductiveCelestialBody(DataBase db, String name, Location location, int startingCarbonStock, int slots, String ownerName)
 	{
-		this.gameBoard = gameBoard;
+		this.db = db;
 		this.key = new ICelestialBody.Key(name, location);
 		this.startingCarbonStock = startingCarbonStock;
 		this.carbonStock = this.startingCarbonStock;
@@ -90,9 +91,9 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	/**
 	 * @param gameConfig
 	 */
-	public ProductiveCelestialBody(GameBoard gameBoard, String name, Location location, GameConfig gameConfig, Class<? extends common.ICelestialBody> celestialBodyType)
+	public ProductiveCelestialBody(DataBase db, String name, Location location, GameConfig gameConfig, Class<? extends common.ICelestialBody> celestialBodyType)
 	{
-		this.gameBoard = gameBoard;
+		this.db = db;
 		this.key = new ICelestialBody.Key(name, location);
 		
 		// Fix carbon amount to the mean value.
@@ -269,7 +270,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	protected Fleet getUnasignedFleet(String playerName)
 	{
 		if (!playersUnasignedFleetsKeys.containsKey(playerName)) return null;
-		return gameBoard.getUnit(getLocation(), Fleet.class, playerName, playersUnasignedFleetsKeys.get(playerName).getName());
+		return db.getUnit(getLocation(), Fleet.class, playerName, playersUnasignedFleetsKeys.get(playerName).getName());
 	}
 	
 	protected Map<String, common.Fleet> getUnasignedFleetView(int date, String playerLogin, boolean isVisible)
@@ -313,9 +314,19 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		return unasignedFleet == null ? null : unasignedFleet.getSpecialUnits();		
 	}
 	
-	public void mergeToUnasignedFleet(String playerName, Map<common.StarshipTemplate, Integer> starshipsToMake, Set<common.ISpecialUnit> specialUnitsToMake)
+	public void mergeToUnasignedFleet(String playerName, Map<common.StarshipTemplate, Integer> starshipsToMerge, Set<common.ISpecialUnit> specialUnitsToMerge)
 	{
-		gameBoard.mergeToUnasignedFleet(this, playerName, starshipsToMake, specialUnitsToMake);			
+		Fleet unasignedFleet = getUnasignedFleet(playerName);
+		
+		if (unasignedFleet == null)
+		{
+			Fleet.Key key = new Fleet.Key("Unasigned fleet on "+getName(), playerName);
+			db.insertUnit(new Fleet(db, key, getLocation().asRealLocation(), starshipsToMerge, specialUnitsToMerge, true));  
+		}
+		else
+		{
+			unasignedFleet.merge(starshipsToMerge, specialUnitsToMerge);
+		}			
 	}	
 	
 	public void removeFromUnasignedFleet(String playerName, Map<common.StarshipTemplate, Integer> fleetToRemove, Set<common.ISpecialUnit> specialUnitsToRemove)
@@ -324,6 +335,11 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		if (unasignedFleet == null) throw new Error("Tried to remove starships from an empty unasigned fleet.");
 		
 		unasignedFleet.remove(fleetToRemove, specialUnitsToRemove);
+	}
+	
+	public ABuilding getBuildingFromClientType(Class<? extends common.IBuilding> clientBuildingType)
+	{
+		return getBuilding(ABuilding.getServerBuildingClass(clientBuildingType));
 	}
 	
 	public <B extends ABuilding> B getBuilding(Class<B> buildingType)
@@ -391,7 +407,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	{		
 		this.carbonStock -= generatedCarbon;
 	}
-
+	
 	public void addConflictInititor(String initiatorLogin)
 	{
 		conflictInitiators.add(initiatorLogin);

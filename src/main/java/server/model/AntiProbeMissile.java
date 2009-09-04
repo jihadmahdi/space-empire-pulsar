@@ -22,9 +22,9 @@ public class AntiProbeMissile extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public AntiProbeMissile(GameBoard gameBoard, String name, String ownerName, RealLocation sourceLocation, boolean fired)
+	public AntiProbeMissile(DataBase db, String name, String ownerName, RealLocation sourceLocation, boolean fired)
 	{
-		super(gameBoard, name, ownerName, sourceLocation);
+		super(db, name, ownerName, sourceLocation);
 		this.fired = fired;
 	}
 
