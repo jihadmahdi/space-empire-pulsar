@@ -16,8 +16,11 @@ import common.Diplomacy.PlayerPolicies;
  */
 public class Diplomacy implements Serializable
 {
+	// DB Context
+	private final DataBase db;
+	
 	// Constants
-	private final Player owner;
+	private final String ownerName;
 	
 	// Variables
 	private final Hashtable<String, common.Diplomacy.PlayerPolicies> policies = new Hashtable<String, common.Diplomacy.PlayerPolicies>();
@@ -30,39 +33,34 @@ public class Diplomacy implements Serializable
 	 * @param owner
 	 * @param players
 	 */
-	public Diplomacy(Player owner, Set<String> playersNames)
+	public Diplomacy(DataBase db, String ownerName)
 	{
-		this.owner = owner;
-		
-		for(String player : playersNames)
-		{
-			if (player.compareTo(owner.getName()) == 0)
-			{
-				policies.put(player, new common.Diplomacy.PlayerPolicies(player, false, false));
-			}
-		}
+		this.db = db;
+		this.ownerName = ownerName;
 	}
 
-	public PlayerPolicies getPolicies(String targetLogin)
+	public PlayerPolicies getPolicies(String targetName)
 	{
-		if (owner.isNamed(targetLogin)) throw new SEPServer.SEPImplementationException("Cannot have a diplomacy toward ourselves.");
-		if (!policies.containsKey(targetLogin))
-		{			
-			policies.put(targetLogin, new PlayerPolicies(targetLogin, false, false));
+		if (ownerName.compareTo(targetName) == 0) throw new SEPServer.SEPImplementationException("Cannot have a diplomacy toward ourselves.");
+		if (!db.playerExists(targetName)) throw new SEPServer.SEPImplementationException("Player '"+targetName+"' does not exist.");
+		
+		if (!policies.containsKey(targetName))
+		{
+			policies.put(targetName, new PlayerPolicies(targetName, false, false));
 		}
 		
-		return policies.get(targetLogin);
+		return policies.get(targetName);
 	}
 	
-	public common.Diplomacy getPlayerView(int date, String playerLogin, boolean isVisible)
+	public common.Diplomacy getPlayerView(int date, String playerName, boolean isVisible)
 	{
-		if (isVisible || owner.isNamed(playerLogin))
+		if (isVisible || ownerName.compareTo(playerName) == 0)
 		{
 			// Updates
-			playersPoliciesView.updateView(playerLogin, policies, date);
+			playersPoliciesView.updateView(playerName, policies, date);
 		}				
 		
-		return new common.Diplomacy(owner, playersPoliciesView.getLastValue(playerLogin, null));
+		return new common.Diplomacy(ownerName, playersPoliciesView.getLastValue(playerName, null));
 	}
 
 	public void update(common.Diplomacy newDiplomacy)

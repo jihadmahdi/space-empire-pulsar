@@ -45,7 +45,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 	 *            Game config.
 	 * @return Planet new starting planet.
 	 */
-	public static Planet newStartingPlanet(GameBoard gameBoard, String name, Location location, String playerName, GameConfig gameConfig)
+	public static Planet newStartingPlanet(DataBase db, String name, Location location, String playerName, GameConfig gameConfig)
 	{
 		// Fix carbon amount to the mean value.
 		Integer[] carbonAmount = gameConfig.getCelestialBodiesStartingCarbonAmount().get(common.Planet.class);
@@ -62,7 +62,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 		int[] populationLimitRange = gameConfig.getPopulationLimit();
 		int populationLimit = (populationLimitRange[1] - populationLimitRange[0])/2 + populationLimitRange[0];
 		
-		Planet planet = new Planet(gameBoard, name, location, carbonStock, slots, playerName, populationPerTurn, populationLimit);
+		Planet planet = new Planet(db, name, location, carbonStock, slots, playerName, populationPerTurn, populationLimit);
 		
 		planet.setCarbon(gameConfig.getPlayersPlanetsStartingCarbonResources());
 		planet.population = gameConfig.getPlayersPlanetsStartingPopulation();
@@ -88,9 +88,9 @@ class Planet extends ProductiveCelestialBody implements Serializable
 	 * Neutral planet generation.
 	 * @param gameCfg
 	 */
-	public Planet(GameBoard gameBoard, String name, Location location, GameConfig gameConfig)
+	public Planet(DataBase db, String name, Location location, GameConfig gameConfig)
 	{
-		super(gameBoard, name, location, gameConfig, common.Planet.class);
+		super(db, name, location, gameConfig, common.Planet.class);
 		
 		int[] populationPerTurnRange = gameConfig.getPopulationPerTurn();
 		this.populationPerTurn = random.nextInt(populationPerTurnRange[1] - populationPerTurnRange[0]) + populationPerTurnRange[0];
@@ -107,9 +107,9 @@ class Planet extends ProductiveCelestialBody implements Serializable
 	 * @param populationPerTurn
 	 * @param maxPopulation
 	 */
-	private Planet(GameBoard gameBoard, String name, Location location, int carbonStock, int slots, String ownerName, int populationPerTurn, int populationLimit)
+	private Planet(DataBase db, String name, Location location, int carbonStock, int slots, String ownerName, int populationPerTurn, int populationLimit)
 	{
-		super(gameBoard, name, location, carbonStock, slots, ownerName);
+		super(db, name, location, carbonStock, slots, ownerName);
 		this.populationPerTurn = populationPerTurn;
 		this.populationLimit = populationLimit;		
 	}

@@ -26,9 +26,9 @@ public class Probe extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public Probe(GameBoard gameBoard, String name, String ownerName, RealLocation sourceLocation, boolean deployed)
+	public Probe(DataBase db, String name, String ownerName, RealLocation sourceLocation, boolean deployed)
 	{
-		super(gameBoard, name, ownerName, sourceLocation);
+		super(db, name, ownerName, sourceLocation);
 		this.deployed = deployed;
 	}
 
@@ -75,9 +75,9 @@ public class Probe extends Unit implements Serializable
 		super.endMove();
 	}
 
-	public void launch(RealLocation source, RealLocation destination)
+	public void launch(RealLocation destination)
 	{
-		setSourceLocation(source);
+		setSourceLocation(getRealLocation());
 		setDestinationLocation(destination);
 		setTravellingProgress(0);
 	}

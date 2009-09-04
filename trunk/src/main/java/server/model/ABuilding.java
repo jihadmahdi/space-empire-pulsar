@@ -137,7 +137,7 @@ abstract class ABuilding
 		}
 	}
 
-	private static Class<? extends ABuilding> getServerBuildingClass(Class<? extends common.IBuilding> clientBuildingType) throws SEPImplementationException
+	public static Class<? extends ABuilding> getServerBuildingClass(Class<? extends common.IBuilding> clientBuildingType) throws SEPImplementationException
 	{
 		Class<?> serverClass;
 		try

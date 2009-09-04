@@ -9,12 +9,12 @@ public class Diplomacy implements Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 
-	private final Player owner;
+	private final String ownerName;
 	private final Map<String, PlayerPolicies> policies;
 	
-	public Diplomacy(Player owner, Map<String,PlayerPolicies> policies)
+	public Diplomacy(String ownerName, Map<String,PlayerPolicies> policies)
 	{
-		this.owner = owner;
+		this.ownerName = ownerName;
 		this.policies = policies;
 	}
 	
@@ -60,14 +60,9 @@ public class Diplomacy implements Serializable
 		}				
 	}
 
-	public Player getOwner()
-	{
-		return owner;
-	}
-	
 	public String getOwnerName()
 	{
-		return Player.getName(owner);
+		return ownerName;
 	}
 
 	public Set<String> targetSet()

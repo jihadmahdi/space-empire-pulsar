@@ -44,3 +44,6 @@ TODO List
 	
 	* Attaquer flottes ennemis en présence
 	
+	* Revoir les messages d'erreur renvoyés lors des GameBoard.checkXXX(...), propager ces messages jusqu'au client.
+	
+	* DataBase, vérifier à chaque fois les paramètres d'entrée, retourner null si un paramètre est null.

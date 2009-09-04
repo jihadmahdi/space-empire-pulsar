@@ -2890,7 +2890,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		
 		try
 		{
-			client.getRunningGameInterface().changeDiplomacy(new Diplomacy(currentPlayer, policies));
+			client.getRunningGameInterface().changeDiplomacy(new Diplomacy(currentPlayer.getName(), policies));
 		}
 		catch(RpcException e)
 		{
