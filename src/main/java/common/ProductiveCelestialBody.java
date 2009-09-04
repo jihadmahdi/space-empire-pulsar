@@ -39,7 +39,7 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 
 	private final Set<IBuilding>	buildings;
 
-	private final Player			owner;
+	private final String			ownerName;
 	
 	private final Map<StarshipTemplate, Integer>				unasignedFleetStarships; // For viewer point of view, not owner.
 	private final Set<ISpecialUnit>								unasignedFleetSpecialUnits;
@@ -47,7 +47,7 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 	/**
 	 * Full constructor.
 	 */
-	public ProductiveCelestialBody(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, Player owner, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits)
+	public ProductiveCelestialBody(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, String ownerName, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits)
 	{
 		this.isVisible = isVisible;
 		this.lastObservation = lastObservation;
@@ -57,7 +57,7 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 		this.carbon = carbon;
 		this.slots = slots;
 		this.buildings = buildings;
-		this.owner = owner;
+		this.ownerName = ownerName;
 		if (unasignedFleetStarships == null)
 		{
 			this.unasignedFleetStarships = new HashMap<StarshipTemplate, Integer>();
@@ -144,14 +144,9 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 		return null;
 	}
 
-	public Player getOwner()
-	{
-		return owner;
-	}
-	
 	public String getOwnerName()
 	{
-		return Player.getName(owner);
+		return ownerName;
 	}
 
 	/*
@@ -164,7 +159,7 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 	{
 		StringBuffer sb = new StringBuffer();
 
-		sb.append((owner == null) ? "" : "[" + owner.getName() + "] ");
+		sb.append((ownerName == null) ? "" : "[" + ownerName + "] ");
 		sb.append(name + " (" + getClass().getSimpleName() + ")\n");
 		sb.append("  Carbon : " + carbon + " / " + carbonStock + " ("+startingCarbonStock+")\n");
 		sb.append("  Slots : " + getBuildSlotsCount() + " / " + slots + "\n");

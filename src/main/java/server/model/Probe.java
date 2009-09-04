@@ -26,9 +26,9 @@ public class Probe extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public Probe(String name, Player owner, RealLocation sourceLocation, boolean deployed)
+	public Probe(GameBoard gameBoard, String name, String ownerName, RealLocation sourceLocation, boolean deployed)
 	{
-		super(name, owner, sourceLocation);
+		super(gameBoard, name, ownerName, sourceLocation);
 		this.deployed = deployed;
 	}
 
@@ -51,7 +51,7 @@ public class Probe extends Unit implements Serializable
 			playersDeployedView.updateView(playerLogin, deployed, date);			
 		}
 		
-		return new common.Probe(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), playersDeployedView.getLastValue(playerLogin, false)); 
+		return new common.Probe(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), playersDeployedView.getLastValue(playerLogin, false)); 
 	}
 
 	@Override
@@ -62,17 +62,17 @@ public class Probe extends Unit implements Serializable
 	}
 
 	@Override
-	public boolean startMove(RealLocation currentLocation, GameBoard currentGameBoard)
+	public boolean startMove()
 	{
-		return (getDestinationLocation() != null && super.startMove(currentLocation, currentGameBoard));		
+		return (getDestinationLocation() != null && super.startMove());		
 	}
 	
 	@Override
-	public void endMove(RealLocation currentLocation, GameBoard gameBoard)
+	public void endMove()
 	{
 		setDestinationLocation(null);
 		deployed = true;
-		super.endMove(currentLocation, gameBoard);
+		super.endMove();
 	}
 
 	public void launch(RealLocation source, RealLocation destination)

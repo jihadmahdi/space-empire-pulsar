@@ -15,6 +15,7 @@ import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 
 import common.GameConfig;
 import common.Player;
+import common.SEPUtils.Location;
 
 /**
  * This class represent a planet in the universe.
@@ -44,7 +45,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 	 *            Game config.
 	 * @return Planet new starting planet.
 	 */
-	public static Planet newStartingPlanet(String name, Player player, GameConfig gameConfig)
+	public static Planet newStartingPlanet(GameBoard gameBoard, String name, Location location, String playerName, GameConfig gameConfig)
 	{
 		// Fix carbon amount to the mean value.
 		Integer[] carbonAmount = gameConfig.getCelestialBodiesStartingCarbonAmount().get(common.Planet.class);
@@ -61,7 +62,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 		int[] populationLimitRange = gameConfig.getPopulationLimit();
 		int populationLimit = (populationLimitRange[1] - populationLimitRange[0])/2 + populationLimitRange[0];
 		
-		Planet planet = new Planet(name, carbonStock, slots, player, populationPerTurn, populationLimit);
+		Planet planet = new Planet(gameBoard, name, location, carbonStock, slots, playerName, populationPerTurn, populationLimit);
 		
 		planet.setCarbon(gameConfig.getPlayersPlanetsStartingCarbonResources());
 		planet.population = gameConfig.getPlayersPlanetsStartingPopulation();
@@ -87,9 +88,9 @@ class Planet extends ProductiveCelestialBody implements Serializable
 	 * Neutral planet generation.
 	 * @param gameCfg
 	 */
-	public Planet(String name, GameConfig gameConfig)
+	public Planet(GameBoard gameBoard, String name, Location location, GameConfig gameConfig)
 	{
-		super(name, gameConfig, common.Planet.class);
+		super(gameBoard, name, location, gameConfig, common.Planet.class);
 		
 		int[] populationPerTurnRange = gameConfig.getPopulationPerTurn();
 		this.populationPerTurn = random.nextInt(populationPerTurnRange[1] - populationPerTurnRange[0]) + populationPerTurnRange[0];
@@ -106,9 +107,9 @@ class Planet extends ProductiveCelestialBody implements Serializable
 	 * @param populationPerTurn
 	 * @param maxPopulation
 	 */
-	private Planet(String name, int carbonStock, int slots, Player owner, int populationPerTurn, int populationLimit)
+	private Planet(GameBoard gameBoard, String name, Location location, int carbonStock, int slots, String ownerName, int populationPerTurn, int populationLimit)
 	{
-		super(name, carbonStock, slots, owner);
+		super(gameBoard, name, location, carbonStock, slots, ownerName);
 		this.populationPerTurn = populationPerTurn;
 		this.populationLimit = populationLimit;		
 	}
@@ -164,7 +165,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 			playersPopulationView.updateView(playerLogin, population, date);			
 		}
 		
-		return new common.Planet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getStartingCarbonStock(), getCarbonStockView(date, playerLogin, isVisible), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerView(date, playerLogin, isVisible), getUnasignedFleetStarships(playerLogin), getUnasignedFleetSpecialUnits(playerLogin), populationLimit, populationPerTurn, playersPopulationView.getLastValue(playerLogin, -1));
+		return new common.Planet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getStartingCarbonStock(), getCarbonStockView(date, playerLogin, isVisible), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerNameView(date, playerLogin, isVisible), getUnasignedFleetStarships(playerLogin), getUnasignedFleetSpecialUnits(playerLogin), populationLimit, populationPerTurn, playersPopulationView.getLastValue(playerLogin, -1));
 	}
 	
 	public int getPopulation()

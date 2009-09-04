@@ -5,15 +5,75 @@
  */
 package server.model;
 
+import java.io.Serializable;
+
 import common.Player;
+import common.SEPUtils.Location;
 
 /**
  * 
  */
 interface ICelestialBody
 {
+	static class Key implements Serializable
+	{	
+		private static final long	serialVersionUID	= 1L;
+		
+		private final String name;
+		private final Location location;
+		
+		public Key(String name)
+		{
+			this(name, null);
+		}
+		
+		public Key(String name, Location location)
+		{
+			this.name = name;
+			this.location = location;
+		}
+		
+		public String getName()
+		{
+			return name;
+		}
+		
+		public Location getLocation()
+		{
+			return location;
+		}
+		
+		@Override
+		public String toString()
+		{
+			return String.format("%s %s", name, (location != null ? location.toString() : "[nowhere]"));
+		}
+		
+		@Override
+		public int hashCode()
+		{
+			return name.hashCode();
+		}
+		
+		@Override
+		public boolean equals(Object obj)
+		{
+			if (!Key.class.isInstance(obj)) return false;
+			
+			Key k = Key.class.cast(obj);
+			
+			boolean eq = name.compareTo(k.name) == 0;
+			if (!eq && location != null && location.equals(k.location))
+			{
+				throw new Error("Two different celestial bodies cannot be located in the same area.");
+			}
+			
+			return eq;
+		}
+	}
+	
 	/** Get this celestial body owner (null if neutral). */
-	Player getOwner();
+	String getOwnerName();
 
 	/**
 	 * @param date
@@ -24,4 +84,8 @@ interface ICelestialBody
 	common.ICelestialBody getPlayerView(int date, String playerLogin, boolean isVisible);
 
 	String getName();
+	
+	Location getLocation();
+	
+	Key getKey();
 }

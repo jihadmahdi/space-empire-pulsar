@@ -48,9 +48,9 @@ public class Planet extends ProductiveCelestialBody implements Serializable
 	/**
 	 * Full constructor.
 	 */
-	public Planet(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, Player owner, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits, int populationLimit, int populationPerTurn, int population)
+	public Planet(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, String ownerName, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits, int populationLimit, int populationPerTurn, int population)
 	{
-		super(isVisible, lastObservation, name, startingCarbonStock, carbonStock, carbon, slots, buildings, owner, unasignedFleetStarships, unasignedFleetSpecialUnits);
+		super(isVisible, lastObservation, name, startingCarbonStock, carbonStock, carbon, slots, buildings, ownerName, unasignedFleetStarships, unasignedFleetSpecialUnits);
 		this.populationLimit = populationLimit;
 		this.populationPerTurn = populationPerTurn;
 		this.population = population;
@@ -87,7 +87,7 @@ public class Planet extends ProductiveCelestialBody implements Serializable
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
 
-		sb.append((getOwner() == null) ? "" : "[" + getOwnerName() + "] ");
+		sb.append((getOwnerName() == null) ? "" : "[" + getOwnerName() + "] ");
 		sb.append(getName() + " (" + getClass().getSimpleName() + ")\n");
 		sb.append("  Population : " + population + " / " + populationLimit+ "\n");
 		sb.append("  Pop. per turn : "+populationPerTurn + "\n");

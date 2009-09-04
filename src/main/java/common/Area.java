@@ -97,7 +97,7 @@ public class Area implements IObservable, Serializable
 			Unit u = m.getUnit();
 
 			// Owner filter
-			if (!((ownerName == null && u.getOwner() == null) || (ownerName != null && u.getOwner() != null && u.getOwner().isNamed(ownerName)))) continue;
+			if (!((ownerName == null && u.getOwnerName() == null) || (ownerName != null && u.getOwnerName() != null && u.getOwnerName().compareTo(ownerName) == 0))) continue;
 			
 			// Unit name filter
 			if (u != null && u.getName().compareTo(unitName) == 0) return u;
@@ -140,7 +140,7 @@ public class Area implements IObservable, Serializable
 		if(units != null) for(Unit u : units)
 		{
 			// Owner filter
-			if (!((ownerName == null && u.getOwner() == null) || (ownerName != null && u.getOwner() != null && u.getOwner().isNamed(ownerName)))) continue;
+			if (!((ownerName == null && u.getOwnerName() == null) || (ownerName != null && u.getOwnerName() != null && u.getOwnerName().compareTo(ownerName) == 0))) continue;
 
 			// Name filter
 			if (u.getName().compareTo(unitName) == 0) return u;

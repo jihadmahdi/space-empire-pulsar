@@ -25,9 +25,9 @@ public class AntiProbeMissile extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public AntiProbeMissile(boolean isVisible, int lastObservation, String name, Player owner, RealLocation sourceLocation, RealLocation targetLocation, RealLocation currentLocation, double travellingProgress, boolean fired)
+	public AntiProbeMissile(boolean isVisible, int lastObservation, String name, String ownerName, RealLocation sourceLocation, RealLocation targetLocation, RealLocation currentLocation, double travellingProgress, boolean fired)
 	{
-		super(isVisible, lastObservation, name, owner, sourceLocation, targetLocation, currentLocation, travellingProgress);
+		super(isVisible, lastObservation, name, ownerName, sourceLocation, targetLocation, currentLocation, travellingProgress);
 		this.fired = fired;																																																					
 	}
 	

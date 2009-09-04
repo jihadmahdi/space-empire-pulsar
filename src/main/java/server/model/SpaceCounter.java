@@ -64,9 +64,9 @@ class SpaceCounter extends ABuilding implements Serializable
 		private final String sourceName;
 		private final String destinationName;
 
-		public SpaceRoadDeliverer(String name, Player owner, RealLocation sourceLocation, String sourceName, String destinationName)
+		public SpaceRoadDeliverer(GameBoard gameBoard, String name, String ownerName, RealLocation sourceLocation, String sourceName, String destinationName)
 		{
-			super(name, owner, sourceLocation);
+			super(gameBoard, name, ownerName, sourceLocation);
 			this.sourceName = sourceName;
 			this.destinationName = destinationName;
 		}
@@ -74,7 +74,7 @@ class SpaceCounter extends ABuilding implements Serializable
 		@Override
 		public common.SpaceRoadDeliverer getPlayerView(int date, String playerLogin, boolean isVisible)
 		{
-			return new common.SpaceRoadDeliverer(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin));
+			return new common.SpaceRoadDeliverer(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin));
 		}
 
 		@Override
@@ -84,16 +84,16 @@ class SpaceCounter extends ABuilding implements Serializable
 		}
 
 		@Override
-		public boolean startMove(RealLocation currentLocation, GameBoard currentGameBoard)
+		public boolean startMove()
 		{
-			return (getDestinationLocation() != null && super.startMove(currentLocation, currentGameBoard));		
+			return (getDestinationLocation() != null && super.startMove());		
 		}
 		
 		@Override
-		public void endMove(RealLocation currentLocation, GameBoard gameBoard)
+		public void endMove()
 		{
 			setDestinationLocation(null);
-			super.endMove(currentLocation, gameBoard);
+			super.endMove();
 			gameBoard.tryToLinkSpaceRoad(this);						
 		}
 		
@@ -124,9 +124,9 @@ class SpaceCounter extends ABuilding implements Serializable
 		 * @param name
 		 * @param owner
 		 */
-		public CarbonCarrier(String name, Player owner, RealLocation sourceLocation)
+		public CarbonCarrier(GameBoard gameBoard, String name, String ownerName, RealLocation sourceLocation)
 		{
-			super(name, owner, sourceLocation);			
+			super(gameBoard, name, ownerName, sourceLocation);			
 		}
 
 		/* (non-Javadoc)
@@ -135,7 +135,7 @@ class SpaceCounter extends ABuilding implements Serializable
 		@Override
 		public common.CarbonCarrier getPlayerView(int date, String playerLogin, boolean isVisible)
 		{
-			return new common.CarbonCarrier(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwner(), getSourceLocation(), getDestinationLocation(), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin));
+			return new common.CarbonCarrier(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocation(), getDestinationLocation(), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin));
 		}
 
 		@Override
@@ -145,16 +145,16 @@ class SpaceCounter extends ABuilding implements Serializable
 		}
 
 		@Override
-		public boolean startMove(RealLocation currentLocation, GameBoard currentGameBoard)
+		public boolean startMove()
 		{
-			return (getDestinationLocation() != null && super.startMove(currentLocation, currentGameBoard));			
+			return (getDestinationLocation() != null && super.startMove());			
 		}
 		
 		@Override
-		public void endMove(RealLocation currentLocation, GameBoard gameBoard)
+		public void endMove()
 		{
 			// NOP
-			super.endMove(currentLocation, gameBoard);
+			super.endMove();
 		}
 	}
 	

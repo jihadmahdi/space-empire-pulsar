@@ -24,11 +24,57 @@ abstract class Unit implements Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
+	static class Key implements Serializable
+	{
+		private static final long	serialVersionUID	= 1L;
+		
+		private final String name;
+		private final String ownerName;
+		
+		public Key(String name, String ownerName)
+		{
+			this.name = name;
+			this.ownerName = ownerName;
+		}
+		
+		public String getName()
+		{
+			return name;
+		}
+		
+		public String getOwnerName()
+		{
+			return ownerName;
+		}
+		
+		@Override
+		public String toString()
+		{
+			return String.format("%s %s", name, ownerName);
+		}
+		
+		@Override
+		public int hashCode()
+		{
+			return toString().hashCode();
+		}
+		
+		@Override
+		public boolean equals(Object obj)
+		{
+			if (!Key.class.isInstance(obj)) return false;
+			
+			Key k = Key.class.cast(obj);
+			return hashCode() == k.hashCode();
+		}
+	}
+	
+	// DB context
+	protected final GameBoard gameBoard;
+	
 	// Constants
-	private final String					name;
-
-	private final Player					owner;
-
+	private final Key key;
+	
 	// Variables
 	private RealLocation							sourceLocation;
 
@@ -42,27 +88,34 @@ abstract class Unit implements Serializable
 	private final PlayerDatedView<Integer>	playersLastObservation	= new PlayerDatedView<Integer>();
 	private final PlayerDatedView<RealLocation> playersCurrentLocationView = new PlayerDatedView<RealLocation>();
 
+	public Unit(GameBoard gameBoard, Key key, RealLocation sourceLocation)
+	{
+		this.gameBoard = gameBoard;
+		this.key = key;
+		this.sourceLocation = sourceLocation;
+	}
+	
 	/**
 	 * Full constructor.
 	 */
-	public Unit(String name, Player owner, RealLocation sourceLocation)
+	public Unit(GameBoard gameBoard, String name, String ownerName, RealLocation sourceLocation)
 	{
-		this.name = name;
-		this.owner = owner;
-		this.sourceLocation = sourceLocation;
+		this(gameBoard, new Key(name, ownerName), sourceLocation);		
 	}
 
-	/**
-	 * @return owner.
-	 */
-	public Player getOwner()
+	public Key getKey()
 	{
-		return owner;
+		return key;
 	}
-
+	
 	public String getName()
 	{
-		return name;
+		return key.getName();
+	}
+	
+	public String getOwnerName()
+	{
+		return key.getOwnerName();
 	}
 
 	protected int getLastObservation(int date, String playerLogin, boolean isVisible)
@@ -81,7 +134,7 @@ abstract class Unit implements Serializable
 	
 	protected RealLocation getSourceLocationView(String playerLogin)
 	{
-		if (owner.isNamed(playerLogin))
+		if (getOwnerName().compareTo(playerLogin) == 0)
 		{
 			return sourceLocation;
 		}
@@ -95,26 +148,25 @@ abstract class Unit implements Serializable
 	
 	protected RealLocation getDestinationLocationView(String playerLogin)
 	{
-		if (owner.isNamed(playerLogin))
+		if (getOwnerName().compareTo(playerLogin) == 0)
 		{
 			return destinationLocation;
 		}
 		return null;
 	}
 	
-	public RealLocation getCurrentLocation()
+	public RealLocation getRealLocation()
 	{
-		if (travellingProgress < 0 || destinationLocation == null) return sourceLocation;
-		if (travellingProgress == 0) return sourceLocation;
-		if (travellingProgress == 1) return destinationLocation;
+		if (travellingProgress <= 0 || destinationLocation == null) return sourceLocation;
+		if (travellingProgress >= 1) return destinationLocation;
 		return SEPUtils.getMobileLocation(sourceLocation, destinationLocation, travellingProgress, true);
 	}
 	
 	protected RealLocation getCurrentLocationView(int date, String playerLogin, boolean isVisible)
 	{
-		if (owner.isNamed(playerLogin) || isVisible)
+		if (getOwnerName().compareTo(playerLogin) == 0 || isVisible)
 		{
-			playersCurrentLocationView.updateView(playerLogin, getCurrentLocation(), date); 
+			playersCurrentLocationView.updateView(playerLogin, getRealLocation(), date); 
 		}
 		
 		return playersCurrentLocationView.getLastValue(playerLogin, null);
@@ -127,7 +179,7 @@ abstract class Unit implements Serializable
 	
 	public double getTravellingProgressView(String playerLogin)
 	{
-		if (owner != null && owner.isNamed(playerLogin))
+		if (getOwnerName().compareTo(playerLogin) == 0)
 		{
 			return travellingProgress;
 		}
@@ -176,11 +228,11 @@ abstract class Unit implements Serializable
 	 * If a previous move order has been registered, let the unit start the move.
 	 * This method must return true if the unit require to be considered as moving for its first move turn (not moved yet).
 	 */
-	public boolean startMove(RealLocation currentLocation, GameBoard gameBoard)
+	public boolean startMove()
 	{
 		if (!isMoving())
 		{	
-			setSourceLocation(currentLocation);
+			setSourceLocation(getRealLocation());
 			setTravellingProgress(0);
 			
 			return true;
@@ -191,14 +243,9 @@ abstract class Unit implements Serializable
 	
 	abstract public double getSpeed();
 
-	public void endMove(RealLocation currentLocation, GameBoard gameBoard)
+	public void endMove()
 	{
-		setSourceLocation(currentLocation);
+		setSourceLocation(getRealLocation());
 		setTravellingProgress(1);
-	}
-
-	public String getOwnerName()
-	{
-		return Player.getName(owner);
 	}	
 }

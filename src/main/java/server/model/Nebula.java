@@ -10,6 +10,7 @@ import java.io.Serializable;
 import common.GameConfig;
 import common.ICelestialBody;
 import common.Player;
+import common.SEPUtils.Location;
 
 /**
  * Represent a Nebula.
@@ -18,17 +19,17 @@ class Nebula extends ProductiveCelestialBody implements Serializable
 {	
 	private static final long	serialVersionUID	= 1L;
 
-	public Nebula(String name, GameConfig gameConfig)
+	public Nebula(GameBoard gameBoard, String name, Location location, GameConfig gameConfig)
 	{
-		super(name, gameConfig, common.Nebula.class);
+		super(gameBoard, name, location, gameConfig, common.Nebula.class);
 	}
 	
 	/**
 	 * Full constructor.
 	 */
-	public Nebula(String name, int carbonStock, int slots, Player owner)
+	public Nebula(GameBoard gameBoard, String name, Location location, int carbonStock, int slots, String ownerName)
 	{
-		super(name, carbonStock, slots, owner);
+		super(gameBoard, name, location, carbonStock, slots, ownerName);
 	}
 
 	/* (non-Javadoc)
@@ -47,7 +48,7 @@ class Nebula extends ProductiveCelestialBody implements Serializable
 	@Override
 	public common.Nebula getPlayerView(int date, String playerLogin, boolean isVisible)
 	{
-		return new common.Nebula(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getStartingCarbonStock(), getCarbonStockView(date, playerLogin, isVisible), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerView(date, playerLogin, isVisible), getUnasignedFleetStarships(playerLogin), getUnasignedFleetSpecialUnits(playerLogin));
+		return new common.Nebula(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getStartingCarbonStock(), getCarbonStockView(date, playerLogin, isVisible), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerNameView(date, playerLogin, isVisible), getUnasignedFleetStarships(playerLogin), getUnasignedFleetSpecialUnits(playerLogin));
 	}
 
 }

@@ -11,6 +11,7 @@ import java.util.Map;
 import common.GameConfig;
 import common.ICelestialBody;
 import common.Player;
+import common.SEPUtils.Location;
 
 /**
  * This class represent an asteroid field.
@@ -19,17 +20,17 @@ class AsteroidField extends ProductiveCelestialBody implements Serializable
 {	
 	private static final long	serialVersionUID	= 1L;
 
-	public AsteroidField(String name, GameConfig gameConfig)
+	public AsteroidField(GameBoard gameBoard, String name, Location location, GameConfig gameConfig)
 	{
-		super(name, gameConfig, common.AsteroidField.class);
+		super(gameBoard, name, location, gameConfig, common.AsteroidField.class);
 	}
 
 	/**
 	 * Full constructor.
 	 */
-	public AsteroidField(String name, int carbonStock, int slots, Player owner)
+	public AsteroidField(GameBoard gameBoard, String name, Location location, int carbonStock, int slots, String ownerName)
 	{
-		super(name, carbonStock, slots, owner);
+		super(gameBoard, name, location, carbonStock, slots, ownerName);
 	}
 
 	/*
@@ -50,7 +51,7 @@ class AsteroidField extends ProductiveCelestialBody implements Serializable
 	@Override
 	public common.AsteroidField getPlayerView(int date, String playerLogin, boolean isVisible)
 	{
-		return new common.AsteroidField(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getStartingCarbonStock(), getCarbonStockView(date, playerLogin, isVisible), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerView(date, playerLogin, isVisible), getUnasignedFleetStarships(playerLogin), getUnasignedFleetSpecialUnits(playerLogin));
+		return new common.AsteroidField(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getStartingCarbonStock(), getCarbonStockView(date, playerLogin, isVisible), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerNameView(date, playerLogin, isVisible), getUnasignedFleetStarships(playerLogin), getUnasignedFleetSpecialUnits(playerLogin));
 	}	
 
 }

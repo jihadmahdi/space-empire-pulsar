@@ -31,7 +31,7 @@ public abstract class SEPUtils
 		public final double x;
 		public final double y;
 		public final double z;
-		
+				
 		public RealLocation(double x, double y, double z)
 		{			
 			this.x = x;
@@ -39,9 +39,13 @@ public abstract class SEPUtils
 			this.z = z;
 		}
 
-		public boolean equals(RealLocation loc)
+		@Override
+		public boolean equals(Object obj)
 		{
-			return x == loc.x && y == loc.y && z == loc.z; 
+			if (!RealLocation.class.isInstance(obj)) return false;
+			
+			RealLocation loc = RealLocation.class.cast(obj);
+			return x == loc.x && y == loc.y && z == loc.z;			
 		}
 		
 		@Override
@@ -55,14 +59,13 @@ public abstract class SEPUtils
 		{
 			return String.format("[%.2f;%.2f;%.2f]", x, y, z);
 		}
-
-		public RealLocation asLocation()
+		
+		public Location asLocation()
 		{
-			return new RealLocation((int) x, (int) y, (int) z);
+			return new Location((int) x, (int) y, (int) z);
 		}
 	}
 	
-	/*
 	public static class Location implements Serializable
 	{
 		private static final long	serialVersionUID	= 1L;
@@ -70,30 +73,21 @@ public abstract class SEPUtils
 		public final int x;
 		public final int y;
 		public final int z;
-		
-		public Location(String s)
-		{
-			String[] parts = Basic.split(s, ";");
-			if (parts.length != 3) throw new IllegalArgumentException("Bad string format '"+s+"', '[x;y;z]' expected");
-			this.x = Basic.intValueOf(parts[0].substring(1), -1);
-			this.y = Basic.intValueOf(parts[1], -1);
-			this.z = Basic.intValueOf(parts[2].substring(0, parts[2].length()-1), -1);
-			
-			if (x < 0 || y < 0 || z < 0) throw new IllegalArgumentException("Bad string format '"+s+"', '[x;y;z]' expected, with x, y, z positives or null.");
-		}
-		
+				
 		public Location(int x, int y, int z)
-		{
-			//if (x < 0 || y < 0 || z < 0) throw new IllegalArgumentException("Location coordinates cannot be negatives.");
-			
+		{			
 			this.x = x;
 			this.y = y;
 			this.z = z;
 		}
-				
-		public boolean equals(Location loc)
+
+		@Override
+		public boolean equals(Object obj)
 		{
-			return x == loc.x && y == loc.y && z == loc.z;
+			if (!Location.class.isInstance(obj)) return false;
+			
+			Location loc = Location.class.cast(obj);
+			return x == loc.x && y == loc.y && z == loc.z;			
 		}
 		
 		@Override
@@ -105,10 +99,22 @@ public abstract class SEPUtils
 		@Override
 		public String toString()
 		{
-			return "["+x+";"+y+";"+z+"]";
+			return String.format("[%d;%d;%d]", x, y, z);
 		}
-	}
-	*/		
+		
+		public RealLocation asRealLocation()
+		{
+			return asRealLocation(0.5);
+		}
+		public RealLocation asRealLocation(double offset)
+		{
+			return asRealLocation(offset, offset, offset);
+		}
+		public RealLocation asRealLocation(double xOffset, double yOffset, double zOffset)
+		{
+			return new RealLocation(x+xOffset, y+yOffset, z+zOffset);
+		}
+	}		
 	
 	public static double getDistance(RealLocation a, RealLocation b)
 	{
