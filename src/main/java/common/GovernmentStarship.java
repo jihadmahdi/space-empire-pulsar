@@ -26,7 +26,7 @@ public class GovernmentStarship implements ISpecialUnit, Serializable
 		if (!GovernmentStarship.class.isInstance(obj)) return false;
 		GovernmentStarship o = GovernmentStarship.class.cast(obj);
 		
-		return (this.name.compareTo(o.name) == 0);
+		return (this.name.equals(o.name));
 	}
 	
 	@Override

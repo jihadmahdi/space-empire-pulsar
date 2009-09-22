@@ -62,7 +62,7 @@ interface ICelestialBody
 			
 			Key k = Key.class.cast(obj);
 			
-			boolean eq = name.compareTo(k.name) == 0;
+			boolean eq = name.equals(k.name);
 			if (!eq && location != null && location.equals(k.location))
 			{
 				throw new Error("Two different celestial bodies cannot be located in the same area.");

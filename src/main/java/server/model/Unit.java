@@ -134,7 +134,7 @@ abstract class Unit implements Serializable
 	
 	protected RealLocation getSourceLocationView(String playerLogin)
 	{
-		if (getOwnerName().compareTo(playerLogin) == 0)
+		if (playerLogin.equals(getOwnerName()))
 		{
 			return sourceLocation;
 		}
@@ -148,7 +148,7 @@ abstract class Unit implements Serializable
 	
 	protected RealLocation getDestinationLocationView(String playerLogin)
 	{
-		if (getOwnerName().compareTo(playerLogin) == 0)
+		if (playerLogin.equals(getOwnerName()))
 		{
 			return destinationLocation;
 		}
@@ -164,7 +164,7 @@ abstract class Unit implements Serializable
 	
 	protected RealLocation getCurrentLocationView(int date, String playerLogin, boolean isVisible)
 	{
-		if (getOwnerName().compareTo(playerLogin) == 0 || isVisible)
+		if (playerLogin.equals(getOwnerName()) || isVisible)
 		{
 			playersCurrentLocationView.updateView(playerLogin, getRealLocation(), date); 
 		}
@@ -179,7 +179,7 @@ abstract class Unit implements Serializable
 	
 	public double getTravellingProgressView(String playerLogin)
 	{
-		if (getOwnerName().compareTo(playerLogin) == 0)
+		if (playerLogin.equals(getOwnerName()))
 		{
 			return travellingProgress;
 		}
@@ -193,6 +193,7 @@ abstract class Unit implements Serializable
 	
 	protected void setDestinationLocation(RealLocation destinationLocation)
 	{
+		if (destinationLocation == null) throw new NullPointerException("destinationLocation cannot be null.");
 		this.destinationLocation = destinationLocation;
 	}
 	
@@ -245,7 +246,8 @@ abstract class Unit implements Serializable
 
 	public void endMove()
 	{
-		setSourceLocation(getRealLocation());
 		setTravellingProgress(1);
+		setSourceLocation(getRealLocation());
+		destinationLocation = null;
 	}	
 }

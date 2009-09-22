@@ -128,9 +128,10 @@ class DataBase implements Serializable
 	
 	/// DELETE
 	
-	public void removeMarker(IMarker.Key key)
+	public void removeMarker(String playerName, IMarker.Key key)
 	{
-		playersMarkers.remove(key);
+		Hashtable<IMarker.Key, IMarker> playerMarkers = getPlayerMarkers(playerName);		
+		playerMarkers.remove(key);
 	}
 	
 	public void removeUnit(Unit.Key key)
@@ -147,7 +148,7 @@ class DataBase implements Serializable
 	
 	public <C extends ICelestialBody> Set<C> getCelestialBodies(Class<C> celestialBodyType)
 	{
-		Set<C> result = new TreeSet<C>();
+		Set<C> result = new HashSet<C>();
 		for(ICelestialBody celestialBody : celestialBodies.values())
 		{
 			if (celestialBodyType.isInstance(celestialBody))
@@ -206,18 +207,33 @@ class DataBase implements Serializable
 			common.Unit u = um.getUnit();
 			
 			// Owner filter
-			if (!((ownerName == null && u.getOwnerName() == null) || (ownerName != null && u.getOwnerName() != null && u.getOwnerName().compareTo(ownerName) == 0))) continue;
+			if (!ownerName.equals(u.getOwnerName())) continue;
 			
 			// Name filter
-			if (u.getName().compareTo(unitName) == 0) return um;
+			if (unitName.equals(u.getName())) return um;
 		}
 		
 		return null;
 	}
 	
+	Set<UnitMarker> getUnitMarkers(String observerName, Location location)
+	{
+		Set<UnitMarker> result = new HashSet<UnitMarker>();
+		
+		for(UnitMarker um : getMarkers(observerName, UnitMarker.class))
+		{
+			if (um.getUnit().getCurrentLocation().asLocation().equals(location))
+			{
+				result.add(um);
+			}
+		}
+		
+		return result;
+	}
+	
 	private <M extends IMarker> Set<M> getMarkers(String observerName, Class<M> markerType)
 	{
-		Set<M> result = new TreeSet<M>();
+		Set<M> result = new HashSet<M>();
 		if (playersMarkers.containsKey(observerName)) for(IMarker m : playersMarkers.get(observerName).values())
 		{
 			if (markerType.isInstance(m)) result.add(markerType.cast(m));
@@ -271,8 +287,7 @@ class DataBase implements Serializable
 
 		for(Unit unit : units.values())
 		{
-			// TODO : remplacer getOwnerName().compareTo(...) par une méthode directe, nettoyer de même le reste du code.
-			if (unit.getOwnerName().compareTo(playerLogin) == 0 && unitType.isInstance(unit))
+			if (playerLogin.equals(unit.getOwnerName()) && unitType.isInstance(unit))
 			{
 				filteredUnits.add(unitType.cast(unit));
 			}
@@ -291,7 +306,7 @@ class DataBase implements Serializable
 	 *            (cannot not be null) return only units that implement this
 	 *            unit sub class.
 	 * @param playerLoginFilter
-	 *            if not null, return only units owned by this player.
+	 *            return only units owned by this player.
 	 * @return Set<Unit> filtered unit for the given location.
 	 * @see #getUnits(String, Class)
 	 */
@@ -316,7 +331,7 @@ class DataBase implements Serializable
 	 * @param location
 	 *            Location to look units for.
 	 * @param playerLoginFilter
-	 *            if not null, return only units owned by this player.
+	 *            return only units owned by this player.
 	 * @return
 	 */
 	public Set<Unit> getUnits(Location location, String ownerName)
@@ -325,8 +340,7 @@ class DataBase implements Serializable
 
 		for(Unit u : getUnits(location))
 		{
-			// If ownerName == null, no ownerName filter.
-			if (ownerName == null || ownerName.compareTo(u.getOwnerName()) == 0)
+			if (ownerName.equals(u.getOwnerName()))
 			{
 				filteredUnits.add(u);
 			}
@@ -337,7 +351,19 @@ class DataBase implements Serializable
 	
 	public Set<Unit> getUnits()
 	{
-		return new TreeSet<Unit>(units.values());
+		return new HashSet<Unit>(units.values());
+	}
+	
+	public <U extends Unit> Set<U> getUnits(Location location, Class<U> unitTypeFilter)
+	{
+		Set<U> filteredUnits = new HashSet<U>();
+		
+		for(Unit u : getUnits(location))
+		{
+			if (unitTypeFilter.isInstance(u)) filteredUnits.add(unitTypeFilter.cast(u));
+		}
+		
+		return filteredUnits;
 	}
 	
 	protected Set<Unit> getUnits(Location location)
@@ -358,7 +384,7 @@ class DataBase implements Serializable
 	protected <C extends ICelestialBody> C getCelestialBody(String celestialBodyName, Class<C> celestialBodyType, String ownerName)
 	{
 		C celestialBody = getCelestialBody(celestialBodyName, celestialBodyType);
-		if (ownerName.compareTo(celestialBody.getOwnerName()) != 0) return null;
+		if (!ownerName.equals(celestialBody.getOwnerName())) return null;
 		return celestialBody;
 	}
 	
@@ -381,7 +407,7 @@ class DataBase implements Serializable
 	
 	public Set<Probe> getDeployedProbes()
 	{
-		Set<Probe> result = new TreeSet<Probe>();
+		Set<Probe> result = new HashSet<Probe>();
 
 		for(Unit u : units.values())
 		{
@@ -421,7 +447,7 @@ class DataBase implements Serializable
 			if (!Planet.class.isInstance(celestialBody)) continue;
 			Planet planet = Planet.class.cast(celestialBody);
 
-			if (planet.getOwnerName() == null || planet.getOwnerName().compareTo(playerLogin) != 0) continue;
+			if (!playerLogin.equals(planet.getOwnerName())) continue;
 
 			if (planet.isGovernmentSettled()) return planet;
 		}
@@ -457,7 +483,7 @@ class DataBase implements Serializable
 		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
 
 		// If player is not the celestial body owner.
-		if (productiveCelestialBody.getOwnerName() == null || productiveCelestialBody.getOwnerName().compareTo(playerName) != 0) throw new DataBaseError("Player '" + playerName + "' is not the '" + celestialBodyName + "' celestial body owner.");
+		if (!playerName.equals(productiveCelestialBody.getOwnerName())) throw new DataBaseError("Player '" + playerName + "' is not the '" + celestialBodyName + "' celestial body owner.");
 
 		Class<? extends ABuilding> serverBuildingType = ABuilding.getServerBuildingClass(clientBuildingType);
 		ABuilding building = productiveCelestialBody.getBuilding(serverBuildingType);

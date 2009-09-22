@@ -80,9 +80,10 @@ public class Fleet extends Unit implements Serializable
 			// Updates
 			playersStarshipsView.updateView(playerLogin, starships, date);
 			playersSpecialUnitsView.updateView(playerLogin, specialUnits, date);
+			
 		}				
 		
-		return new common.Fleet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), playersStarshipsView.getLastValue(playerLogin, null), playersSpecialUnitsView.getLastValue(playerLogin, null), (getOwnerName().compareTo(playerLogin) == 0?currentMove:null) ,(getOwnerName().compareTo(playerLogin)==0?checkpoints:null), isUnassigned);
+		return new common.Fleet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), playersStarshipsView.getLastValue(playerLogin, null), playersSpecialUnitsView.getLastValue(playerLogin, null), (playerLogin.equals(getOwnerName()) ? currentMove : null) ,(playerLogin.equals(getOwnerName())?checkpoints:null), isUnassigned);
 	}
 
 	public boolean isGovernmentFleet()
@@ -180,7 +181,7 @@ public class Fleet extends Unit implements Serializable
 		
 		for(common.Fleet.Move checkpoint : newCheckpoints)
 		{
-			if (checkpoints.size() > 0 && checkpoints.peek().getDestinationName().compareTo(checkpoint.getDestinationName()) == 0)
+			if (checkpoints.size() > 0 && checkpoints.peek().getDestinationName().equals(checkpoint.getDestinationName()))
 			{
 				checkpoints.pop();
 			}
@@ -219,8 +220,7 @@ public class Fleet extends Unit implements Serializable
 	
 	@Override
 	public void endMove()
-	{
-		setDestinationLocation(null);
+	{		
 		if (currentMove.isAnAttack())
 		{
 			ProductiveCelestialBody productiveCelestialBody = db.getCelestialBody(getRealLocation().asLocation(), ProductiveCelestialBody.class);

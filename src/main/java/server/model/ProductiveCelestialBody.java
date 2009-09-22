@@ -321,7 +321,8 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		if (unasignedFleet == null)
 		{
 			Fleet.Key key = new Fleet.Key("Unasigned fleet on "+getName(), playerName);
-			db.insertUnit(new Fleet(db, key, getLocation().asRealLocation(), starshipsToMerge, specialUnitsToMerge, true));  
+			db.insertUnit(new Fleet(db, key, getLocation().asRealLocation(), starshipsToMerge, specialUnitsToMerge, true));
+			playersUnasignedFleetsKeys.put(playerName, key);
 		}
 		else
 		{

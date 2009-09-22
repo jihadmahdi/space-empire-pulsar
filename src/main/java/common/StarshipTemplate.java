@@ -164,7 +164,7 @@ public class StarshipTemplate implements Serializable, Comparable<StarshipTempla
 		if (!getClass().isInstance(obj)) return false;
 		StarshipTemplate o = StarshipTemplate.class.cast(obj);
 		
-		return (super.equals(o) || (this.name.compareTo(o.name) == 0 && this.specializationClass == o.specializationClass));
+		return (super.equals(o) || (this.name.equals(o.name) && this.specializationClass == o.specializationClass));
 	}
 	
 	@Override

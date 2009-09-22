@@ -687,7 +687,7 @@ public class PlayerGameMove
 	{
 		checkTurnIsNotEnded();
 		
-		if (playerLogin.compareTo(newDiplomacy.getOwnerName()) != 0)
+		if (!playerLogin.equals(newDiplomacy.getOwnerName()))
 		{
 			throw new RunningGameCommandException(playerLogin+" sent a diplomacy plan with wrong signature '"+newDiplomacy.getOwnerName()+"'.");
 		}

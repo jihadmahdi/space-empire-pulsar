@@ -92,10 +92,9 @@ class SpaceCounter extends ABuilding implements Serializable
 		
 		@Override
 		public void endMove()
-		{
-			setDestinationLocation(null);
+		{			
+			tryToLinkSpaceRoad();
 			super.endMove();
-			tryToLinkSpaceRoad();						
 		}
 		
 		private static class LinkSpaceRoadCheckResult
@@ -114,7 +113,7 @@ class SpaceCounter extends ABuilding implements Serializable
 		
 		private LinkSpaceRoadCheckResult checkLinkSpaceRoad() throws RunningGameCommandException
 		{
-			if (sourceName.compareTo(destinationName) == 0) throw new RunningGameCommandException("Cannot build space road locally.");
+			if (sourceName.equals(destinationName)) throw new RunningGameCommandException("Cannot build space road locally.");
 			
 			ProductiveCelestialBody source = db.getCelestialBody(sourceName, ProductiveCelestialBody.class, getOwnerName());
 			if (source == null) throw new RunningGameCommandException("Celestial body '"+sourceName+"' is not a productive celestial body.");
@@ -419,7 +418,7 @@ class SpaceCounter extends ABuilding implements Serializable
 	{
 		for(SpaceRoad r : spaceRoadsBuilt)
 		{
-			if (r.getDestination().compareTo(destinationName) == 0)
+			if (r.getDestination().equals(destinationName))
 			{
 				return true;
 			}
@@ -432,7 +431,7 @@ class SpaceCounter extends ABuilding implements Serializable
 	{
 		for(SpaceRoad r : spaceRoadsLinked)
 		{
-			if (r.getSource().compareTo(sourceName) == 0)
+			if (r.getSource().equals(sourceName))
 			{
 				return true;
 			}
@@ -445,7 +444,7 @@ class SpaceCounter extends ABuilding implements Serializable
 	{
 		for(SpaceRoad r : spaceRoadsBuilt)
 		{
-			if (r.getDestination().compareTo(destinationName) == 0)
+			if (r.getDestination().equals(destinationName))
 			{
 				spaceRoadsBuilt.remove(r);
 				break;
@@ -454,7 +453,7 @@ class SpaceCounter extends ABuilding implements Serializable
 		
 		for(SpaceRoad r : spaceRoadsLinked)
 		{
-			if (r.getSource().compareTo(destinationName) == 0)
+			if (r.getSource().equals(destinationName))
 			{
 				spaceRoadsLinked.remove(r);
 				break;

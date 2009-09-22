@@ -70,7 +70,6 @@ public class Probe extends Unit implements Serializable
 	@Override
 	public void endMove()
 	{
-		setDestinationLocation(null);
 		deployed = true;
 		super.endMove();
 	}

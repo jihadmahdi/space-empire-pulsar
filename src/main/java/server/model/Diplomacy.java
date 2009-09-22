@@ -41,7 +41,7 @@ public class Diplomacy implements Serializable
 
 	public PlayerPolicies getPolicies(String targetName)
 	{
-		if (ownerName.compareTo(targetName) == 0) throw new SEPServer.SEPImplementationException("Cannot have a diplomacy toward ourselves.");
+		if (ownerName.equals(targetName)) throw new SEPServer.SEPImplementationException("Cannot have a diplomacy toward ourselves.");
 		if (!db.playerExists(targetName)) throw new SEPServer.SEPImplementationException("Player '"+targetName+"' does not exist.");
 		
 		if (!policies.containsKey(targetName))
@@ -54,7 +54,7 @@ public class Diplomacy implements Serializable
 	
 	public common.Diplomacy getPlayerView(int date, String playerName, boolean isVisible)
 	{
-		if (isVisible || ownerName.compareTo(playerName) == 0)
+		if (isVisible || ownerName.equals(playerName))
 		{
 			// Updates
 			playersPoliciesView.updateView(playerName, policies, date);

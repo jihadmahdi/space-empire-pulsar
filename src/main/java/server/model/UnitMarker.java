@@ -57,4 +57,9 @@ public final class UnitMarker implements IMarker, Serializable
 	{
 		return markedUnit;
 	}
+	
+	public common.UnitMarker getView(boolean isVisible)
+	{
+		return new common.UnitMarker(creationDate, isVisible, markedUnit); 
+	}
 }

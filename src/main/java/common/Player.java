@@ -53,7 +53,7 @@ public class Player implements Serializable
 	 */
 	public boolean isNamed(String playerLogin)
 	{
-		return name.compareTo(playerLogin) == 0;
+		return name.equals(playerLogin);
 	}
 
 	public static String getName(Player player)
