@@ -66,7 +66,6 @@ public class AntiProbeMissile extends Unit implements Serializable
 	@Override
 	public void endMove()
 	{
-		setDestinationLocation(null);
 		super.endMove();
 	}
 

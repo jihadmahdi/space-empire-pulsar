@@ -183,7 +183,7 @@ public class GameBoard implements Serializable
 					Fleet unassignedFleet = (productiveCelestialBody != null ? productiveCelestialBody.getUnasignedFleet(playerLogin) : null);
 
 					// Visible if area celestial body is owned by the player.
-					if (!isVisible && celestialBodyOwnerName != null && celestialBodyOwnerName.compareTo(playerLogin) == 0)
+					if (!isVisible && playerLogin.equals(celestialBodyOwnerName))
 					{
 						isVisible = true;
 					}
@@ -218,16 +218,16 @@ public class GameBoard implements Serializable
 						}
 						
 						// If governmental fleets are located in this area
-						for(Fleet fleet : db.getUnits(location, Fleet.class, null))
+						for(Fleet fleet : db.getUnits(location, Fleet.class))
 						{
 							if (fleet.isGovernmentFleet())
 							{
 								playersPoliciesView.put(fleet.getOwnerName(), db.getPlayerPolicies(fleet.getOwnerName()).getPlayerView(db.getDate(), playerLogin, isVisible));
 							}
-						}
-						
-						playerUniverseView[x][y][z] = db.getCreateArea(location).getPlayerView(db.getDate(), playerLogin, isVisible);
+						}												
 					}
+					
+					playerUniverseView[x][y][z] = db.getCreateArea(location).getPlayerView(db.getDate(), playerLogin, isVisible);
 				}
 		
 		for(String playerName : db.getPlayersKeySet())
@@ -279,7 +279,7 @@ public class GameBoard implements Serializable
 
 		// Unit moves
 
-		Set<Unit> currentStepMovedUnits = new TreeSet<Unit>();
+		Set<Unit> currentStepMovedUnits = new HashSet<Unit>();
 		Set<Probe> deployedProbes = db.getDeployedProbes();
 		
 		double step = 1 / maxSpeed;
@@ -290,8 +290,8 @@ public class GameBoard implements Serializable
 			for(Unit u : movingUnits)
 			{
 				double distance = SEPUtils.getDistance(u.getSourceLocation(), u.getDestinationLocation());
-				double progressInOneStep = (distance != 0 ? (u.getSpeed() / distance) : 1);
-				u.setTravellingProgress(Math.min(1, u.getTravellingProgress() + progressInOneStep));
+				double progressInOneTurn = (distance != 0 ? (u.getSpeed() / distance) : 100);
+				u.setTravellingProgress(Math.min(1, u.getTravellingProgress() + progressInOneTurn * step));
 				RealLocation currentStepLocation = u.getRealLocation();
 				
 				for(Unit movedUnit : currentStepMovedUnits)
@@ -324,7 +324,7 @@ public class GameBoard implements Serializable
 			}
 		}
 		
-		Set<AntiProbeMissile> explodingAntiProbeMissiles = new TreeSet<AntiProbeMissile>();
+		Set<AntiProbeMissile> explodingAntiProbeMissiles = new HashSet<AntiProbeMissile>();
 		
 		for(Unit u : movingUnits)
 		{
@@ -332,7 +332,7 @@ public class GameBoard implements Serializable
 			
 			IMarker.Key key = new IMarker.Key("own unit("+u.getName()+") travelling marker", UnitMarker.class, u.getOwnerName());
 			
-			db.removeMarker(key);
+			db.removeMarker(u.getOwnerName(), key);
 			
 			if (endTurnLocation.asLocation().equals(u.getDestinationLocation().asLocation()))
 			{
@@ -436,11 +436,11 @@ public class GameBoard implements Serializable
 			Map<String, Boolean> playerConflicts = new Hashtable<String, Boolean>();
 			for(String p2 : db.getPlayersKeySet())
 			{
-				if (p1.compareTo(p2) == 0) continue;
+				if (p1.equals(p2)) continue;
 				
 				boolean p1Policy = false;
 				
-				if (p1.compareTo(productiveCelestialBody.getOwnerName()) == 0)
+				if (p1.equals(productiveCelestialBody.getOwnerName()))
 				{
 					p1Policy = !db.getPlayerPolicies(p1).getPolicies(p2).isAllowedToLandFleetInHomeTerritory();					
 				}
@@ -475,11 +475,8 @@ public class GameBoard implements Serializable
 		}
 		
 		Set<Unit> unitsToRemove = new HashSet<Unit>();
-		for(Unit u : db.getUnits(location))
-		{
-			if (!Fleet.class.isInstance(u)) continue;
-			Fleet f = Fleet.class.cast(u);
-			
+		for(Fleet f : db.getUnits(location, Fleet.class))
+		{						
 			if (!fleets.containsKey(f.getOwnerName()))
 			{
 				fleets.put(f.getOwnerName(), new Fleet(db, f.getOwnerName()+" forces in conflict on "+productiveCelestialBody.getName()+" at turn "+db.getDate(), f.getOwnerName(), location.asRealLocation(), f.getStarships(), f.getSpecialUnits(), false));
@@ -519,7 +516,7 @@ public class GameBoard implements Serializable
 			
 			for(String p : db.getPlayersKeySet())
 			{
-				if (p.compareTo(winnerKey) == 0) continue; 
+				if (p.equals(winnerKey)) continue; 
 				if (conflicts.get(winnerKey).get(p))
 				{
 					tempFleets.remove(p);
@@ -1491,7 +1488,7 @@ public class GameBoard implements Serializable
 		double distance = SEPUtils.getDistance(source.getLocation().asRealLocation(), destination.getLocation().asRealLocation());
 		int price = (int) (db.getGameConfig().getSpaceRoadPricePerArea() * distance);
 		
-		if (source.getOwnerName() == null || source.getOwnerName().compareTo(playerLogin) != 0 || sourceSpaceCounter == null || sourceSpaceCounter.getAvailableRoadsBuilder() <= 0 || source.getCarbon() < price)
+		if (!playerLogin.equals(source.getOwnerName()) || sourceSpaceCounter == null || sourceSpaceCounter.getAvailableRoadsBuilder() <= 0 || source.getCarbon() < price)
 		{
 			throw new RunningGameCommandException("None of the space road end can pay nor have free builder.");
 		}

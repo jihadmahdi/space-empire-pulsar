@@ -6,6 +6,7 @@
 package server.model;
 
 import java.io.Serializable;
+import java.rmi.UnexpectedException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,9 +18,7 @@ import java.util.Set;
 import server.SEPServer;
 import sun.security.action.GetLongAction;
 
-import common.IMarker;
 import common.SEPUtils;
-import common.UnitMarker;
 
 class Area implements Serializable
 {
@@ -55,9 +54,7 @@ class Area implements Serializable
 	// Views
 	private final PlayerDatedView<Integer> playersLastObservation = new PlayerDatedView<Integer>();
 	private final PlayerDatedView<HashSet<common.Unit>> playersUnitsView = new PlayerDatedView<HashSet<common.Unit>>();
-
-	// Markers
-	private final Map<String, Set<common.IMarker>> playersMarkers = new HashMap<String, Set<common.IMarker>>();
+	private final PlayerDatedView<HashSet<common.IMarker>> playersMarkersView = new PlayerDatedView<HashSet<common.IMarker>>();
 	
 	public Area(DataBase db, common.SEPUtils.Location location)
 	{
@@ -133,30 +130,20 @@ class Area implements Serializable
 			
 			for(Unit u : db.getUnits(location))
 			{
+				if (Fleet.class.isInstance(u))
+				{
+					Fleet f = Fleet.class.cast(u);
+					if (playerLogin.equals(f.getOwnerName()) && f.isUnassignedFleet()) continue;
+					if (f.isEmpty())
+					{
+						if (!f.isUnassignedFleet()) throw new Error("Assigned fleet cannot be empty.");
+						continue;
+					}
+				}
+				
 				unitsView.add(u.getPlayerView(date, playerLogin, isVisible));
 			}
 			playersUnitsView.updateView(playerLogin, unitsView, date);
-			
-			// Refresh markers
-			markersView = new HashSet<IMarker>();
-			if (playersMarkers.containsKey(playerLogin)) for(common.IMarker m : playersMarkers.get(playerLogin))
-			{
-				// Unit markers
-				if (UnitMarker.class.isInstance(m))
-				{
-					UnitMarker um = UnitMarker.class.cast(m);
-					
-					Unit unit = db.getUnit(location, getServerUnitType(um.getUnit().getClass()), um.getUnit().getOwnerName(), um.getUnit().getName());
-					
-					if (unit == null) markersView.add(um);
-					
-					continue;
-				}
-				
-				// TODO: Other markers
-			}
-			
-			playersMarkers.put(playerLogin, markersView);
 		}
 		else
 		{		
@@ -165,7 +152,7 @@ class Area implements Serializable
 			unitsView = new HashSet<common.Unit>();
 			if (playersUnitsView.hasView(playerLogin)) for(common.Unit u : playersUnitsView.getView(playerLogin).getValue())
 			{
-				if (u.getOwnerName() != null && u.getOwnerName().compareTo(playerLogin) == 0)
+				if (playerLogin.equals(u.getOwnerName()))
 				{
 					modified = true;
 					
@@ -184,8 +171,17 @@ class Area implements Serializable
 			{
 				playersUnitsView.updateView(playerLogin, unitsView, date);
 			}
+		}
+		
+		// Refresh markers	
+		markersView = new HashSet<common.IMarker>();
+		for(UnitMarker um : db.getUnitMarkers(playerLogin, location))
+		{	
+			Unit unit = db.getUnit(location, getServerUnitType(um.getUnit().getClass()), um.getUnit().getOwnerName(), um.getUnit().getName());
 			
-			markersView = playersMarkers.get(playerLogin);
+			if (!isVisible || unit == null) markersView.add(um.getView(isVisible));
+			
+			// TODO: remove marker for existing units if (unit != null) db.removeMarker(...) ?
 		}
 		
 		ICelestialBody celestialBody = getCelestialBody();

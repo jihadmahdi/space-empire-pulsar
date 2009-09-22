@@ -34,6 +34,4 @@ public class UnitMarker implements IMarker, Serializable
 	{
 		return markedUnit;
 	}
-
-	
 }

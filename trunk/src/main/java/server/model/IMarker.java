@@ -46,7 +46,7 @@ public interface IMarker
 			if (!Key.class.isInstance(obj)) return false;
 			
 			Key k = Key.class.cast(obj);
-			return type.equals(k.type) && name.compareTo(k.name) == 0 && observerName.compareTo(k.observerName) == 0;
+			return type.equals(k.type) && name.equals(k.name) && observerName.equals(k.observerName);
 		}
 		
 		public String getName()
