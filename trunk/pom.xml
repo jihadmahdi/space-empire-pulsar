@@ -105,8 +105,8 @@
 		<authorMail>p.escallier@laposte.net</authorMail>
 
 		<!-- External tools -->
-		<izpack2exeDirectory>/home/axan/IzPack/utils/izpack2exe</izpack2exeDirectory>
-		<izpack2appDirectory>/home/axan/IzPack/utils/izpack2app</izpack2appDirectory>
+		<izpack2exeDirectory>/media/data/code/IzPack/utils/izpack2exe</izpack2exeDirectory>
+		<izpack2appDirectory>/media/data/code/IzPack/utils/izpack2app</izpack2appDirectory>
 
 		<!-- Env -->
 		<tmp>/tmp</tmp>

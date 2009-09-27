@@ -2,7 +2,6 @@ package server.model;
 
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -10,8 +9,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,23 +16,14 @@ import java.util.logging.Logger;
 import org.axan.eplib.utils.Basic;
 
 import server.SEPServer;
-import server.model.Area.AreaIllegalDefinitionException;
-import server.model.DataBase.DataBaseError;
-import server.model.DataBase.genericResultSet;
 import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
-import server.model.SpaceCounter.SpaceRoad;
-import server.model.SpaceCounter.SpaceRoadDeliverer;
 
 import common.GameConfig;
-import common.GovernmentStarship;
-import common.ISpecialUnit;
-import common.Player;
 import common.SEPUtils;
 import common.TravellingLogEntryUnitSeen;
 import common.Protocol.ServerRunningGame.RunningGameCommandException;
-
-import common.SEPUtils.RealLocation;
 import common.SEPUtils.Location;
+import common.SEPUtils.RealLocation;
 
 public class GameBoard implements Serializable
 {
@@ -1485,6 +1473,11 @@ public class GameBoard implements Serializable
 			throw new RunningGameCommandException("'"+sourceName+"' already has a space road linked from '"+sourceName+"'");
 		}
 		
+		for(RealLocation pathStep : SEPUtils.getAllPathLoc(source.getLocation().asRealLocation(), destination.getLocation().asRealLocation()))
+		{
+			if (db.getArea(pathStep.asLocation()) != null && db.getArea(pathStep.asLocation()).isSun()) throw new RunningGameCommandException("Impossible path : " + source.getLocation() + " to " + destination.getLocation() + ", cannot travel the sun.");
+		}
+		
 		double distance = SEPUtils.getDistance(source.getLocation().asRealLocation(), destination.getLocation().asRealLocation());
 		int price = (int) (db.getGameConfig().getSpaceRoadPricePerArea() * distance);
 		
@@ -1535,7 +1528,7 @@ public class GameBoard implements Serializable
 		SpaceCounter sourceSpaceCounter = source.getBuilding(SpaceCounter.class);
 		if (sourceSpaceCounter == null) throw new RunningGameCommandException("'"+sourceName+"' has no space counter build.");
 						
-		if (!sourceSpaceCounter.hasSpaceRoadTo(destinationName) && !sourceSpaceCounter.hasSpaceRoadLinkedFrom(sourceName))
+		if (!sourceSpaceCounter.hasSpaceRoadTo(destinationName) && !sourceSpaceCounter.hasSpaceRoadLinkedFrom(destinationName))
 		{
 			throw new RunningGameCommandException("'"+sourceName+"' has no space road link with '"+destinationName+"'");
 		}

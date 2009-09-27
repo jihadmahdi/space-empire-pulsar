@@ -2174,7 +2174,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		spaceCounterActionPanel.add(getSpaceRoadsLabel());
 		spaceCounterActionPanel.add(getSpaceRoadsScrollPane());
 		spaceCounterActionPanel.add(getSpaceRoadCreateLabel());
-		spaceCounterActionPanel.add(getSpaceRoadDestinationComboBox());
+		spaceCounterActionPanel.add(getSpaceRoadDestinationComboBox().getComponent());
 		spaceCounterActionPanel.add(getSpaceRoadCreateButton());
 		spaceCounterActionPanel.add(getSpaceRoadsRemoveButton());
 
@@ -2221,7 +2221,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		getSpaceRoadsList().clear();
 		getSpaceRoadsList().addAll(infos.building.getSpaceRoadsBuilt());
 		getSpaceRoadsList().addAll(infos.building.getSpaceRoadsLinked());				
-				
+		
+		getSpaceRoadDestinationComboBox().clear();
+		getSpaceRoadDestinationComboBox().addAll(currentGameBoard.getCelestialBodiesWithBuilding(SpaceCounter.class));
+		
 		updateUI();
 	}
 
@@ -2342,23 +2345,36 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return spaceRoadCreateLabel;
 	}
 
-	private JComboBox	spaceRoadDestinationComboBox;
+	private TypedListWrapper<JComboBox, ProductiveCelestialBody>	spaceRoadDestinationComboBox;
 
-	private JComboBox getSpaceRoadDestinationComboBox()
+	private TypedListWrapper<JComboBox, ProductiveCelestialBody> getSpaceRoadDestinationComboBox()
 	{
 		if (spaceRoadDestinationComboBox == null)
-		{
-			Set<ProductiveCelestialBody> dest = currentGameBoard.getCelestialBodiesWithBuilding(SpaceCounter.class);
-
-			String[] cbData = new String[dest.size()];
-			int i = 0;
-			for(ProductiveCelestialBody d : dest)
+		{	
+			spaceRoadDestinationComboBox = new TypedListWrapper<JComboBox, ProductiveCelestialBody>(ProductiveCelestialBody.class, new JComboBox(), new Comparator<ProductiveCelestialBody>() {
+				@Override
+				public int compare(ProductiveCelestialBody o1, ProductiveCelestialBody o2)
+				{
+					int owner = o1.getOwnerName().compareTo(o2.getOwnerName());
+					if (owner != 0) return owner;
+					return o1.getName().compareTo(o2.getName());
+				}
+			});
+					
+			spaceRoadDestinationComboBox.setCellRenderer(new TypedListWrapper.AbstractTypedJListCellRender<ProductiveCelestialBody>()
 			{
-				cbData[i] = d.getName();
-				++i;
-			}
-			spaceRoadDestinationComboBox = new JComboBox(cbData);
-			spaceRoadDestinationComboBox.setBounds(getSpaceRoadCreateLabel().getX(), getSpaceRoadCreateLabel().getY() + getSpaceRoadCreateLabel().getHeight(), (int) (getSpaceRoadCreateLabel().getWidth() * 0.3), getSpaceRoadCreateLabel().getHeight());
+				@Override
+				public Component getListCellRendererComponent(JList list, ProductiveCelestialBody value, int index, boolean isSelected, boolean cellHasFocus)
+				{
+					super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+					label.setText("["+value.getOwnerName()+"] "+value.getName());
+					return label;
+				}
+			});
+			
+			spaceRoadDestinationComboBox.addAll(currentGameBoard.getCelestialBodiesWithBuilding(SpaceCounter.class));
+			
+			spaceRoadDestinationComboBox.getComponent().setBounds(getSpaceRoadCreateLabel().getX(), getSpaceRoadCreateLabel().getY() + getSpaceRoadCreateLabel().getHeight(), (int) (getSpaceRoadCreateLabel().getWidth() * 0.3), getSpaceRoadCreateLabel().getHeight());
 		}
 		return spaceRoadDestinationComboBox;
 	}
@@ -2370,7 +2386,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (spaceRoadCreateButton == null)
 		{
 			spaceRoadCreateButton = new JButton("Create");
-			spaceRoadCreateButton.setBounds(getSpaceRoadDestinationComboBox().getX() + getSpaceRoadDestinationComboBox().getWidth() + 2, getSpaceRoadDestinationComboBox().getY(), getSpaceRoadCreateLabel().getWidth() - getSpaceRoadDestinationComboBox().getWidth() - 4, getSpaceRoadDestinationComboBox().getHeight());
+			spaceRoadCreateButton.setBounds(getSpaceRoadDestinationComboBox().getComponent().getX() + getSpaceRoadDestinationComboBox().getComponent().getWidth() + 2, getSpaceRoadDestinationComboBox().getComponent().getY(), getSpaceRoadCreateLabel().getWidth() - getSpaceRoadDestinationComboBox().getComponent().getWidth() - 4, getSpaceRoadDestinationComboBox().getComponent().getHeight());
 			spaceRoadCreateButton.addActionListener(new ActionListener()
 			{
 
@@ -2380,12 +2396,12 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					SelectedBuildingInfos<SpaceCounter> infos = getSelectedBuildingInfos(SpaceCounter.class);
 					if (infos == null || infos.building == null || infos.productiveCelestialBody == null) return;
 					
-					Object obj = getSpaceRoadDestinationComboBox().getSelectedItem();
-					if (obj == null) return;
+					ProductiveCelestialBody selectedSpaceRoadDestination = getSpaceRoadDestinationComboBox().getSelectedElement();
+					if (selectedSpaceRoadDestination == null) return;
 					
 					try
 					{
-						client.getRunningGameInterface().buildSpaceRoad(infos.productiveCelestialBody.getName(), obj.toString());
+						client.getRunningGameInterface().buildSpaceRoad(infos.productiveCelestialBody.getName(), selectedSpaceRoadDestination.getName());
 					}
 					catch(StateMachineNotExpectedEventException e1)
 					{
