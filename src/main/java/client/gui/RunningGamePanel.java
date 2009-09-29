@@ -2181,7 +2181,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		spaceCounterActionPanel.add(getNextCarbonOrdersLabel());
 		spaceCounterActionPanel.add(getNextCarbonOrdersScrollPane());
 		spaceCounterActionPanel.add(getCarbonFreightLabel());
-		spaceCounterActionPanel.add(getCarbonFreightDestinationComboBox());
+		spaceCounterActionPanel.add(getCarbonFreightDestinationComboBox().getComponent());
 		spaceCounterActionPanel.add(getCarbonFreightAmountTextField());
 		spaceCounterActionPanel.add(getCarbonFreightAddButton());
 		spaceCounterActionPanel.add(getCarbonFreightDownButton());
@@ -2224,6 +2224,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		
 		getSpaceRoadDestinationComboBox().clear();
 		getSpaceRoadDestinationComboBox().addAll(currentGameBoard.getCelestialBodiesWithBuilding(SpaceCounter.class));
+		
+		getCarbonFreightLabel().setText("Carbon freight "+infos.building.getCurrentCarbonFreight()+" / "+infos.building.getMaxCarbonFreight());
 		
 		updateUI();
 	}
@@ -2494,22 +2496,35 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return carbonFreightLabel;
 	}
 
-	private JComboBox	carbonFreightDestinationComboBox;
+	private TypedListWrapper<JComboBox, ProductiveCelestialBody>	carbonFreightDestinationComboBox;
 
-	private JComboBox getCarbonFreightDestinationComboBox()
+	private TypedListWrapper<JComboBox, ProductiveCelestialBody> getCarbonFreightDestinationComboBox()
 	{
 		if (carbonFreightDestinationComboBox == null)
 		{
-			Set<ProductiveCelestialBody> dest = currentGameBoard.getCelestialBodiesWithBuilding(SpaceCounter.class);
-			String[] cbData = new String[dest.size()];
-			int i = 0;
-			for(ProductiveCelestialBody d : dest)
+			carbonFreightDestinationComboBox = new TypedListWrapper<JComboBox, ProductiveCelestialBody>(ProductiveCelestialBody.class, new JComboBox(), new Comparator<ProductiveCelestialBody>() {
+				@Override
+				public int compare(ProductiveCelestialBody o1, ProductiveCelestialBody o2)
+				{
+					int owner = o1.getOwnerName().compareTo(o2.getOwnerName());
+					if (owner != 0) return owner;
+					return o1.getName().compareTo(o2.getName());
+				}
+			});
+					
+			carbonFreightDestinationComboBox.setCellRenderer(new TypedListWrapper.AbstractTypedJListCellRender<ProductiveCelestialBody>()
 			{
-				cbData[i] = d.getName();
-				++i;
-			}
-			carbonFreightDestinationComboBox = new JComboBox(cbData);
-			carbonFreightDestinationComboBox.setBounds(getCarbonFreightLabel().getX(), getCarbonFreightLabel().getY() + getCarbonFreightLabel().getHeight(), (int) (getCarbonFreightLabel().getWidth() * 0.3), getCarbonFreightLabel().getHeight());
+				@Override
+				public Component getListCellRendererComponent(JList list, ProductiveCelestialBody value, int index, boolean isSelected, boolean cellHasFocus)
+				{
+					super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+					label.setText("["+value.getOwnerName()+"] "+value.getName());
+					return label;
+				}
+			});
+			
+			carbonFreightDestinationComboBox.addAll(currentGameBoard.getCelestialBodiesWithBuilding(SpaceCounter.class));
+			carbonFreightDestinationComboBox.getComponent().setBounds(getCarbonFreightLabel().getX(), getCarbonFreightLabel().getY() + getCarbonFreightLabel().getHeight(), (int) (getCarbonFreightLabel().getWidth() * 0.3), getCarbonFreightLabel().getHeight());
 		}
 		return carbonFreightDestinationComboBox;
 	}
@@ -2521,7 +2536,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (carbonFreightAmountTextField == null)
 		{
 			carbonFreightAmountTextField = new JTextField();
-			carbonFreightAmountTextField.setBounds(getCarbonFreightDestinationComboBox().getX() + getCarbonFreightDestinationComboBox().getWidth() + 2, getCarbonFreightDestinationComboBox().getY(), getCarbonFreightLabel().getWidth() - getCarbonFreightDestinationComboBox().getWidth() - 4, getCarbonFreightDestinationComboBox().getHeight());
+			carbonFreightAmountTextField.setBounds(getCarbonFreightDestinationComboBox().getComponent().getX() + getCarbonFreightDestinationComboBox().getComponent().getWidth() + 2, getCarbonFreightDestinationComboBox().getComponent().getY(), getCarbonFreightLabel().getWidth() - getCarbonFreightDestinationComboBox().getComponent().getWidth() - 4, getCarbonFreightDestinationComboBox().getComponent().getHeight());
 		}
 		return carbonFreightAmountTextField;
 	}
@@ -2540,8 +2555,34 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				@Override
 				public void actionPerformed(ActionEvent e)
 				{
-					// TODO
-					showTodoMsg();
+					SelectedBuildingInfos<SpaceCounter> infos = getSelectedBuildingInfos(SpaceCounter.class);
+					if (infos == null || infos.building == null || infos.productiveCelestialBody == null) return;
+					
+					ProductiveCelestialBody selectedCarbonFreightDestination = getCarbonFreightDestinationComboBox().getSelectedElement();
+					if (selectedCarbonFreightDestination == null) return;
+					
+					int amount = Basic.intValueOf(getCarbonFreightAmountTextField().getText(), -1);
+					
+					try
+					{
+						client.getRunningGameInterface().modifyCarbonOrder(infos.productiveCelestialBody.getName(), selectedCarbonFreightDestination.getName(), amount);
+					}
+					catch(StateMachineNotExpectedEventException e1)
+					{
+						e1.printStackTrace();
+					}
+					catch(RpcException e1)
+					{
+						e1.printStackTrace();
+					}
+					catch(RunningGameCommandException e1)
+					{
+						showRunningGameCommandExceptionMsg(e1);
+					}
+					finally
+					{
+						refreshGameBoard();
+					}
 				}
 			});
 		}

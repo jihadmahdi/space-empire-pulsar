@@ -9,12 +9,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import org.axan.eplib.clientserver.rpc.RpcException;
+import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.eplib.utils.Basic;
 
 import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 
 import client.gui.RunningGamePanel;
 
+import common.CarbonOrder;
 import common.Diplomacy;
 import common.IBuilding;
 import common.Player;
@@ -499,6 +502,35 @@ public class PlayerGameMove
 		}
 	}
 	
+	static class ModifyCarbonOrder extends GameMoveCommand
+	{
+		private final String originCelestialBodyName;
+		private final Stack<CarbonOrder> nextCarbonOrders;
+		
+		public ModifyCarbonOrder(String playerLogin, String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders)
+		{
+			super(playerLogin);
+			this.originCelestialBodyName = originCelestialBodyName;
+			this.nextCarbonOrders = nextCarbonOrders;
+		}
+		
+		@Override
+		protected GameBoard apply(GameBoard originalGameBoard)
+		{
+			GameBoard newGameBoard = Basic.clone(originalGameBoard);
+			try
+			{
+				newGameBoard.modifyCarbonOrder(playerLogin, originCelestialBodyName, nextCarbonOrders);
+			}
+			catch(RunningGameCommandException e)
+			{
+				e.printStackTrace();
+				return originalGameBoard;
+			}
+			return newGameBoard;
+		}
+	}
+	
 	//////////////////
 	
 	private final GameBoard originalGameBoard;
@@ -735,6 +767,18 @@ public class PlayerGameMove
 		}
 		
 		addGameMoveCommand(new DemolishSpaceRoadCommand(playerLogin, sourceName, destinationName));
+	}
+	
+	public void addModifyCarbonOrderCommand(String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders) throws RunningGameCommandException
+	{
+		checkTurnIsNotEnded();
+		
+		if (!getGameBoard().canModifyCarbonOrder(playerLogin, originCelestialBodyName, nextCarbonOrders))
+		{
+			throw new RunningGameCommandException(playerLogin+" cannot modify carbon order from '"+originCelestialBodyName+"'.");
+		}
+		
+		addGameMoveCommand(new ModifyCarbonOrder(playerLogin, originCelestialBodyName, nextCarbonOrders));
 	}
 	
 	private void addGameMoveCommand(GameMoveCommand command) throws RunningGameCommandException

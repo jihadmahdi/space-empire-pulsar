@@ -1,37 +1,34 @@
-/**
- * @author Escallier Pierre
- * @file CarbonOrder.java
- * @date 3 juin 2009
- */
 package common;
 
 import java.io.Serializable;
 
-/**
- * Represent a carbon trade order.
- */
 public class CarbonOrder implements Serializable
 {
-	private static final long	serialVersionUID	= 1L;
-
-	private final CarbonCarrier carbonCarrier;
-	private final int carbonAmount;
+	private static final long serialVersionUID = 1L;
 	
-	/**
-	 * Full constructor.
-	 */
-	public CarbonOrder(CarbonCarrier carbonCarrier, int carbonAmount)
+	/** Source productive celestial body name. */
+	private final String sourceName;
+	
+	/** Destination productive celestial body name. */
+	private final String destinationName;
+	
+	/** Carbon amount. */
+	private final int amount;
+	
+	public CarbonOrder(String sourceName, String destinationName, int amount)
 	{
-		this.carbonCarrier = carbonCarrier;
-		this.carbonAmount = carbonAmount;
+		this.sourceName = sourceName;
+		this.destinationName = destinationName;
+		this.amount = amount;
 	}
 	
-	/* (non-Javadoc)
-	 * @see java.lang.Object#toString()
-	 */
-	@Override
-	public String toString()
+	public int getAmount()
 	{
-		return carbonAmount+" carbon; "+carbonCarrier;
+		return amount;
+	}
+
+	public String getDestinationName()
+	{
+		return destinationName;
 	}
 }

@@ -13,6 +13,7 @@ import java.util.Stack;
 
 import server.SEPServer;
 
+import common.CarbonOrder;
 import common.Player;
 import common.Protocol.ServerRunningGame.RunningGameCommandException;
 import common.SEPUtils.RealLocation;
@@ -58,24 +59,29 @@ class SpaceCounter extends ABuilding implements Serializable
 		}
 	}
 	
-	static class CarbonOrder implements Serializable
+	static class CarbonDelivery implements Serializable
 	{
 		private static final long	serialVersionUID	= 1L;
 		
 		private CarbonCarrier carbonCarrier;
-		private int carbonAmount;
+		private common.CarbonOrder order;
 		
 		/**
 		 * 
 		 */
-		public CarbonOrder()
+		public CarbonDelivery()
 		{
 			// TODO Auto-generated constructor stub
 		}
 		
-		public common.CarbonOrder getPlayerView(int date, String playerLogin)
+		public common.CarbonDelivery getPlayerView(int date, String playerLogin)
 		{
-			return new common.CarbonOrder(carbonCarrier.getPlayerView(date, playerLogin, true), carbonAmount);
+			return new common.CarbonDelivery(carbonCarrier.getPlayerView(date, playerLogin, true), order.getAmount());
+		}
+		
+		public int getAmount()
+		{
+			return order.getAmount();
 		}
 	}
 	
@@ -87,9 +93,9 @@ class SpaceCounter extends ABuilding implements Serializable
 	// assert Sets.size() == nbBuild
 	private final Set<SpaceRoad> spaceRoadsBuilt;
 	private final Set<SpaceRoad> spaceRoadsLinked;
-	private final Set<CarbonOrder> ordersToReceive;
-	private final Set<CarbonOrder> currentSentOrder;
-	private final Stack<CarbonOrder> nextOrders;
+	private final Set<CarbonDelivery> ordersToReceive;
+	private final Set<CarbonDelivery> currentSentOrder;
+	private final Stack<common.CarbonOrder> nextOrders;
 	
 	
 	/**
@@ -108,13 +114,13 @@ class SpaceCounter extends ABuilding implements Serializable
 		this.nbBuild = nbBuild;
 		this.spaceRoadsBuilt = new HashSet<SpaceRoad>();
 		this.spaceRoadsLinked = new HashSet<SpaceRoad>();
-		this.ordersToReceive = new HashSet<CarbonOrder>();
-		this.currentSentOrder = new HashSet<CarbonOrder>();
-		this.nextOrders = new Stack<CarbonOrder>();
+		this.ordersToReceive = new HashSet<CarbonDelivery>();
+		this.currentSentOrder = new HashSet<CarbonDelivery>();
+		this.nextOrders = new Stack<common.CarbonOrder>();
 		this.lastBuildDate = lastBuildDate;
 	}
 	
-	private SpaceCounter(int lastBuildDate, int nbBuild, Set<SpaceRoad> spaceRoadsBuilt, Set<SpaceRoad> spaceRoadsLinked, Set<CarbonOrder> ordersToReceive, Set<CarbonOrder> currentSentOrder, Stack<CarbonOrder> nextOrders)
+	private SpaceCounter(int lastBuildDate, int nbBuild, Set<SpaceRoad> spaceRoadsBuilt, Set<SpaceRoad> spaceRoadsLinked, Set<CarbonDelivery> ordersToReceive, Set<CarbonDelivery> currentSentOrder, Stack<common.CarbonOrder> nextOrders)
 	{
 		this.nbBuild = nbBuild;
 		this.spaceRoadsBuilt = spaceRoadsBuilt;
@@ -143,22 +149,22 @@ class SpaceCounter extends ABuilding implements Serializable
 			spaceRoadsLinkedSet.add(r.getPlayerView(date, playerLogin));
 		}
 		
-		Set<common.CarbonOrder> ordersToReceiveSet = new HashSet<common.CarbonOrder>();
-		for(CarbonOrder o : ordersToReceive)
+		Set<common.CarbonDelivery> ordersToReceiveSet = new HashSet<common.CarbonDelivery>();
+		for(CarbonDelivery o : ordersToReceive)
 		{
 			ordersToReceiveSet.add(o.getPlayerView(date, playerLogin));
 		}
 		
-		Set<common.CarbonOrder> currentSentOrderSet = new HashSet<common.CarbonOrder>();
-		for(CarbonOrder o : currentSentOrder)
+		Set<common.CarbonDelivery> currentSentOrderSet = new HashSet<common.CarbonDelivery>();
+		for(CarbonDelivery o : currentSentOrder)
 		{
 			currentSentOrderSet.add(o.getPlayerView(date, playerLogin));
 		}
 		
 		Stack<common.CarbonOrder> nextOrdersSet = new Stack<common.CarbonOrder>();
-		for(CarbonOrder o : nextOrders)
+		for(common.CarbonOrder o : nextOrders)
 		{
-			nextOrdersSet.push(o.getPlayerView(date, playerLogin));
+			nextOrdersSet.push(o);
 		}
 		
 		return new common.SpaceCounter(nbBuild, spaceRoadsBuiltSet, spaceRoadsLinkedSet, ordersToReceiveSet, currentSentOrderSet, nextOrdersSet, getMaxCarbonFreight(), getCurrentCarbonFreight());
@@ -179,9 +185,9 @@ class SpaceCounter extends ABuilding implements Serializable
 	public int getCurrentCarbonFreight()
 	{
 		int carbonFreight = 0;
-		for(CarbonOrder order : currentSentOrder)
+		for(CarbonDelivery delivery : currentSentOrder)
 		{
-			carbonFreight += order.carbonAmount;
+			carbonFreight += delivery.getAmount();
 		}
 		
 		return carbonFreight;
@@ -285,5 +291,11 @@ class SpaceCounter extends ABuilding implements Serializable
 				break;
 			}
 		}
+	}
+
+	public void modifyCarbonOrder(Stack<CarbonOrder> nextCarbonOrders)
+	{
+		nextOrders.clear();
+		nextOrders.addAll(nextCarbonOrders);	
 	}
 }

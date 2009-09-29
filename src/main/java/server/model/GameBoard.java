@@ -18,6 +18,7 @@ import org.axan.eplib.utils.Basic;
 import server.SEPServer;
 import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 
+import common.CarbonOrder;
 import common.GameConfig;
 import common.SEPUtils;
 import common.TravellingLogEntryUnitSeen;
@@ -1534,6 +1535,72 @@ public class GameBoard implements Serializable
 		}
 		
 		return new DemolishSpaceRoadCheckResult(sourceSpaceCounter);			
+	}
+	
+	////
+	
+	public boolean canModifyCarbonOrder(String playerLogin, String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders)
+	{
+		try
+		{
+			checkModifyCarbonOrder(playerLogin, originCelestialBodyName, nextCarbonOrders);
+		}
+		catch(Throwable t)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	public void modifyCarbonOrder(String playerLogin, String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders) throws RunningGameCommandException
+	{
+		ModifyCarbonOrderCheckResult modifyCarbonOrderCheckResult = checkModifyCarbonOrder(playerLogin, originCelestialBodyName, nextCarbonOrders);
+		modifyCarbonOrderCheckResult.spaceCounter.modifyCarbonOrder(nextCarbonOrders);
+	}
+
+	private static class ModifyCarbonOrderCheckResult
+	{
+		final SpaceCounter spaceCounter;
+		
+		public ModifyCarbonOrderCheckResult(SpaceCounter spaceCounter)
+		{
+			this.spaceCounter = spaceCounter;
+		}
+	}
+
+	private ModifyCarbonOrderCheckResult checkModifyCarbonOrder(String playerLogin, String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders) throws RunningGameCommandException
+	{
+		ProductiveCelestialBody source = db.getCelestialBody(originCelestialBodyName, ProductiveCelestialBody.class);
+		if (source == null) throw new RunningGameCommandException("Celestial body '"+originCelestialBodyName+"' is not a productive celestial body.");
+		
+		if (!playerLogin.equals(source.getOwnerName()))
+		{
+			throw new RunningGameCommandException("'"+playerLogin+"' is not the celestial body '"+originCelestialBodyName+"' owner.");
+		}
+		
+		SpaceCounter sourceSpaceCounter = source.getBuilding(SpaceCounter.class);
+		if (sourceSpaceCounter == null) throw new RunningGameCommandException("'"+originCelestialBodyName+"' has no space counter build.");
+		 
+		for(CarbonOrder order : nextCarbonOrders)
+		{
+			String destinationCelestialBodyName = order.getDestinationName();
+			int amount = order.getAmount();
+			
+			ProductiveCelestialBody destination = db.getCelestialBody(destinationCelestialBodyName, ProductiveCelestialBody.class);
+			if (destination == null) throw new RunningGameCommandException("Celestial body '"+destinationCelestialBodyName+"' is not a productive celestial body.");
+			
+			SpaceCounter destinationSpaceCounter = destination.getBuilding(SpaceCounter.class);
+			if (destinationSpaceCounter == null) throw new RunningGameCommandException("'"+destinationCelestialBodyName+"' has no space counter build.");		
+		
+			if (amount <= 0) throw new RunningGameCommandException("Carbon amount must be greater than 0.");
+			
+			for(RealLocation pathStep : SEPUtils.getAllPathLoc(source.getLocation().asRealLocation(), destination.getLocation().asRealLocation()))
+			{
+				if (db.getArea(pathStep.asLocation()) != null && db.getArea(pathStep.asLocation()).isSun()) throw new RunningGameCommandException("Impossible path : " + source.getLocation() + " to " + destination.getLocation() + ", cannot travel the sun.");
+			}
+		}
+		
+		return new ModifyCarbonOrderCheckResult(sourceSpaceCounter);
 	}
 	
 	////
