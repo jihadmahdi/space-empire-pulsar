@@ -26,11 +26,11 @@ public class SpaceCounter implements IBuilding, Serializable
 	
 	private final Set<SpaceRoad> spaceRoadsLinked;
 	
-	private final Set<CarbonOrder> carbonToReceive;
+	private final Set<CarbonDelivery> carbonToReceive;
 	
 	private final Stack<CarbonOrder> nextCarbonOrder;
 	
-	private final Set<CarbonOrder> currentCarbonOrder;
+	private final Set<CarbonDelivery> currentCarbonOrder;
 	
 	private final int maxCarbonFreight;
 	private final int currentCarbonFreight;
@@ -38,7 +38,7 @@ public class SpaceCounter implements IBuilding, Serializable
 	/**
 	 * Full constructor.
 	 */
-	public SpaceCounter(int nbBuild, Set<SpaceRoad> spaceRoadsBuilt, Set<SpaceRoad> spaceRoadsLinked, Set<CarbonOrder> carbonToReceive, Set<CarbonOrder> currentCarbonOrder, Stack<CarbonOrder> nextCarbonOrder, int maxCarbonFreight, int currentCarbonFreight)
+	public SpaceCounter(int nbBuild, Set<SpaceRoad> spaceRoadsBuilt, Set<SpaceRoad> spaceRoadsLinked, Set<CarbonDelivery> carbonToReceive, Set<CarbonDelivery> currentCarbonOrder, Stack<CarbonOrder> nextCarbonOrder, int maxCarbonFreight, int currentCarbonFreight)
 	{
 		this.nbBuild = nbBuild;
 		this.spaceRoadsBuilt = spaceRoadsBuilt;
@@ -97,7 +97,7 @@ public class SpaceCounter implements IBuilding, Serializable
 		if (carbonToReceive.size() > 0)
 		{
 			sb.append("To receive :\n");
-			for(CarbonOrder o : carbonToReceive)
+			for(CarbonDelivery o : carbonToReceive)
 			{
 				sb.append("  "+o+"\n");
 			}
@@ -105,7 +105,7 @@ public class SpaceCounter implements IBuilding, Serializable
 		if (currentCarbonOrder.size() > 0)
 		{
 			sb.append("sent :\n");
-			for(CarbonOrder o : currentCarbonOrder)
+			for(CarbonDelivery o : currentCarbonOrder)
 			{
 				sb.append("  "+o+"\n");
 			}

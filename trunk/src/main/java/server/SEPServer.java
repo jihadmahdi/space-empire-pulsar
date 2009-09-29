@@ -37,6 +37,7 @@ import server.model.PlayerGameMove;
 import server.model.ServerGame;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import common.CarbonOrder;
 import common.GameConfig;
 import common.IBuilding;
 import common.PlayerGameBoard;
@@ -513,18 +514,16 @@ public class SEPServer implements IServer, GameServerListener
 		}
 		
 		@Override
-		public void canModifyCarbonOrder() throws RpcException, StateMachineNotExpectedEventException
+		public boolean canModifyCarbonOrder(String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders) throws RpcException, StateMachineNotExpectedEventException
 		{
-			// if (getGameMove().isTurnEnded()) return false;
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			if (getGameMove().isTurnEnded()) return false;
+			return getGameBoard().canModifyCarbonOrder(getLogin(), originCelestialBodyName, nextCarbonOrders);
 		}
 
 		@Override
-		public void modifyCarbonOrder(String originCelestialBodyName, String destinationCelestialBodyName, int amount) throws RpcException, StateMachineNotExpectedEventException
+		public void modifyCarbonOrder(String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
-			// TODO Auto-generated method stub
-			throw new NotImplementedException();
+			getGameMove().addModifyCarbonOrderCommand(originCelestialBodyName, nextCarbonOrders);
 		}
 
 		@Override

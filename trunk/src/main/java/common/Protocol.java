@@ -339,7 +339,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state. 
 		 */
-		void canModifyCarbonOrder() throws RpcException, StateMachineNotExpectedEventException;
+		boolean canModifyCarbonOrder(String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Modify/create a carbon order from two celestial bodies.
@@ -348,8 +348,9 @@ public interface Protocol
 		 * @param amount
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 * @throws RunningGameCommandException 
 		 */
-		void modifyCarbonOrder(String originCelestialBodyName, String destinationCelestialBodyName, int amount) throws RpcException, StateMachineNotExpectedEventException;
+		void modifyCarbonOrder(String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
 		
 		/**
 		 * Test if fleet can be moved.
