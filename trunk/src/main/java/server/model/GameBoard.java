@@ -17,6 +17,7 @@ import org.axan.eplib.utils.Basic;
 
 import server.SEPServer;
 import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
+import sun.security.action.GetBooleanAction;
 
 import common.CarbonOrder;
 import common.GameConfig;
@@ -380,7 +381,7 @@ public class GameBoard implements Serializable
 				
 				if (extractionModule == null || extractionModule.getCarbonProductionPerTurn() <= 0)
 				{
-					generatedCarbon = Math.min(db.getGameConfig().getMaxNaturalCarbon() - productiveCelestialBody.getCarbon(), generatedCarbon);
+					generatedCarbon = Math.min(Math.max(0, db.getGameConfig().getMaxNaturalCarbon() - productiveCelestialBody.getCarbon()), generatedCarbon);
 				}					
 			}																				
 							
@@ -404,13 +405,24 @@ public class GameBoard implements Serializable
 			}
 		}
 		
+		Set<ProductiveCelestialBody> productiveCelestialBodies = db.getCelestialBodies(ProductiveCelestialBody.class);
+		
 		// Conflicts
-		for(ProductiveCelestialBody productiveCelestialBody : db.getCelestialBodies(ProductiveCelestialBody.class))
+		for(ProductiveCelestialBody productiveCelestialBody : productiveCelestialBodies)
 		{
 			if (!productiveCelestialBody.getConflictInitiators().isEmpty())
 			{
 				resolveConflict(productiveCelestialBody);
 			}
+		}
+		
+		// Carbon freight
+		for(ProductiveCelestialBody productiveCelstialBody : productiveCelestialBodies)
+		{
+			SpaceCounter spaceCounter = productiveCelstialBody.getBuilding(SpaceCounter.class);
+			if (spaceCounter == null) continue;
+			
+			spaceCounter.prepareCarbonDelivery(db, productiveCelstialBody);
 		}
 
 		db.incDate();
@@ -1428,7 +1440,7 @@ public class GameBoard implements Serializable
 		BuildSpaceRoadCheckResult buildSpaceRoadCheckResult = checkBuildSpaceRoad(playerLogin, productiveCelestialBodyNameA, productiveCelestialBodyNameB);
 			
 		db.insertUnit(buildSpaceRoadCheckResult.deliverer);
-		buildSpaceRoadCheckResult.deliverer.launch(buildSpaceRoadCheckResult.sourceLocation.asRealLocation(), buildSpaceRoadCheckResult.destinationLocation.asRealLocation());		
+		buildSpaceRoadCheckResult.deliverer.launch(buildSpaceRoadCheckResult.destinationLocation.asRealLocation());		
 		buildSpaceRoadCheckResult.payer.setCarbon(buildSpaceRoadCheckResult.payer.getCarbon() - buildSpaceRoadCheckResult.price);
 	}
 
@@ -1592,7 +1604,7 @@ public class GameBoard implements Serializable
 			SpaceCounter destinationSpaceCounter = destination.getBuilding(SpaceCounter.class);
 			if (destinationSpaceCounter == null) throw new RunningGameCommandException("'"+destinationCelestialBodyName+"' has no space counter build.");		
 		
-			if (amount <= 0) throw new RunningGameCommandException("Carbon amount must be greater than 0.");
+			if (amount < db.getGameConfig().getCarbonMinimalFreight()) throw new RunningGameCommandException("Carbon amount must be greater than 0.");
 			
 			for(RealLocation pathStep : SEPUtils.getAllPathLoc(source.getLocation().asRealLocation(), destination.getLocation().asRealLocation()))
 			{

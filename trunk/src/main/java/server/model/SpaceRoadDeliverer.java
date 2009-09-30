@@ -120,9 +120,9 @@ class SpaceRoadDeliverer extends Unit implements Serializable
 		}
 	}
 	
-	public void launch(RealLocation sourceLocation, RealLocation destinationLocation)
+	public void launch(RealLocation destinationLocation)
 	{
-		setSourceLocation(sourceLocation);
+		setSourceLocation(getRealLocation());
 		setDestinationLocation(destinationLocation);
 		setTravellingProgress(0);
 	}

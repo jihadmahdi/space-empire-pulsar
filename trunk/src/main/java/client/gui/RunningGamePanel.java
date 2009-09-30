@@ -31,6 +31,7 @@ import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -100,6 +101,7 @@ import client.gui.lib.WrappedJLabel;
 import common.AntiProbeMissile;
 import common.Area;
 import common.CarbonCarrier;
+import common.CarbonOrder;
 import common.DefenseModule;
 import common.ExtractionModule;
 import common.Fleet;
@@ -635,33 +637,35 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return runningGameCelestialBodyDetailsBuildingsList;
 	}
 
+	private final TypedListWrapper.TypedListElementSelector<Unit> UNIT_SELECTOR = new TypedListWrapper.TypedListElementSelector<Unit>()
+	{
+		@Override
+		public boolean equals(Unit o1, Unit o2)
+		{
+			return o1.getOwnerName().equals(o2.getOwnerName()) && o1.getName().equals(o2.getName());
+		}
+	};
+	
+	private final TypedListWrapper.AbstractTypedJListCellRender<Unit> UNIT_RENDERER = new TypedListWrapper.AbstractTypedJListCellRender<Unit>()
+	{
+		@Override
+		public Component getListCellRendererComponent(JList list, Unit unit, int index, boolean isSelected, boolean cellHasFocus)
+		{
+			super.getListCellRendererComponent(list, unit, index, isSelected, cellHasFocus);
+			label.setText(unit.getClass().getSimpleName() + " [" + ((unit.getOwnerName() != null) ? unit.getOwnerName() : "unknown") + "] " + unit.getName());
+			return label;
+		}
+	};
+	
 	private TypedListWrapper<JList, Unit>	runningGameCelestialBodyDetailsUnitsList;
 
 	private TypedListWrapper<JList, Unit> getRunningGameCelestialBodyDetailsUnitsList()
 	{
 		if (runningGameCelestialBodyDetailsUnitsList == null)
 		{			
-			runningGameCelestialBodyDetailsUnitsList = new TypedListWrapper<JList, Unit>(Unit.class, new JList(), new Comparator<Unit>()
-			{
-				@Override
-				public int compare(Unit o1, Unit o2)
-				{
-					int owner = o1.getOwnerName().compareTo(o2.getOwnerName());
-					if (owner != 0) return owner;
-					return o1.getName().compareTo(o2.getName());
-				}
-			});
+			runningGameCelestialBodyDetailsUnitsList = new TypedListWrapper<JList, Unit>(Unit.class, new JList(), UNIT_SELECTOR);
 			
-			runningGameCelestialBodyDetailsUnitsList.setCellRenderer(new TypedListWrapper.AbstractTypedJListCellRender<Unit>()
-			{
-				@Override
-				public Component getListCellRendererComponent(JList list, Unit unit, int index, boolean isSelected, boolean cellHasFocus)
-				{
-					super.getListCellRendererComponent(list, unit, index, isSelected, cellHasFocus);
-					label.setText(unit.getClass().getSimpleName() + " [" + ((unit.getOwnerName() != null) ? unit.getOwnerName() : "unknown") + "] " + unit.getName());
-					return label;
-				}
-			});
+			runningGameCelestialBodyDetailsUnitsList.setCellRenderer(UNIT_RENDERER);
 
 			runningGameCelestialBodyDetailsUnitsList.getComponent().setVisibleRowCount(5);
 			runningGameCelestialBodyDetailsUnitsList.getComponent().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -1324,34 +1328,35 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return launchProbeDestinationZTextField;
 	}
 	
+	private final TypedListWrapper.TypedListElementSelector<Probe> PROBE_SELECTOR = new TypedListWrapper.TypedListElementSelector<Probe>()
+	{
+		@Override
+		public boolean equals(Probe o1, Probe o2)
+		{
+			return o1.getOwnerName().equals(o2.getOwnerName()) && o1.getName().equals(o2.getName());
+		}
+	};
+	
+	private final TypedListWrapper.AbstractTypedJListCellRender<Probe> PROBE_RENDERER = new TypedListWrapper.AbstractTypedJListCellRender<Probe>()
+	{
+		@Override
+		public Component getListCellRendererComponent(JList list, Probe probe, int index, boolean isSelected, boolean cellHasFocus)
+		{
+			super.getListCellRendererComponent(list, probe, index, isSelected, cellHasFocus);
+			label.setText(probe.getClass().getSimpleName() + " [" + ((probe.getOwnerName() != null) ? probe.getOwnerName() : "unknown") + "] " + probe.getName());
+			return label;
+		}
+	};
+	
 	private TypedListWrapper<JComboBox, Probe> antiPulsarMissileTargetComboBox;
 
 	private TypedListWrapper<JComboBox, Probe> getAntiPulsarMissileTargetComboBox()
 	{
 		if (antiPulsarMissileTargetComboBox == null)
 		{			
-			antiPulsarMissileTargetComboBox = new TypedListWrapper<JComboBox, Probe>(Probe.class, new JComboBox(), new Comparator<Probe>()
-			{
-				
-				@Override
-				public int compare(Probe o1, Probe o2)
-				{
-					int owner = o1.getOwnerName().compareTo(o2.getOwnerName());
-					if (owner != 0) return owner;
-					return o1.getName().compareTo(o2.getName());					
-				}
-			});
+			antiPulsarMissileTargetComboBox = new TypedListWrapper<JComboBox, Probe>(Probe.class, new JComboBox(), PROBE_SELECTOR);
 			
-			antiPulsarMissileTargetComboBox.setCellRenderer(new TypedListWrapper.AbstractTypedJListCellRender<Probe>()
-			{
-				@Override
-				public Component getListCellRendererComponent(JList list, Probe value, int index, boolean isSelected, boolean cellHasFocus)
-				{
-					super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-					label.setText("["+value.getOwnerName()+"] "+value.getName());
-					return label;
-				}
-			});						
+			antiPulsarMissileTargetComboBox.setCellRenderer(PROBE_RENDERER);						
 		}
 		return antiPulsarMissileTargetComboBox;
 	}
@@ -2102,7 +2107,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
 
 		B building = null;
-		for(IBuilding b : productiveCelestialBody.getBuildings())
+		Set<IBuilding> buildings = productiveCelestialBody.getBuildings();
+		if (buildings != null) for(IBuilding b : buildings)
 		{
 			if (buildingType.isInstance(b))
 			{
@@ -2183,6 +2189,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		spaceCounterActionPanel.add(getCarbonFreightLabel());
 		spaceCounterActionPanel.add(getCarbonFreightDestinationComboBox().getComponent());
 		spaceCounterActionPanel.add(getCarbonFreightAmountTextField());
+		spaceCounterActionPanel.add(getCarbonFreightAutomatedOrderCheckBox());
 		spaceCounterActionPanel.add(getCarbonFreightAddButton());
 		spaceCounterActionPanel.add(getCarbonFreightDownButton());
 		spaceCounterActionPanel.add(getCarbonFreightRemoveButton());
@@ -2218,12 +2225,26 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		SelectedBuildingInfos<SpaceCounter> infos = getSelectedBuildingInfos(SpaceCounter.class);
 		if (infos == null || infos.building == null) return;
 		
+		Set<ProductiveCelestialBody> possiblesDestinations = currentGameBoard.getCelestialBodiesWithBuilding(SpaceCounter.class);
+		
 		getSpaceRoadsList().clear();
 		getSpaceRoadsList().addAll(infos.building.getSpaceRoadsBuilt());
-		getSpaceRoadsList().addAll(infos.building.getSpaceRoadsLinked());				
+		getSpaceRoadsList().addAll(infos.building.getSpaceRoadsLinked());	
 		
 		getSpaceRoadDestinationComboBox().clear();
-		getSpaceRoadDestinationComboBox().addAll(currentGameBoard.getCelestialBodiesWithBuilding(SpaceCounter.class));
+		getSpaceRoadDestinationComboBox().addAll(possiblesDestinations);
+		
+		getNextCarbonOrdersList().clear();
+		getNextCarbonOrdersList().addAll(infos.building.getNextCarbonOrders());
+		
+		getCarbonFreightDestinationComboBox().clear();
+		getCarbonFreightDestinationComboBox().addAll(possiblesDestinations);
+		
+		getCurrentCarbonOrdersList().clear();
+		getCurrentCarbonOrdersList().addAll(infos.building.getCurrentCarbonOrders());
+		
+		getCarbonOrdersToReceiveList().clear();
+		getCarbonOrdersToReceiveList().addAll(infos.building.getCarbonOrdersToReceive());
 		
 		getCarbonFreightLabel().setText("Carbon freight "+infos.building.getCurrentCarbonFreight()+" / "+infos.building.getMaxCarbonFreight());
 		
@@ -2267,20 +2288,22 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return spaceRoadsScrollPane;
 	}
 
+	private final TypedListWrapper.TypedListElementSelector<SpaceRoad> SPACEROAD_SELECTOR = new TypedListWrapper.TypedListElementSelector<SpaceRoad>()
+	{
+		@Override
+		public boolean equals(SpaceRoad o1, SpaceRoad o2)
+		{
+			return o1.getDestination().equals(o2.getDestination());			
+		}
+	};
+	
 	private TypedListWrapper<JList, SpaceRoad>	spaceRoadsList;
 
 	private TypedListWrapper<JList, SpaceRoad> getSpaceRoadsList()
 	{
 		if (spaceRoadsList == null)
 		{
-			spaceRoadsList = new TypedListWrapper<JList, SpaceRoad>(SpaceRoad.class, new JList(), new Comparator<SpaceRoad>()
-			{
-				@Override
-				public int compare(SpaceRoad o1, SpaceRoad o2)
-				{
-					return o1.getCreationDate() - o2.getCreationDate();
-				}
-			});
+			spaceRoadsList = new TypedListWrapper<JList, SpaceRoad>(SpaceRoad.class, new JList(), SPACEROAD_SELECTOR);
 			
 			spaceRoadsList.setCellRenderer(new TypedListWrapper.AbstractTypedJListCellRender());
 			spaceRoadsList.getComponent().setVisibleRowCount(3);
@@ -2347,32 +2370,34 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return spaceRoadCreateLabel;
 	}
 
+	private final TypedListWrapper.TypedListElementSelector<ProductiveCelestialBody> PRODUCTIVE_CELESTIAL_BODY_SELECTOR = new TypedListWrapper.TypedListElementSelector<ProductiveCelestialBody>()
+	{
+		public boolean equals(ProductiveCelestialBody o1, ProductiveCelestialBody o2)
+		{
+			return o1.getName().equals(o2.getName());
+		};
+	};
+	
+	private final TypedListWrapper.AbstractTypedJListCellRender<ProductiveCelestialBody> PRODUCTIVE_CELESTIAL_BODY_RENDERER = new TypedListWrapper.AbstractTypedJListCellRender<ProductiveCelestialBody>()
+	{
+		@Override
+		public Component getListCellRendererComponent(JList list, ProductiveCelestialBody value, int index, boolean isSelected, boolean cellHasFocus)
+		{
+			super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+			label.setText("["+value.getOwnerName()+"] "+value.getName());
+			return label;
+		}
+	};
+	
 	private TypedListWrapper<JComboBox, ProductiveCelestialBody>	spaceRoadDestinationComboBox;
 
 	private TypedListWrapper<JComboBox, ProductiveCelestialBody> getSpaceRoadDestinationComboBox()
 	{
 		if (spaceRoadDestinationComboBox == null)
 		{	
-			spaceRoadDestinationComboBox = new TypedListWrapper<JComboBox, ProductiveCelestialBody>(ProductiveCelestialBody.class, new JComboBox(), new Comparator<ProductiveCelestialBody>() {
-				@Override
-				public int compare(ProductiveCelestialBody o1, ProductiveCelestialBody o2)
-				{
-					int owner = o1.getOwnerName().compareTo(o2.getOwnerName());
-					if (owner != 0) return owner;
-					return o1.getName().compareTo(o2.getName());
-				}
-			});
+			spaceRoadDestinationComboBox = new TypedListWrapper<JComboBox, ProductiveCelestialBody>(ProductiveCelestialBody.class, new JComboBox(), PRODUCTIVE_CELESTIAL_BODY_SELECTOR);
 					
-			spaceRoadDestinationComboBox.setCellRenderer(new TypedListWrapper.AbstractTypedJListCellRender<ProductiveCelestialBody>()
-			{
-				@Override
-				public Component getListCellRendererComponent(JList list, ProductiveCelestialBody value, int index, boolean isSelected, boolean cellHasFocus)
-				{
-					super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-					label.setText("["+value.getOwnerName()+"] "+value.getName());
-					return label;
-				}
-			});
+			spaceRoadDestinationComboBox.setCellRenderer(PRODUCTIVE_CELESTIAL_BODY_RENDERER);
 			
 			spaceRoadDestinationComboBox.addAll(currentGameBoard.getCelestialBodiesWithBuilding(SpaceCounter.class));
 			
@@ -2446,40 +2471,45 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (nextCarbonOrdersScrollPane == null)
 		{
 			nextCarbonOrdersScrollPane = new JScrollPane();
-			nextCarbonOrdersScrollPane = new JScrollPane(getNextCarbonOrdersList());
-			nextCarbonOrdersScrollPane.setPreferredSize(new Dimension(200, getNextCarbonOrdersList().getPreferredScrollableViewportSize().height));
+			nextCarbonOrdersScrollPane = new JScrollPane(getNextCarbonOrdersList().getComponent());
+			nextCarbonOrdersScrollPane.setPreferredSize(new Dimension(200, getNextCarbonOrdersList().getComponent().getPreferredScrollableViewportSize().height));
 			nextCarbonOrdersScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 			nextCarbonOrdersScrollPane.setBounds(getNextCarbonOrdersLabel().getX(), getNextCarbonOrdersLabel().getY() + getNextCarbonOrdersLabel().getHeight(), getNextCarbonOrdersLabel().getWidth(), getSpaceRoadsScrollPane().getHeight());
 		}
 		return nextCarbonOrdersScrollPane;
 	}
 
-	private JList	nextCarbonOrdersList;
+	private final TypedListWrapper.TypedListElementSelector<CarbonOrder> CARBONORDER_SELECTOR = new TypedListWrapper.TypedListElementSelector<CarbonOrder>()
+	{
+		public boolean equals(CarbonOrder o1, CarbonOrder o2)
+		{
+			return o1.getDestinationName().equals(o2.getDestinationName()) && o1.getAmount() == o2.getAmount();
+		}
+	};
+	
+	private final TypedListWrapper.AbstractTypedJListCellRender<CarbonOrder> CARBONORDER_RENDERER = new TypedListWrapper.AbstractTypedJListCellRender<CarbonOrder>()
+	{
+		@Override
+		public Component getListCellRendererComponent(JList list, CarbonOrder value, int index, boolean isSelected, boolean cellHasFocus)
+		{
+			super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+			label.setText(value.getDestinationName()+" : "+value.getAmount()+(value.isAutomated()?" (auto)":""));
+			return label;
+		}
+	};
+	
+	private TypedListWrapper<JList, CarbonOrder>	nextCarbonOrdersList;
 
-	private JList getNextCarbonOrdersList()
+	private TypedListWrapper<JList, CarbonOrder> getNextCarbonOrdersList()
 	{
 		if (nextCarbonOrdersList == null)
 		{
-			nextCarbonOrdersList = new JList();
-			nextCarbonOrdersList.setVisibleRowCount(3);
-			nextCarbonOrdersList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+			nextCarbonOrdersList = new TypedListWrapper<JList, CarbonOrder>(CarbonOrder.class, new JList(), CARBONORDER_SELECTOR);
+			
+			nextCarbonOrdersList.getComponent().setVisibleRowCount(3);
+			nextCarbonOrdersList.getComponent().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-			nextCarbonOrdersList.addMouseMotionListener(new MouseMotionAdapter()
-			{
-				@Override
-				public void mouseMoved(MouseEvent e)
-				{
-					int index = nextCarbonOrdersList.locationToIndex(e.getPoint());
-					if (index < 0) return;
-
-					String label = nextCarbonOrdersList.getModel().getElementAt(index).toString();
-					if (label == null) return;
-
-					nextCarbonOrdersList.setToolTipText(label);
-
-					super.mouseMoved(e);
-				}
-			});
+			nextCarbonOrdersList.setCellRenderer(CARBONORDER_RENDERER);
 		}
 		return nextCarbonOrdersList;
 	}
@@ -2502,29 +2532,12 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	{
 		if (carbonFreightDestinationComboBox == null)
 		{
-			carbonFreightDestinationComboBox = new TypedListWrapper<JComboBox, ProductiveCelestialBody>(ProductiveCelestialBody.class, new JComboBox(), new Comparator<ProductiveCelestialBody>() {
-				@Override
-				public int compare(ProductiveCelestialBody o1, ProductiveCelestialBody o2)
-				{
-					int owner = o1.getOwnerName().compareTo(o2.getOwnerName());
-					if (owner != 0) return owner;
-					return o1.getName().compareTo(o2.getName());
-				}
-			});
+			carbonFreightDestinationComboBox = new TypedListWrapper<JComboBox, ProductiveCelestialBody>(ProductiveCelestialBody.class, new JComboBox(), PRODUCTIVE_CELESTIAL_BODY_SELECTOR);
 					
-			carbonFreightDestinationComboBox.setCellRenderer(new TypedListWrapper.AbstractTypedJListCellRender<ProductiveCelestialBody>()
-			{
-				@Override
-				public Component getListCellRendererComponent(JList list, ProductiveCelestialBody value, int index, boolean isSelected, boolean cellHasFocus)
-				{
-					super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-					label.setText("["+value.getOwnerName()+"] "+value.getName());
-					return label;
-				}
-			});
+			carbonFreightDestinationComboBox.setCellRenderer(PRODUCTIVE_CELESTIAL_BODY_RENDERER);
 			
 			carbonFreightDestinationComboBox.addAll(currentGameBoard.getCelestialBodiesWithBuilding(SpaceCounter.class));
-			carbonFreightDestinationComboBox.getComponent().setBounds(getCarbonFreightLabel().getX(), getCarbonFreightLabel().getY() + getCarbonFreightLabel().getHeight(), (int) (getCarbonFreightLabel().getWidth() * 0.3), getCarbonFreightLabel().getHeight());
+			carbonFreightDestinationComboBox.getComponent().setBounds(getCarbonFreightLabel().getX(), getCarbonFreightLabel().getY() + getCarbonFreightLabel().getHeight(), (int) (getCarbonFreightLabel().getWidth() * 0.6), getCarbonFreightLabel().getHeight());
 		}
 		return carbonFreightDestinationComboBox;
 	}
@@ -2541,6 +2554,18 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return carbonFreightAmountTextField;
 	}
 
+	private JCheckBox carbonFreightAutomatedOrderCheckBox;
+	
+	private JCheckBox getCarbonFreightAutomatedOrderCheckBox()
+	{
+		if (carbonFreightAutomatedOrderCheckBox == null)
+		{
+			carbonFreightAutomatedOrderCheckBox = new JCheckBox("Repeat automatically");
+			carbonFreightAutomatedOrderCheckBox.setBounds(getCarbonFreightLabel().getX(), getCarbonFreightAmountTextField().getY() + getCarbonFreightAmountTextField().getHeight() + 2, getCarbonFreightLabel().getWidth(), getCarbonFreightLabel().getHeight());			
+		}
+		return carbonFreightAutomatedOrderCheckBox;
+	}
+	
 	private JButton	carbonFreightAddButton;
 
 	private JButton getCarbonFreightAddButton()
@@ -2548,7 +2573,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (carbonFreightAddButton == null)
 		{
 			carbonFreightAddButton = new JButton("Add");
-			carbonFreightAddButton.setBounds(getCarbonFreightLabel().getX(), getCarbonFreightAmountTextField().getY() + getCarbonFreightAmountTextField().getHeight() + 2, getCarbonFreightLabel().getWidth(), getCarbonFreightLabel().getHeight());
+			carbonFreightAddButton.setBounds(getCarbonFreightLabel().getX(), getCarbonFreightAutomatedOrderCheckBox().getY() + getCarbonFreightAutomatedOrderCheckBox().getHeight() + 2, getCarbonFreightLabel().getWidth(), getCarbonFreightLabel().getHeight());
 			carbonFreightAddButton.addActionListener(new ActionListener()
 			{
 
@@ -2562,10 +2587,18 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					if (selectedCarbonFreightDestination == null) return;
 					
 					int amount = Basic.intValueOf(getCarbonFreightAmountTextField().getText(), -1);
+					boolean automated = getCarbonFreightAutomatedOrderCheckBox().isSelected();
+					
+					CarbonOrder newCarbonOrder = new CarbonOrder(infos.productiveCelestialBody.getName(), selectedCarbonFreightDestination.getName(), amount, automated);
+					
+					Stack<CarbonOrder> orders = new Stack<CarbonOrder>();
+					orders.addAll(getNextCarbonOrdersList());
+					orders.add(newCarbonOrder);
 					
 					try
 					{
-						client.getRunningGameInterface().modifyCarbonOrder(infos.productiveCelestialBody.getName(), selectedCarbonFreightDestination.getName(), amount);
+						client.getRunningGameInterface().modifyCarbonOrder(infos.productiveCelestialBody.getName(), orders);
+						getNextCarbonOrdersList().add(newCarbonOrder);
 					}
 					catch(StateMachineNotExpectedEventException e1)
 					{
@@ -2603,8 +2636,41 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				@Override
 				public void actionPerformed(ActionEvent e)
 				{
-					// TODO
-					showTodoMsg();
+					SelectedBuildingInfos<SpaceCounter> infos = getSelectedBuildingInfos(SpaceCounter.class);
+					if (infos == null || infos.building == null || infos.productiveCelestialBody == null) return;
+					
+					int selectedIndex = getNextCarbonOrdersList().getSelectedIndex();
+					if (selectedIndex <= 0) return;
+					
+					CarbonOrder movedCarbonOrder = getNextCarbonOrdersList().getSelectedElement();
+					
+					Stack<CarbonOrder> orders = new Stack<CarbonOrder>();
+					orders.addAll(getNextCarbonOrdersList());
+					orders.remove(selectedIndex);
+					orders.add(selectedIndex-1, movedCarbonOrder);
+					
+					try
+					{
+						client.getRunningGameInterface().modifyCarbonOrder(infos.productiveCelestialBody.getName(), orders);
+						getNextCarbonOrdersList().remove(selectedIndex);
+						getNextCarbonOrdersList().add(selectedIndex-1, movedCarbonOrder);
+					}
+					catch(StateMachineNotExpectedEventException e1)
+					{
+						e1.printStackTrace();
+					}
+					catch(RpcException e1)
+					{
+						e1.printStackTrace();
+					}
+					catch(RunningGameCommandException e1)
+					{
+						showRunningGameCommandExceptionMsg(e1);
+					}
+					finally
+					{
+						refreshGameBoard();
+					}
 				}
 			});
 		}
@@ -2625,8 +2691,42 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				@Override
 				public void actionPerformed(ActionEvent e)
 				{
-					// TODO
-					showTodoMsg();
+					SelectedBuildingInfos<SpaceCounter> infos = getSelectedBuildingInfos(SpaceCounter.class);
+					if (infos == null || infos.building == null || infos.productiveCelestialBody == null) return;
+										
+					int selectedIndex = getNextCarbonOrdersList().getSelectedIndex();
+					if (selectedIndex < 0) return;
+					if (selectedIndex+1 >= getNextCarbonOrdersList().size()) return;
+					
+					CarbonOrder movedCarbonOrder = getNextCarbonOrdersList().getSelectedElement();
+					
+					Stack<CarbonOrder> orders = new Stack<CarbonOrder>();
+					orders.addAll(getNextCarbonOrdersList());
+					orders.remove(selectedIndex);
+					orders.add(selectedIndex+1, movedCarbonOrder);
+					
+					try
+					{
+						client.getRunningGameInterface().modifyCarbonOrder(infos.productiveCelestialBody.getName(), orders);
+						getNextCarbonOrdersList().remove(selectedIndex);
+						getNextCarbonOrdersList().add(selectedIndex+1, movedCarbonOrder);
+					}
+					catch(StateMachineNotExpectedEventException e1)
+					{
+						e1.printStackTrace();
+					}
+					catch(RpcException e1)
+					{
+						e1.printStackTrace();
+					}
+					catch(RunningGameCommandException e1)
+					{
+						showRunningGameCommandExceptionMsg(e1);
+					}
+					finally
+					{
+						refreshGameBoard();
+					}
 				}
 			});
 		}
@@ -2647,8 +2747,37 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				@Override
 				public void actionPerformed(ActionEvent e)
 				{
-					// TODO
-					showTodoMsg();
+					SelectedBuildingInfos<SpaceCounter> infos = getSelectedBuildingInfos(SpaceCounter.class);
+					if (infos == null || infos.building == null || infos.productiveCelestialBody == null) return;
+								
+					int selectedIndex = getNextCarbonOrdersList().getSelectedIndex();
+					if (selectedIndex < 0) return;
+					
+					Stack<CarbonOrder> orders = new Stack<CarbonOrder>();
+					orders.addAll(getNextCarbonOrdersList());
+					orders.remove(selectedIndex);
+					
+					try
+					{
+						client.getRunningGameInterface().modifyCarbonOrder(infos.productiveCelestialBody.getName(), orders);
+						getNextCarbonOrdersList().remove(selectedIndex);
+					}
+					catch(StateMachineNotExpectedEventException e1)
+					{
+						e1.printStackTrace();
+					}
+					catch(RpcException e1)
+					{
+						e1.printStackTrace();
+					}
+					catch(RunningGameCommandException e1)
+					{
+						showRunningGameCommandExceptionMsg(e1);
+					}
+					finally
+					{
+						refreshGameBoard();
+					}
 				}
 			});
 		}
@@ -2674,40 +2803,31 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (currentCarbonOrdersScrollPane == null)
 		{
 			currentCarbonOrdersScrollPane = new JScrollPane();
-			currentCarbonOrdersScrollPane = new JScrollPane(getCurrentCarbonOrdersList());
-			currentCarbonOrdersScrollPane.setPreferredSize(new Dimension(200, getCurrentCarbonOrdersList().getPreferredScrollableViewportSize().height));
+			currentCarbonOrdersScrollPane = new JScrollPane(getCurrentCarbonOrdersList().getComponent());
+			currentCarbonOrdersScrollPane.setPreferredSize(new Dimension(200, getCurrentCarbonOrdersList().getComponent().getPreferredScrollableViewportSize().height));
 			currentCarbonOrdersScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 			currentCarbonOrdersScrollPane.setBounds(getCurrentCarbonOrdersLabel().getX(), getCurrentCarbonOrdersLabel().getY() + getCurrentCarbonOrdersLabel().getHeight(), getCurrentCarbonOrdersLabel().getWidth(), getNextCarbonOrdersScrollPane().getHeight());
 		}
 		return currentCarbonOrdersScrollPane;
 	}
 
-	private JList	currentCarbonOrdersList;
+	private final TypedListWrapper.TypedListElementSelector<CarbonCarrier> CARBONCARRIER_SELECTOR = new TypedListWrapper.TypedListElementSelector<CarbonCarrier>()
+	{
+		public boolean equals(CarbonCarrier o1, CarbonCarrier o2)
+		{
+			return o1.getName().equals(o2.getName()) && o1.getOwnerName().equals(o2.getOwnerName());
+		}
+	};
+	
+	private TypedListWrapper<JList, CarbonCarrier>	currentCarbonOrdersList;
 
-	private JList getCurrentCarbonOrdersList()
+	private TypedListWrapper<JList, CarbonCarrier> getCurrentCarbonOrdersList()
 	{
 		if (currentCarbonOrdersList == null)
 		{
-			currentCarbonOrdersList = new JList();
-			currentCarbonOrdersList.setVisibleRowCount(3);
-			currentCarbonOrdersList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-			currentCarbonOrdersList.addMouseMotionListener(new MouseMotionAdapter()
-			{
-				@Override
-				public void mouseMoved(MouseEvent e)
-				{
-					int index = currentCarbonOrdersList.locationToIndex(e.getPoint());
-					if (index < 0) return;
-
-					String label = currentCarbonOrdersList.getModel().getElementAt(index).toString();
-					if (label == null) return;
-
-					currentCarbonOrdersList.setToolTipText(label);
-
-					super.mouseMoved(e);
-				}
-			});
+			currentCarbonOrdersList = new TypedListWrapper<JList, CarbonCarrier>(CarbonCarrier.class, new JList(), CARBONCARRIER_SELECTOR);
+			currentCarbonOrdersList.getComponent().setVisibleRowCount(3);
+			currentCarbonOrdersList.getComponent().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		}
 		return currentCarbonOrdersList;
 	}
@@ -2731,40 +2851,23 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (carbonOrdersToReceiveScrollPane == null)
 		{
 			carbonOrdersToReceiveScrollPane = new JScrollPane();
-			carbonOrdersToReceiveScrollPane = new JScrollPane(getCarbonOrdersToReceiveList());
-			carbonOrdersToReceiveScrollPane.setPreferredSize(new Dimension(200, getCarbonOrdersToReceiveList().getPreferredScrollableViewportSize().height));
+			carbonOrdersToReceiveScrollPane = new JScrollPane(getCarbonOrdersToReceiveList().getComponent());
+			carbonOrdersToReceiveScrollPane.setPreferredSize(new Dimension(200, getCarbonOrdersToReceiveList().getComponent().getPreferredScrollableViewportSize().height));
 			carbonOrdersToReceiveScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 			carbonOrdersToReceiveScrollPane.setBounds(getCarbonOrdersToReceiveLabel().getX(), getCarbonOrdersToReceiveLabel().getY() + getCarbonOrdersToReceiveLabel().getHeight(), getCurrentCarbonOrdersScrollPane().getWidth(), getCurrentCarbonOrdersScrollPane().getHeight());
 		}
 		return carbonOrdersToReceiveScrollPane;
 	}
 
-	private JList	carbonOrdersToReceiveList;
+	private TypedListWrapper<JList, CarbonCarrier>	carbonOrdersToReceiveList;
 
-	private JList getCarbonOrdersToReceiveList()
+	private TypedListWrapper<JList, CarbonCarrier> getCarbonOrdersToReceiveList()
 	{
 		if (carbonOrdersToReceiveList == null)
 		{
-			carbonOrdersToReceiveList = new JList();
-			carbonOrdersToReceiveList.setVisibleRowCount(3);
-			carbonOrdersToReceiveList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-			carbonOrdersToReceiveList.addMouseMotionListener(new MouseMotionAdapter()
-			{
-				@Override
-				public void mouseMoved(MouseEvent e)
-				{
-					int index = carbonOrdersToReceiveList.locationToIndex(e.getPoint());
-					if (index < 0) return;
-
-					String label = carbonOrdersToReceiveList.getModel().getElementAt(index).toString();
-					if (label == null) return;
-
-					carbonOrdersToReceiveList.setToolTipText(label);
-
-					super.mouseMoved(e);
-				}
-			});
+			carbonOrdersToReceiveList = new TypedListWrapper<JList, CarbonCarrier>(CarbonCarrier.class, new JList(), CARBONCARRIER_SELECTOR);
+			carbonOrdersToReceiveList.getComponent().setVisibleRowCount(3);
+			carbonOrdersToReceiveList.getComponent().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		}
 		return carbonOrdersToReceiveList;
 	}
@@ -3252,20 +3355,22 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return fleetMoveCheckPointListScrollPane;
 	}
 
+	private final TypedListWrapper.TypedListElementSelector<Fleet.Move> FLEETMOVE_SELECTOR = new TypedListWrapper.TypedListElementSelector<Fleet.Move>()
+	{
+		@Override
+		public boolean equals(Move o1, Move o2)
+		{
+			return o1.getDestinationName().equals(o2.getDestinationName());
+		}
+	};
+	
 	private TypedListWrapper<JList, Fleet.Move>	fleetMoveCheckPointList;
 
 	private TypedListWrapper<JList, Fleet.Move> getFleetMoveCheckPointList()
 	{
 		if (fleetMoveCheckPointList == null)
 		{
-			fleetMoveCheckPointList = new TypedListWrapper<JList, Fleet.Move>(Fleet.Move.class, new JList(), new Comparator<Fleet.Move>()
-			{
-				@Override
-				public int compare(Move o1, Move o2)
-				{
-					return o1.getDestinationName().compareTo(o2.getDestinationName());
-				}
-			});
+			fleetMoveCheckPointList = new TypedListWrapper<JList, Fleet.Move>(Fleet.Move.class, new JList(), FLEETMOVE_SELECTOR);
 			fleetMoveCheckPointList.getComponent().setVisibleRowCount(getFleetMoveDirectBtn().getY() / fleetMoveCheckPointList.getComponent().getFixedCellHeight());
 			fleetMoveCheckPointList.getComponent().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 

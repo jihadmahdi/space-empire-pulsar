@@ -140,7 +140,6 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	public boolean isMoving()
 	{
 		if (travellingProgress < 0 || sourceLocation == null || destinationLocation == null) return false;
-		
 		return (travellingProgress != 0 && travellingProgress != 1);		
 	}
 }
