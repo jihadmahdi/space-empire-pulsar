@@ -59,32 +59,6 @@ class SpaceCounter extends ABuilding implements Serializable
 		}
 	}
 	
-	static class CarbonDelivery implements Serializable
-	{
-		private static final long	serialVersionUID	= 1L;
-		
-		private CarbonCarrier carbonCarrier;
-		private common.CarbonOrder order;
-		
-		/**
-		 * 
-		 */
-		public CarbonDelivery()
-		{
-			// TODO Auto-generated constructor stub
-		}
-		
-		public common.CarbonDelivery getPlayerView(int date, String playerLogin)
-		{
-			return new common.CarbonDelivery(carbonCarrier.getPlayerView(date, playerLogin, true), order.getAmount());
-		}
-		
-		public int getAmount()
-		{
-			return order.getAmount();
-		}
-	}
-	
 	// Constants
 	private final int lastBuildDate;
 	
@@ -93,8 +67,8 @@ class SpaceCounter extends ABuilding implements Serializable
 	// assert Sets.size() == nbBuild
 	private final Set<SpaceRoad> spaceRoadsBuilt;
 	private final Set<SpaceRoad> spaceRoadsLinked;
-	private final Set<CarbonDelivery> ordersToReceive;
-	private final Set<CarbonDelivery> currentSentOrder;
+	private final Set<CarbonCarrier> ordersToReceive;
+	private final Set<CarbonCarrier> currentSentOrder;
 	private final Stack<common.CarbonOrder> nextOrders;
 	
 	
@@ -114,13 +88,13 @@ class SpaceCounter extends ABuilding implements Serializable
 		this.nbBuild = nbBuild;
 		this.spaceRoadsBuilt = new HashSet<SpaceRoad>();
 		this.spaceRoadsLinked = new HashSet<SpaceRoad>();
-		this.ordersToReceive = new HashSet<CarbonDelivery>();
-		this.currentSentOrder = new HashSet<CarbonDelivery>();
+		this.ordersToReceive = new HashSet<CarbonCarrier>();
+		this.currentSentOrder = new HashSet<CarbonCarrier>();
 		this.nextOrders = new Stack<common.CarbonOrder>();
 		this.lastBuildDate = lastBuildDate;
 	}
 	
-	private SpaceCounter(int lastBuildDate, int nbBuild, Set<SpaceRoad> spaceRoadsBuilt, Set<SpaceRoad> spaceRoadsLinked, Set<CarbonDelivery> ordersToReceive, Set<CarbonDelivery> currentSentOrder, Stack<common.CarbonOrder> nextOrders)
+	private SpaceCounter(int lastBuildDate, int nbBuild, Set<SpaceRoad> spaceRoadsBuilt, Set<SpaceRoad> spaceRoadsLinked, Set<CarbonCarrier> ordersToReceive, Set<CarbonCarrier> currentSentOrder, Stack<common.CarbonOrder> nextOrders)
 	{
 		this.nbBuild = nbBuild;
 		this.spaceRoadsBuilt = spaceRoadsBuilt;
@@ -149,16 +123,16 @@ class SpaceCounter extends ABuilding implements Serializable
 			spaceRoadsLinkedSet.add(r.getPlayerView(date, playerLogin));
 		}
 		
-		Set<common.CarbonDelivery> ordersToReceiveSet = new HashSet<common.CarbonDelivery>();
-		for(CarbonDelivery o : ordersToReceive)
+		Set<common.CarbonCarrier> ordersToReceiveSet = new HashSet<common.CarbonCarrier>();
+		for(CarbonCarrier o : ordersToReceive)
 		{
-			ordersToReceiveSet.add(o.getPlayerView(date, playerLogin));
+			ordersToReceiveSet.add(o.getPlayerView(date, playerLogin, true));
 		}
 		
-		Set<common.CarbonDelivery> currentSentOrderSet = new HashSet<common.CarbonDelivery>();
-		for(CarbonDelivery o : currentSentOrder)
+		Set<common.CarbonCarrier> currentSentOrderSet = new HashSet<common.CarbonCarrier>();
+		for(CarbonCarrier o : currentSentOrder)
 		{
-			currentSentOrderSet.add(o.getPlayerView(date, playerLogin));
+			currentSentOrderSet.add(o.getPlayerView(date, playerLogin, true));
 		}
 		
 		Stack<common.CarbonOrder> nextOrdersSet = new Stack<common.CarbonOrder>();
@@ -185,9 +159,9 @@ class SpaceCounter extends ABuilding implements Serializable
 	public int getCurrentCarbonFreight()
 	{
 		int carbonFreight = 0;
-		for(CarbonDelivery delivery : currentSentOrder)
+		for(CarbonCarrier carrier : currentSentOrder)
 		{
-			carbonFreight += delivery.getAmount();
+			carbonFreight += carrier.getOrderAmount();
 		}
 		
 		return carbonFreight;
@@ -297,5 +271,51 @@ class SpaceCounter extends ABuilding implements Serializable
 	{
 		nextOrders.clear();
 		nextOrders.addAll(nextCarbonOrders);	
+	}
+
+	public void prepareCarbonDelivery(DataBase db, ProductiveCelestialBody source)
+	{
+		int delivererId = 0;
+		
+		while(!nextOrders.isEmpty() && nextOrders.firstElement().getAmount() + getCurrentCarbonFreight() <= getMaxCarbonFreight() && nextOrders.firstElement().getAmount() <= source.getCarbon())
+		{
+			CarbonOrder order = nextOrders.firstElement();
+			
+			if (!source.getName().equals(order.getSourceName())) throw new Error("SpaceCounter / Order source inconsistency : "+source.getName()+" != "+order.getSourceName());
+			
+			ProductiveCelestialBody destination = db.getCelestialBody(order.getDestinationName(), ProductiveCelestialBody.class);
+			if (destination == null) throw new SEPServer.SEPImplementationException("Order destination error : "+order.getDestinationName());
+			
+			SpaceCounter destinationSpaceCounter = destination.getBuilding(SpaceCounter.class);
+			if (destinationSpaceCounter == null) throw new SEPServer.SEPImplementationException("Cannot found destination space counter on "+destination.getName());
+			
+			CarbonCarrier carrier = new CarbonCarrier(db, String.format("CarbonDeliverer-%d%x", db.getDate(), delivererId), source.getOwnerName(), source.getLocation().asRealLocation(), order);
+			carrier.launch(destination.getLocation().asRealLocation());			
+			db.insertUnit(carrier);
+			
+			currentSentOrder.add(carrier);
+			destinationSpaceCounter.ordersToReceive.add(carrier);
+			
+			source.setCarbon(source.getCarbon() - order.getAmount());
+			
+			++delivererId;
+			
+			if (order.isAutomated())
+			{
+				nextOrders.add(order);
+			}
+			
+			nextOrders.remove(0);
+		}
+	}
+	
+	public void validateSentCarbonDelivery(CarbonCarrier carrier)
+	{
+		currentSentOrder.remove(carrier);
+	}
+	
+	public void validateReceivedCarbonDelivery(CarbonCarrier carrier)
+	{
+		ordersToReceive.remove(carrier);
 	}
 }

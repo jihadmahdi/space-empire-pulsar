@@ -26,11 +26,11 @@ public class SpaceCounter implements IBuilding, Serializable
 	
 	private final Set<SpaceRoad> spaceRoadsLinked;
 	
-	private final Set<CarbonDelivery> carbonToReceive;
+	private final Set<CarbonCarrier> carbonToReceive;
 	
 	private final Stack<CarbonOrder> nextCarbonOrder;
 	
-	private final Set<CarbonDelivery> currentCarbonOrder;
+	private final Set<CarbonCarrier> currentCarbonOrder;
 	
 	private final int maxCarbonFreight;
 	private final int currentCarbonFreight;
@@ -38,7 +38,7 @@ public class SpaceCounter implements IBuilding, Serializable
 	/**
 	 * Full constructor.
 	 */
-	public SpaceCounter(int nbBuild, Set<SpaceRoad> spaceRoadsBuilt, Set<SpaceRoad> spaceRoadsLinked, Set<CarbonDelivery> carbonToReceive, Set<CarbonDelivery> currentCarbonOrder, Stack<CarbonOrder> nextCarbonOrder, int maxCarbonFreight, int currentCarbonFreight)
+	public SpaceCounter(int nbBuild, Set<SpaceRoad> spaceRoadsBuilt, Set<SpaceRoad> spaceRoadsLinked, Set<CarbonCarrier> carbonToReceive, Set<CarbonCarrier> currentCarbonOrder, Stack<CarbonOrder> nextCarbonOrder, int maxCarbonFreight, int currentCarbonFreight)
 	{
 		this.nbBuild = nbBuild;
 		this.spaceRoadsBuilt = spaceRoadsBuilt;
@@ -97,7 +97,7 @@ public class SpaceCounter implements IBuilding, Serializable
 		if (carbonToReceive.size() > 0)
 		{
 			sb.append("To receive :\n");
-			for(CarbonDelivery o : carbonToReceive)
+			for(CarbonCarrier o : carbonToReceive)
 			{
 				sb.append("  "+o+"\n");
 			}
@@ -105,7 +105,7 @@ public class SpaceCounter implements IBuilding, Serializable
 		if (currentCarbonOrder.size() > 0)
 		{
 			sb.append("sent :\n");
-			for(CarbonDelivery o : currentCarbonOrder)
+			for(CarbonCarrier o : currentCarbonOrder)
 			{
 				sb.append("  "+o+"\n");
 			}
@@ -130,5 +130,20 @@ public class SpaceCounter implements IBuilding, Serializable
 	public Set<SpaceRoad> getSpaceRoadsLinked()
 	{
 		return spaceRoadsLinked;
+	}
+	
+	public Stack<CarbonOrder> getNextCarbonOrders()
+	{
+		return nextCarbonOrder;
+	}
+	
+	public Set<CarbonCarrier> getCurrentCarbonOrders()
+	{
+		return currentCarbonOrder;
+	}
+	
+	public Set<CarbonCarrier> getCarbonOrdersToReceive()
+	{
+		return carbonToReceive;
 	}
 }

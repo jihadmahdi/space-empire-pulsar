@@ -30,6 +30,11 @@ public class TypedListWrapper<ComponentType extends JComponent, ElementType> imp
 		<ComponentType extends JComponent> String getListCellToolTipText(TypedListWrapper<ComponentType, ElementType> typedWrapper, ElementType value, int index, boolean isSelected);
 	}
 	
+	public static interface TypedListElementSelector<ElementType>
+	{
+		boolean equals(ElementType o1, ElementType o2);
+	}
+	
 	public static class AbstractTypedJListCellRender<ElementType> implements TypedListCellRenderer<ElementType>
 	{
 		protected final JLabel label = new JLabel();
@@ -88,17 +93,31 @@ public class TypedListWrapper<ComponentType extends JComponent, ElementType> imp
 	
 	private final Class<ElementType> wrappedType;
 	private final ComponentType wrappedComponent;
-	private final Comparator<ElementType> comparator;
+	private final TypedListElementSelector<ElementType> selector;
 	
 	private TypedListCellRenderer<ElementType> cellRenderer;
 	private final ListCellRenderer defaultListCellRenderer;
 	private final TypedListWrappedComponentModel<ElementType> model;
 	
-	public TypedListWrapper(Class<ElementType> wrappedType, ComponentType wrappedComponent, Comparator<ElementType> comparator)
+	private TypedListWrapper(Class<ElementType> wrappedType, ComponentType wrappedComponent)
+	{
+		this(wrappedType, wrappedComponent, null);
+	}
+	
+	public TypedListWrapper(Class<ElementType> wrappedType, ComponentType wrappedComponent, TypedListElementSelector<ElementType> selector)
 	{
 		this.wrappedType = wrappedType;
 		this.wrappedComponent = wrappedComponent;
-		this.comparator = comparator;
+		this.selector = (selector != null) ? selector : new TypedListElementSelector<ElementType>()
+		{
+			
+			@Override
+			public boolean equals(ElementType o1, ElementType o2)
+			{
+				return (o1 == null) ? o2 == null : o1.equals(o2);
+			}
+		};
+		
 		this.defaultListCellRenderer = new DefaultListCellRenderer();
 		
 		ListCellRenderer listCellRenderer = new ListCellRenderer()
@@ -167,8 +186,8 @@ public class TypedListWrapper<ComponentType extends JComponent, ElementType> imp
 				public void setSelectedElement(ElementType element)
 				{
 					for(Object e : wrappedListModel.toArray())
-					{						
-						if (TypedListWrapper.this.comparator.compare(element, TypedListWrapper.this.wrappedType.cast(e)) == 0)
+					{	
+						if (TypedListWrapper.this.selector.equals(element, TypedListWrapper.this.wrappedType.cast(e)))
 						{
 							wrappedList.setSelectedValue(e, true);
 							return;

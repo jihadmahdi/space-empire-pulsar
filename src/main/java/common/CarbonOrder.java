@@ -15,11 +15,21 @@ public class CarbonOrder implements Serializable
 	/** Carbon amount. */
 	private final int amount;
 	
-	public CarbonOrder(String sourceName, String destinationName, int amount)
+	/** Automatically repeated order. */
+	private final boolean automated;
+	
+	public CarbonOrder(String sourceName, String destinationName, int amount, boolean automated)
 	{
 		this.sourceName = sourceName;
 		this.destinationName = destinationName;
 		this.amount = amount;
+		this.automated = automated;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return String.format("%s to %s (%dc)", sourceName, destinationName, amount);
 	}
 	
 	public int getAmount()
@@ -27,8 +37,18 @@ public class CarbonOrder implements Serializable
 		return amount;
 	}
 
+	public String getSourceName()
+	{
+		return sourceName;
+	}
+	
 	public String getDestinationName()
 	{
 		return destinationName;
+	}
+	
+	public boolean isAutomated()
+	{
+		return automated;
 	}
 }

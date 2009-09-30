@@ -678,4 +678,10 @@ public class GameConfig implements Serializable
 		// TODO : Add to CTOR
 		return 3;
 	}
+	
+	public int getCarbonMinimalFreight()
+	{
+		// TODO : Add to CTOR
+		return 1000;
+	}
 }
