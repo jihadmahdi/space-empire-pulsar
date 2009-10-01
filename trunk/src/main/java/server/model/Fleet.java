@@ -99,6 +99,18 @@ public class Fleet extends Unit implements Serializable
 		return false;
 	}
 	
+	public void removeGovernment()
+	{
+		for(common.ISpecialUnit specialUnit : specialUnits)
+		{
+			if (common.GovernmentStarship.class.isInstance(specialUnit))
+			{
+				specialUnits.remove(specialUnit);
+				return;
+			}
+		}
+	}
+	
 	public boolean isUnassignedFleet()
 	{
 		return isUnassigned;

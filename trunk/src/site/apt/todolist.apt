@@ -32,18 +32,19 @@ TODO List
 		
 ** Notes (brouillon)  
 	
-	* Déployer sonde
+	* De même que les raisons d'erreur CommandCheckResult, propager un message pouvant par exemple indiquer le prix de la commande envisagée.
 	
-	* Tirer missile anti-sondes
+	* Implémenter les commandes diplomatiques (changer diplomatie, visibilité de la diplomatie d'un tier)
+	
+	* Implémenter la résolution des conflits.
+		* Intégrer les bonus des DefenseModule lors des combats.
+		
+	* Perte de contrôle/visibilité lorsque le gouvernement est en voyage.
 	
 	* Tester/Coder Pulsar Launching Pad.
 	
-	* Implémenter la conquète de corps céleste neutres, tester/coder alors Space Counter.
+	* Implémenter les pouvoirs spéciaux de classes de vaisseaux.
 	
-	* Changer diplomaties
-	
-	* Attaquer flottes ennemis en présence
-	
-	* Revoir les messages d'erreur renvoyés lors des GameBoard.checkXXX(...), propager ces messages jusqu'au client.
-	
+	* Valider le nouveau gameplay des échanges de carbones.
+		
 	* DataBase, vérifier à chaque fois les paramètres d'entrée, retourner null si un paramètre est null.

@@ -2,6 +2,7 @@ package server.model;
 
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -17,9 +18,11 @@ import org.axan.eplib.utils.Basic;
 
 import server.SEPServer;
 import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
+import server.model.SpaceCounter.SpaceRoad;
 import sun.security.action.GetBooleanAction;
 
 import common.CarbonOrder;
+import common.CommandCheckResult;
 import common.GameConfig;
 import common.SEPUtils;
 import common.TravellingLogEntryUnitSeen;
@@ -255,15 +258,17 @@ public class GameBoard implements Serializable
 	{
 		// TODO : Résolve mobile units movement, attacks, etc... On Current instance.
 
-		Set<Unit> movingUnits = new HashSet<Unit>();
+		Map<Unit, Double> movingUnitsSpeeds = new HashMap<Unit, Double>();
 		double maxSpeed = Double.MIN_VALUE;
 
 		for(Unit unit : db.getUnits())
 		{
 			if (unit.isMoving() || unit.startMove())
 			{
-				movingUnits.add(unit);
-				maxSpeed = Math.max(maxSpeed, unit.getSpeed());
+				SpaceRoad spaceRoad = db.getSpaceRoad(unit.getSourceLocation(), unit.getDestinationLocation());
+				double unitSpeed = (spaceRoad == null ? unit.getSpeed() : Math.max(spaceRoad.getSpeed(), unit.getSpeed())); 
+				movingUnitsSpeeds.put(unit, unitSpeed);
+				maxSpeed = Math.max(maxSpeed, unitSpeed);
 			}
 		}
 
@@ -277,10 +282,13 @@ public class GameBoard implements Serializable
 		{
 			currentStepMovedUnits.clear();
 			
-			for(Unit u : movingUnits)
+			for(Entry<Unit, Double> e : movingUnitsSpeeds.entrySet())
 			{
+				Unit u = e.getKey();
+				double speed = e.getValue();
+				
 				double distance = SEPUtils.getDistance(u.getSourceLocation(), u.getDestinationLocation());
-				double progressInOneTurn = (distance != 0 ? (u.getSpeed() / distance) : 100);
+				double progressInOneTurn = (distance != 0 ? (speed / distance) : 100);
 				u.setTravellingProgress(Math.min(1, u.getTravellingProgress() + progressInOneTurn * step));
 				RealLocation currentStepLocation = u.getRealLocation();
 				
@@ -316,8 +324,10 @@ public class GameBoard implements Serializable
 		
 		Set<AntiProbeMissile> explodingAntiProbeMissiles = new HashSet<AntiProbeMissile>();
 		
-		for(Unit u : movingUnits)
+		for(Entry<Unit, Double> e : movingUnitsSpeeds.entrySet())
 		{
+			Unit u = e.getKey();
+			
 			RealLocation endTurnLocation = u.getRealLocation();
 			
 			IMarker.Key key = new IMarker.Key("own unit("+u.getName()+") travelling marker", UnitMarker.class, u.getOwnerName());
@@ -548,7 +558,7 @@ public class GameBoard implements Serializable
 		demolishCheckResult.productiveCelestialBody.demolishBuilding(demolishCheckResult.existingBuilding);
 	}
 
-	public boolean canDemolish(String playerLogin, String celestialBodyName, Class<? extends common.IBuilding> buildingType)
+	public CommandCheckResult canDemolish(String playerLogin, String celestialBodyName, Class<? extends common.IBuilding> buildingType)
 	{
 		try
 		{
@@ -556,9 +566,9 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		return new CommandCheckResult();
 	}
 
 	private static class DemolishCheckResult
@@ -599,7 +609,7 @@ public class GameBoard implements Serializable
 		embarkGovernmentCheckResult.planet.setPopulation(embarkGovernmentCheckResult.planet.getPopulation() - embarkGovernmentCheckResult.populationCost);
 	}
 
-	public boolean canEmbarkGovernment(String playerLogin)
+	public CommandCheckResult canEmbarkGovernment(String playerLogin)
 	{
 		try
 		{
@@ -607,9 +617,9 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		return new CommandCheckResult();
 	}
 
 	private static class EmbarkGovernmentCheckResult
@@ -659,32 +669,40 @@ public class GameBoard implements Serializable
 		return new EmbarkGovernmentCheckResult(planet, governmentModule, starshipPlant, carbonCost, populationCost);
 	}
 
-	public boolean canFirePulsarMissile(String playerName, String celestialBodyName)
+	public CommandCheckResult canFirePulsarMissile(String playerName, String celestialBodyName)
 	{
 		ProductiveCelestialBody productiveCelestialBody = db.getCelestialBody(celestialBodyName, ProductiveCelestialBody.class, playerName);
-		if (productiveCelestialBody == null) throw new IllegalArgumentException("Celestial body '" + celestialBodyName + "' does not exist, or is not a productive one.");
+		if (productiveCelestialBody == null) return new CommandCheckResult(new IllegalArgumentException("Celestial body '" + celestialBodyName + "' does not exist, or is not a productive one."));
 		
 		ABuilding building = productiveCelestialBody.getBuildingFromClientType(common.PulsarLauchingPad.class);
 
 		// If no building of this type exist.
-		if (building == null) return false;
+		if (building == null) return new CommandCheckResult("No pulsar launcher found.");
 
 		// Building type check		
-		if (!PulsarLauchingPad.class.isInstance(building)) return false;
+		if (!PulsarLauchingPad.class.isInstance(building)) return new CommandCheckResult("No pulsar launcher found.");
 
 		PulsarLauchingPad pulsarLaunchingPad = PulsarLauchingPad.class.cast(building);
-		if (pulsarLaunchingPad.getUnusedCount() <= 0) return false;
+		if (pulsarLaunchingPad.getUnusedCount() <= 0) return new CommandCheckResult("No available pulsar launcher found.");
 
-		return true;
+		return new CommandCheckResult();
 	}
 
 	public void settleGovernment(String playerLogin, String planetName) throws RunningGameCommandException
 	{
 		SettleGovernmentCheckResult settleGovernmentCheckResult = checkSettleGovernment(playerLogin, planetName);
-		// TODO
+		settleGovernmentCheckResult.governmentalFleet.removeGovernment();
+		try
+		{
+			settleGovernmentCheckResult.planet.updateBuilding(settleGovernmentCheckResult.governmentModule);
+		}
+		catch(CelestialBodyBuildException e)
+		{
+			throw new SEPServer.SEPImplementationException("Unexpected exception", e);
+		}
 	}
 	
-	public boolean canSettleGovernment(String playerLogin, String planetName)
+	public CommandCheckResult canSettleGovernment(String playerLogin, String planetName)
 	{
 		try
 		{
@@ -692,20 +710,22 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		return new CommandCheckResult();
 	}
 	
 	private static class SettleGovernmentCheckResult
 	{
 		final Planet	planet;
 		final Fleet		governmentalFleet;
+		final GovernmentModule governmentModule;
 
-		public SettleGovernmentCheckResult(Planet planet, Fleet governmentalFleet)
+		public SettleGovernmentCheckResult(Planet planet, Fleet governmentalFleet, GovernmentModule governmentModule)
 		{
 			this.planet = planet;
-			this.governmentalFleet = governmentalFleet;			
+			this.governmentalFleet = governmentalFleet;
+			this.governmentModule = governmentModule;
 		}
 	}
 	
@@ -727,7 +747,10 @@ public class GameBoard implements Serializable
 		
 		if (governmentalFleet == null) throw new RunningGameCommandException("'"+playerName+"' government cannot be found on planet '"+planetName+"'");
 		
-		return new SettleGovernmentCheckResult(planet, governmentalFleet);
+		if (planet.getFreeSlotsCount() <= 0) throw new RunningGameCommandException("No free slot available on '"+planet.getName()+"'");
+		
+		GovernmentModule governmentModule = new GovernmentModule(db.getDate());
+		return new SettleGovernmentCheckResult(planet, governmentalFleet, governmentModule);
 	}
 
 	public void build(String playerLogin, String celestialBodyName, Class<? extends common.IBuilding> buildingType) throws CelestialBodyBuildException
@@ -745,7 +768,7 @@ public class GameBoard implements Serializable
 		buildCheckResult.productiveCelestialBody.setLastBuildDate(db.getDate());
 	}
 
-	public boolean canBuild(String playerLogin, String celestialBodyName, Class<? extends common.IBuilding> buildingType)
+	public CommandCheckResult canBuild(String playerLogin, String celestialBodyName, Class<? extends common.IBuilding> buildingType)
 	{
 		try
 		{
@@ -753,9 +776,9 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		return new CommandCheckResult();
 	}
 
 	private static class BuildCheckResult
@@ -819,7 +842,7 @@ public class GameBoard implements Serializable
 		return new BuildCheckResult(productiveCelestialBody, building, carbonCost, populationCost, newBuilding);
 	}
 
-	public boolean canFireAntiProbeMissile(String playerLogin, String antiProbeMissileName, String targetOwnerName, String targetProbeName)
+	public CommandCheckResult canFireAntiProbeMissile(String playerLogin, String antiProbeMissileName, String targetOwnerName, String targetProbeName)
 	{
 		try
 		{
@@ -827,9 +850,9 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		return new CommandCheckResult();
 	}
 
 	public void fireAntiProbeMissile(String playerLogin, String antiProbeMissileName, String targetOwnerName, String targetProbeName) throws RunningGameCommandException
@@ -889,7 +912,7 @@ public class GameBoard implements Serializable
 		return new FireAntiProbeMissileCheckResult(antiProbeMissile, targetProbeName, antiProbeMissile.getRealLocation(), destination);
 	}
 
-	public boolean canLaunchProbe(String playerLogin, String probeName, RealLocation destination)
+	public CommandCheckResult canLaunchProbe(String playerLogin, String probeName, RealLocation destination)
 	{
 		try
 		{
@@ -897,9 +920,9 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		return new CommandCheckResult();
 	}
 
 	public void launchProbe(String playerLogin, String probeName, RealLocation destination) throws RunningGameCommandException
@@ -941,7 +964,7 @@ public class GameBoard implements Serializable
 		return new LaunchProbeCheckResult(probe, destination);
 	}
 
-	public boolean canMoveFleet(String playerLogin, String fleetName, Stack<common.Fleet.Move> checkpoints)
+	public CommandCheckResult canMoveFleet(String playerLogin, String fleetName, Stack<common.Fleet.Move> checkpoints)
 	{
 		try
 		{
@@ -949,9 +972,9 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		return new CommandCheckResult();
 	}
 
 	public void moveFleet(String playerLogin, String fleetName, Stack<common.Fleet.Move> checkpoints) throws RunningGameCommandException
@@ -999,7 +1022,7 @@ public class GameBoard implements Serializable
 		return new MoveFleetCheckResult(fleet, locatedCheckpoints);
 	}
 
-	public boolean canFormFleet(String playerLogin, String planetName, String fleetName, Map<common.StarshipTemplate, Integer> fleetToFormStarships, Set<common.ISpecialUnit> fleetToFormSpecialUnits)
+	public CommandCheckResult canFormFleet(String playerLogin, String planetName, String fleetName, Map<common.StarshipTemplate, Integer> fleetToFormStarships, Set<common.ISpecialUnit> fleetToFormSpecialUnits)
 	{
 		try
 		{
@@ -1007,9 +1030,9 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		return new CommandCheckResult();
 	}
 
 	public void formFleet(String playerLogin, String planetName, String fleetName, Map<common.StarshipTemplate, Integer> fleetToFormStarships, Set<common.ISpecialUnit> fleetToFormSpecialUnits) throws RunningGameCommandException
@@ -1065,7 +1088,7 @@ public class GameBoard implements Serializable
 		return new FormFleetCheckResult(productiveCelestialBody, newFleet);
 	}
 
-	public boolean canDismantleFleet(String playerLogin, String fleetName)
+	public CommandCheckResult canDismantleFleet(String playerLogin, String fleetName)
 	{
 		try
 		{
@@ -1073,9 +1096,9 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		return new CommandCheckResult();
 	}
 
 	public void dismantleFleet(String playerName, String fleetName) throws RunningGameCommandException
@@ -1109,7 +1132,7 @@ public class GameBoard implements Serializable
 		return new DismantleFleetCheckResult(productiveCelestialBody, fleet);
 	}
 
-	public boolean canMakeProbes(String playerLogin, String planetName, String probeName, int quantity)
+	public CommandCheckResult canMakeProbes(String playerLogin, String planetName, String probeName, int quantity)
 	{
 		try
 		{
@@ -1117,9 +1140,9 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		return new CommandCheckResult();
 	}
 
 	public void makeProbes(String playerLogin, String planetName, String probeName, int quantity) throws RunningGameCommandException
@@ -1188,7 +1211,7 @@ public class GameBoard implements Serializable
 		return new MakeProbesCheckResult(planet, carbonCost, populationCost, starshipPlant, newProbes);
 	}
 
-	public boolean canMakeAntiProbeMissiles(String playerLogin, String planetName, String antiProbeMissileName, int quantity)
+	public CommandCheckResult canMakeAntiProbeMissiles(String playerLogin, String planetName, String antiProbeMissileName, int quantity)
 	{
 		try
 		{
@@ -1196,9 +1219,9 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		return new CommandCheckResult();
 	}
 
 	public void makeAntiProbeMissiles(String playerLogin, String planetName, String antiProbeMissileName, int quantity) throws RunningGameCommandException
@@ -1267,7 +1290,7 @@ public class GameBoard implements Serializable
 		return new MakeAntiProbeMissilesCheckResult(planet, carbonCost, populationCost, starshipPlant, newAntiProbeMissiles);
 	}
 
-	public boolean canMakeStarships(String playerLogin, String planetName, Map<common.StarshipTemplate, Integer> starshipsToMake)
+	public CommandCheckResult canMakeStarships(String playerLogin, String planetName, Map<common.StarshipTemplate, Integer> starshipsToMake)
 	{
 		try
 		{
@@ -1275,9 +1298,9 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		return new CommandCheckResult();
 	}
 
 	public void makeStarships(String playerLogin, String planetName, Map<common.StarshipTemplate, Integer> starshipsToMake) throws RunningGameCommandException
@@ -1351,7 +1374,7 @@ public class GameBoard implements Serializable
 		return new MakeStarshipsCheckResult(planet, carbonCost, populationCost, starshipPlant);
 	}
 
-	public boolean canChangeDiplomacy(String playerLogin, common.Diplomacy newDiplomacy)
+	public CommandCheckResult canChangeDiplomacy(String playerLogin, common.Diplomacy newDiplomacy)
 	{
 		try
 		{
@@ -1359,9 +1382,9 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		return new CommandCheckResult();
 	}
 
 	public void changeDiplomacy(String playerLogin, common.Diplomacy newDiplomacy) throws RunningGameCommandException
@@ -1384,7 +1407,7 @@ public class GameBoard implements Serializable
 		return new ChangeDiplomacyCheckResult();
 	}
 	
-	public boolean canAttackEnemiesFleet(String playerLogin, String celestialBodyName)
+	public CommandCheckResult canAttackEnemiesFleet(String playerLogin, String celestialBodyName)
 	{
 		try
 		{
@@ -1392,9 +1415,10 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		
+		return new CommandCheckResult();
 	}
 
 	public void attackEnemiesFleet(String playerLogin, String celestialBodyName) throws RunningGameCommandException
@@ -1422,7 +1446,7 @@ public class GameBoard implements Serializable
 	
 	/////
 	
-	public boolean canBuildSpaceRoad(String playerLogin, String productiveCelestialBodyNameA, String productiveCelestialBodyNameB)
+	public CommandCheckResult canBuildSpaceRoad(String playerLogin, String productiveCelestialBodyNameA, String productiveCelestialBodyNameB)
 	{
 		try
 		{
@@ -1430,9 +1454,9 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		return new CommandCheckResult();
 	}
 
 	public void buildSpaceRoad(String playerLogin, String productiveCelestialBodyNameA, String productiveCelestialBodyNameB) throws RunningGameCommandException
@@ -1504,7 +1528,7 @@ public class GameBoard implements Serializable
 		return new BuildSpaceRoadCheckResult(source, price, deliverer, source.getLocation(), destination.getLocation());			
 	}
 	
-	public boolean canDemolishSpaceRoad(String playerLogin, String sourceName, String destinationName)
+	public CommandCheckResult canDemolishSpaceRoad(String playerLogin, String sourceName, String destinationName)
 	{
 		try
 		{
@@ -1512,9 +1536,9 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		return new CommandCheckResult();
 	}
 
 	public void demolishSpaceRoad(String playerLogin, String sourceName, String destinationName) throws RunningGameCommandException
@@ -1551,7 +1575,7 @@ public class GameBoard implements Serializable
 	
 	////
 	
-	public boolean canModifyCarbonOrder(String playerLogin, String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders)
+	public CommandCheckResult canModifyCarbonOrder(String playerLogin, String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders)
 	{
 		try
 		{
@@ -1559,9 +1583,9 @@ public class GameBoard implements Serializable
 		}
 		catch(Throwable t)
 		{
-			return false;
+			return new CommandCheckResult(t);
 		}
-		return true;
+		return new CommandCheckResult();
 	}
 
 	public void modifyCarbonOrder(String playerLogin, String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders) throws RunningGameCommandException

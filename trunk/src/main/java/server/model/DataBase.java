@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import server.model.Area.AreaIllegalDefinitionException;
+import server.model.SpaceCounter.SpaceRoad;
 
 import common.GameConfig;
 import common.IBuilding;
@@ -492,6 +493,23 @@ class DataBase implements Serializable
 		if (building == null) throw new DataBaseError("No building type '" + clientBuildingType.getSimpleName() + "' built yet.");
 
 		return new genericResultSet<ProductiveCelestialBody, Unit, ABuilding>(getArea(celestialBody.getLocation()), productiveCelestialBody, getPlayer(playerName), null, building);
+	}
+
+	public SpaceRoad getSpaceRoad(RealLocation sourceLocation, RealLocation destinationLocation)
+	{
+		ProductiveCelestialBody source = getCelestialBody(sourceLocation.asLocation(), ProductiveCelestialBody.class);
+		if (source == null) return null;
+		
+		SpaceCounter sourceSpaceCounter = source.getBuilding(SpaceCounter.class);
+		if (sourceSpaceCounter == null) return null;
+		
+		ProductiveCelestialBody destination = getCelestialBody(destinationLocation.asLocation(), ProductiveCelestialBody.class);
+		if (destination == null) return null;
+		
+		SpaceCounter destinationSpaceCounter = destination.getBuilding(SpaceCounter.class);
+		if (destinationSpaceCounter == null) return null;
+		
+		return sourceSpaceCounter.getSpaceRoad(destination.getName());					
 	}
 
 }
