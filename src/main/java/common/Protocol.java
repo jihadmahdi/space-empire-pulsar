@@ -109,7 +109,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void canSendMessage(String msg) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canSendMessage(String msg) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Send a message to the RunningGame Chat.
@@ -126,7 +126,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		boolean canBuild(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canBuild(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order construction of a new building on the given celestial body.
@@ -145,7 +145,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		boolean canDemolish(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canDemolish(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order demolition of a building on the given celestial body.
@@ -162,7 +162,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		boolean canMakeStarships(String planetName, Map<StarshipTemplate, Integer> starshipsToMake) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canMakeStarships(String planetName, Map<StarshipTemplate, Integer> starshipsToMake) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Make given starships on the given planet.
@@ -184,7 +184,7 @@ public interface Protocol
 		 * @throws StateMachineNotExpectedEventException
 		 * @throws RunningGameCommandException
 		 */
-		boolean canMakeProbes(String planetName, String probeName, int quantity) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canMakeProbes(String planetName, String probeName, int quantity) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Make the given quantity of probes on the given planet, named by probeName+unit_number.
@@ -206,7 +206,7 @@ public interface Protocol
 		 * @throws StateMachineNotExpectedEventException
 		 * @throws RunningGameCommandException
 		 */
-		boolean canMakeAntiProbeMissiles(String planetName, String antiProbeMissileName, int quantity) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canMakeAntiProbeMissiles(String planetName, String antiProbeMissileName, int quantity) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Make the given quantity of probes on the given planet, named by probeName+unit_number.
@@ -225,7 +225,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		boolean canFormFleet(String planetName, String fleetName, Map<StarshipTemplate, Integer> fleetToFormStarships, Set<ISpecialUnit> fleetToFormSpecialUnits) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canFormFleet(String planetName, String fleetName, Map<StarshipTemplate, Integer> fleetToFormStarships, Set<ISpecialUnit> fleetToFormSpecialUnits) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Form a new fleet from the given starships composition.
@@ -244,7 +244,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		boolean canDismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canDismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Dismantle the given fleet and land the starships in the starship plant.
@@ -260,7 +260,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		boolean canEmbarkGovernment() throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canEmbarkGovernment() throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order to embark the government (from government module) on a government starship.
@@ -276,7 +276,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		boolean canSettleGovernment(String planetName) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canSettleGovernment(String planetName) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order to settle the government (from government starship) in the planet the government starship is currently landed.
@@ -291,7 +291,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		boolean canFirePulsarMissile(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canFirePulsarMissile(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order to fire a pulsar missile from the given celestial body with the given bonus modifier.
@@ -305,7 +305,7 @@ public interface Protocol
 		/**
 		 * Test if player can build a space road.
 		 */
-		boolean canBuildSpaceRoad(String sourceName, String destinationName) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canBuildSpaceRoad(String sourceName, String destinationName) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order to build a space road between the given celestial bodies.
@@ -322,7 +322,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		boolean canDemolishSpaceRoad(String sourceName, String destinationName) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canDemolishSpaceRoad(String sourceName, String destinationName) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order to demolish a space road.
@@ -339,7 +339,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state. 
 		 */
-		boolean canModifyCarbonOrder(String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canModifyCarbonOrder(String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Modify/create a carbon order from two celestial bodies.
@@ -357,7 +357,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void canMoveFleet() throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canMoveFleet() throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order a fleet to move with optionnal delay and checkpoints list.
@@ -378,7 +378,7 @@ public interface Protocol
 		 * @throws RpcException
 		 * @throws StateMachineNotExpectedEventException
 		 */
-		boolean canFireAntiProbeMissile(String antiProbeMissileName, String targetOwnerName, String targetProbeName) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canFireAntiProbeMissile(String antiProbeMissileName, String targetOwnerName, String targetProbeName) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order to fire the antiprobe missile onto the given probe target.
@@ -395,7 +395,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		boolean canLaunchProbe(String probeName, RealLocation destination) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canLaunchProbe(String probeName, RealLocation destination) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order to launch a probe to the specified destination.
@@ -412,7 +412,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		boolean canAttackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canAttackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Order a celestial body to attack enemies fleet.
@@ -428,7 +428,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		boolean canChangeDiplomacy(Diplomacy newDiplomacy) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canChangeDiplomacy(Diplomacy newDiplomacy) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Change the player domestic policy.
@@ -443,7 +443,7 @@ public interface Protocol
 		 * @throws RpcException
 		 * @throws StateMachineNotExpectedEventException
 		 */
-		boolean canResetTurn() throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canResetTurn() throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Reset current player turn (erase commands).
@@ -458,7 +458,7 @@ public interface Protocol
 		 * @throws RpcException
 		 * @throws StateMachineNotExpectedEventException
 		 */
-		boolean canEndTurn() throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canEndTurn() throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Terminate the current turn.

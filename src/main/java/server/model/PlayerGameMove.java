@@ -18,6 +18,7 @@ import server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 import client.gui.RunningGamePanel;
 
 import common.CarbonOrder;
+import common.CommandCheckResult;
 import common.Diplomacy;
 import common.IBuilding;
 import common.Player;
@@ -571,14 +572,20 @@ public class PlayerGameMove
 		}
 	}
 	
+	private void checkCommandResult(CommandCheckResult result) throws RunningGameCommandException
+	{
+		if (!result.isPossible())
+		{
+			throw new RunningGameCommandException(result.getReason());
+		}
+	}
+	
 	public void addBuildCommand(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RunningGameCommandException
 	{
 		checkTurnIsNotEnded();
 		
-		if (!getGameBoard().canBuild(playerLogin, celestialBodyName, buildingType))
-		{
-			throw new RunningGameCommandException(playerLogin+" cannot build '"+buildingType.getSimpleName()+"' on "+celestialBodyName);
-		}
+		CommandCheckResult result = getGameBoard().canBuild(playerLogin, celestialBodyName, buildingType);
+		checkCommandResult(result);
 		
 		addGameMoveCommand(new BuildCommand(playerLogin, celestialBodyName, buildingType));
 	}
@@ -587,10 +594,8 @@ public class PlayerGameMove
 	{
 		checkTurnIsNotEnded();
 
-		if (!getGameBoard().canDemolish(playerLogin, celestialBodyName, buildingType))
-		{
-			throw new RunningGameCommandException(playerLogin+" cannot demolish '"+buildingType.getSimpleName()+"' on "+celestialBodyName);
-		}
+		CommandCheckResult result = getGameBoard().canDemolish(playerLogin, celestialBodyName, buildingType);
+		checkCommandResult(result);
 
 		addGameMoveCommand(new DemolishCommand(playerLogin, celestialBodyName, buildingType));
 	}
@@ -599,10 +604,8 @@ public class PlayerGameMove
 	{
 		checkTurnIsNotEnded();
 		
-		if (!getGameBoard().canFormFleet(playerLogin, planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits))
-		{
-			throw new RunningGameCommandException(playerLogin+" cannot form fleet '"+fleetName+"' on "+planetName);
-		}
+		CommandCheckResult result = getGameBoard().canFormFleet(playerLogin, planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits);
+		checkCommandResult(result);
 		
 		addGameMoveCommand(new FormFleetCommand(playerLogin, planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits));
 	}
@@ -611,10 +614,8 @@ public class PlayerGameMove
 	{
 		checkTurnIsNotEnded();
 		
-		if (!getGameBoard().canDismantleFleet(playerLogin, fleetName))
-		{
-			throw new RunningGameCommandException(playerLogin+" cannot dismantle fleet '"+fleetName+"'");			
-		}
+		CommandCheckResult result = getGameBoard().canDismantleFleet(playerLogin, fleetName);
+		checkCommandResult(result);
 		
 		addGameMoveCommand(new DismantleFleetCommand(playerLogin, fleetName));
 	}
@@ -623,10 +624,8 @@ public class PlayerGameMove
 	{
 		checkTurnIsNotEnded();
 		
-		if (!getGameBoard().canMakeStarships(playerLogin, planetName, starshipsToMake))
-		{
-			throw new RunningGameCommandException(playerLogin+" cannot make these starships on "+planetName);
-		}
+		CommandCheckResult result = getGameBoard().canMakeStarships(playerLogin, planetName, starshipsToMake);
+		checkCommandResult(result);
 		
 		addGameMoveCommand(new MakeStarshipsCommand(playerLogin, planetName, starshipsToMake));
 	}
@@ -635,10 +634,8 @@ public class PlayerGameMove
 	{
 		checkTurnIsNotEnded();
 		
-		if (!getGameBoard().canMakeProbes(playerLogin, planetName, probeName, quantity))
-		{
-			throw new RunningGameCommandException(playerLogin+" cannot make "+quantity+" probes named '"+probeName+"' on '"+planetName+"'");
-		}
+		CommandCheckResult result = getGameBoard().canMakeProbes(playerLogin, planetName, probeName, quantity);
+		checkCommandResult(result);
 		
 		addGameMoveCommand(new MakeProbesCommand(playerLogin, planetName, probeName, quantity));
 	}
@@ -647,10 +644,8 @@ public class PlayerGameMove
 	{
 		checkTurnIsNotEnded();
 		
-		if (!getGameBoard().canMakeAntiProbeMissiles(playerLogin, planetName, antiProbeMissileName, quantity))
-		{
-			throw new RunningGameCommandException(playerLogin+" cannot make "+quantity+" anti-probe missiles named '"+antiProbeMissileName+"' on '"+planetName+"'");
-		}
+		CommandCheckResult result = getGameBoard().canMakeAntiProbeMissiles(playerLogin, planetName, antiProbeMissileName, quantity);
+		checkCommandResult(result);
 		
 		addGameMoveCommand(new MakeAntiProbeMissilesCommand(playerLogin, planetName, antiProbeMissileName, quantity));
 	}
@@ -659,10 +654,8 @@ public class PlayerGameMove
 	{
 		checkTurnIsNotEnded();
 			
-		if (!getGameBoard().canLaunchProbe(playerLogin, probeName, destination))
-		{
-			throw new RunningGameCommandException(playerLogin+" cannot launch probe '"+probeName+"' to "+destination);
-		}
+		CommandCheckResult result = getGameBoard().canLaunchProbe(playerLogin, probeName, destination);
+		checkCommandResult(result);
 		
 		addGameMoveCommand(new LaunchProbeCommand(playerLogin, probeName, destination));
 	}
@@ -671,10 +664,8 @@ public class PlayerGameMove
 	{
 		checkTurnIsNotEnded();
 		
-		if (!getGameBoard().canFireAntiProbeMissile(playerLogin, antiProbeMissileName, targetOwnerName, targetProbeName))
-		{
-			throw new RunningGameCommandException(playerLogin+" cannot fire anti-probe missile '"+antiProbeMissileName+"' to probe '"+targetProbeName+"'");
-		}
+		CommandCheckResult result = getGameBoard().canFireAntiProbeMissile(playerLogin, antiProbeMissileName, targetOwnerName, targetProbeName);
+		checkCommandResult(result);
 		
 		addGameMoveCommand(new FireAntiProbeMissileCommand(playerLogin, antiProbeMissileName, targetOwnerName, targetProbeName));
 	}
@@ -683,10 +674,8 @@ public class PlayerGameMove
 	{
 		checkTurnIsNotEnded();
 		
-		if (!getGameBoard().canEmbarkGovernment(playerLogin))
-		{
-			throw new RunningGameCommandException(playerLogin+" cannot embark the government.");
-		}
+		CommandCheckResult result = getGameBoard().canEmbarkGovernment(playerLogin);
+		checkCommandResult(result);
 		
 		addGameMoveCommand(new EmbarkGovernmentCommand(playerLogin));		
 	}
@@ -695,10 +684,8 @@ public class PlayerGameMove
 	{
 		checkTurnIsNotEnded();
 		
-		if (!getGameBoard().canMoveFleet(playerLogin, fleetName, checkpoints))
-		{
-			throw new RunningGameCommandException(playerLogin+" sent invalid roadmap for fleet '"+fleetName+"'");
-		}
+		CommandCheckResult result = getGameBoard().canMoveFleet(playerLogin, fleetName, checkpoints);
+		checkCommandResult(result);
 		
 		addGameMoveCommand(new MoveFleetCommand(playerLogin, fleetName, checkpoints));
 	}
@@ -707,10 +694,8 @@ public class PlayerGameMove
 	{
 		checkTurnIsNotEnded();
 		
-		if (!getGameBoard().canSettleGovernment(playerLogin, planetName))
-		{
-			throw new RunningGameCommandException(playerLogin+" cannot settle its government on '"+planetName+"'");
-		}
+		CommandCheckResult result = getGameBoard().canSettleGovernment(playerLogin, planetName);
+		checkCommandResult(result);
 		
 		addGameMoveCommand(new SettleGovernmentCommand(playerLogin, planetName));
 	}
@@ -724,12 +709,9 @@ public class PlayerGameMove
 			throw new RunningGameCommandException(playerLogin+" sent a diplomacy plan with wrong signature '"+newDiplomacy.getOwnerName()+"'.");
 		}
 		
-		if (!getGameBoard().canChangeDiplomacy(playerLogin, newDiplomacy))
-		{
-			throw new RunningGameCommandException(playerLogin+" cannot change diplomacy or sent an invalid diplomacy plan.");
-		}
-		
-		
+		CommandCheckResult result = getGameBoard().canChangeDiplomacy(playerLogin, newDiplomacy);
+		checkCommandResult(result);
+				
 		addGameMoveCommand(new ChangeDiplomacyCommand(playerLogin, newDiplomacy));
 	}
 	
@@ -737,10 +719,8 @@ public class PlayerGameMove
 	{
 		checkTurnIsNotEnded();
 		
-		if (!getGameBoard().canAttackEnemiesFleet(playerLogin, celestialBodyName))
-		{
-			throw new RunningGameCommandException(playerLogin+" cannot attack enemies fleet from celestial body '"+celestialBodyName+"'");
-		}
+		CommandCheckResult result = getGameBoard().canAttackEnemiesFleet(playerLogin, celestialBodyName);
+		checkCommandResult(result);
 		
 		addGameMoveCommand(new AttackEnemiesFleetCommand(playerLogin, celestialBodyName));
 	}
@@ -749,10 +729,8 @@ public class PlayerGameMove
 	{
 		checkTurnIsNotEnded();
 		
-		if (!getGameBoard().canBuildSpaceRoad(playerLogin, sourceName, destinationName))
-		{
-			throw new RunningGameCommandException(playerLogin+" cannot build space road between '"+sourceName+"' and '"+destinationName+"'");
-		}
+		CommandCheckResult result = getGameBoard().canBuildSpaceRoad(playerLogin, sourceName, destinationName);
+		checkCommandResult(result);
 		
 		addGameMoveCommand(new BuildSpaceRoadCommand(playerLogin, sourceName, destinationName));
 	}
@@ -761,10 +739,8 @@ public class PlayerGameMove
 	{
 		checkTurnIsNotEnded();
 		
-		if (!getGameBoard().canDemolishSpaceRoad(playerLogin, sourceName, destinationName))
-		{
-			throw new RunningGameCommandException(playerLogin+" cannot build space road between '"+sourceName+"' and '"+destinationName+"'");
-		}
+		CommandCheckResult result = getGameBoard().canDemolishSpaceRoad(playerLogin, sourceName, destinationName);
+		checkCommandResult(result);
 		
 		addGameMoveCommand(new DemolishSpaceRoadCommand(playerLogin, sourceName, destinationName));
 	}
@@ -773,10 +749,8 @@ public class PlayerGameMove
 	{
 		checkTurnIsNotEnded();
 		
-		if (!getGameBoard().canModifyCarbonOrder(playerLogin, originCelestialBodyName, nextCarbonOrders))
-		{
-			throw new RunningGameCommandException(playerLogin+" cannot modify carbon order from '"+originCelestialBodyName+"'.");
-		}
+		CommandCheckResult result = getGameBoard().canModifyCarbonOrder(playerLogin, originCelestialBodyName, nextCarbonOrders);
+		checkCommandResult(result);
 		
 		addGameMoveCommand(new ModifyCarbonOrder(playerLogin, originCelestialBodyName, nextCarbonOrders));
 	}

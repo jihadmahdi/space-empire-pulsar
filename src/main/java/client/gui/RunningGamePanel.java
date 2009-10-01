@@ -102,6 +102,7 @@ import common.AntiProbeMissile;
 import common.Area;
 import common.CarbonCarrier;
 import common.CarbonOrder;
+import common.CommandCheckResult;
 import common.DefenseModule;
 import common.ExtractionModule;
 import common.Fleet;
@@ -122,6 +123,7 @@ import common.PulsarLauchingPad;
 import common.SEPUtils;
 import common.SpaceCounter;
 import common.SpaceRoad;
+import common.SpaceRoadDeliverer;
 import common.StarshipPlant;
 import common.StarshipTemplate;
 import common.Unit;
@@ -175,6 +177,12 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		this.client = client;
 		this.universeRenderer = universeRenderer;
 		initGUI();
+	}
+	
+	private static void checkCommandBtn(JComponent component, CommandCheckResult result)
+	{
+		component.setEnabled(result.isPossible());
+		component.setToolTipText(result.getReason());
 	}
 
 	private void initGUI()
@@ -864,7 +872,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				getRunningGameCelestialBodyDetailsAttackFleetsBtn().setVisible(true);
 				try
 				{
-					getRunningGameCelestialBodyDetailsAttackFleetsBtn().setEnabled(client.getRunningGameInterface().canAttackEnemiesFleet(productiveCelestialBody.getName()));
+					checkCommandBtn(getRunningGameCelestialBodyDetailsAttackFleetsBtn(), client.getRunningGameInterface().canAttackEnemiesFleet(productiveCelestialBody.getName()));
 				}
 				catch(StateMachineNotExpectedEventException e)
 				{
@@ -926,7 +934,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		String label = (nbBuild > 0) ? "Upgrade" : "Build";
 		buildBtn.setText(label);
 		buildBtn.setToolTipText(label + " " + (nbBuild + 1) + " " + buildingType.getSimpleName() + " for " + ((buildCosts[0] > 0) ? buildCosts[0] + "c" : "") + ((buildCosts.length > 1 && buildCosts[1] > 0) ? buildCosts[1] + "pop." : ""));
-		buildBtn.setEnabled(client.getRunningGameInterface().canBuild(productiveCelestialBody.getName(), buildingType));
+		
+		checkCommandBtn(buildBtn, client.getRunningGameInterface().canBuild(productiveCelestialBody.getName(), buildingType));
 		buildBtn.addActionListener(new ActionListener()
 		{
 
@@ -960,7 +969,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		JButton destroyBtn = new JButton();
 		destroyBtn.setText("Demolish");
 		destroyBtn.setToolTipText("Demolish 1 defense module to free one slot.");
-		destroyBtn.setEnabled(client.getRunningGameInterface().canDemolish(productiveCelestialBody.getName(), buildingType));
+		checkCommandBtn(destroyBtn, client.getRunningGameInterface().canDemolish(productiveCelestialBody.getName(), buildingType));
 		destroyBtn.addActionListener(new ActionListener()
 		{
 
@@ -1073,7 +1082,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					JButton dismantleBtn = new JButton();
 					dismantleBtn.setText("Dismantle");
 					dismantleBtn.setToolTipText("Dismantle fleet so starships land on plant.");
-					dismantleBtn.setEnabled(isUnitOwner && client.getRunningGameInterface().canDismantleFleet(unit.getName()));
+					checkCommandBtn(dismantleBtn, client.getRunningGameInterface().canDismantleFleet(unit.getName()));
 					dismantleBtn.addActionListener(new ActionListener()
 					{
 
@@ -1108,7 +1117,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					JButton settleGvnmt = new JButton();
 					settleGvnmt.setText("Settle government");
 					settleGvnmt.setToolTipText("Settle governement.");
-					settleGvnmt.setEnabled(isUnitOwner && fleet.isGovernmentFleet() && client.getRunningGameInterface().canSettleGovernment(celestialBody.getName()));
+					checkCommandBtn(settleGvnmt, client.getRunningGameInterface().canSettleGovernment(celestialBody.getName()));
 					settleGvnmt.addActionListener(new ActionListener()
 					{
 
@@ -1169,13 +1178,14 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 						try
 						{
-							if (client.getRunningGameInterface().canFireAntiProbeMissile(infos.unit.getName(), target.getOwnerName(), target.getName()))
+							CommandCheckResult result = client.getRunningGameInterface().canFireAntiProbeMissile(infos.unit.getName(), target.getOwnerName(), target.getName());
+							if (result.isPossible())
 							{
 								client.getRunningGameInterface().fireAntiProbeMissile(infos.unit.getName(), target.getOwnerName(), target.getName());
 							}
 							else
 							{
-								JOptionPane.showMessageDialog(null, "Cannot fire antiprobe missile '" + infos.unit.getName() + "' onto '" + target.toString() + "'", "Error", JOptionPane.ERROR_MESSAGE);
+								JOptionPane.showMessageDialog(null, "Cannot fire antiprobe missile '" + infos.unit.getName() + "' onto '" + target.toString() + "'\n" + result.getReason(), "Error", JOptionPane.ERROR_MESSAGE);
 							}
 						}
 						catch(StateMachineNotExpectedEventException e)
@@ -1209,6 +1219,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			else if (CarbonCarrier.class.isInstance(unit))
 			{
 
+			}
+			else if (SpaceRoadDeliverer.class.isInstance(unit))
+			{
+				
 			}
 			else if (LaunchedPulsarMissile.class.isInstance(unit))
 			{
@@ -1246,9 +1260,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						
 						try
 						{
-							if (!client.getRunningGameInterface().canLaunchProbe(infos.unit.getName(), dest))
+							CommandCheckResult result = client.getRunningGameInterface().canLaunchProbe(infos.unit.getName(), dest);
+							if (!result.isPossible())
 							{
-								JOptionPane.showMessageDialog(null, "Impossible", "Error", JOptionPane.ERROR_MESSAGE);
+								JOptionPane.showMessageDialog(null, "Impossible\n"+result.getReason(), "Error", JOptionPane.ERROR_MESSAGE);
 								return;
 							}						
 						
@@ -1498,8 +1513,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 						JButton buildBtn = new JButton();
 						buildBtn.setText("Embark");
-						buildBtn.setToolTipText("Embark the government on a government starship for " + GovernmentStarship.POPULATION_PRICE + "pop. and " + GovernmentStarship.CARBON_PRICE + "c.");
-						buildBtn.setEnabled(client.getRunningGameInterface().canEmbarkGovernment());
+						checkCommandBtn(buildBtn, client.getRunningGameInterface().canEmbarkGovernment());
 						buildBtn.addActionListener(new ActionListener()
 						{
 
@@ -1534,7 +1548,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					}
 					else
 					{
-						if (client.getRunningGameInterface().canSettleGovernment(productiveCelestialBody.getName()))
+						CommandCheckResult result = client.getRunningGameInterface().canSettleGovernment(productiveCelestialBody.getName());
+						if (result.isPossible())
 						{
 							// Actions btn
 							JPanel btnsPanel = new JPanel(new FlowLayout());
@@ -1598,9 +1613,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 					JButton buildBtn = new JButton();
 					String label = (unusedCount > 0) ? "Upgrade " + unusedCount : "Build";
-					buildBtn.setText(label);
-					buildBtn.setToolTipText(label + " pulsar launching pad for " + PulsarLauchingPad.POPULATION_COST + "pop. and " + PulsarLauchingPad.CARBON_COST + "c.");
-					buildBtn.setEnabled(client.getRunningGameInterface().canBuild(productiveCelestialBody.getName(), PulsarLauchingPad.class));
+					buildBtn.setText(label);					
+					checkCommandBtn(buildBtn, client.getRunningGameInterface().canBuild(productiveCelestialBody.getName(), PulsarLauchingPad.class));
 					buildBtn.addActionListener(new ActionListener()
 					{
 
@@ -1632,9 +1646,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					btnsPanel.add(buildBtn);
 
 					JButton fireBtn = new JButton();
-					fireBtn.setText("Fire");
-					fireBtn.setToolTipText("Get access to pulsar missile launching controls.");
-					fireBtn.setEnabled(client.getRunningGameInterface().canFirePulsarMissile(productiveCelestialBody.getName()));
+					fireBtn.setText("Fire");					
+					checkCommandBtn(fireBtn, client.getRunningGameInterface().canFirePulsarMissile(productiveCelestialBody.getName()));
 					fireBtn.addActionListener(new ActionListener()
 					{
 
@@ -1801,11 +1814,13 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		getStarshipPlantWorkshopMakeStarshipBtn().setToolTipText("Make starships for " + makeCarbonPrice + "c and " + makePopulationPrice + "pop.");
 		try
 		{
-			getStarshipPlantWorkshopMakeStarshipBtn().setEnabled(client.getRunningGameInterface().canMakeStarships(infos.productiveCelestialBody.getName(), starshipsToMake));
-			getStarshipPlantFormFleetBtn().setEnabled(client.getRunningGameInterface().canFormFleet(infos.productiveCelestialBody.getName(), fleetName, fleetToFormStarships, fleetToFormSpecialUnits));
-
-			getStarshipPlantWorkshopMakeProbeBtn().setEnabled(infos.building != null && client.getRunningGameInterface().canMakeProbes(infos.productiveCelestialBody.getName(), probeName, probeToMake));
-			getStarshipPlantWorkshopMakeAntiProbeMissileBtn().setEnabled(infos.building != null && client.getRunningGameInterface().canMakeAntiProbeMissiles(infos.productiveCelestialBody.getName(), antiProbeMissileName, antiProbeMissileToMake));
+			checkCommandBtn(getStarshipPlantWorkshopMakeStarshipBtn(), client.getRunningGameInterface().canMakeStarships(infos.productiveCelestialBody.getName(), starshipsToMake));
+			
+			checkCommandBtn(getStarshipPlantFormFleetBtn(), client.getRunningGameInterface().canFormFleet(infos.productiveCelestialBody.getName(), fleetName, fleetToFormStarships, fleetToFormSpecialUnits));
+			
+			checkCommandBtn(getStarshipPlantWorkshopMakeProbeBtn(), client.getRunningGameInterface().canMakeProbes(infos.productiveCelestialBody.getName(), probeName, probeToMake));
+			
+			checkCommandBtn(getStarshipPlantWorkshopMakeAntiProbeMissileBtn(), client.getRunningGameInterface().canMakeAntiProbeMissiles(infos.productiveCelestialBody.getName(), antiProbeMissileName, antiProbeMissileToMake));			
 		}
 		catch(RpcException e)
 		{
@@ -3813,8 +3828,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	{
 		try
 		{
-			getRunningGameCancelTurnBtn().setEnabled(client.getRunningGameInterface().canResetTurn());
-			getRunningGameEndTurnBtn().setEnabled(client.getRunningGameInterface().canEndTurn());
+			checkCommandBtn(getRunningGameCancelTurnBtn(), client.getRunningGameInterface().canResetTurn());			
+			checkCommandBtn(getRunningGameEndTurnBtn(), client.getRunningGameInterface().canEndTurn());			
 		}
 		catch(Exception e)
 		{

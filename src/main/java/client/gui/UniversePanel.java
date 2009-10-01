@@ -1,7 +1,6 @@
 package client.gui;
 
 import java.awt.BorderLayout;
-
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridLayout;
@@ -9,27 +8,19 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.io.File;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.Stack;
 
 import javax.swing.BorderFactory;
-
-import javax.swing.WindowConstants;
-import javax.swing.border.LineBorder;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import org.axan.eplib.utils.Basic;
 
@@ -37,7 +28,6 @@ import client.gui.lib.JImagePanel;
 
 import common.Area;
 import common.ICelestialBody;
-import common.Planet;
 import common.PlayerGameBoard;
 import common.Unit;
 import common.UnitMarker;
@@ -164,6 +154,11 @@ public class UniversePanel extends javax.swing.JPanel implements UniverseRendere
 				if (row == 0)
 				{
 					getUniverseViewPanel().add(getCoordLabel(false, col));
+					
+					if (col == 0)
+					{
+						getCoordLabel(false, col).setText(String.format("T %d", currentGameBoard.getDate()));
+					}
 				}
 				else if (col == 0)
 				{

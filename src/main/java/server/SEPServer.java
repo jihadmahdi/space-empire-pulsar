@@ -38,6 +38,7 @@ import server.model.ServerGame;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import common.CarbonOrder;
+import common.CommandCheckResult;
 import common.GameConfig;
 import common.IBuilding;
 import common.PlayerGameBoard;
@@ -277,7 +278,7 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public void canSendMessage(String msg) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canSendMessage(String msg) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO
 			throw new NotImplementedException();
@@ -318,9 +319,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canAttackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canAttackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canAttackEnemiesFleet(getLogin(), celestialBodyName);
 		}
 
@@ -331,9 +332,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canBuild(String celestialBodyName, Class<? extends common.IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canBuild(String celestialBodyName, Class<? extends common.IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canBuild(getLogin(), celestialBodyName, buildingType);
 		}
 
@@ -344,9 +345,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canBuildSpaceRoad(String sourceName, String destinationName) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canBuildSpaceRoad(String sourceName, String destinationName) throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canBuildSpaceRoad(getLogin(), sourceName, destinationName);
 		}
 
@@ -357,9 +358,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canChangeDiplomacy(common.Diplomacy newDiplomacy) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canChangeDiplomacy(common.Diplomacy newDiplomacy) throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canChangeDiplomacy(getLogin(), newDiplomacy);
 		}
 
@@ -370,9 +371,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canDemolish(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canDemolish(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canDemolish(getLogin(), celestialBodyName, buildingType);
 		}
 
@@ -383,9 +384,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canDemolishSpaceRoad(String sourceName, String destinationName) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canDemolishSpaceRoad(String sourceName, String destinationName) throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canDemolishSpaceRoad(getLogin(), sourceName, destinationName);
 		}
 
@@ -396,9 +397,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canDismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canDismantleFleet(String fleetName) throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canDismantleFleet(getLogin(), fleetName);
 		}
 
@@ -409,9 +410,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canEmbarkGovernment() throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canEmbarkGovernment() throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canEmbarkGovernment(getLogin());
 		}
 
@@ -422,9 +423,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canFirePulsarMissile(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canFirePulsarMissile(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canFirePulsarMissile(getLogin(), celestialBodyName);			
 		}
 
@@ -436,9 +437,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 		
 		@Override
-		public boolean canFormFleet(String planetName, String fleetName, Map<common.StarshipTemplate, Integer> fleetToFormStarships, Set<common.ISpecialUnit> fleetToFormSpecialUnits) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canFormFleet(String planetName, String fleetName, Map<common.StarshipTemplate, Integer> fleetToFormStarships, Set<common.ISpecialUnit> fleetToFormSpecialUnits) throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canFormFleet(getLogin(), planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits);
 		}
 
@@ -449,9 +450,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canFireAntiProbeMissile(String antiProbeMissileName, String targetOwnerName, String targetProbeName) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canFireAntiProbeMissile(String antiProbeMissileName, String targetOwnerName, String targetProbeName) throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canFireAntiProbeMissile(getLogin(), antiProbeMissileName, targetOwnerName, targetProbeName);
 		}
 		
@@ -462,9 +463,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 		
 		@Override
-		public boolean canLaunchProbe(String probeName, RealLocation destination) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canLaunchProbe(String probeName, RealLocation destination) throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canLaunchProbe(getLogin(), probeName, destination);
 		}
 
@@ -475,9 +476,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canMakeStarships(String planetName, Map<common.StarshipTemplate, Integer> starshipsToMake) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canMakeStarships(String planetName, Map<common.StarshipTemplate, Integer> starshipsToMake) throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canMakeStarships(getLogin(), planetName, starshipsToMake);
 		}
 
@@ -488,9 +489,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canMakeProbes(String planetName, String probeName, int quantity) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canMakeProbes(String planetName, String probeName, int quantity) throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canMakeProbes(getLogin(), planetName, probeName, quantity);
 		}
 		
@@ -501,9 +502,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 		
 		@Override
-		public boolean canMakeAntiProbeMissiles(String planetName, String antiProbeMissileName, int quantity) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canMakeAntiProbeMissiles(String planetName, String antiProbeMissileName, int quantity) throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canMakeAntiProbeMissiles(getLogin(), planetName, antiProbeMissileName, quantity);
 		}
 		
@@ -514,9 +515,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 		
 		@Override
-		public boolean canModifyCarbonOrder(String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canModifyCarbonOrder(String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders) throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canModifyCarbonOrder(getLogin(), originCelestialBodyName, nextCarbonOrders);
 		}
 
@@ -527,9 +528,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public void canMoveFleet() throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canMoveFleet() throws RpcException, StateMachineNotExpectedEventException
 		{
-			// if (getGameMove().isTurnEnded()) return false;
+			// if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			// TODO Auto-generated method stub
 			throw new NotImplementedException();
 		}
@@ -541,9 +542,9 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canSettleGovernment(String planetName) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canSettleGovernment(String planetName) throws RpcException, StateMachineNotExpectedEventException
 		{
-			if (getGameMove().isTurnEnded()) return false;
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canSettleGovernment(getLogin(), planetName);
 		}
 
@@ -576,15 +577,17 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public boolean canEndTurn() throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canEndTurn() throws RpcException, StateMachineNotExpectedEventException
 		{
-			return !getGameMove().isTurnEnded();
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
+			return new CommandCheckResult();
 		}
 
 		@Override
-		public boolean canResetTurn() throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canResetTurn() throws RpcException, StateMachineNotExpectedEventException
 		{
-			return !getGameMove().isTurnEnded();
+			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
+			return new CommandCheckResult();
 		}
 
 	}

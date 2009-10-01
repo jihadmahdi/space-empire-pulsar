@@ -57,6 +57,11 @@ class SpaceCounter extends ABuilding implements Serializable
 		{
 			return source;
 		}
+		
+		public double getSpeed()
+		{
+			return speed;
+		}
 	}
 	
 	// Constants
@@ -220,6 +225,27 @@ class SpaceCounter extends ABuilding implements Serializable
 		spaceRoadsLinked.add(spaceRoad);
 	}
 
+	public SpaceRoad getSpaceRoad(String otherSideName)
+	{
+		for(SpaceRoad r : spaceRoadsBuilt)
+		{
+			if (r.getDestination().equals(otherSideName))
+			{
+				return r;
+			}
+		}
+		
+		for(SpaceRoad r : spaceRoadsLinked)
+		{
+			if (r.getSource().equals(otherSideName))
+			{
+				return r;
+			}
+		}
+		
+		return null;
+	}
+	
 	public boolean hasSpaceRoadTo(String destinationName)
 	{
 		for(SpaceRoad r : spaceRoadsBuilt)

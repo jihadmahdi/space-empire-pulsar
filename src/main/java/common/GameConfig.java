@@ -676,7 +676,7 @@ public class GameConfig implements Serializable
 	public int getSpaceRoadsSpeed()
 	{
 		// TODO : Add to CTOR
-		return 3;
+		return 5;
 	}
 	
 	public int getCarbonMinimalFreight()
