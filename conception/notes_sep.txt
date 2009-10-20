@@ -1,5 +1,25 @@
 NOTES A METTRE A JOUR :
 
+// Le système diplomatique est-il satisfaisant ? Permet t'il une vrai stratégie diplomatique dans le jeu ?
+
+Une grille diplomatique par corps céleste, avec la liste des joueurs et une checkbox "hostile/neutre", plus des options générales "défendre corps céleste", "takeover corps céleste", 
+Le joueur peut vite fait enregistrer des templates diplomatiques qu'il peut donc recharger et éditer rapidement pour les appliquers a d'autres CC.
+Réalisme: les diplomaties n'ont pas de matérialisation physique sur les corps célestes, elles sont communiquées à chaque flotte à la date de leur départ (et celles-ci ne les mettent à jour qu'au tour suivant leur arrivée).
+
+Espionage diplomatique: Un espionage du gouvernement entraine une vue complète de l'empire.
+Le gouvernement est trop simple à espionner ! => Non, cf. espionage.
+
+Ou alors des templates dynamiques prédéfinis qui définissent toutes les stratégies principales.
+ 
+Attaque															Défense
+Raser tout le monde												Raser tout le monde
+Prendre le corps céleste (attaquer le strict minimum)			Prendre le corps céleste (attaquer le strict minimum)
+Nettoyer le corps céleste (attaquer le strict minimum)			Défendre le corps céleste (attaquer le strict minimum)
+Se poser pacifiquement											Eviter au maximum les combats
+
+Le seul comportement supplémentaire que permet la grille complète est:
+Attaquer pas tout le monde, mais plus que le strict minimum. Qui est à 80% du temps un choix pas malin.
+
 /Cas d'exploit/
 soit 2 corps céleste A et B à 10 zones l'un de l'autre.
 soit la vitesse des vaisseaux de 1zone / tour.
@@ -37,6 +57,9 @@ Pour celà il faut poser sur la planète sur laquelle il a son module gouverneme
 Si le gouvernement est dans un vaisseau, l'espionnage devrait être facilité.
 Reste à voir si en cas de success les 2 politiques (intérieure & de conquète) sont rendues visibles, ou une seule des deux.
 => Actuellement, il suffit d'avoir la vue sur le gouvernement (même lorsqu'il est en voyage, s'il est repéré par une sonde) pour que la politique globable du joueur soit dévoilée)
+Plusieurs forces étrangères en présence sur la planète gouvernementale :
+Les étrangers dont les forces dépassent les forces locales sont éligibles à l'espionage.
+Parmis les étrangers éligibles à l'espionage, seuls ceux dont la part de force dépasse 30% ont effectivement accès à l'espionage.
 
 // Routes spaciales : Un comptoir octroie 1 lancement de route spatiale, mais peut recevoir une infinitée de route venues d'ailleurs (pour éviter le problème ou un joueur reçoit une route alors qu'il  déjà envoyé la sienne et n'a plus de comptoir libre), par ailleurs la construction prend le temps de déplacement du véhicule de construction.
 

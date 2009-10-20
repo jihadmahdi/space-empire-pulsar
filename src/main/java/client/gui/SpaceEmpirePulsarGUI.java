@@ -397,6 +397,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		}
 	}
 
+	private static final Random random = new Random();
+	
 	private JPanel	joinGameJPanel	= null;
 
 	private JPanel getJJoinGamePanel()
@@ -420,6 +422,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 			joinGameJPanel.add(getJoinGameOkJButton());
 			joinGameJPanel.add(getJoinGameCancelJButton());
+			
+			getNameJTextField().setText("Guest"+random.nextInt());
 		}
 		return joinGameJPanel;
 	}
@@ -445,6 +449,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 			hostGameJPanel.add(getHostGameOkJButton());
 			hostGameJPanel.add(getHostGameCancelJButton());
+			
+			getNameJTextField().setText("Host");
 		}
 		return hostGameJPanel;
 	}

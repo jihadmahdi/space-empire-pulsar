@@ -26,6 +26,7 @@ import common.CommandCheckResult;
 import common.GameConfig;
 import common.SEPUtils;
 import common.TravellingLogEntryUnitSeen;
+import common.Diplomacy.PlayerPolicies;
 import common.Protocol.ServerRunningGame.RunningGameCommandException;
 import common.SEPUtils.Location;
 import common.SEPUtils.RealLocation;
@@ -446,19 +447,23 @@ public class GameBoard implements Serializable
 
 	public void resolveConflict(ProductiveCelestialBody productiveCelestialBody)
 	{
-		// Initiate conflicts table
+		// Initiate conflicts table : PlayerName/PlayerName: boolean
 		Map<String, Map<String, Boolean>> conflicts = new Hashtable<String, Map<String,Boolean>>();
 		for(String p1 : db.getPlayersKeySet())
 		{
+			// Initiate player p1 conflict line
 			Map<String, Boolean> playerConflicts = new Hashtable<String, Boolean>();
 			for(String p2 : db.getPlayersKeySet())
 			{
 				if (p1.equals(p2)) continue;
 				
+				// Set to true if p1 is hostile to p2.
 				boolean p1Policy = false;
 				
+				// If p1 is the battlefield owner
 				if (p1.equals(productiveCelestialBody.getOwnerName()))
 				{
+					// We check home policies.
 					p1Policy = !db.getPlayerPolicies(p1).getPolicies(p2).isAllowedToLandFleetInHomeTerritory();					
 				}
 				else
@@ -1386,11 +1391,11 @@ public class GameBoard implements Serializable
 		return new MakeStarshipsCheckResult(planet, carbonCost, populationCost, starshipPlant);
 	}
 
-	public CommandCheckResult canChangeDiplomacy(String playerLogin, common.Diplomacy newDiplomacy)
+	public CommandCheckResult canChangeDiplomacy(String playerLogin, Map<String,PlayerPolicies> newPolicies)
 	{
 		try
 		{
-			checkChangeDiplomacy(playerLogin, newDiplomacy);
+			checkChangeDiplomacy(playerLogin, newPolicies);
 		}
 		catch(Throwable t)
 		{
@@ -1399,11 +1404,11 @@ public class GameBoard implements Serializable
 		return new CommandCheckResult();
 	}
 
-	public void changeDiplomacy(String playerLogin, common.Diplomacy newDiplomacy) throws RunningGameCommandException
+	public void changeDiplomacy(String playerLogin, Map<String,PlayerPolicies> newPolicies) throws RunningGameCommandException
 	{
-		ChangeDiplomacyCheckResult changeDiplomacyCheckResult = checkChangeDiplomacy(playerLogin, newDiplomacy);
+		ChangeDiplomacyCheckResult changeDiplomacyCheckResult = checkChangeDiplomacy(playerLogin, newPolicies);
 		
-		db.getPlayerPolicies(playerLogin).update(newDiplomacy);
+		db.getPlayerPolicies(playerLogin).update(newPolicies);
 	}
 
 	private static class ChangeDiplomacyCheckResult
@@ -1413,9 +1418,9 @@ public class GameBoard implements Serializable
 		}
 	}
 
-	private ChangeDiplomacyCheckResult checkChangeDiplomacy(String playerLogin, common.Diplomacy newDiplomacy) throws RunningGameCommandException
+	private ChangeDiplomacyCheckResult checkChangeDiplomacy(String playerLogin, Map<String,PlayerPolicies> newPolicies) throws RunningGameCommandException
 	{
-		if (newDiplomacy.getPolicies(playerLogin) != null) throw new RunningGameCommandException("Cannot have a diplomacy toward ourselves.");
+		if (newPolicies.get(playerLogin) != null) throw new RunningGameCommandException("Cannot have a diplomacy toward ourselves.");
 		return new ChangeDiplomacyCheckResult();
 	}
 	

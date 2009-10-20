@@ -45,6 +45,7 @@ import common.PlayerGameBoard;
 import common.Player;
 import common.PlayerConfig;
 import common.Protocol;
+import common.Diplomacy.PlayerPolicies;
 import common.Protocol.ServerGameCreation;
 import common.Protocol.ServerPausedGame;
 import common.Protocol.ServerRunningGame;
@@ -358,16 +359,16 @@ public class SEPServer implements IServer, GameServerListener
 		}
 
 		@Override
-		public CommandCheckResult canChangeDiplomacy(common.Diplomacy newDiplomacy) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canChangeDiplomacy(Map<String,PlayerPolicies> newPolicies) throws RpcException, StateMachineNotExpectedEventException
 		{
 			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
-			return getGameBoard().canChangeDiplomacy(getLogin(), newDiplomacy);
+			return getGameBoard().canChangeDiplomacy(getLogin(), newPolicies);
 		}
 
 		@Override
-		public void changeDiplomacy(common.Diplomacy newDiplomacy) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
+		public void changeDiplomacy(Map<String,PlayerPolicies> newPolicies) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
-			getGameMove().addChangeDiplomacyCommand(newDiplomacy);
+			getGameMove().addChangeDiplomacyCommand(newPolicies);
 		}
 
 		@Override

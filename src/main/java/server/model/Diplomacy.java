@@ -26,6 +26,7 @@ public class Diplomacy implements Serializable
 	private final Hashtable<String, common.Diplomacy.PlayerPolicies> policies = new Hashtable<String, common.Diplomacy.PlayerPolicies>();
 	
 	// Views
+	private final PlayerDatedView<Integer> playersLastObservation = new PlayerDatedView<Integer>();
 	private final PlayerDatedView<Hashtable<String, common.Diplomacy.PlayerPolicies>> playersPoliciesView = new PlayerDatedView<Hashtable<String, common.Diplomacy.PlayerPolicies>>();
 	
 	/**
@@ -68,17 +69,19 @@ public class Diplomacy implements Serializable
 			// Updates
 			ensureDefaultPlayerPolicies();
 			playersPoliciesView.updateView(playerName, policies, date);
+			playersLastObservation.updateView(playerName, date, date);
 		}				
 		
-		return new common.Diplomacy(ownerName, playersPoliciesView.getLastValue(playerName, null));
+		int lastObservation = playersLastObservation.getLastValue(playerName, -1);
+		return new common.Diplomacy(isVisible, lastObservation, ownerName, playersPoliciesView.getLastValue(playerName, null));
 	}
 
-	public void update(common.Diplomacy newDiplomacy)
+	public void update(Map<String,PlayerPolicies> newPolicies)
 	{
 		policies.clear();
-		for(String playerLogin : newDiplomacy.targetSet())
+		for(String playerLogin : newPolicies.keySet())
 		{
-			policies.put(playerLogin, newDiplomacy.getPolicies(playerLogin));
+			policies.put(playerLogin, newPolicies.get(playerLogin));
 		}
 	}
 }

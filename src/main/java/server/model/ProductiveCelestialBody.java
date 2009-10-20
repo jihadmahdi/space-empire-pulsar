@@ -432,7 +432,8 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	public void controlNewcomer(Unit u)
 	{
 		if (conflictInitiators.contains(u.getOwnerName())) return; // Unit has already initiated a conflict.
-		if (ownerName == null) return; // TODO: Neutral celestial bodies automatically defend themselves ? (game config option ?) 
+		if (ownerName == null) return; // TODO: Neutral celestial bodies automatically defend themselves ? (game config option ?)
+		if (ownerName.equals(u.getOwnerName())) return; // Unit is owned.
 		if (db.getPlayerPolicies(ownerName).getPolicies(u.getOwnerName()).isAllowedToLandFleetInHomeTerritory()) return; // Unit is allowed to land.
 		addConflictInititor(ownerName); // Unit is not allowed to land, celestial body owner initiate the conflict.
 	}

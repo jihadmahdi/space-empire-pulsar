@@ -24,6 +24,7 @@ import common.IBuilding;
 import common.Player;
 import common.PlayerGameBoard;
 import common.Protocol;
+import common.Diplomacy.PlayerPolicies;
 import common.Protocol.ServerRunningGame.RunningGameCommandException;
 import common.SEPUtils.RealLocation;
 
@@ -393,12 +394,12 @@ public class PlayerGameMove
 	
 	static class ChangeDiplomacyCommand extends GameMoveCommand
 	{
-		private final common.Diplomacy newDiplomacy;
+		private final Map<String,PlayerPolicies> newPolicies;
 		
-		public ChangeDiplomacyCommand(String playerLogin, common.Diplomacy newDiplomacy)
+		public ChangeDiplomacyCommand(String playerLogin, Map<String,PlayerPolicies> newPolicies)
 		{
 			super(playerLogin);
-			this.newDiplomacy = newDiplomacy;
+			this.newPolicies = newPolicies;
 		}
 		
 		@Override
@@ -407,7 +408,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.changeDiplomacy(playerLogin, newDiplomacy);
+				newGameBoard.changeDiplomacy(playerLogin, newPolicies);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -700,19 +701,14 @@ public class PlayerGameMove
 		addGameMoveCommand(new SettleGovernmentCommand(playerLogin, planetName));
 	}
 	
-	public void addChangeDiplomacyCommand(Diplomacy newDiplomacy) throws RunningGameCommandException
+	public void addChangeDiplomacyCommand(Map<String,PlayerPolicies> newPolicies) throws RunningGameCommandException
 	{
 		checkTurnIsNotEnded();
 		
-		if (!playerLogin.equals(newDiplomacy.getOwnerName()))
-		{
-			throw new RunningGameCommandException(playerLogin+" sent a diplomacy plan with wrong signature '"+newDiplomacy.getOwnerName()+"'.");
-		}
-		
-		CommandCheckResult result = getGameBoard().canChangeDiplomacy(playerLogin, newDiplomacy);
+		CommandCheckResult result = getGameBoard().canChangeDiplomacy(playerLogin, newPolicies);
 		checkCommandResult(result);
 				
-		addGameMoveCommand(new ChangeDiplomacyCommand(playerLogin, newDiplomacy));
+		addGameMoveCommand(new ChangeDiplomacyCommand(playerLogin, newPolicies));
 	}
 	
 	public void addAttackEnemiesFleetCommand(String celestialBodyName) throws RunningGameCommandException

@@ -13,6 +13,7 @@ import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 
+import common.Diplomacy.PlayerPolicies;
 import common.Protocol.ServerRunningGame.RunningGameCommandException;
 import common.SEPUtils.RealLocation;
 
@@ -428,7 +429,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		CommandCheckResult canChangeDiplomacy(Diplomacy newDiplomacy) throws RpcException, StateMachineNotExpectedEventException;
+		CommandCheckResult canChangeDiplomacy(Map<String,PlayerPolicies> newPolicies) throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Change the player domestic policy.
@@ -436,7 +437,7 @@ public interface Protocol
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 * @throws RunningGameCommandException 
 		 */
-		void changeDiplomacy(Diplomacy newDiplomacy) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
+		void changeDiplomacy(Map<String,PlayerPolicies> newPolicies) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException;
 
 		/**
 		 * Test if turn can be reseted (not ended yet).
