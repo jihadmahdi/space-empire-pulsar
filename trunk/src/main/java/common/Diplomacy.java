@@ -3,17 +3,26 @@ package common;
 import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.Observer;
 import java.util.Set;
 
-public class Diplomacy implements Serializable
+public class Diplomacy implements Serializable, IObservable
 {
 	private static final long	serialVersionUID	= 1L;
 
+	/** Is the current area visible for the player. */
+	private final boolean isVisible;	
+	
+	/** Last turn date this area has been visible. */
+	private final int lastObservation; 
+	
 	private final String ownerName;
 	private final Map<String, PlayerPolicies> policies;
 	
-	public Diplomacy(String ownerName, Map<String,PlayerPolicies> policies)
+	public Diplomacy(boolean isVisible, int lastObservation, String ownerName, Map<String,PlayerPolicies> policies)
 	{
+		this.isVisible = isVisible;
+		this.lastObservation = lastObservation;
 		this.ownerName = ownerName;
 		this.policies = policies;
 	}
@@ -69,4 +78,18 @@ public class Diplomacy implements Serializable
 	{
 		return policies.keySet();
 	}
+
+	@Override
+	public int getLastObservation()
+	{
+		return lastObservation;
+	}
+
+	@Override
+	public boolean isVisible()
+	{
+		return isVisible;
+	}
+	
+	
 }

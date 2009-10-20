@@ -1128,40 +1128,43 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						});
 						btnsPanel.add(dismantleBtn);
 
-						// Settle governement fleet
-						JButton settleGvnmt = new JButton();
-						settleGvnmt.setText("Settle government");
-						settleGvnmt.setToolTipText("Settle governement.");
-						checkCommandBtn(settleGvnmt, client.getRunningGameInterface().canSettleGovernment(celestialBody.getName()));
-						settleGvnmt.addActionListener(new ActionListener()
+						if (productiveCelestialBody != null)
 						{
-
-							@Override
-							public void actionPerformed(ActionEvent e)
+							// Settle governement fleet
+							JButton settleGvnmt = new JButton();
+							settleGvnmt.setText("Settle government");
+							settleGvnmt.setToolTipText("Settle governement.");
+							checkCommandBtn(settleGvnmt, client.getRunningGameInterface().canSettleGovernment(productiveCelestialBody.getName()));
+							settleGvnmt.addActionListener(new ActionListener()
 							{
-								try
+
+								@Override
+								public void actionPerformed(ActionEvent e)
 								{
-									client.getRunningGameInterface().settleGovernment(celestialBody.getName());
+									try
+									{
+										client.getRunningGameInterface().settleGovernment(celestialBody.getName());
+									}
+									catch(StateMachineNotExpectedEventException e1)
+									{
+										e1.printStackTrace();
+									}
+									catch(RpcException e1)
+									{
+										e1.printStackTrace();
+									}
+									catch(RunningGameCommandException e1)
+									{
+										showRunningGameCommandExceptionMsg(e1);
+									}
+									finally
+									{
+										refreshGameBoard();
+									}
 								}
-								catch(StateMachineNotExpectedEventException e1)
-								{
-									e1.printStackTrace();
-								}
-								catch(RpcException e1)
-								{
-									e1.printStackTrace();
-								}
-								catch(RunningGameCommandException e1)
-								{
-									showRunningGameCommandExceptionMsg(e1);
-								}
-								finally
-								{
-									refreshGameBoard();
-								}
-							}
-						});
-						btnsPanel.add(settleGvnmt);
+							});
+							btnsPanel.add(settleGvnmt);
+						}
 
 						getRunningGameFleetDetailsSpecificDetailsPanel().add(btnsPanel);
 
@@ -2929,8 +2932,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		GridLayout gridLayout = new GridLayout(policies.size() + 1, policies.size() + 1, 1, 1);
 		diplomacyActionPanel.setLayout(gridLayout);
 
+		// Top left label
 		diplomacyActionPanel.add(getDiplomacyPanelPlayerFieldLabel());
 
+		// First line (players labels, current player first column)
 		diplomacyActionPanel.add(getDiplomacyPlayerLabel(currentPlayer));
 		for(Player player : currentGamePlayers)
 		{
@@ -2938,6 +2943,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			diplomacyActionPanel.add(getDiplomacyPlayerLabel(player));
 		}
 
+		// Second line, current player label in first column, empty label in second column, then current player policies.
 		diplomacyActionPanel.add(getDiplomacyPlayerLabel(currentPlayer));
 		diplomacyActionPanel.add(new JLabel());
 
@@ -2951,27 +2957,24 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			diplomacyActionPanel.add(panel);
 		}
 
+		// Next lines, players labels and policies
 		for(Player owner : currentGamePlayers)
 		{
-			if (currentPlayer.isNamed(owner.getName())) continue;
+			if (currentPlayer.isNamed(owner.getName())) continue;						
 
+			// First column, player label
 			diplomacyActionPanel.add(getDiplomacyPlayerLabel(owner));
 
-			Diplomacy diplomacy = policies.get(owner.getName());
-
-			diplomacyActionPanel.add(diplomacy == null || diplomacy.getPolicies(currentPlayer.getName()) == null ? new JLabel() : new WrappedJLabel(diplomacy.getPolicies(currentPlayer.getName()).toString()));
-
+			// Second column, player policy toward current player.
+			diplomacyActionPanel.add(getPlayerPoliciesLabel(owner.getName(), currentPlayer.getName()));
+			
+			// Next columns, player policies
 			for(Player player : currentGamePlayers)
 			{
 				if (currentPlayer.isNamed(player.getName())) continue;
-				if (owner.isNamed(player.getName()))
-				{
-					diplomacyActionPanel.add(new JLabel());
-				}
-				else
-				{
-					diplomacyActionPanel.add(diplomacy == null || diplomacy.getPolicies(player.getName()) == null ? new JLabel() : new WrappedJLabel(diplomacy.getPolicies(player.getName()).toString()));
-				}
+				if (owner.isNamed(player.getName())) continue;
+				
+				diplomacyActionPanel.add(getPlayerPoliciesLabel(owner.getName(), player.getName()));
 			}
 		}
 
@@ -2986,23 +2989,47 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		updateUI();
 	}
+	
+	private final HashMap<String, WrappedJLabel> playersPoliciesLabel = new HashMap<String, WrappedJLabel>();
+	private static final String mapSeparator = "@ @"; 
+	
+	private WrappedJLabel getPlayerPoliciesLabel(String ownerName, String targetName)
+	{
+		String key = ownerName+mapSeparator+targetName;
+		if (!playersPoliciesLabel.containsKey(key))
+		{
+			WrappedJLabel label = (ownerName.equals(targetName) ? null : new WrappedJLabel("Never seen"));			
+			playersPoliciesLabel.put(key, label);
+		}
+		return playersPoliciesLabel.get(key);
+	}
 
 	private void refreshDiplomacyActionPanel()
 	{
 		if (currentGameBoard == null || currentPlayer == null) return;
 
-		Diplomacy diplomacy = currentGameBoard.getPlayersPolicies().get(currentPlayer.getName());
+		Diplomacy currentPlayerDiplomacy = currentGameBoard.getPlayersPolicies().get(currentPlayer.getName());
 
 		for(Player player : currentGamePlayers)
 		{
 			if (currentPlayer.isNamed(player.getName())) continue;
 
-			PlayerPolicies policies = diplomacy.getPolicies(player.getName());
+			PlayerPolicies currentPlayerPolicies = currentPlayerDiplomacy.getPolicies(player.getName());
 
-			getDiplomacyPlayerHomeDiplomacyPanel(player).setSelected(policies.isAllowedToLandFleetInHomeTerritory());
-			getDiplomacyPlayerForeignDiplomacyPanel(player).setSelected(policies.isAlwaysEngagedInConflictOnStrangerTerritory());
+			getDiplomacyPlayerHomeDiplomacyPanel(player).setSelected(currentPlayerPolicies.isAllowedToLandFleetInHomeTerritory());
+			getDiplomacyPlayerForeignDiplomacyPanel(player).setSelected(currentPlayerPolicies.isAlwaysEngagedInConflictOnStrangerTerritory());
+			
+			Diplomacy playerDiplomacy = currentGameBoard.getPlayersPolicies().get(player.getName());
+			
+			for(Player target : currentGamePlayers)
+			{
+				if (player.isNamed(target.getName())) continue;
+				
+				PlayerPolicies playerPolicies = (playerDiplomacy == null) ? null : playerDiplomacy.getPolicies(target.getName());
+				getPlayerPoliciesLabel(player.getName(), target.getName()).setText(playerPolicies == null ? "Unknown" : (playerDiplomacy.isVisible() ? "" : "T"+playerDiplomacy.getLastObservation()+": ") + playerPolicies.toString());
+			}
 		}
-
+		
 		updateUI();
 	}
 
@@ -3104,7 +3131,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		try
 		{
-			client.getRunningGameInterface().changeDiplomacy(new Diplomacy(currentPlayer.getName(), policies));
+			client.getRunningGameInterface().changeDiplomacy(policies);
 		}
 		catch(RpcException e)
 		{

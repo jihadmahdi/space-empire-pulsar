@@ -32,9 +32,7 @@ TODO List
 		
 ** Notes (brouillon)  
 	
-	* De même que les raisons d'erreur CommandCheckResult, propager un message pouvant par exemple indiquer le prix de la commande envisagée.
-	
-	* Implémenter les commandes diplomatiques (changer diplomatie, visibilité de la diplomatie d'un tier)
+	* Implémenter la diplomatie telle que redéfinie.
 	
 	* Implémenter la résolution des conflits.
 		* Intégrer les bonus des DefenseModule lors des combats.
