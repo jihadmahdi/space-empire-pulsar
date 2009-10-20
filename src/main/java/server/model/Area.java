@@ -133,7 +133,7 @@ class Area implements Serializable
 				if (Fleet.class.isInstance(u))
 				{
 					Fleet f = Fleet.class.cast(u);
-					if (playerLogin.equals(f.getOwnerName()) && f.isUnassignedFleet()) continue;
+					if (f.isUnassignedFleet()) continue;
 					if (f.isEmpty())
 					{
 						if (!f.isUnassignedFleet()) throw new Error("Assigned fleet cannot be empty.");

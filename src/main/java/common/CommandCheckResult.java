@@ -12,8 +12,10 @@ public class CommandCheckResult implements Serializable
 	private static final long	serialVersionUID	= 1L;
 	
 	private final boolean isCommandPossible;
-	private final String impossibilityReason;
-	private final Throwable exception;
+	private String impossibilityReason = null;
+	private Throwable exception = null;
+	private Integer carbonPrice = null;
+	private Integer populationPrice = null;
 	
 	public CommandCheckResult(Throwable exception)
 	{
@@ -30,7 +32,6 @@ public class CommandCheckResult implements Serializable
 	{
 		this.isCommandPossible = false;
 		this.impossibilityReason = impossibilityReason;
-		this.exception = null;
 	}
 	
 	/**
@@ -39,8 +40,28 @@ public class CommandCheckResult implements Serializable
 	public CommandCheckResult()
 	{
 		this.isCommandPossible = true;
-		this.impossibilityReason = null;
-		this.exception = null;
+	}
+	
+	public CommandCheckResult(int carbonPrice, int populationPrice)
+	{
+		this.isCommandPossible = true;
+		this.carbonPrice = carbonPrice;
+		this.populationPrice = populationPrice;
+	}
+	
+	public boolean isPriceDefined()
+	{
+		return ((carbonPrice != null && carbonPrice > 0) || (populationPrice != null && populationPrice > 0));
+	}
+	
+	public int getCarbonPrice()
+	{
+		return carbonPrice == null ? 0 : carbonPrice;
+	}
+	
+	public int getPopulationPrice()
+	{
+		return populationPrice == null ? 0 : populationPrice;
 	}
 	
 	public boolean isPossible()

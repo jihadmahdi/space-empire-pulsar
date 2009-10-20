@@ -338,6 +338,12 @@ public class GameBoard implements Serializable
 			{
 				u.endMove();
 				
+				ProductiveCelestialBody productiveCelestialBody = db.getCelestialBody(endTurnLocation.asLocation(), ProductiveCelestialBody.class);
+				if (productiveCelestialBody != null)
+				{
+					productiveCelestialBody.controlNewcomer(u);
+				}
+				
 				if (AntiProbeMissile.class.isInstance(u))
 				{
 					explodingAntiProbeMissiles.add(AntiProbeMissile.class.cast(u));
@@ -611,15 +617,16 @@ public class GameBoard implements Serializable
 
 	public CommandCheckResult canEmbarkGovernment(String playerLogin)
 	{
+		EmbarkGovernmentCheckResult check;
 		try
 		{
-			checkEmbarkGovernment(playerLogin);
+			check = checkEmbarkGovernment(playerLogin);
 		}
 		catch(Throwable t)
 		{
 			return new CommandCheckResult(t);
 		}
-		return new CommandCheckResult();
+		return new CommandCheckResult(check.carbonCost, check.populationCost);
 	}
 
 	private static class EmbarkGovernmentCheckResult
@@ -685,6 +692,7 @@ public class GameBoard implements Serializable
 		PulsarLauchingPad pulsarLaunchingPad = PulsarLauchingPad.class.cast(building);
 		if (pulsarLaunchingPad.getUnusedCount() <= 0) return new CommandCheckResult("No available pulsar launcher found.");
 
+		// TODO
 		return new CommandCheckResult();
 	}
 
@@ -770,15 +778,16 @@ public class GameBoard implements Serializable
 
 	public CommandCheckResult canBuild(String playerLogin, String celestialBodyName, Class<? extends common.IBuilding> buildingType)
 	{
+		BuildCheckResult check;
 		try
 		{
-			checkBuild(playerLogin, celestialBodyName, buildingType);
+			check = checkBuild(playerLogin, celestialBodyName, buildingType);
 		}
 		catch(Throwable t)
 		{
 			return new CommandCheckResult(t);
 		}
-		return new CommandCheckResult();
+		return new CommandCheckResult(check.carbonCost, check.populationCost);
 	}
 
 	private static class BuildCheckResult
@@ -1134,15 +1143,16 @@ public class GameBoard implements Serializable
 
 	public CommandCheckResult canMakeProbes(String playerLogin, String planetName, String probeName, int quantity)
 	{
+		MakeProbesCheckResult check;
 		try
 		{
-			checkMakeProbes(playerLogin, planetName, probeName, quantity);
+			check = checkMakeProbes(playerLogin, planetName, probeName, quantity);
 		}
 		catch(Throwable t)
 		{
 			return new CommandCheckResult(t);
 		}
-		return new CommandCheckResult();
+		return new CommandCheckResult(check.carbonCost, check.populationCost);
 	}
 
 	public void makeProbes(String playerLogin, String planetName, String probeName, int quantity) throws RunningGameCommandException
@@ -1213,15 +1223,16 @@ public class GameBoard implements Serializable
 
 	public CommandCheckResult canMakeAntiProbeMissiles(String playerLogin, String planetName, String antiProbeMissileName, int quantity)
 	{
+		MakeAntiProbeMissilesCheckResult check;
 		try
 		{
-			checkMakeAntiProbeMissiles(playerLogin, planetName, antiProbeMissileName, quantity);
+			check = checkMakeAntiProbeMissiles(playerLogin, planetName, antiProbeMissileName, quantity);
 		}
 		catch(Throwable t)
 		{
 			return new CommandCheckResult(t);
 		}
-		return new CommandCheckResult();
+		return new CommandCheckResult(check.carbonCost, check.populationCost);
 	}
 
 	public void makeAntiProbeMissiles(String playerLogin, String planetName, String antiProbeMissileName, int quantity) throws RunningGameCommandException
@@ -1292,15 +1303,16 @@ public class GameBoard implements Serializable
 
 	public CommandCheckResult canMakeStarships(String playerLogin, String planetName, Map<common.StarshipTemplate, Integer> starshipsToMake)
 	{
+		MakeStarshipsCheckResult check;
 		try
 		{
-			checkMakeStarships(playerLogin, planetName, starshipsToMake);
+			check = checkMakeStarships(playerLogin, planetName, starshipsToMake);
 		}
 		catch(Throwable t)
 		{
 			return new CommandCheckResult(t);
 		}
-		return new CommandCheckResult();
+		return new CommandCheckResult(check.carbonCost, check.populationCost);
 	}
 
 	public void makeStarships(String playerLogin, String planetName, Map<common.StarshipTemplate, Integer> starshipsToMake) throws RunningGameCommandException
@@ -1448,15 +1460,16 @@ public class GameBoard implements Serializable
 	
 	public CommandCheckResult canBuildSpaceRoad(String playerLogin, String productiveCelestialBodyNameA, String productiveCelestialBodyNameB)
 	{
+		BuildSpaceRoadCheckResult check;
 		try
 		{
-			checkBuildSpaceRoad(playerLogin, productiveCelestialBodyNameA, productiveCelestialBodyNameB);
+			check = checkBuildSpaceRoad(playerLogin, productiveCelestialBodyNameA, productiveCelestialBodyNameB);
 		}
 		catch(Throwable t)
 		{
 			return new CommandCheckResult(t);
 		}
-		return new CommandCheckResult();
+		return new CommandCheckResult(check.price, 0);
 	}
 
 	public void buildSpaceRoad(String playerLogin, String productiveCelestialBodyNameA, String productiveCelestialBodyNameB) throws RunningGameCommandException
