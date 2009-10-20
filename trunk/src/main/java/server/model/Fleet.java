@@ -232,13 +232,15 @@ public class Fleet extends Unit implements Serializable
 	
 	@Override
 	public void endMove()
-	{		
+	{	
+		ProductiveCelestialBody productiveCelestialBody = db.getCelestialBody(getRealLocation().asLocation(), ProductiveCelestialBody.class);
+		if (productiveCelestialBody == null) throw new SEPServer.SEPImplementationException("Cannot set conflict on location '"+getRealLocation()+"', no ProductiveCelestialBody found there.");
+		
 		if (currentMove.isAnAttack())
-		{
-			ProductiveCelestialBody productiveCelestialBody = db.getCelestialBody(getRealLocation().asLocation(), ProductiveCelestialBody.class);
-			if (productiveCelestialBody == null) throw new SEPServer.SEPImplementationException("Cannot set conflict on location '"+getRealLocation()+"', no ProductiveCelestialBody found there.");	
+		{				
 			productiveCelestialBody.addConflictInititor(getOwnerName());
 		}		
+		
 		currentMove = null; // Needed for the next startMove call.
 		super.endMove();
 	}

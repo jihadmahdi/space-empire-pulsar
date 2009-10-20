@@ -52,11 +52,21 @@ public class Diplomacy implements Serializable
 		return policies.get(targetName);
 	}
 	
+	private void ensureDefaultPlayerPolicies()
+	{
+		for(String p : db.getPlayersKeySet())
+		{
+			if (ownerName.equals(p)) continue;
+			getPolicies(p);
+		}
+	}
+	
 	public common.Diplomacy getPlayerView(int date, String playerName, boolean isVisible)
 	{
 		if (isVisible || ownerName.equals(playerName))
 		{
 			// Updates
+			ensureDefaultPlayerPolicies();
 			playersPoliciesView.updateView(playerName, policies, date);
 		}				
 		
