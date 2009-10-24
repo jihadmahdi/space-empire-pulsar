@@ -10,7 +10,7 @@ Espionage diplomatique: Un espionage du gouvernement entraine une vue complète 
 Le gouvernement est trop simple à espionner ! => Non, cf. espionage.
 
 Ou alors des templates dynamiques prédéfinis qui définissent toutes les stratégies principales.
- 
+
 Attaque															Défense
 Raser tout le monde												Raser tout le monde
 Prendre le corps céleste (attaquer le strict minimum)			Prendre le corps céleste (attaquer le strict minimum)
@@ -19,6 +19,36 @@ Se poser pacifiquement											Eviter au maximum les combats
 
 Le seul comportement supplémentaire que permet la grille complète est:
 Attaquer pas tout le monde, mais plus que le strict minimum. Qui est à 80% du temps un choix pas malin.
+
+--
+Grille diplomatique avec checkbox à 3 états: "toujours hostile" / "hostile si owner" / "neutre"
+Le comportement entre deux joueurs j1 et j2 avec l'initiative à j1 se résoud comme suit :
+SI 	(	(j1.hostile(j2) OU (j1.hostileSiOwner(j2) ET estOwner(j2)))
+	OU	(j2.hostile(j1) OU (j2.hostileSiOwner(j1) ET estOwner(j1))))
+ALORS
+	hostiles
+SINON
+	neutres
+FSI
+
+[owner non soft-ally] Raser tout le monde : Se poser pacifiquement
+[owner hostile] Prendre le corps céleste : Se poser pacifiquement
+[owner neutre] Nettoyer le corps céleste : Se poser pacifiquement
+Se poser pacifiquement
+
+--- 21/10/09
+
+Un rapport de combat partiel est envoyé aux propriétaires de corps célestes battus.
+
+On reste sur une diplomatie globale (le but n'étant pas de faire une simulation TACTIQUE mais bien diplomatique).
+La diplomatie est une liste d'attitude à définir à l'égard de chaque joueurs:
+	* Politique Intérieure : Hostile, les corps célestes attaquent à vu les flottes entrantes. Neutre, les corps célestes laissent les flottes pacifiques se poser.
+	* Politique Extérieure : Hostile, les flottes engagées dans un conflit attaques toujours les flottes du joueur. Hostile si propriétaire, les flottes attaques uniquement si le joueur est propriétaire du corps céleste (ou le devient après un vote). Neutre, les flottes n'attaquent que si elles sont elles-même attaquées.   
+
+Lors de l'attribution du corps céleste aux vainqueurs, l'attitude "Hostile si propriétaire" est à nouveau testée et peu engendrer immédiatement un nouveau conflit. Néanmoins, un rapport de combat est envoyé à tout les joueurs en lice au moment du vote.
+
+===
+
 
 /Cas d'exploit/
 soit 2 corps céleste A et B à 10 zones l'un de l'autre.
