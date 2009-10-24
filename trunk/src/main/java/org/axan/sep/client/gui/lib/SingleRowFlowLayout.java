@@ -3,7 +3,7 @@
  * @file SingleRowFlowLayout.java
  * @date 7 juin 2009
  */
-package client.gui.lib;
+package org.axan.sep.client.gui.lib;
 
 import java.awt.Component;
 import java.awt.Container;

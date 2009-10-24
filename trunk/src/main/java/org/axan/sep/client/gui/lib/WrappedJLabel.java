@@ -3,17 +3,13 @@
  * @file WrappedJLabel.java
  * @date 7 juin 2009
  */
-package client.gui.lib;
+package org.axan.sep.client.gui.lib;
 
-import java.awt.Component;
 import java.awt.Container;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.text.BreakIterator;
-import java.util.Stack;
 
-import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;

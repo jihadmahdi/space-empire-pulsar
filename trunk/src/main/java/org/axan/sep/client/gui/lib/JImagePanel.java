@@ -1,7 +1,7 @@
 /**
  * 
  */
-package client.gui.lib;
+package org.axan.sep.client.gui.lib;
 
 import javax.imageio.*;
 import javax.swing.*;
