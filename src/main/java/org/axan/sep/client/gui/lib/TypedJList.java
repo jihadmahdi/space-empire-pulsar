@@ -1,4 +1,4 @@
-package client.gui.lib;
+package org.axan.sep.client.gui.lib;
 
 import java.awt.Component;
 import java.awt.event.MouseEvent;
@@ -37,7 +37,7 @@ public class TypedJList<E> extends JList
 	{
 		protected final JLabel label = new JLabel();
 		
-		public Component getListCellRendererComponent(client.gui.lib.TypedJList<E> list, E value, int index, boolean isSelected, boolean cellHasFocus)
+		public Component getListCellRendererComponent(org.axan.sep.client.gui.lib.TypedJList<E> list, E value, int index, boolean isSelected, boolean cellHasFocus)
 		{
 			label.setText(value.toString());
 			
@@ -59,7 +59,7 @@ public class TypedJList<E> extends JList
 			return label;
 		}
 		
-		public String getListCellToolTipText(client.gui.lib.TypedJList<E> list, E value, int index, boolean isSelected)
+		public String getListCellToolTipText(org.axan.sep.client.gui.lib.TypedJList<E> list, E value, int index, boolean isSelected)
 		{
 			return value.toString();
 		};

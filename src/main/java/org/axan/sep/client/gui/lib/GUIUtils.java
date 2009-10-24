@@ -3,7 +3,7 @@
  * @file GUIUtils.java
  * @date 7 juin 2009
  */
-package client.gui.lib;
+package org.axan.sep.client.gui.lib;
 
 import java.awt.Color;
 
