@@ -6,7 +6,6 @@
 package org.axan.sep.common;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.Set;
 import java.util.Stack;
 

@@ -1,22 +1,16 @@
 package org.axan.sep.server.model;
 
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.axan.sep.common.GameConfig;
-import org.axan.sep.common.IBuilding;
 import org.axan.sep.common.Player;
-import org.axan.sep.common.Diplomacy.PlayerPolicies;
-import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.model.Area.AreaIllegalDefinitionException;
-import org.axan.sep.server.model.IMarker.Key;
 import org.axan.sep.server.model.SpaceCounter.SpaceRoad;
 
 class DataBase implements Serializable

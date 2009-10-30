@@ -6,7 +6,6 @@
 package org.axan.sep.server.model;
 
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,13 +16,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import org.axan.sep.common.GameConfig;
-import org.axan.sep.common.Player;
-import org.axan.sep.common.Diplomacy.PlayerPolicies.eForeignPolicy;
 import org.axan.sep.common.SEPUtils.Location;
-import org.axan.sep.common.SEPUtils.RealLocation;
-import org.axan.sep.server.SEPServer;
-
-import sun.nio.ch.EPollSelectorProvider;
 
 
 
@@ -168,7 +161,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	}
 	
 	/* (non-Javadoc)
-	 * @see server.model.ICelestialBody#getOwner()
+	 * @see org.axan.sep.server.model.ICelestialBody#getOwner()
 	 */
 	@Override
 	public String getOwnerName()

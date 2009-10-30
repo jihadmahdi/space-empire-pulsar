@@ -6,19 +6,11 @@
 package org.axan.sep.server.model;
 
 import java.io.Serializable;
-import java.rmi.UnexpectedException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
 
-import org.axan.sep.common.SEPUtils;
 import org.axan.sep.server.SEPServer;
-
-import sun.security.action.GetLongAction;
 
 
 class Area implements Serializable

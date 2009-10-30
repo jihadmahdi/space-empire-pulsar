@@ -1,12 +1,9 @@
 package org.axan.sep.server.model;
 
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Map;
-import java.util.Set;
 
-import org.axan.sep.common.Player;
 import org.axan.sep.common.Diplomacy.PlayerPolicies;
 import org.axan.sep.common.Diplomacy.PlayerPolicies.eForeignPolicy;
 import org.axan.sep.server.SEPServer;

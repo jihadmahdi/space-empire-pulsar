@@ -47,7 +47,7 @@ class PulsarLauchingPad extends ABuilding implements Serializable
 	}
 	
 	/* (non-Javadoc)
-	 * @see server.model.IBuilding#getPlayerView(java.lang.String)
+	 * @see org.axan.sep.server.model.IBuilding#getPlayerView(java.lang.String)
 	 */
 	@Override
 	public org.axan.sep.common.PulsarLauchingPad getPlayerView(int date, String playerLogin)

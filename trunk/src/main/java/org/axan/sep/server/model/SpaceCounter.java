@@ -6,15 +6,11 @@
 package org.axan.sep.server.model;
 
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 
 import org.axan.sep.common.CarbonOrder;
-import org.axan.sep.common.Player;
-import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
-import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.SEPServer;
 
 
@@ -112,7 +108,7 @@ class SpaceCounter extends ABuilding implements Serializable
 	}
 
 	/* (non-Javadoc)
-	 * @see server.model.IBuilding#getPlayerView(java.lang.String)
+	 * @see org.axan.sep.server.model.IBuilding#getPlayerView(java.lang.String)
 	 */
 	@Override
 	public org.axan.sep.common.SpaceCounter getPlayerView(int date, String playerLogin)

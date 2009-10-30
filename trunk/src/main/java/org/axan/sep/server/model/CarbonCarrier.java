@@ -24,7 +24,7 @@ class CarbonCarrier extends Unit implements Serializable
 	}
 
 	/* (non-Javadoc)
-	 * @see server.model.Unit#getPlayerView(int, java.lang.String, boolean)
+	 * @see org.axan.sep.server.model.Unit#getPlayerView(int, java.lang.String, boolean)
 	 */
 	@Override
 	public org.axan.sep.common.CarbonCarrier getPlayerView(int date, String playerLogin, boolean isVisible)

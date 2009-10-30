@@ -1,13 +1,7 @@
 package org.axan.sep.common;
 
 import java.io.Serializable;
-import java.util.Hashtable;
 import java.util.Map;
-import java.util.Observer;
-import java.util.Set;
-
-
-import sun.nio.ch.EPollSelectorProvider;
 
 public class Diplomacy implements Serializable, IObservable
 {
@@ -75,6 +69,15 @@ public class Diplomacy implements Serializable, IObservable
 		{
 			return isAllowedToLand;
 		}
+		
+		@Override
+		public boolean equals(Object obj)
+		{			
+			if (obj == null || !PlayerPolicies.class.isInstance(obj)) return false;
+			PlayerPolicies p = PlayerPolicies.class.cast(obj);
+			
+			return this.isAllowedToLand == p.isAllowedToLand && this.foreignConflictPolicy == p.foreignConflictPolicy && this.targetLogin.equals(p.targetLogin);
+		}
 	}
 
 	public String getOwnerName()
@@ -92,5 +95,22 @@ public class Diplomacy implements Serializable, IObservable
 	public boolean isVisible()
 	{
 		return isVisible;
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (obj == null || !Diplomacy.class.isInstance(obj)) return false;
+		Diplomacy dip = Diplomacy.class.cast(obj);
+		
+		if (!(this.isVisible == dip.isVisible && this.lastObservation == dip.lastObservation && this.ownerName.equals(dip.ownerName))) return false;
+		
+		return this.playersPolicies.equals(dip.playersPolicies);
+	}
+	
+	@Override
+	public String toString()
+	{
+		return (isVisible?"":"last observation on "+lastObservation+": ")+"["+ownerName+"] "+playersPolicies.toString();
 	}
 }

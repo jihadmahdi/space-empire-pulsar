@@ -5,7 +5,6 @@
  */
 package org.axan.sep.server.model;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.axan.sep.common.Player;

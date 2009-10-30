@@ -34,7 +34,7 @@ class Nebula extends ProductiveCelestialBody implements Serializable
 	}
 
 	/* (non-Javadoc)
-	 * @see common.CelestialBody#canBuild(server.model.Building)
+	 * @see org.axan.sep.common.CelestialBody#canBuild(server.model.Building)
 	 */
 	@Override
 	public boolean canBuild(ABuilding building)
@@ -44,7 +44,7 @@ class Nebula extends ProductiveCelestialBody implements Serializable
 	}
 
 	/* (non-Javadoc)
-	 * @see server.model.ICelestialBody#getPlayerView(int, java.lang.String, boolean)
+	 * @see org.axan.sep.server.model.ICelestialBody#getPlayerView(int, java.lang.String, boolean)
 	 */
 	@Override
 	public org.axan.sep.common.Nebula getPlayerView(int date, String playerLogin, boolean isVisible)

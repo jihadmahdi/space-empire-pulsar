@@ -167,4 +167,15 @@ public class Fleet extends Unit implements Serializable
 	{
 		return checkpoints;
 	}
+
+	public int getTotalQt()
+	{
+		int qt = 0;
+		for(Integer i : starships.values())
+		{
+			qt += Math.max(0, i);
+		}
+		
+		return qt;
+	}
 }

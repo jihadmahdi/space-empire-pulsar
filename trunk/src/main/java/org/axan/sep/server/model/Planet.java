@@ -116,7 +116,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 	}
 
 	/* (non-Javadoc)
-	 * @see server.model.ProductiveCelestialBody#canBuild(IBuilding)
+	 * @see org.axan.sep.server.model.ProductiveCelestialBody#canBuild(IBuilding)
 	 */
 	@Override
 	public boolean canBuild(ABuilding building)
@@ -155,7 +155,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 	}
 
 	/* (non-Javadoc)
-	 * @see server.model.ICelestialBody#getPlayerView(int, java.lang.String, boolean)
+	 * @see org.axan.sep.server.model.ICelestialBody#getPlayerView(int, java.lang.String, boolean)
 	 */
 	@Override
 	public org.axan.sep.common.Planet getPlayerView(int date, String playerLogin, boolean isVisible)

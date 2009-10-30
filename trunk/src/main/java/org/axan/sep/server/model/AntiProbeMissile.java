@@ -38,7 +38,7 @@ public class AntiProbeMissile extends Unit implements Serializable
 	}
 
 	/* (non-Javadoc)
-	 * @see server.model.Unit#getPlayerView(int, java.lang.String)
+	 * @see org.axan.sep.server.model.Unit#getPlayerView(int, java.lang.String)
 	 */
 	@Override
 	public org.axan.sep.common.AntiProbeMissile getPlayerView(int date, String playerLogin, boolean isVisible)
