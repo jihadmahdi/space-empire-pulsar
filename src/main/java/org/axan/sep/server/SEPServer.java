@@ -7,31 +7,23 @@ package org.axan.sep.server;
 
 import java.net.InetAddress;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
-import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.axan.eplib.clientserver.IServer;
-import org.axan.eplib.clientserver.ServerClient;
 import org.axan.eplib.clientserver.rpc.RpcException;
-import org.axan.eplib.clientserver.rpc.RpcServerModule.RpcServerModuleBadServiceException;
 import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.eplib.gameserver.server.GameServer;
 import org.axan.eplib.gameserver.server.GameServer.ExecutorFactory;
-import org.axan.eplib.gameserver.server.GameServer.GameServerAlreadyRegisteredExecutorInterfaceException;
 import org.axan.eplib.gameserver.server.GameServer.GameServerListener;
 import org.axan.eplib.gameserver.server.GameServer.ServerUser;
-import org.axan.eplib.statemachine.ProxiedStateMachine.ProxiedStateMachineBadServiceException;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
-import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.CarbonOrder;
 import org.axan.sep.common.CommandCheckResult;
 import org.axan.sep.common.GameConfig;
@@ -44,7 +36,6 @@ import org.axan.sep.common.Diplomacy.PlayerPolicies;
 import org.axan.sep.common.Protocol.ServerGameCreation;
 import org.axan.sep.common.Protocol.ServerPausedGame;
 import org.axan.sep.common.Protocol.ServerRunningGame;
-import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.model.GameBoard;
 import org.axan.sep.server.model.PlayerGameMove;
@@ -720,7 +711,7 @@ public class SEPServer implements IServer
 
 	private void checkForNextTurn()
 	{
-		log.log(Level.SEVERE, "Checking for next turn...");
+		log.log(Level.FINEST, "Checking for next turn...");
 
 		synchronized(players)
 		{
@@ -854,87 +845,96 @@ public class SEPServer implements IServer
 		return gameServer.getServerAdminKey();
 	}
 
-	private final GameServerListener	gameServerListener	= new GameServerListener()
-															{
-																/*
-																 * (non-Javadoc)
-																 * 
-																 * @see org.axan.eplib.gameserver.server.GameServer.GameServerListener#playerLoggedIn(org.axan.eplib.gameserver.server.GameServer.ServerUser)
-																 */
-																@Override
-																public void playerLoggedIn(ServerUser player)
-																{
-																	synchronized(players)
-																	{
-																		if (players.containsKey(player.getLogin()))
-																		{
-																			players.get(player.getLogin()).setServerUser(player);
-																		}
-																		else
-																		{
-																			players.put(player.getLogin(), new ServerPlayer(player));
-																		}
-																	}
-																	refreshPlayerList();
-																}
+	static class SEPGameServerListener implements GameServerListener
+	{
+		private final SEPServer server;
+		
+		public SEPGameServerListener(SEPServer server)
+		{
+			this.server = server;
+		}
+		
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see org.axan.eplib.gameserver.server.GameServer.GameServerListener#playerLoggedIn(org.axan.eplib.gameserver.server.GameServer.ServerUser)
+		 */
+		@Override
+		public void playerLoggedIn(ServerUser player)
+		{
+			synchronized(server.players)
+			{
+				if (server.players.containsKey(player.getLogin()))
+				{
+					server.players.get(player.getLogin()).setServerUser(player);
+				}
+				else
+				{
+					server.players.put(player.getLogin(), new ServerPlayer(player));
+				}
+			}
+			server.refreshPlayerList();
+		}
 
-																/*
-																 * (non-Javadoc)
-																 * 
-																 * @see org.axan.eplib.gameserver.server.GameServer.GameServerListener#playerLoggedOut(org.axan.eplib.gameserver.server.GameServer.ServerUser)
-																 */
-																@Override
-																public void playerLoggedOut(ServerUser player)
-																{
-																	if (players.containsKey(player.getLogin()))
-																	{
-																		players.get(player.getLogin()).setServerUser(null);
-																		refreshPlayerList();
-																	}
-																}
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see org.axan.eplib.gameserver.server.GameServer.GameServerListener#playerLoggedOut(org.axan.eplib.gameserver.server.GameServer.ServerUser)
+		 */
+		@Override
+		public void playerLoggedOut(ServerUser player)
+		{
+			if (server.players.containsKey(player.getLogin()))
+			{
+				server.players.get(player.getLogin()).setServerUser(null);
+				server.refreshPlayerList();
+			}
+		}
 
-																/*
-																 * (non-Javadoc)
-																 * 
-																 * @see org.axan.eplib.gameserver.server.GameServer.GameServerListener#gameRan()
-																 */
-																@Override
-																public void gameRan()
-																{
-																	log.log(Level.INFO, "gameRan");
-																	threadPool.execute(new Runnable()
-																	{
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see org.axan.eplib.gameserver.server.GameServer.GameServerListener#gameRan()
+		 */
+		@Override
+		public void gameRan()
+		{
+			log.log(Level.INFO, "gameRan");
+			server.threadPool.execute(new Runnable()
+			{
 
-																		@Override
-																		public void run()
-																		{
-																			getCurrentGame();
-																		}
-																	});
-																}
+				@Override
+				public void run()
+				{
+					server.getCurrentGame();
+				}
+			});
+		}
 
-																/*
-																 * (non-Javadoc)
-																 * 
-																 * @see org.axan.eplib.gameserver.server.GameServer.GameServerListener#gamePaused()
-																 */
-																@Override
-																public void gamePaused()
-																{
-																	log.log(Level.INFO, "gamePaused");
-																}
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see org.axan.eplib.gameserver.server.GameServer.GameServerListener#gamePaused()
+		 */
+		@Override
+		public void gamePaused()
+		{
+			log.log(Level.INFO, "gamePaused");
+		}
 
-																/*
-																 * (non-Javadoc)
-																 * 
-																 * @see org.axan.eplib.gameserver.server.GameServer.GameServerListener#gameResumed()
-																 */
-																@Override
-																public void gameResumed()
-																{
-																	log.log(Level.INFO, "gameResumed");
-																}
-															};
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see org.axan.eplib.gameserver.server.GameServer.GameServerListener#gameResumed()
+		 */
+		@Override
+		public void gameResumed()
+		{
+			log.log(Level.INFO, "gameResumed");
+		}
+	}
+	
+	private final GameServerListener	gameServerListener	= new SEPGameServerListener(this);
 
 	private void refreshGameConfig()
 	{

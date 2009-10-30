@@ -5,23 +5,13 @@
  */
 package org.axan.sep.server.model;
 
-import java.lang.reflect.Constructor;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.GameConfig;
-import org.axan.sep.common.IBuilding;
 import org.axan.sep.common.Player;
-import org.axan.sep.common.PlayerGameBoard;
-import org.axan.sep.server.SEPServer;
 
 
 

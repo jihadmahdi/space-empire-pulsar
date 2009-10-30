@@ -78,7 +78,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 {
 	static Logger				log			= SEPClient.log;
 
-	public static final String	IMG_PATH	= "resources/client/gui/img/".replace('/', File.separatorChar);
+	public static final String	IMG_PATH	= ("resources/"+SpaceEmpirePulsarGUI.class.getPackage().getName().replace('.', '/')+"/img/").replace('/', File.separatorChar);
 
 	private boolean				isAdmin		= false;
 
@@ -824,7 +824,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 				{
 					System.out.println("GUI: onGameRan");
 					displayRunningGamePanel();
-
+/*
 					SwingUtilities.invokeLater(new Runnable()
 					{
 
@@ -841,6 +841,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 							}
 						}
 					});
+*/
 				}
 			});
 		}

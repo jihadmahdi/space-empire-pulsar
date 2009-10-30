@@ -28,11 +28,9 @@ import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandExceptio
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.SEPServer;
-import org.axan.sep.server.model.IMarker.Key;
+import org.axan.sep.server.SEPServer.SEPImplementationException;
 import org.axan.sep.server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 import org.axan.sep.server.model.SpaceCounter.SpaceRoad;
-
-import sun.security.action.GetBooleanAction;
 
 
 public class GameBoard implements Serializable
@@ -129,11 +127,10 @@ public class GameBoard implements Serializable
 
 			Class<? extends org.axan.sep.common.ICelestialBody> celestialBodyType = Basic.getKeyFromRandomTable(config.getNeutralCelestialBodiesGenerationTable());
 
-			Class<? extends ICelestialBody> serverCelestialBodyType;
 			String nextName = generateCelestialBodyName();
+			Class<? extends ICelestialBody> serverCelestialBodyType = getServerCelestialBodyClass(celestialBodyType);			
 			try
 			{
-				serverCelestialBodyType = Class.forName("server.model." + celestialBodyType.getSimpleName()).asSubclass(ICelestialBody.class);
 				Constructor<? extends ICelestialBody> ctor = serverCelestialBodyType.getConstructor(DataBase.class, String.class, Location.class, org.axan.sep.common.GameConfig.class);
 				ICelestialBody celestialBody = ctor.newInstance(db, nextName, celestialBodyLocation, config);
 				
@@ -146,6 +143,26 @@ public class GameBoard implements Serializable
 		}
 	}
 
+	public static Class<? extends ICelestialBody> getServerCelestialBodyClass(Class<? extends org.axan.sep.common.ICelestialBody> clientCelestialBodyType) throws SEPImplementationException
+	{
+		Class<?> serverClass;
+		try
+		{
+			serverClass = Class.forName(ICelestialBody.class.getPackage().getName() + "." + clientCelestialBodyType.getSimpleName());
+		}
+		catch(ClassNotFoundException e)
+		{
+			throw new SEPServer.SEPImplementationException("Cannot find server celestial body type for '" + clientCelestialBodyType.getSimpleName() + "'", e);
+		}
+
+		if (!ICelestialBody.class.isAssignableFrom(serverClass))
+			throw new SEPServer.SEPImplementationException("Cannot find server celestial body type for '" + clientCelestialBodyType.getSimpleName() + "', '"
+					+ ICelestialBody.class.getName() + "' is not assignable from '" + serverClass.getName() + "'");
+		Class<? extends ICelestialBody> serverCelestialBodyType = serverClass.asSubclass(ICelestialBody.class);
+
+		return serverCelestialBodyType;
+	}
+	
 	/**
 	 * @param playerLogin
 	 */
@@ -1184,7 +1201,7 @@ public class GameBoard implements Serializable
 		}
 
 		// Special units availability check
-		for(org.axan.sep.common.ISpecialUnit u : fleetToFormSpecialUnits)
+		if (fleetToFormSpecialUnits != null) for(org.axan.sep.common.ISpecialUnit u : fleetToFormSpecialUnits)
 		{
 			if (u == null) continue;
 			

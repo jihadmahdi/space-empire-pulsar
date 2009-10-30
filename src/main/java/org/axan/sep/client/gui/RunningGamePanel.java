@@ -90,6 +90,7 @@ import org.axan.sep.common.UnitMarker;
 import org.axan.sep.common.Diplomacy.PlayerPolicies;
 import org.axan.sep.common.Diplomacy.PlayerPolicies.eForeignPolicy;
 import org.axan.sep.common.Fleet.Move;
+import org.axan.sep.common.PlayerGameBoard.PlayerGameBoardQueryException;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.common.SEPUtils.RealLocation;
 
@@ -1014,7 +1015,16 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		if (unit == null) return;
 
-		RealLocation unitLocation = currentGameBoard.getUnitLocation(unit.getOwnerName(), unit.getName());
+		RealLocation unitLocation;
+		try
+		{
+			unitLocation = currentGameBoard.getUnitLocation(unit.getOwnerName(), unit.getName());
+		}
+		catch(PlayerGameBoardQueryException e2)
+		{
+			e2.printStackTrace();
+			unitLocation = null;
+		}
 		if (unitLocation == null) return;
 
 		Area area = currentGameBoard.getArea(unitLocation);

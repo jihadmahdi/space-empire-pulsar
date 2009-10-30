@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
 
 
@@ -23,6 +24,14 @@ import org.axan.sep.common.SEPUtils.RealLocation;
 public class PlayerGameBoard implements Serializable
 {
 	//public static final Logger log = Logger.getLogger(PlayerGameBoard.class.getName());
+	
+	public static class PlayerGameBoardQueryException extends Exception
+	{
+		public PlayerGameBoardQueryException(String msg)
+		{
+			super(msg);
+		}
+	}
 
 	private static final long			serialVersionUID	= 1L;
 
@@ -88,7 +97,7 @@ public class PlayerGameBoard implements Serializable
 		return date;
 	}
 
-	public RealLocation getUnitLocation(String ownerName, String unitName)
+	public RealLocation getUnitLocation(String ownerName, String unitName) throws PlayerGameBoardQueryException
 	{
 		for(int x = 0; x < getDimX(); ++x)
 			for(int y = 0; y < getDimY(); ++y)
@@ -101,10 +110,17 @@ public class PlayerGameBoard implements Serializable
 					if (unit != null) return new RealLocation(x + 0.5, y + 0.5, z + 0.5);
 				}
 
-		return null;
+		throw new PlayerGameBoardQueryException("Unknown unit '"+ownerName+"@"+unitName+"'");
 	}
 
-	public Unit getUnit(String ownerName, String unitName)
+	public <U extends Unit> U getUnit(String ownerName, String unitName, Class<U> unitType) throws PlayerGameBoardQueryException
+	{
+		Unit u = getUnit(ownerName, unitName);
+		if (!unitType.isInstance(u)) throw new PlayerGameBoardQueryException("Unit '"+ownerName+"@"+unitName+"' is not of unitType '"+unitType.getSimpleName()+"'");
+		return unitType.cast(u);
+	}
+	
+	public Unit getUnit(String ownerName, String unitName) throws PlayerGameBoardQueryException
 	{
 		for(int x = 0; x < getDimX(); ++x)
 			for(int y = 0; y < getDimY(); ++y)
@@ -117,7 +133,7 @@ public class PlayerGameBoard implements Serializable
 					if (unit != null) return unit;
 				}
 
-		return null;
+		throw new PlayerGameBoardQueryException("Unknown unit '"+ownerName+"@"+unitName+"'");
 	}
 
 	public <U extends Unit> Set<U> getUnits(Class<U> unitType)
@@ -157,6 +173,51 @@ public class PlayerGameBoard implements Serializable
 		return result;
 	}
 
+	public RealLocation getCelestialBodyLocation(String celestialBodyName) throws PlayerGameBoardQueryException
+	{
+		for(int x = 0; x < getDimX(); ++x)
+			for(int y = 0; y < getDimY(); ++y)
+				for(int z = 0; z < getDimZ(); ++z)
+				{
+					Area area = universe[x][y][z];
+					if (area == null) continue;
+
+					if (area.getCelestialBody() != null)
+					{
+						if (area.getCelestialBody().getName().equals(celestialBodyName)) return new Location(x, y, z).asRealLocation();
+					}
+				}
+
+		throw new PlayerGameBoardQueryException("Unknown celestial body '"+celestialBodyName+"'");
+	}
+	
+	public ICelestialBody getCelestialBody(String celestialBodyName) throws PlayerGameBoardQueryException
+	{
+		for(int x = 0; x < getDimX(); ++x)
+			for(int y = 0; y < getDimY(); ++y)
+				for(int z = 0; z < getDimZ(); ++z)
+				{
+					Area area = universe[x][y][z];
+					if (area == null) continue;
+
+					if (area.getCelestialBody() != null)
+					{
+						if (area.getCelestialBody().getName().equals(celestialBodyName)) return area.getCelestialBody();
+					}
+				}
+
+		throw new PlayerGameBoardQueryException("Unknown celestial body '"+celestialBodyName+"'");
+	}
+	
+	public <B extends IBuilding> B getBuilding(String celestialBodyName, Class<B> buildingType) throws PlayerGameBoardQueryException
+	{
+		ICelestialBody celestialBody = getCelestialBody(celestialBodyName);
+		if (celestialBody == null || !ProductiveCelestialBody.class.isInstance(celestialBody)) throw new PlayerGameBoardQueryException("Unknown productive celestial body '"+celestialBodyName+"'");
+		ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
+		
+		return productiveCelestialBody.getBuilding(buildingType);		
+	}
+	
 	public Set<ProductiveCelestialBody> getCelestialBodiesWithBuilding(Class<? extends IBuilding> buildingType)
 	{
 		Set<ProductiveCelestialBody> result = new HashSet<ProductiveCelestialBody>();
@@ -172,9 +233,9 @@ public class PlayerGameBoard implements Serializable
 						if (ProductiveCelestialBody.class.isInstance(area.getCelestialBody()))
 						{
 							ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(area.getCelestialBody());
-							SpaceCounter spaceCounter = productiveCelestialBody.getBuilding(SpaceCounter.class);
+							IBuilding building = productiveCelestialBody.getBuilding(buildingType);
 
-							if (spaceCounter != null)
+							if (building != null)
 							{
 								result.add(productiveCelestialBody);
 							}
