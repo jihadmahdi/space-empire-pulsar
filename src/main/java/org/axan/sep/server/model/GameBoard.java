@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
+import java.util.Vector;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -204,7 +205,7 @@ public class GameBoard implements Serializable
 					}
 
 					// Visible if area contains a celestial body and player has a unit on it.
-					if (!isVisible && ((unassignedFleet != null && !unassignedFleet.isEmpty()) || (productiveCelestialBody != null && !db.getUnits(location, playerLogin).isEmpty())))
+					if (!isVisible && ((unassignedFleet != null && !unassignedFleet.hasNoMoreStarships()) || (productiveCelestialBody != null && !db.getUnits(location, playerLogin).isEmpty())))
 					{
 						isVisible = true;
 					}
@@ -300,7 +301,7 @@ public class GameBoard implements Serializable
 		Set<Probe> deployedProbes = db.getDeployedProbes();
 		
 		double step = 1 / maxSpeed;
-		for(float currentStep = 0; currentStep <= 1; currentStep += step)
+		for(float currentStep = 0; currentStep < 1; currentStep += step)
 		{
 			currentStepMovedUnits.clear();
 			
@@ -474,7 +475,7 @@ public class GameBoard implements Serializable
 		// List merged (unassigned fleets + fleets) forces for each players
 		// Backup and remove original fleets (including unassigned ones). 
 		Map<String, Fleet> mergedFleets = new Hashtable<String, Fleet>();
-		Map<String, Set<Fleet>> originalFleets = new Hashtable<String, Set<Fleet>>();
+		Map<String, Set<Fleet>> originalPlayersFleets = new Hashtable<String, Set<Fleet>>();
 		
 		Location location = productiveCelestialBody.getLocation();
 		
@@ -504,27 +505,121 @@ public class GameBoard implements Serializable
 		
 		for(Fleet f : fleetsToRemove)
 		{
-			if (!originalFleets.containsKey(f.getOwnerName())) originalFleets.put(f.getOwnerName(), new HashSet<Fleet>());
-			originalFleets.get(f.getOwnerName()).add(f);
+			if (!originalPlayersFleets.containsKey(f.getOwnerName())) originalPlayersFleets.put(f.getOwnerName(), new HashSet<Fleet>());
+			originalPlayersFleets.get(f.getOwnerName()).add(f);
 			db.removeUnit(f.getKey());
 		}
 		
 		// Run battle
-		Map<String, Fleet> survivors = resolveBattle(conflictDiplomacy, mergedFleets);
+		Map<String, Fleet> survivalFleets = resolveBattle(conflictDiplomacy, mergedFleets);
 		
 		// Restore original fleets from survived ones.
-		for(Map.Entry<String, Fleet> e : survivors.entrySet())
+		for(Map.Entry<String, Fleet> e : survivalFleets.entrySet())
 		{
-			productiveCelestialBody.mergeToUnasignedFleet(e.getKey(), e.getValue().getStarships(), e.getValue().getSpecialUnits());
+			String playerName = e.getKey();
+			Fleet survivalFleet = e.getValue();
+			Set<Fleet> originalFleets = originalPlayersFleets.get(playerName);
+			Vector<Fleet> originalFleetsCopy = new Vector<Fleet>();
+			Map<String, Map<StarshipTemplate, Integer>> resultantFleetsStarships = new HashMap<String, Map<StarshipTemplate,Integer>>();
+			Map<String, Set<ISpecialUnit>> resultantFleetsSpecialUnits = new HashMap<String, Set<ISpecialUnit>>();						
+			Map<StarshipTemplate, Integer> resultantUnasignedStarships = new HashMap<StarshipTemplate, Integer>();
+			Set<ISpecialUnit> resultantUnasignedSpecialUnits = new HashSet<ISpecialUnit>();
+			
+			for(ISpecialUnit specialUnit : survivalFleet.getSpecialUnits())
+			{
+				boolean found = false;
+				for(Fleet originalFleet : originalFleets)
+				{					
+					if (originalFleet.getSpecialUnits().contains(specialUnit))
+					{
+						if (!resultantFleetsSpecialUnits.containsKey(originalFleet.getName())) resultantFleetsSpecialUnits.put(originalFleet.getName(), new HashSet<ISpecialUnit>());						
+						resultantFleetsSpecialUnits.get(originalFleet.getName()).add(specialUnit);
+						found = true;
+						break;
+					}
+				}
+				
+				if (!found)
+				{
+					resultantUnasignedSpecialUnits.add(specialUnit);
+				}
+			}
+						
+			for(StarshipTemplate starshipTemplate : survivalFleet.getStarships().keySet())
+			{
+				int totalNb = survivalFleet.getStarships().get(starshipTemplate);				
+				
+				while(totalNb > 0)
+				{
+					originalFleetsCopy.clear();
+					originalFleetsCopy.addAll(originalFleets);
+					
+					int alreadyRecovered = 0;
+					int maxToRecover = 0;
+					
+					Fleet originalFleet = null;
+					do
+					{
+						if (originalFleetsCopy.isEmpty())
+						{
+							originalFleet = null;
+							break;
+						}
+						
+						int i = rnd.nextInt(originalFleetsCopy.size());
+						originalFleet = originalFleetsCopy.remove(i);
+						
+						if (!resultantFleetsStarships.containsKey(originalFleet.getName())) resultantFleetsStarships.put(originalFleet.getName(), new HashMap<StarshipTemplate, Integer>());
+						if (!resultantFleetsStarships.get(originalFleet.getName()).containsKey(starshipTemplate)) resultantFleetsStarships.get(originalFleet.getName()).put(starshipTemplate, 0);
+						
+						alreadyRecovered = resultantFleetsStarships.get(originalFleet.getName()).get(starshipTemplate);
+						maxToRecover = originalFleet.getStarships().containsKey(starshipTemplate)?originalFleet.getStarships().get(starshipTemplate):0;
+							
+					}while(maxToRecover <= alreadyRecovered);
+					
+					if (originalFleet == null)
+					{						
+						if (!resultantUnasignedStarships.containsKey(starshipTemplate)) resultantUnasignedStarships.put(starshipTemplate, 0);						
+						resultantUnasignedStarships.put(starshipTemplate, resultantUnasignedStarships.get(starshipTemplate) + totalNb);
+						totalNb = 0;
+					}
+					else
+					{															
+						int maxNb = Math.min(maxToRecover - alreadyRecovered, totalNb);
+						int recoveredNb = rnd.nextInt(maxNb)+1;
+						totalNb -= recoveredNb;
+											
+						resultantFleetsStarships.get(originalFleet.getName()).put(starshipTemplate, resultantFleetsStarships.get(originalFleet.getName()).get(starshipTemplate) + recoveredNb);
+					}
+				}
+			}
+			
+			for(Fleet originalFleet : originalFleets)
+			{
+				Fleet recoveredFleet = null;
+				if (resultantFleetsStarships.get(originalFleet.getName()) != null)
+				{
+					recoveredFleet = new Fleet(db, originalFleet.getKey(), originalFleet.getSourceLocation(), resultantFleetsStarships.get(originalFleet.getName()), resultantFleetsSpecialUnits.get(originalFleet.getName()), false);
+					if (!recoveredFleet.hasNoMoreStarships()) db.insertUnit(recoveredFleet);
+				}
+				
+				if (resultantFleetsSpecialUnits.get(originalFleet.getName()) != null && (recoveredFleet == null || recoveredFleet.hasNoMoreStarships()))
+				{
+					resultantUnasignedSpecialUnits.addAll(resultantFleetsSpecialUnits.get(originalFleet.getName()));
+					productiveCelestialBody.mergeToUnasignedFleet(playerName, null, resultantFleetsSpecialUnits.get(originalFleet.getName()));
+				}
+			}
+			
+			productiveCelestialBody.mergeToUnasignedFleet(playerName, resultantUnasignedStarships, resultantUnasignedSpecialUnits);
 		}
 		
 		// End conflict, enventually change the celestial body owner, and check for new conflict.
 		productiveCelestialBody.endConflict();
 		
-		if (productiveCelestialBody.getOwnerName() == null || !survivors.keySet().contains(productiveCelestialBody.getOwnerName()))
+		if (productiveCelestialBody.getOwnerName() == null || !survivalFleets.keySet().contains(productiveCelestialBody.getOwnerName()))
 		{
 			Random rnd = new Random();
-			String newOwner = survivors.keySet().toArray(new String[survivors.keySet().size()])[rnd.nextInt(survivors.keySet().size())];
+			String newOwner = survivalFleets.keySet().toArray(new String[survivalFleets.keySet().size()])[rnd.nextInt(survivalFleets.keySet().size())];
 			productiveCelestialBody.changeOwner(newOwner);
 			
 			productiveCelestialBody.addConflictInititor(newOwner);
@@ -1645,6 +1740,8 @@ public class GameBoard implements Serializable
 			throw new RunningGameCommandException("None of the space road end can pay nor have free builder.");
 		}
 		
+		String delivererId = sourceName+" to "+destinationName+" space road deliverer";
+		if (db.getUnit(SpaceRoadDeliverer.class, playerLogin, delivererId) != null) throw new RunningGameCommandException("Space road from '"+sourceName+"' to '"+destinationName+"' is already in delivery.");
 		SpaceRoadDeliverer deliverer = new SpaceRoadDeliverer(db, sourceName+" to "+destinationName+" space road deliverer", playerLogin, source.getLocation().asRealLocation(), sourceName, destinationName);
 		
 		return new BuildSpaceRoadCheckResult(source, price, deliverer, destination.getLocation());			

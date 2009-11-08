@@ -13,6 +13,7 @@ import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.gameserver.client.GameClient;
 import org.axan.eplib.gameserver.common.IClientUser;
 import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
+import org.axan.eplib.gameserver.common.IServerUser.ServerSavingGameException;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.Player;
@@ -224,6 +225,21 @@ public class SEPClient
 	public void resumeGame() throws StateMachineNotExpectedEventException, ServerPrivilegeException, RpcException
 	{
 		client.getServerInterface().resumeGame();
+	}
+	
+	public boolean isGameSaved(String savedGameId) throws ServerPrivilegeException, ServerSavingGameException, StateMachineNotExpectedEventException, RpcException
+	{
+		return client.getServerInterface().isGameSaved(savedGameId);
+	}
+	
+	public void loadGame(String savedGameId) throws ServerPrivilegeException, StateMachineNotExpectedEventException, RpcException
+	{
+		client.getServerInterface().loadGame(savedGameId);
+	}
+	
+	public void saveGame(String saveGameId) throws ServerPrivilegeException, StateMachineNotExpectedEventException, RpcException
+	{
+		client.getServerInterface().saveGame(saveGameId);
 	}
 	
 	private Protocol.ServerGameCreation gameCreationProxy = null;

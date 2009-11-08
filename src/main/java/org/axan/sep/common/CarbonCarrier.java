@@ -22,9 +22,9 @@ public class CarbonCarrier extends Unit implements Serializable
 	/**
 	 * 
 	 */
-	public CarbonCarrier(boolean isVisible, int lastObervation, String name, String ownerName, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress, CarbonOrder order)
+	public CarbonCarrier(boolean isVisible, int lastObervation, String name, String ownerName, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress, double speed, CarbonOrder order)
 	{
-		super(isVisible, lastObervation, name, ownerName, sourceLocation, destinationLocation, currentLocation, travellingProgress);
+		super(isVisible, lastObervation, name, ownerName, sourceLocation, destinationLocation, currentLocation, travellingProgress, speed);
 		this.order = order;
 	}
 	

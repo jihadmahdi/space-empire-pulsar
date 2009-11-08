@@ -39,9 +39,9 @@ public interface Protocol
 		 * Return the current game config.
 		 * @return GameConfig current game config.
 		 * @throws RpcException On connection error.
-		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
+		 * @throws StateMachineNotExpectedEventException.
 		 */
-		GameConfig getGameConfig() throws RpcException, StateMachineNotExpectedEventException;
+		GameConfig getGameConfig() throws RpcException, StateMachineNotExpectedEventException;								
 	}
 	
 	/**

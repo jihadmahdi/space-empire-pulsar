@@ -29,7 +29,7 @@ class CarbonCarrier extends Unit implements Serializable
 	@Override
 	public org.axan.sep.common.CarbonCarrier getPlayerView(int date, String playerLogin, boolean isVisible)
 	{
-		return new org.axan.sep.common.CarbonCarrier(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocation(), getDestinationLocation(), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), (isVisible?order:null));
+		return new org.axan.sep.common.CarbonCarrier(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocation(), getDestinationLocation(), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), getSpeedView(date, playerLogin, isVisible), (isVisible?order:null));
 	}
 
 	@Override

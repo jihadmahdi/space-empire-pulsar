@@ -16,4 +16,5 @@ public interface IMobile
 	RealLocation getDestinationLocation();
 	double getTravellingProgress();
 	RealLocation getCurrentLocation();
+	double getSpeed();
 }
