@@ -28,9 +28,9 @@ public class Probe extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public Probe(boolean isVisible, int lastObservation, String name, String ownerName, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress, boolean deployed)
+	public Probe(boolean isVisible, int lastObservation, String name, String ownerName, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress, double speed, boolean deployed)
 	{
-		super(isVisible, lastObservation, name, ownerName, sourceLocation, destinationLocation, currentLocation, travellingProgress);
+		super(isVisible, lastObservation, name, ownerName, sourceLocation, destinationLocation, currentLocation, travellingProgress, speed);
 		this.deployed = deployed;
 	}
 	

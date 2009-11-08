@@ -20,8 +20,8 @@ public class LaunchedPulsarMissile extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public LaunchedPulsarMissile(boolean isVisible, int lastObservation, String name, String ownerName, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress)
+	public LaunchedPulsarMissile(boolean isVisible, int lastObservation, String name, String ownerName, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress, double speed)
 	{
-		super(isVisible, lastObservation, name, ownerName, sourceLocation, destinationLocation, currentLocation, travellingProgress);
+		super(isVisible, lastObservation, name, ownerName, sourceLocation, destinationLocation, currentLocation, travellingProgress, speed);
 	}
 }

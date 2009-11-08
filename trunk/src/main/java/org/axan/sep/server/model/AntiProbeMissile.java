@@ -2,7 +2,6 @@ package org.axan.sep.server.model;
 
 import java.io.Serializable;
 
-import org.axan.sep.common.Player;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.SEPServer;
 
@@ -48,7 +47,7 @@ public class AntiProbeMissile extends Unit implements Serializable
 			playersFiredView.updateView(playerLogin, fired, date);			
 		}
 		
-		return new org.axan.sep.common.AntiProbeMissile(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), playersFiredView.getLastValue(playerLogin, false)); 
+		return new org.axan.sep.common.AntiProbeMissile(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), getSpeedView(date, playerLogin, isVisible), playersFiredView.getLastValue(playerLogin, false)); 
 	}	
 
 	@Override

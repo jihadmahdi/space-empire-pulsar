@@ -280,9 +280,10 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 				if ((!playersUnasignedFleetsView.containsKey(player)) || playersUnasignedFleetsView.get(player) == null)
 				{
 					playersUnasignedFleetsView.put(player, new PlayerDatedView<org.axan.sep.common.Fleet>());
-				}
+				}							
 				
-				playersUnasignedFleetsView.get(player).updateView(playerLogin, getUnasignedFleet(player).getPlayerView(date, playerLogin, isVisible), date);
+				Fleet unasignedFleet = getUnasignedFleet(player);
+				playersUnasignedFleetsView.get(player).updateView(playerLogin, (unasignedFleet == null) ? null : unasignedFleet.getPlayerView(date, playerLogin, isVisible), date);
 			}			
 		}
 		

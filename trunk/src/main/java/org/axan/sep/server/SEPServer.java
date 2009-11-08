@@ -5,6 +5,12 @@
  */
 package org.axan.sep.server;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
@@ -931,6 +937,37 @@ public class SEPServer implements IServer
 		public void gameResumed()
 		{
 			log.log(Level.INFO, "gameResumed");
+		}
+
+		@Override
+		public ObjectInputStream getGameLoadingStream(String savedGameId) throws FileNotFoundException, IOException
+		{
+			return new ObjectInputStream(new FileInputStream(ServerGame.getSaveFileName(savedGameId)));
+		}
+
+		@Override
+		public ObjectOutputStream getGameSavingStream(String saveGameId) throws FileNotFoundException, IOException
+		{
+			return new ObjectOutputStream(new FileOutputStream(ServerGame.getSaveFileName(saveGameId)));			
+		}
+
+		@Override
+		public void loadGame(ObjectInputStream ois) throws Throwable
+		{
+			// TODO Auto-generated method stub
+			synchronized(server)
+			{
+				server.game = ServerGame.load(ois);
+			}
+		}
+
+		@Override
+		public void saveGame(ObjectOutputStream oos) throws Throwable
+		{
+			synchronized(server)
+			{
+				server.game.save(oos);
+			}			
 		}
 	}
 	

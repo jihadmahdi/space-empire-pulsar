@@ -126,7 +126,7 @@ class Area implements Serializable
 				{
 					Fleet f = Fleet.class.cast(u);
 					if (f.isUnassignedFleet()) continue;
-					if (f.isEmpty())
+					if (f.hasNoMoreStarships())
 					{
 						if (!f.isUnassignedFleet()) throw new Error("Assigned fleet cannot be empty.");
 						continue;

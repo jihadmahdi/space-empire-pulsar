@@ -7,7 +7,6 @@ package org.axan.sep.server.model;
 
 import java.io.Serializable;
 
-import org.axan.sep.common.Player;
 import org.axan.sep.common.SEPUtils.RealLocation;
 
 
@@ -52,7 +51,7 @@ public class Probe extends Unit implements Serializable
 			playersDeployedView.updateView(playerLogin, deployed, date);			
 		}
 		
-		return new org.axan.sep.common.Probe(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), playersDeployedView.getLastValue(playerLogin, false)); 
+		return new org.axan.sep.common.Probe(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), getSpeedView(date, playerLogin, isVisible), playersDeployedView.getLastValue(playerLogin, false)); 
 	}
 
 	@Override

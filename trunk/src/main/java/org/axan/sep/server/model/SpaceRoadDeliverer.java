@@ -25,7 +25,7 @@ class SpaceRoadDeliverer extends Unit implements Serializable
 	@Override
 	public org.axan.sep.common.SpaceRoadDeliverer getPlayerView(int date, String playerLogin, boolean isVisible)
 	{
-		return new org.axan.sep.common.SpaceRoadDeliverer(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin));
+		return new org.axan.sep.common.SpaceRoadDeliverer(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), getSpeedView(date, playerLogin, isVisible));
 	}
 
 	@Override

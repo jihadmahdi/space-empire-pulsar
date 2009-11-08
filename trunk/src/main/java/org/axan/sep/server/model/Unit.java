@@ -6,14 +6,9 @@
 package org.axan.sep.server.model;
 
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Map;
 import java.util.Stack;
 
 import org.axan.sep.common.ATravellingLogEntry;
-import org.axan.sep.common.EstimatedPulsarMarker;
-import org.axan.sep.common.Player;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.SEPUtils.RealLocation;
 
@@ -88,6 +83,7 @@ abstract class Unit implements Serializable
 	// Views
 	private final PlayerDatedView<Integer>	playersLastObservation	= new PlayerDatedView<Integer>();
 	private final PlayerDatedView<RealLocation> playersCurrentLocationView = new PlayerDatedView<RealLocation>();
+	private final PlayerDatedView<Double> playersSpeedView = new PlayerDatedView<Double>();
 
 	public Unit(DataBase db, Key key, RealLocation sourceLocation)
 	{
@@ -185,7 +181,17 @@ abstract class Unit implements Serializable
 			return travellingProgress;
 		}
 		else return -1;
-	}		
+	}
+	
+	public double getSpeedView(int date, String playerLogin, boolean isVisible)
+	{
+		if (playerLogin.equals(getOwnerName()) || isVisible)
+		{
+			playersSpeedView.updateView(playerLogin, getSpeed(), date);
+		}
+		
+		return playersSpeedView.getLastValue(playerLogin, null);
+	}
 	
 	protected void setSourceLocation(RealLocation sourceLocation)
 	{

@@ -191,6 +191,13 @@ public class PlayerGameBoard implements Serializable
 		throw new PlayerGameBoardQueryException("Unknown celestial body '"+celestialBodyName+"'");
 	}
 	
+	public <C extends ICelestialBody> C getCelestialBody(String celestialBodyName, Class<C> celestialBodyType) throws PlayerGameBoardQueryException
+	{
+		ICelestialBody celestialBody = getCelestialBody(celestialBodyName);
+		if (!celestialBodyType.isInstance(celestialBody)) throw new PlayerGameBoardQueryException("Celestial body '"+celestialBodyName+"' is not of type '"+celestialBodyType.getSimpleName()+"'");
+		return celestialBodyType.cast(celestialBody);
+	}
+	
 	public ICelestialBody getCelestialBody(String celestialBodyName) throws PlayerGameBoardQueryException
 	{
 		for(int x = 0; x < getDimX(); ++x)

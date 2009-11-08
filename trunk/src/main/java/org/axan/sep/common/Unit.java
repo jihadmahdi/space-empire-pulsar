@@ -25,6 +25,7 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	private final String name;
 	private final String ownerName;
 	private final RealLocation currentLocation;
+	private final double speed;
 	
 	// Only if owner
 	private final RealLocation sourceLocation;
@@ -34,7 +35,7 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	/**
 	 * Full constructor.
 	 */
-	public Unit(boolean isVisible, int lastObervation, String name, String ownerName, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress)
+	public Unit(boolean isVisible, int lastObervation, String name, String ownerName, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress, double speed)
 	{
 		this.isVisible = isVisible;
 		this.lastObservation = lastObervation;
@@ -44,6 +45,7 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 		this.destinationLocation = destinationLocation;
 		this.currentLocation = currentLocation;
 		this.travellingProgress = travellingProgress;
+		this.speed = speed;
 	}
 	
 	/* (non-Javadoc)
@@ -107,6 +109,15 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	public RealLocation getCurrentLocation()
 	{
 		return currentLocation;
+	}
+	
+	/* (non-Javadoc)
+	 * @see common.IMobile#getSpeed()
+	 */
+	@Override
+	public double getSpeed()
+	{
+		return speed;
 	}
 	
 	/* (non-Javadoc)

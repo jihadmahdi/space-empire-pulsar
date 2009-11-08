@@ -8,12 +8,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-import org.axan.sep.common.GovernmentStarship;
-import org.axan.sep.common.Player;
-import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.SEPServer;
-import org.axan.sep.server.model.Unit.Key;
 
 
 
@@ -85,7 +81,7 @@ public class Fleet extends Unit implements Serializable
 			
 		}				
 		
-		return new org.axan.sep.common.Fleet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), playersStarshipsView.getLastValue(playerLogin, null), playersSpecialUnitsView.getLastValue(playerLogin, null), (playerLogin.equals(getOwnerName()) ? currentMove : null) ,(playerLogin.equals(getOwnerName())?checkpoints:null), isUnassigned);
+		return new org.axan.sep.common.Fleet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getOwnerName(), getSourceLocationView(playerLogin), getDestinationLocationView(playerLogin), getCurrentLocationView(date, playerLogin, isVisible), getTravellingProgressView(playerLogin), getSpeedView(date, playerLogin, isVisible), playersStarshipsView.getLastValue(playerLogin, null), playersSpecialUnitsView.getLastValue(playerLogin, null), (playerLogin.equals(getOwnerName()) ? currentMove : null) ,(playerLogin.equals(getOwnerName())?checkpoints:null), isUnassigned);
 	}
 
 	public boolean isGovernmentFleet()
@@ -128,7 +124,7 @@ public class Fleet extends Unit implements Serializable
 		return Collections.unmodifiableSet(specialUnits);
 	}
 	
-	public boolean isEmpty()
+	public boolean hasNoMoreStarships()
 	{
 		for(Map.Entry<org.axan.sep.common.StarshipTemplate, Integer> e : starships.entrySet())
 		{
@@ -252,5 +248,11 @@ public class Fleet extends Unit implements Serializable
 	{
 		// TODO, compute total speed from fleet composition
 		return 3;
-	}	
+	}
+	
+	@Override
+	public Key getKey()
+	{
+		return Key.class.cast(super.getKey());
+	}
 }
