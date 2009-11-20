@@ -12,57 +12,6 @@ import java.io.Serializable;
  */
 public class StarshipTemplate implements Serializable, Comparable<StarshipTemplate>
 {
-	public enum eClass
-	{
-		ARTILLERY, DESTROYER, FIGHTER;
-		
-		static public eClass getBN(eClass starshipClass)
-		{
-			switch(starshipClass)
-			{
-				case ARTILLERY:
-					return FIGHTER;
-				case DESTROYER:
-					return ARTILLERY;
-				case FIGHTER:
-					return DESTROYER;
-				default:
-					throw new RuntimeException("BN inconnue pour la classe \"" + starshipClass + "\"");
-			}
-		}
-
-		static public eClass getTdT(eClass starshipClass)
-		{
-			switch(starshipClass)
-			{
-				case ARTILLERY:
-					return DESTROYER;
-				case DESTROYER:
-					return FIGHTER;
-				case FIGHTER:
-					return ARTILLERY;
-				default:
-					throw new RuntimeException("TdT inconnue pour la classe \"" + starshipClass + "\"");
-			}
-		}
-
-		public int comparer(eClass starshipClass)
-		{			
-			if (this == starshipClass) return 0;
-			if (getTdT(this) == starshipClass) return 1;
-			if (getBN(this) == starshipClass) return -1;
-
-			throw new RuntimeException("Comparaison de classes impossible: \"" + this + "\" et \"" + starshipClass + "\"");
-		}
-		
-		@Override
-		public String toString()
-		{
-			String upper = super.toString();
-			return upper.substring(0, 1)+upper.substring(1).toLowerCase();
-		}
-	};
-
 	public final int	defense;
 
 	public final int	attack;
@@ -73,19 +22,20 @@ public class StarshipTemplate implements Serializable, Comparable<StarshipTempla
 
 	public final double		speed;
 
-	public final eClass		specializationClass;
+	public final eStarshipSpecializationClass	specializationClass;
 
 	public final String		name;
 	
 	public final int carbonPrice;
 	public final int populationPrice;
 	
-	public StarshipTemplate(String name, int defense, int attack, eClass specializationClass, double attackSpecializationBonus, double defenseSpecializationBonus, double speed, int carbonPrice, int populationPrice)
+	public StarshipTemplate(String name, int defense, int attack, eStarshipSpecializationClass specializationClass, double attackSpecializationBonus, double defenseSpecializationBonus, double speed, int carbonPrice, int populationPrice)
 	{
 		if (defenseSpecializationBonus > 1.0) throw new NumberFormatException("Error: defenseSpecializationBonus cannot be greter than 100%");
 		this.name = name;
 		this.defense = defense;
 		this.attack = attack;
+			
 		this.specializationClass = specializationClass;
 
 		this.attackSpecializationBonus = attackSpecializationBonus;
@@ -102,7 +52,7 @@ public class StarshipTemplate implements Serializable, Comparable<StarshipTempla
 		return name;
 	}
 	
-	public eClass getSpecializationClass()
+	public eStarshipSpecializationClass getSpecializationClass()
 	{
 		return specializationClass;
 	}
@@ -150,9 +100,9 @@ public class StarshipTemplate implements Serializable, Comparable<StarshipTempla
 	@Override
 	public int compareTo(StarshipTemplate o)
 	{
-		int result = specializationClass.comparer(o.specializationClass);
+		int result = eStarshipSpecializationClass.compare(specializationClass, o.specializationClass);
 		if (result != 0) return result;
-		
+				
 		if (defense == o.defense) return 0;
 		if (defense > o.defense) return 1;
 		return -1;		

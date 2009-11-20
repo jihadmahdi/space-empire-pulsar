@@ -437,14 +437,14 @@ public class SEPServer implements IServer
 		}
 
 		@Override
-		public CommandCheckResult canFormFleet(String planetName, String fleetName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships, Set<org.axan.sep.common.ISpecialUnit> fleetToFormSpecialUnits) throws RpcException, StateMachineNotExpectedEventException
+		public CommandCheckResult canFormFleet(String planetName, String fleetName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships, Set<String> fleetToFormSpecialUnits) throws RpcException, StateMachineNotExpectedEventException
 		{
 			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return getGameBoard().canFormFleet(getLogin(), planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits);
 		}
 
 		@Override
-		public void formFleet(String planetName, String fleetName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships, Set<org.axan.sep.common.ISpecialUnit> fleetToFormSpecialUnits) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
+		public void formFleet(String planetName, String fleetName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships, Set<String> fleetToFormSpecialUnits) throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
 			getGameMove().addFormFleetCommand(planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits);
 		}

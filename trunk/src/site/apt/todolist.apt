@@ -32,8 +32,6 @@ TODO List
 		
 ** Notes (brouillon)  
 	
-	* Implémenter la diplomatie telle que redéfinie.
-	
 	* Implémenter la résolution des conflits.
 		* Intégrer les bonus des DefenseModule lors des combats.
 		* Ajouter les logs de combat (nb de vaisseaux/unités perdues)
@@ -43,6 +41,8 @@ TODO List
 	* Tester/Coder Pulsar Launching Pad.
 	
 	* Implémenter les pouvoirs spéciaux de classes de vaisseaux.
+	
+	* Implémeter les héros.
 	
 	* Valider le nouveau gameplay des échanges de carbones.
 		

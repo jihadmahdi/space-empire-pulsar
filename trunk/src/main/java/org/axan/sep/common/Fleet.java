@@ -6,6 +6,7 @@
 package org.axan.sep.common;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
@@ -177,5 +178,15 @@ public class Fleet extends Unit implements Serializable
 		}
 		
 		return qt;
+	}
+	
+	public Map<StarshipTemplate, Integer> getStarships()
+	{
+		return Collections.unmodifiableMap(starships);
+	}
+	
+	public Set<ISpecialUnit> getSpecialUnits()
+	{
+		return Collections.unmodifiableSet(specialUnits);
 	}
 }

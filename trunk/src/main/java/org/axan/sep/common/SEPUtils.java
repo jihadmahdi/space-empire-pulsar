@@ -12,8 +12,6 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
 
-import org.axan.sep.common.StarshipTemplate.eClass;
-
 
 /**
  * 
@@ -177,23 +175,35 @@ public abstract class SEPUtils
 		buildingTypes = Collections.unmodifiableSet(buildingsTypesSet);
 	}
 	
-	public static final Set<StarshipTemplate> starshipTypes;
+	public static final Set<StarshipTemplate> starshipSizeTemplates;
 	
 	static
 	{
+		Set<StarshipTemplate> starshipSizeTemplatesSet = new TreeSet<StarshipTemplate>();
+		
+		starshipSizeTemplatesSet.add(new StarshipTemplate("Light", 10, 10, null, 0.1, 0.1, 3, 100, 100));
+		starshipSizeTemplatesSet.add(new StarshipTemplate("Medium", 50, 50, null, 0.4, 0.4, 2, 300, 300));
+		starshipSizeTemplatesSet.add(new StarshipTemplate("Heavy", 100, 100, null, 1.0, 1.0, 1, 600, 600));
+		
+		//starshipSizeTemplates = Collections.unmodifiableSet(starshipSizeTemplatesSet);
+		starshipSizeTemplates = starshipSizeTemplatesSet;
+	}
+	
+	public static final Set<StarshipTemplate> starshipTypes;
+	
+	static
+	{		
 		Set<StarshipTemplate> starshipTypesSet = new TreeSet<StarshipTemplate>();
-		
-		StarshipTemplate[] gabarits = {new StarshipTemplate("Light", 10, 10, eClass.FIGHTER, 0.1, 0.1, 3, 100, 100), new StarshipTemplate("Medium", 50, 50, eClass.FIGHTER, 0.3, 0.3, 2, 300, 300), new StarshipTemplate("Heavy", 100, 100, eClass.FIGHTER, 0.8, 0.8, 1, 600, 600)};
-		
-		for(StarshipTemplate gabarit : gabarits)
-		{
-			for(eClass specializationClass : eClass.values())
-			{
-				starshipTypesSet.add(new StarshipTemplate(gabarit.getName()+specializationClass.toString(), gabarit.getDefense(), gabarit.getAttack(), specializationClass, gabarit.getAttackSpecializationBonus(), gabarit.getDefenseSpecializationBonus(), gabarit.getSpeed(), gabarit.getCarbonPrice(), gabarit.getPopulationPrice()));				
-			}
-		}
 				
-		starshipTypes = Collections.unmodifiableSet(starshipTypesSet);
+		for(StarshipTemplate gabarit : starshipSizeTemplates)
+		{
+			for(eStarshipSpecializationClass specializationClass : eStarshipSpecializationClass.values())
+			{
+				starshipTypesSet.add(new StarshipTemplate(gabarit.getName()+specializationClass.toString(), gabarit.getDefense(), gabarit.getAttack(), specializationClass, gabarit.getAttackSpecializationBonus(), gabarit.getDefenseSpecializationBonus(), gabarit.getSpeed(), gabarit.getCarbonPrice(), gabarit.getPopulationPrice()));
+			}
+		}		
+		
+		starshipTypes = Collections.unmodifiableSet(starshipTypesSet);		
 	}
 	
 	public static void main(String[] args)

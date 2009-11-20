@@ -12,6 +12,60 @@ import java.io.Serializable;
  */
 class DefenseModule extends ABuilding implements Serializable
 {
+	public static class DefenseModuleSpecialUnit extends FleetBattleSkillsModifierAdaptor implements ISpecialUnit
+	{
+		private final int fixedAttackBonus;
+		private final String name;
+		
+		public DefenseModuleSpecialUnit(String name, int fixedAttackBonus)
+		{
+			this.name = name;
+			this.fixedAttackBonus = fixedAttackBonus;
+		}
+
+		@Override
+		public int getFixedAttackBonus()
+		{
+			return fixedAttackBonus;
+		}
+
+		@Override
+		public org.axan.sep.common.ISpecialUnit getPlayerView(int date, String playerLogin, boolean isVisible)
+		{
+			throw new Error("DefenseModule SpecialUnit are not expected to be shown to players.");
+			/*
+			return new ISpecialUnit()
+			{
+				
+				@Override
+				public String getName()
+				{
+					return "DefenseModule (+"+fixedAttackBonus+"Att)";
+				}
+			};
+			*/
+		}
+
+		@Override
+		public boolean canJoinFleet()
+		{
+			return false;
+		}
+
+		@Override
+		public String getName()
+		{
+			return name;
+		}
+
+		@Override
+		public boolean isVisibleToClients()
+		{
+			return false;
+		}
+		
+	}
+	
 	private static final long	serialVersionUID	= 1L;
 	
 	// Constants
@@ -46,10 +100,10 @@ class DefenseModule extends ABuilding implements Serializable
 		return new org.axan.sep.common.DefenseModule(nbBuild, getTotalBonus(), getUpgradeCarbonCost());
 	}
 	
-	private float getTotalBonus()
+	private int getTotalBonus()
 	{
 		// TODO : Redefine the formula
-		return Float.valueOf(nbBuild)* (float) 0.25;
+		return (int) (0.25 * nbBuild * 100);
 	}		
 
 	@Override
@@ -97,5 +151,10 @@ class DefenseModule extends ABuilding implements Serializable
 	boolean canDowngrade()
 	{
 		return nbBuild > 0;
+	}
+	
+	DefenseModuleSpecialUnit getSpecialUnit()
+	{
+		return new DefenseModuleSpecialUnit("DefenseModule", getTotalBonus());
 	}
 }

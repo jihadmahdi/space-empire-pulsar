@@ -1743,7 +1743,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		Map<StarshipTemplate, Integer> starshipsToMake = new HashMap<StarshipTemplate, Integer>();
 		Map<StarshipTemplate, Integer> fleetToFormStarships = new HashMap<StarshipTemplate, Integer>();
-		Set<ISpecialUnit> fleetToFormSpecialUnits = new HashSet<ISpecialUnit>();
+		Set<String> fleetToFormSpecialUnits = new HashSet<String>();
 
 		Set<StarshipTemplate> starshipTemplates = new TreeSet<StarshipTemplate>();
 		starshipTemplates.addAll(SEPUtils.starshipTypes);
@@ -1790,7 +1790,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			if (toFleet > 0)
 			{
 				toFleet = 1;
-				fleetToFormSpecialUnits.add(specialUnit);
+				fleetToFormSpecialUnits.add(specialUnit.getName());
 			}
 
 			// Update display			
@@ -1890,7 +1890,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					if (infos == null || infos.productiveCelestialBody == null) return;
 
 					Map<StarshipTemplate, Integer> fleetToFormStarships = new HashMap<StarshipTemplate, Integer>();
-					Set<ISpecialUnit> fleetToFormSpecialUnits = new HashSet<ISpecialUnit>();
+					Set<String> fleetToFormSpecialUnits = new HashSet<String>();
 
 					Set<StarshipTemplate> starshipTemplates = new TreeSet<StarshipTemplate>();
 					starshipTemplates.addAll(SEPUtils.starshipTypes);
@@ -1905,7 +1905,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					if (infos.productiveCelestialBody.getUnasignedSpecialUnits() != null) for(ISpecialUnit specialUnit : infos.productiveCelestialBody.getUnasignedSpecialUnits())
 					{
 						int fleetToFormQt = Basic.intValueOf(getStarshipPlantWorkshopSpecialUnitNewFleetQtTextField(specialUnit).getText(), 0);
-						if (fleetToFormQt > 0) fleetToFormSpecialUnits.add(specialUnit);
+						if (fleetToFormQt > 0) fleetToFormSpecialUnits.add(specialUnit.getName());
 					}
 
 					try
