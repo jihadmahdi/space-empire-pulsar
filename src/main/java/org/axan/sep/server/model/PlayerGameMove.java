@@ -9,17 +9,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-import org.axan.eplib.clientserver.rpc.RpcException;
-import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.eplib.utils.Basic;
-import org.axan.sep.client.gui.RunningGamePanel;
 import org.axan.sep.common.CarbonOrder;
 import org.axan.sep.common.CommandCheckResult;
-import org.axan.sep.common.Diplomacy;
 import org.axan.sep.common.IBuilding;
-import org.axan.sep.common.Player;
-import org.axan.sep.common.PlayerGameBoard;
-import org.axan.sep.common.Protocol;
 import org.axan.sep.common.Diplomacy.PlayerPolicies;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.common.SEPUtils.RealLocation;
@@ -102,9 +95,9 @@ public class PlayerGameMove
 		private final String planetName;
 		private final String fleetName;
 		private final Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships;
-		private final Set<org.axan.sep.common.ISpecialUnit> fleetToFormSpecialUnits;
+		private final Set<String> fleetToFormSpecialUnits;
 		
-		public FormFleetCommand(String playerLogin, String planetName, String fleetName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships, Set<org.axan.sep.common.ISpecialUnit> fleetToFormSpecialUnits)
+		public FormFleetCommand(String playerLogin, String planetName, String fleetName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships, Set<String> fleetToFormSpecialUnits)
 		{
 			super(playerLogin);
 			this.planetName = planetName;
@@ -601,7 +594,7 @@ public class PlayerGameMove
 		addGameMoveCommand(new DemolishCommand(playerLogin, celestialBodyName, buildingType));
 	}
 	
-	public void addFormFleetCommand(String planetName, String fleetName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships, Set<org.axan.sep.common.ISpecialUnit> fleetToFormSpecialUnits) throws RunningGameCommandException
+	public void addFormFleetCommand(String planetName, String fleetName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships, Set<String> fleetToFormSpecialUnits) throws RunningGameCommandException
 	{
 		checkTurnIsNotEnded();
 		

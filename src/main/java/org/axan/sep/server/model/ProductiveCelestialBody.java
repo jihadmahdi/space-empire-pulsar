@@ -305,13 +305,25 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		return unasignedFleet == null ? null : unasignedFleet.getStarships();
 	}
 	
-	protected Set<org.axan.sep.common.ISpecialUnit> getUnasignedFleetSpecialUnits(String playerName)
+	protected Map<org.axan.sep.common.StarshipTemplate, Integer> getUnasignedFleetStarshipViews(int date, String playerName, boolean isVisible)
+	{
+		Fleet unasignedFleet = getUnasignedFleet(playerName);
+		return unasignedFleet == null ? null : unasignedFleet.getPlayerView(date, playerName, isVisible).getStarships();
+	}
+	
+	protected Set<ISpecialUnit> getUnasignedFleetSpecialUnits(String playerName)
 	{
 		Fleet unasignedFleet = getUnasignedFleet(playerName);
 		return unasignedFleet == null ? null : unasignedFleet.getSpecialUnits();		
 	}
 	
-	public void mergeToUnasignedFleet(String playerName, Map<org.axan.sep.common.StarshipTemplate, Integer> starshipsToMerge, Set<org.axan.sep.common.ISpecialUnit> specialUnitsToMerge)
+	protected Set<org.axan.sep.common.ISpecialUnit> getUnasignedFleetSpecialUnitViews(int date, String playerName, boolean isVisible)
+	{
+		Fleet unasignedFleet = getUnasignedFleet(playerName);
+		return unasignedFleet == null ? null : unasignedFleet.getPlayerView(date, playerName, isVisible).getSpecialUnits();
+	}
+	
+	public void mergeToUnasignedFleet(String playerName, Map<org.axan.sep.common.StarshipTemplate, Integer> starshipsToMerge, Set<ISpecialUnit> specialUnitsToMerge)
 	{
 		Fleet unasignedFleet = getUnasignedFleet(playerName);
 		
@@ -327,7 +339,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		}			
 	}	
 	
-	public void removeFromUnasignedFleet(String playerName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToRemove, Set<org.axan.sep.common.ISpecialUnit> specialUnitsToRemove)
+	public void removeFromUnasignedFleet(String playerName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToRemove, Set<ISpecialUnit> specialUnitsToRemove)
 	{
 		Fleet unasignedFleet = getUnasignedFleet(playerName);
 		if (unasignedFleet == null) throw new Error("Tried to remove starships from an empty unasigned fleet.");

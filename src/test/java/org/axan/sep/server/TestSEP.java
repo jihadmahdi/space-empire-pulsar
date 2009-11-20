@@ -25,9 +25,12 @@ import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.client.SEPClient.IUserInterface;
+import org.axan.sep.common.CommandCheckResult;
+import org.axan.sep.common.DefenseModule;
 import org.axan.sep.common.ExtractionModule;
 import org.axan.sep.common.Fleet;
 import org.axan.sep.common.GameConfig;
+import org.axan.sep.common.Planet;
 import org.axan.sep.common.Player;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.SEPUtils;
@@ -362,6 +365,7 @@ public class TestSEP
 			while(client1GameCreation.getGameConfig().getDimZ() != gameCfg.getDimZ() || client2GameCreation.getGameConfig().getDimZ() != gameCfg.getDimZ()) Thread.sleep(1000);
 			
 			gameCfg.setDimZ(1);
+			gameCfg.setPlayersPlanetsStartingCarbonResources(gameCfg.getCelestialBodiesStartingCarbonAmount().get(Planet.class)[0]-1);
 			client1GameCreation.updateGameConfig(gameCfg);
 			
 			while(client1GameCreation.getGameConfig().getDimZ() != gameCfg.getDimZ() || client2GameCreation.getGameConfig().getDimZ() != gameCfg.getDimZ()) Thread.sleep(1000);
@@ -664,7 +668,7 @@ public class TestSEP
 			Map<StarshipTemplate, Integer> starshipsToMake = new HashMap<StarshipTemplate, Integer>();
 			StarshipTemplate[] starshipTemplates = SEPUtils.starshipTypes.toArray(new StarshipTemplate[SEPUtils.starshipTypes.size()]);
 
-			starshipsToMake.put(starshipTemplates[6], 11);
+			starshipsToMake.put(starshipTemplates[6], 5);
 			client3RunningGame.makeStarships(startingPlanet3, starshipsToMake);
 
 			starshipsToMake.put(starshipTemplates[6], 5);
@@ -748,8 +752,8 @@ public class TestSEP
 			tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard(" + turn + ")", "client2.receiveNewTurnGameBoard(" + turn + ")", "client3.receiveNewTurnGameBoard(" + turn + ")" });
 			tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
 
-			boolean fleet1moved = client1AITest.checkFleetMove(t1Fleets, 5, startingPlanet1, startingPlanet3, 1);
-			boolean fleet2moved = client2AITest.checkFleetMove(t1Fleets, 4, startingPlanet2, startingPlanet3, 2);
+			boolean fleet1moved = client1AITest.checkFleetMove(t1Fleets, 5, startingPlanet1, startingPlanet3, 1) > 0;
+			boolean fleet2moved = client2AITest.checkFleetMove(t1Fleets, 4, startingPlanet2, startingPlanet3, 2) > 0;
 			client3AITest.checkFleetNotMoved(t2Fleets, 5);
 
 			if (!fleet1moved && !fleet2moved)
@@ -808,6 +812,7 @@ public class TestSEP
 		assertTrue("Unexpected remaining log", tester.flush());
 		
 		int client1Win=0, client2Win=0, client3Win=0, totalRuns=0;
+		long startTime, sumTime=0;
 		
 		do
 		{
@@ -853,10 +858,12 @@ public class TestSEP
 				client3RunningGame.endTurn();
 				++turn;
 				
+				startTime = System.currentTimeMillis();
 				while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
 				{
 					Thread.sleep(200);
 				}
+				sumTime += System.currentTimeMillis() - startTime;
 			}
 			catch(Throwable t)
 			{
@@ -908,13 +915,118 @@ public class TestSEP
 				client2AITest.checkInvisibleLocation(startingPlanet3);
 			}
 			
-			assertFalse("Too much loop", totalRuns > 20);
-			
-		}while(client1Win<=0 || client2Win<=0 || client3Win<=0);
+		}while(totalRuns < 10 && (client1Win<=0 || client2Win<=0 || client3Win<=0));
 		
+		System.out.format("Average time (ms) : %.2fms\n", (double) sumTime / totalRuns);
 		System.out.format(client1.getLogin()+" wins "+client1Win+" times (%.2f).\n"+client2.getLogin()+" wins "+client2Win+" times (%.2f).\n"+client3.getLogin()+" wins "+client3Win+" times (%.2f).\n", (double) client1Win/totalRuns, (double) client2Win/totalRuns, (double) client3Win/totalRuns);
 		
-		//SUIS LA, implémenter le vrai resolveBattle().
+		assertEquals("Unexpected result", totalRuns, client1Win);
+		
+		// DefenseModule test
+		try
+		{
+			client1.loadGame(saveName);
+			--turn;
+			
+			while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
+			{
+				Thread.sleep(200);
+			}
+		}
+		catch(Throwable t)
+		{
+			t.printStackTrace();
+			fail("Unexpected exception thrown : " + t.getMessage());
+			return;
+		}
+		
+		assertEquals("Unexpected result", turn, client1AITest.getDate());
+		System.out.println("After loading: turn "+turn);
+
+		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gamePaused", "gamePaused");
+		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gameResumed", "gameResumed");
+		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)");
+
+		tester.checkAllUnorderedTraces(clientOut, TestClientUserInterface.class, "onGamePaused", "client1.onGamePaused", "client2.onGamePaused", "client3.onGamePaused");
+		tester.checkAllUnorderedTraces(clientOut, TestClientUserInterface.class, "onGameResumed", "client1.onGameResumed", "client2.onGameResumed", "client3.onGameResumed");		
+
+		assertTrue("Unexpected remaining log", tester.flush());
+				
+		int i = 0;
+		CommandCheckResult chr;
+		
+		do
+		{
+			try
+			{	
+				chr = client3RunningGame.canBuild(startingPlanet3, DefenseModule.class);
+				if (!chr.isPossible()) continue;
+				
+				++i;
+				client3RunningGame.build(startingPlanet3, DefenseModule.class);				
+				
+				client1RunningGame.endTurn();
+				client2RunningGame.endTurn();
+				client3RunningGame.endTurn();
+				++turn;
+				
+				while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
+				{
+					Thread.sleep(200);
+				}			
+			}
+			catch(Throwable t)
+			{
+				t.printStackTrace();
+				fail("Unexpected exception thrown : " + t.getMessage());
+				return;
+			}
+	
+			assertEquals("Unexpected result", turn, client1AITest.getDate());
+			
+			tester.checkNextTrace(serverOut, SEPServer.class, "checkForNextTurn", "Resolving new turn");
+			tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
+			tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
+		}while(chr.isPossible());
+		
+		assertTrue("Unexpected numbers of built ("+i+").", i > 3);
+		
+		try
+		{
+			Stack<Move> checkpoints = new Stack<Move>();
+			checkpoints.add(new Move(startingPlanet3, 0, true));
+			client2RunningGame.moveFleet(t1Fleets, checkpoints);
+			
+			client1RunningGame.endTurn();
+			client2RunningGame.endTurn();
+			client3RunningGame.endTurn();
+			++turn;
+			
+			while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
+			{
+				Thread.sleep(200);
+			}			
+		}
+		catch(Throwable t)
+		{
+			t.printStackTrace();
+			fail("Unexpected exception thrown : " + t.getMessage());
+			return;
+		}
+
+		assertEquals("Unexpected result", turn, client1AITest.getDate());
+		
+		tester.checkNextTrace(serverOut, SEPServer.class, "checkForNextTurn", "Resolving new turn");
+		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
+		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
+		
+		if (client1AITest.isCelestialBodyOwner(startingPlanet3) || client2AITest.isCelestialBodyOwner(startingPlanet3))
+		{
+			fail("Unexpected winner.");
+		}
+		assertTrue(client3AITest.isCelestialBodyOwner(startingPlanet3));
+		
+		//SUIS LA, ajouter le cas de test: le propriétaire des DefenseModule perds le combat, s'assurer que les modules sont détruits.
 		
 		/*=======================================================
 		
@@ -1001,144 +1113,4 @@ public class TestSEP
 
 		assertTrue("Unexpected remaining log", tester.flush());
 	}
-
-	/*
-	private boolean flush()
-	{
-		String clientsLog = flushLog(clientOut);
-		if (!clientsLog.isEmpty())
-		{
-			System.out.println();
-			System.out.println("Clients OUT");
-			System.out.println(clientsLog);
-		}
-
-		String serverLog = flushLog(serverOut);
-		if (!serverLog.isEmpty())
-		{
-			System.out.println("Server OUT");
-			System.out.println(serverLog);
-		}
-
-		return clientsLog.isEmpty() && serverLog.isEmpty();
-	}
-
-	private String flushLog(BufferedReader out)
-	{
-		StringBuffer sb = new StringBuffer();
-		String line;
-		try
-		{
-			while(out.ready())
-			{
-				line = out.readLine();
-				if (!line.isEmpty()) sb.append(line + "\n");
-			}
-		}
-		catch(IOException e)
-		{
-			e.printStackTrace();
-			fail("Test code unexpected exception thrown : " + e.getMessage());
-		}
-
-		return sb.toString();
-	}
-
-	private boolean tester.checkAllUnorderedTraces(BufferedReader out, Class<?> clazz, String methodName, String[] possibleTraces)
-	{
-		Method m = getMethod(clazz, methodName);
-
-		Vector<String> possibles = new Vector<String>();
-		possibles.addAll(Arrays.asList(possibleTraces));
-
-		try
-		{
-			String line = null;
-
-			do
-			{
-				long start = System.currentTimeMillis();
-				while(!out.ready() && System.currentTimeMillis() - start < 5000)
-				{
-					Thread.sleep(200);
-				}
-				if (!out.ready()) fail("No output");
-				line = out.readLine();
-			} while(line == null || line.isEmpty());
-
-			String pattern = "^.* " + clazz.getCanonicalName() + " " + m.getName() + "$";
-			assertTrue("Unexpected trace header \"" + line + "\", expected \"... " + clazz.getCanonicalName() + " " + m.getName() + "\"", line.matches(pattern));
-			System.out.println("[CHECKED] " + line);
-			line = out.readLine();
-
-			for(String p : possibles)
-			{
-				String errMsg = "Unexpected output \"" + line + "\", expected \"... " + p + "\"";
-
-				if (line.length() > p.length() && line.substring(line.length() - p.length()).compareTo(p) == 0)
-				{
-					System.out.println("[CHECKED] " + line);
-					possibles.remove(p);
-					if (possibles.size() == 0) return true;
-					if (tester.checkAllUnorderedTraces(out, clazz, methodName, possibles.toArray(new String[possibles.size()]))) return true;
-					break;
-				}
-			}
-
-			fail("Unexpected output \"" + line + "\", expected [" + possibles + "]");
-			return false;
-		}
-		catch(IOException e)
-		{
-			fail("Test code unexpected exception");
-			return false;
-		}
-		catch(InterruptedException e)
-		{
-			fail("No output");
-			return false;
-		}
-	}
-
-	private void checkNextTrace(BufferedReader out, Class<?> clazz, String methodName, String expectedTrace)
-	{
-		Method m = getMethod(clazz, methodName);
-
-		try
-		{
-			String line = null;
-
-			do
-			{
-				while(!out.ready())
-				{
-					Thread.sleep(200);
-				}
-				//if ( !out.ready()) fail("No output");
-				line = out.readLine();
-			} while(line == null || line.isEmpty());
-
-			String pattern = "^.* " + clazz.getCanonicalName() + "[$[^ ]+]* " + m.getName() + "$";
-			assertTrue("Unexpected trace header \"" + line + "\", expected \"... " + clazz.getCanonicalName() + " " + m.getName() + "\"", line.matches(pattern));
-			System.out.println("[CHECKED] " + line);
-
-			line = out.readLine();
-			String errMsg = "Unexpected output \"" + line + "\", expected \"... " + expectedTrace + "\"";
-
-			assertTrue(errMsg, line.length() > expectedTrace.length());
-			assertTrue(errMsg, line.substring(line.length() - expectedTrace.length()).compareTo(expectedTrace) == 0);
-			System.out.println("[CHECKED] " + line);
-		}
-		catch(IOException e)
-		{
-			fail("Test code unexpected exception");
-			return;
-		}
-		catch(InterruptedException e)
-		{
-			fail("No output");
-			return;
-		}
-	}
-	*/
 }

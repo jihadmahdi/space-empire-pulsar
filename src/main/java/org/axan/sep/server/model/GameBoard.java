@@ -19,10 +19,10 @@ import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.CarbonOrder;
 import org.axan.sep.common.CommandCheckResult;
 import org.axan.sep.common.GameConfig;
-import org.axan.sep.common.ISpecialUnit;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.StarshipTemplate;
 import org.axan.sep.common.TravellingLogEntryUnitSeen;
+import org.axan.sep.common.eStarshipSpecializationClass;
 import org.axan.sep.common.Diplomacy.PlayerPolicies;
 import org.axan.sep.common.Diplomacy.PlayerPolicies.eForeignPolicy;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
@@ -30,6 +30,7 @@ import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.SEPServer;
 import org.axan.sep.server.SEPServer.SEPImplementationException;
+import org.axan.sep.server.model.Fleet.SpecializedEquivalentFleet;
 import org.axan.sep.server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 import org.axan.sep.server.model.SpaceCounter.SpaceRoad;
 
@@ -510,6 +511,19 @@ public class GameBoard implements Serializable
 			db.removeUnit(f.getKey());
 		}
 		
+		DefenseModule defenseModule = productiveCelestialBody.getBuilding(DefenseModule.class);
+		if (defenseModule != null)
+		{
+			if (!mergedFleets.containsKey(productiveCelestialBody.getOwnerName()))
+			{	
+				mergedFleets.put(productiveCelestialBody.getOwnerName(), new Fleet(db, productiveCelestialBody.getOwnerName()+" forces in conflict on "+productiveCelestialBody.getName()+" at turn "+db.getDate(), productiveCelestialBody.getOwnerName(), location.asRealLocation(), null, null, false));				
+			}
+			
+			Set<ISpecialUnit> specialUnits = new HashSet<ISpecialUnit>();
+			specialUnits.add(defenseModule.getSpecialUnit());
+			mergedFleets.get(productiveCelestialBody.getOwnerName()).merge(null, specialUnits);
+		}
+		
 		// Run battle
 		Map<String, Fleet> survivalFleets = resolveBattle(conflictDiplomacy, mergedFleets);
 		
@@ -518,6 +532,8 @@ public class GameBoard implements Serializable
 		{
 			String playerName = e.getKey();
 			Fleet survivalFleet = e.getValue();
+			survivalFleet.rest();
+			
 			Set<Fleet> originalFleets = originalPlayersFleets.get(playerName);
 			Vector<Fleet> originalFleetsCopy = new Vector<Fleet>();
 			Map<String, Map<StarshipTemplate, Integer>> resultantFleetsStarships = new HashMap<String, Map<StarshipTemplate,Integer>>();
@@ -627,34 +643,19 @@ public class GameBoard implements Serializable
 		}
 	}
 	
-	private static Map<String, Fleet> resolveBattle(Map<String, Map<String, Boolean>> conflictDiplomacy, Map<String, Fleet> forces)
+	public static Map<String, Fleet> resolveBattle(Map<String, Map<String, Boolean>> conflictDiplomacy, Map<String, Fleet> forces)
 	{
 		Map<String, Fleet> survivors = new Hashtable<String, Fleet>(forces);
-		Set<String> killed = new HashSet<String>();
 		
-		Set<String> fighting = new HashSet<String>();
-		for(String p : survivors.keySet())
-		{
-			for(String t : survivors.keySet())
-			{
-				if (conflictDiplomacy.containsKey(p) && conflictDiplomacy.get(p).containsKey(t) && conflictDiplomacy.get(p).get(t))
-				{
-					fighting.add(p); fighting.add(t);
-				}
-			}
-		}
-		
-		// Fake resolution
-		boolean isFinished = true;
+		boolean isFinished;
 		do
-		{			
+		{
+			// Look if there's still some alive player wanting to fight with another alive one.
 			isFinished = true;
-			for(String p : fighting)
+			for(String p : survivors.keySet())
 			{
-				for(String t : fighting)
-				{
-					if (killed.contains(t)) continue;
-					
+				for(String t : survivors.keySet())
+				{		
 					if (conflictDiplomacy.containsKey(p) && conflictDiplomacy.get(p).containsKey(t) && conflictDiplomacy.get(p).get(t)) isFinished = false;
 					
 					if (!isFinished) break;
@@ -663,34 +664,133 @@ public class GameBoard implements Serializable
 				if (!isFinished) break;
 			}
 			
+			// If yes, play the battle round to next victim.
 			if (!isFinished)
 			{
-				String victim = fighting.toArray(new String[fighting.size()])[rnd.nextInt(fighting.size())];
-				survivors.remove(victim);
-				fighting.remove(victim);
-				killed.add(victim);				
+				boolean thereIsVictims = false;
+				do
+				{
+					Map<String, Map<eStarshipSpecializationClass, Double>> attackPromises = new HashMap<String, Map<eStarshipSpecializationClass,Double>>();
+					Map<String, Fleet> mergedEnnemyFleets = new HashMap<String, Fleet>();
+					
+					for(String attacker : survivors.keySet())
+					{
+						Fleet attackerFleet = survivors.get(attacker);
+																		
+						Fleet mergedEnnemyFleet = Fleet.computeMergedAttackers(attacker, conflictDiplomacy, survivors);
+						mergedEnnemyFleets.put(attacker, mergedEnnemyFleet);
+						
+						for(eStarshipSpecializationClass specialization : eStarshipSpecializationClass.values())
+						{
+							Map<String, Boolean> ennemies = new HashMap<String, Boolean>(conflictDiplomacy.get(attacker));							
+							
+							SpecializedEquivalentFleet attackerSubFleet = attackerFleet.getSpecializedFleet(specialization);																						
+							if (attackerSubFleet == null) continue;
+							
+							SpecializedEquivalentFleet targetSubFleet = mergedEnnemyFleet.getNextTarget(specialization);
+							double attack = attackerFleet.getBattleSkillsModifier().getFixedAttackBonus() + (attackerSubFleet.getAttack() * (1 + (specialization.getTdT() == targetSubFleet.getSpecialization() ? attackerSubFleet.getAttackSpecializationBonus() : (specialization.getBN() == targetSubFleet.getSpecialization() ? -1 * targetSubFleet.getDefenseSpecializationBonus() : 0))));
+							
+							while(attack > 0)
+							{
+								int i = rnd.nextInt(ennemies.size());
+								String ennemy = ennemies.keySet().toArray(new String[ennemies.size()])[i];
+								
+								if (!ennemies.get(ennemy) || !survivors.containsKey(ennemy))
+								{
+									ennemies.remove(ennemy);
+									continue;
+								}
+								else
+								{
+									SpecializedEquivalentFleet ennemySubFleet = survivors.get(ennemy).getSpecializedFleet(targetSubFleet.getSpecialization());
+									if (ennemySubFleet == null || ennemySubFleet.getDefense() == 0)
+									{
+										ennemies.remove(ennemy);
+										continue;
+									}
+									
+									double r = (ennemies.size() > 1) ? rnd.nextDouble() : 1.0;
+									double hit = r * attack;
+									
+									if (!attackPromises.containsKey(ennemy)) attackPromises.put(ennemy, new HashMap<eStarshipSpecializationClass, Double>());
+									if (!attackPromises.get(ennemy).containsKey(targetSubFleet.getSpecialization())) attackPromises.get(ennemy).put(targetSubFleet.getSpecialization(), 0.0);									
+									attackPromises.get(ennemy).put(targetSubFleet.getSpecialization(), attackPromises.get(ennemy).get(targetSubFleet.getSpecialization()) + hit);
+									attack -= hit;
+								}
+							}															
+						}							
+					}
+					
+					double bestTime = Double.POSITIVE_INFINITY;
+					
+					for(Map.Entry<String, Map<eStarshipSpecializationClass, Double>> e : attackPromises.entrySet())
+					{
+						String target = e.getKey();
+						for(Map.Entry<eStarshipSpecializationClass, Double> f : e.getValue().entrySet())
+						{
+							eStarshipSpecializationClass specialization = f.getKey();
+							double attack = f.getValue();
+							
+							bestTime = Math.min(bestTime, ((double) survivors.get(target).getSpecializedFleet(specialization).getDefense()) / attack);
+						}
+					}
+					
+					for(Map.Entry<String, Map<eStarshipSpecializationClass, Double>> e : attackPromises.entrySet())
+					{
+						String target = e.getKey();						
+						
+						for(Map.Entry<eStarshipSpecializationClass, Double> f : e.getValue().entrySet())
+						{
+							eStarshipSpecializationClass specialization = f.getKey();
+							double attack = f.getValue();
+							double dmg = bestTime * attack;
+											
+							survivors.get(target).getSpecializedFleet(specialization).takeDamage(dmg);																												
+						}
+					}
+					
+					Iterator<Entry<String, Fleet>> it = survivors.entrySet().iterator();
+					while(it.hasNext())
+					{
+						Entry<String, Fleet> e = it.next();
+						if (e.getValue().isDestroyed())
+						{
+							thereIsVictims = true;
+							it.remove();
+						}							
+					}										
+					
+				}while(!thereIsVictims);
+				
+				/*
+				DO
+				
+					Map[Target, eStarshipSpecializationClass, Attack] attackPromises;
+					Map[Target, Fleet] mergedAttackers; 										
+					
+					FOREACH belligerent
+						Fleet defender <- forces(belligerent)
+						mergedAttackers[belligerent] <- computeMergeAttackers(belligerent, conflictDiplomacy, forces)						
+						FOREACH starshipClass							
+							eStarshipSpecializationClass targetClass <- defenser.getNextTargetClass(starshipClass);
+							attackPromises[defender, targetClass, mergedAttackers[belligerent].Attack * (1 + starshipClass.isTdT(targetClass) ? mergedAttackers[belligerent].Weapon : starshipClass.isBN(targetClass) ? -defenser.getNextTargetArmor(starshipClass) : 0)];							
+						NEXT
+					NEXT
+					
+					double bestTime <- +INF;
+					
+					FOREACH attackPromise IN attackPromises
+						bestTime <- Min(bestTime, attackPromise.target.Defense / attackPromise.Attack);
+					NEXT
+					
+					FOREACH attackPromise IN attackPromises
+						attackPromise.target.takeDamage(bestTime * attackPromise.Attack);
+					NEXT
+				
+				WHILE(!attackPromise.target.isEmpty())					
+				 */									
 			}
 		}while(!isFinished);
-
-		for(String s : fighting)
-		{
-			Fleet f = survivors.get(s);
-			Map<StarshipTemplate, Integer> starships = new Hashtable<StarshipTemplate, Integer>();
-			Set<ISpecialUnit> specialUnits = new HashSet<ISpecialUnit>();
-			
-			for(StarshipTemplate t : f.getStarships().keySet())
-			{
-				starships.put(t, rnd.nextInt(f.getStarships().get(t)));
-			}
-			
-			Iterator<ISpecialUnit> it = f.getSpecialUnits().iterator();
-			if (it.hasNext()) for(int i = rnd.nextInt(f.getSpecialUnits().size()); i > 0; --i)
-			{
-				specialUnits.add(it.next());
-			}
-			
-			f.remove(starships, specialUnits);
-		}
 		
 		return survivors;
 	}
@@ -827,8 +927,8 @@ public class GameBoard implements Serializable
 	{
 		EmbarkGovernmentCheckResult embarkGovernmentCheckResult = checkEmbarkGovernment(playerName);
 		embarkGovernmentCheckResult.planet.removeBuilding(GovernmentModule.class);
-		Set<org.axan.sep.common.ISpecialUnit> specialUnitsToMake = new HashSet<org.axan.sep.common.ISpecialUnit>();
-		specialUnitsToMake.add(new org.axan.sep.common.GovernmentStarship(playerName+" government starship"));		
+		Set<ISpecialUnit> specialUnitsToMake = new HashSet<ISpecialUnit>();
+		specialUnitsToMake.add(new GovernmentStarship(playerName+" government starship"));		
 		embarkGovernmentCheckResult.planet.mergeToUnasignedFleet(playerName, null, specialUnitsToMake);
 		embarkGovernmentCheckResult.planet.setCarbon(embarkGovernmentCheckResult.planet.getCarbon() - embarkGovernmentCheckResult.carbonCost);
 		embarkGovernmentCheckResult.planet.setPopulation(embarkGovernmentCheckResult.planet.getPopulation() - embarkGovernmentCheckResult.populationCost);
@@ -1242,7 +1342,7 @@ public class GameBoard implements Serializable
 		return new MoveFleetCheckResult(fleet, locatedCheckpoints);
 	}
 
-	public CommandCheckResult canFormFleet(String playerLogin, String planetName, String fleetName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships, Set<org.axan.sep.common.ISpecialUnit> fleetToFormSpecialUnits)
+	public CommandCheckResult canFormFleet(String playerLogin, String planetName, String fleetName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships, Set<String> fleetToFormSpecialUnits)
 	{
 		try
 		{
@@ -1255,11 +1355,11 @@ public class GameBoard implements Serializable
 		return new CommandCheckResult();
 	}
 
-	public void formFleet(String playerLogin, String planetName, String fleetName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships, Set<org.axan.sep.common.ISpecialUnit> fleetToFormSpecialUnits) throws RunningGameCommandException
+	public void formFleet(String playerLogin, String planetName, String fleetName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships, Set<String> fleetToFormSpecialUnits) throws RunningGameCommandException
 	{
 		FormFleetCheckResult formFleetCheckResult = checkFormFleet(playerLogin, planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits);
 		db.insertUnit(formFleetCheckResult.newFleet);
-		formFleetCheckResult.productiveCelestialBody.removeFromUnasignedFleet(playerLogin, fleetToFormStarships, fleetToFormSpecialUnits);
+		formFleetCheckResult.productiveCelestialBody.removeFromUnasignedFleet(playerLogin, fleetToFormStarships, formFleetCheckResult.newFleet.getSpecialUnits());
 	}
 
 	private static class FormFleetCheckResult
@@ -1274,7 +1374,7 @@ public class GameBoard implements Serializable
 		}
 	}
 
-	private FormFleetCheckResult checkFormFleet(String playerLogin, String productiveCelestialBodyName, String fleetName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships, Set<org.axan.sep.common.ISpecialUnit> fleetToFormSpecialUnits) throws RunningGameCommandException
+	private FormFleetCheckResult checkFormFleet(String playerLogin, String productiveCelestialBodyName, String fleetName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships, Set<String> fleetToFormSpecialUnits) throws RunningGameCommandException
 	{
 		ProductiveCelestialBody productiveCelestialBody = db.getCelestialBody(productiveCelestialBodyName, ProductiveCelestialBody.class);
 		if (productiveCelestialBody == null) throw new RunningGameCommandException("Celestial body '" + productiveCelestialBodyName + "' does not exist.");
@@ -1296,14 +1396,19 @@ public class GameBoard implements Serializable
 		}
 
 		// Special units availability check
-		if (fleetToFormSpecialUnits != null) for(org.axan.sep.common.ISpecialUnit u : fleetToFormSpecialUnits)
+		Set<ISpecialUnit> specialUnits = new HashSet<ISpecialUnit>();
+		
+		if (fleetToFormSpecialUnits != null) for(String specialUnitName : fleetToFormSpecialUnits)
 		{
-			if (u == null) continue;
+			ISpecialUnit specialUnit = unasignedFleet.getSpecialUnit(specialUnitName);
 			
-			if (!unasignedFleet.getSpecialUnits().contains(u)) throw new RunningGameCommandException("Unasigned fleet does not have require special unit '"+u.toString()+"'");
+			if (specialUnit == null) throw new RunningGameCommandException("Cannot find special unit '"+specialUnitName+"' on '"+productiveCelestialBodyName+"'");			
+			if (!specialUnit.canJoinFleet()) throw new RunningGameCommandException("Special unit '"+specialUnitName+"' cannot join fleet.");
+			
+			specialUnits.add(specialUnit);
 		}
 				
-		Fleet newFleet = new Fleet(db, fleetName, playerLogin, productiveCelestialBody.getLocation().asRealLocation(), fleetToFormStarships, fleetToFormSpecialUnits, false);
+		Fleet newFleet = new Fleet(db, fleetName, playerLogin, productiveCelestialBody.getLocation().asRealLocation(), fleetToFormStarships, specialUnits, false);
 
 		return new FormFleetCheckResult(productiveCelestialBody, newFleet);
 	}

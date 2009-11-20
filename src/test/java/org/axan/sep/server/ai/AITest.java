@@ -93,40 +93,48 @@ public class AITest
 	{
 		checkFleetMove(fleetName, expectedQt, null, null, -1);
 	}
-	public boolean checkFleetMove(String fleetName, int expectedQt, String sourceCelestialBody, String destinationCelestialBody, int departureDate)
+	public int checkFleetMove(String fleetName, int expectedQt, String sourceCelestialBody, String destinationCelestialBody, int departureDate)
 	{
 		if (gameBoard == null) fail("Test code error: Gameboard not refreshed yet.");
 		
-		boolean expectedMoved = false;
+		int expectedMoved = 0;
 		
 		try
 		{
 			Fleet f = gameBoard.getUnit(playerName, fleetName, Fleet.class);
 			if (f.getTotalQt() != expectedQt) fail("Unexpected starships quantity.");
 			
-			expectedMoved = (departureDate < 0 || sourceCelestialBody == null || destinationCelestialBody == null) ? false : shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getDate()-1);
+			expectedMoved = (departureDate < 0 || sourceCelestialBody == null || destinationCelestialBody == null) ? 0 : shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getDate()-1);
 			
 			if (!previousGameBoards.isEmpty())
 			{
 				try
 				{
 					Fleet pf = previousGameBoards.lastElement().getUnit(playerName, fleetName, Fleet.class);
-					if (pf.getCurrentLocation().equals(f.getCurrentLocation()) == expectedMoved)
+					if (pf.getCurrentLocation().equals(f.getCurrentLocation()) == (expectedMoved > 0))
 					{
-						//shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getDate()-1);
-						fail("Unexpected fleet move state ("+!expectedMoved+").");
+						//shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getDate()-1);												
+						fail("Unexpected fleet move state ("+(expectedMoved<=0)+").");
 					}
 				}
 				catch(PlayerGameBoardQueryException e)
 				{
-					if ((f.getDestinationLocation() == null || f.getSourceLocation().equals(f.getCurrentLocation())) == expectedMoved)
+					if ((f.getDestinationLocation() == null || f.getSourceLocation().equals(f.getCurrentLocation())) == (expectedMoved>=1))
 					{
 						//shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getDate()-1);
-						fail("Unexpected fleet move state ("+!expectedMoved+").");					
+						System.err.println("checkFleetMove('"+fleetName+"', "+expectedQt+", '"+sourceCelestialBody+"', '"+destinationCelestialBody+"', "+departureDate+") ERROR");
+						System.err.println("Fleet: "+f.toString());
+						System.err.println("\tsourceLocation: "+f.getSourceLocation());
+						System.err.println("\tcurrentLocation: "+f.getCurrentLocation());
+						System.err.println("\tdestinationLocation: "+f.getDestinationLocation());
+						
+						System.err.println("ExpectedMoved : "+expectedMoved);
+						
+						fail("Unexpected fleet move state ("+(expectedMoved<=0)+").");					
 					}
 				}
 			}
-			else if (expectedMoved) fail("Fleet has just been created and not moved yet.");
+			else if (expectedMoved>0) fail("Fleet has just been created and not moved yet.");
 		}
 		catch(PlayerGameBoardQueryException e)
 		{
@@ -144,7 +152,7 @@ public class AITest
 		assertEquals(expectedDiplomacy, gameBoard.getPlayersPolicies().get(playerName));
 	}
 	
-	public boolean shouldMove(String sourceCelestialBody, String destinationCelestialBody, int departureDate, double speed, int date)
+	public int shouldMove(String sourceCelestialBody, String destinationCelestialBody, int departureDate, double speed, int date)
 	{
 		if (gameBoard == null) fail("Test code error: Gameboard not refreshed yet.");
 		
@@ -159,14 +167,15 @@ public class AITest
 			
 			double progress = (date - departureDate) / totalTime;
 			
-			boolean shouldMove = !SEPUtils.getMobileLocation(source, destination, progress, true).asLocation().equals(destination.asLocation());
-			return shouldMove;			
+			boolean shouldMove = !SEPUtils.getMobileLocation(source, destination, progress, true).asLocation().equals(destination.asLocation());						
+			
+			return shouldMove ? (int) distance : 0;			
 		}
 		catch(PlayerGameBoardQueryException e)
 		{
 			e.printStackTrace();
 			fail(e.getMessage());
-			return false;
+			return 0;
 		}
 	}
 
