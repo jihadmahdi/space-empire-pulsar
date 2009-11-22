@@ -147,7 +147,12 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		buildings.put(building.getClass(), building);
 	}
 	
-	public void demolishBuilding(ABuilding existingBuilding)
+	public <B extends ABuilding> void demolishBuilding(Class<B> buildingType)
+	{
+		buildings.remove(buildingType);
+	}
+	
+	public void downgradeBuilding(ABuilding existingBuilding)
 	{
 		ABuilding downgradedBuilding = existingBuilding.getDowngraded();
 		if (downgradedBuilding == null)
