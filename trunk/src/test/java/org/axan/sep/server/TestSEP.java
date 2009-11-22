@@ -470,7 +470,8 @@ public class TestSEP
 
 		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "onGameRan", new String[] { "client1.onGameRan", "client2.onGameRan", "client3.onGameRan" });
 		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gameRan", "gameRan");
-
+		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
+		
 		assertTrue("Unexpected remaining log", tester.flush());
 		System.out.println("Step: getting clients runningGame interfaces");
 		
@@ -497,9 +498,7 @@ public class TestSEP
 		assertEquals("B", startingPlanet2);
 
 		String startingPlanet3 = client3AITest.getStartingPlanetName();
-		assertEquals("C", startingPlanet3);
-
-		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
+		assertEquals("C", startingPlanet3);		
 
 		assertTrue("Unexpected remaining log", tester.flush());
 		System.out.println("Step: Build");

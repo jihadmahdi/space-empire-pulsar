@@ -51,7 +51,7 @@ public class TestBattle
 	private void runBattleTest(int scale, File dir) throws FileNotFoundException
 	{
 		PrintStream out;
-
+		
 		if (dir == null)
 		{
 			out = System.out;
