@@ -241,6 +241,9 @@ public class TestSEP
 		final int CONNECTION_TIMEOUT = 10000;
 		
 		int turn = 0;
+		
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: Server creation");
 
 		SEPServer server = new SEPServer(PORT, TIMEOUT);
 		assertNotNull("Unexpected result", server);
@@ -264,12 +267,18 @@ public class TestSEP
 			fail("Test code exception: " + e.getMessage());
 			return;
 		}
-
+		
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: Starting server");
+		
 		// server.start
 		server.start();
 
 		tester.checkNextTrace(serverOut, SEPServer.class, "start", "Server started");
 
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: Client1 connection");
+		
 		// Client 1
 
 		TestClientUserInterface ui1 = new TestClientUserInterface("client1", SERVER_ADMIN_KEY, "localhost", PORT, TIMEOUT);
@@ -290,6 +299,9 @@ public class TestSEP
 		tester.checkNextTrace(clientOut, TestSEP.TestClientUserInterface.class, "refreshPlayerList", "client1.refreshPlayerList([client1])");
 		tester.checkNextTrace(clientOut, TestSEP.TestClientUserInterface.class, "displayGameCreationPanel", "client1.displayGameCreationPanel");
 
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: Client1 getting gameCreation interface");
+		
 		// client.getGameCreationInterface()
 		ServerGameCreation client1GameCreation;
 		try
@@ -310,6 +322,9 @@ public class TestSEP
 		assertEquals("Unexpected client login", "client2", client2.getLogin());
 		assertFalse("No connection expected", client2.isConnected());
 
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: Client2 connection");
+		
 		client2.connect();
 		for(long start = System.currentTimeMillis(); !client2.isConnected() && System.currentTimeMillis() - start < CONNECTION_TIMEOUT;)
 			;
@@ -318,7 +333,10 @@ public class TestSEP
 		tester.checkNextTrace(clientOut, SEPClient.class, "connect", "Client 'client2' connected");
 		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "refreshPlayerList", new String[] { "client1.refreshPlayerList([client1, client2])", "client2.refreshPlayerList([client1, client2])" });
 		tester.checkNextTrace(clientOut, TestSEP.TestClientUserInterface.class, "displayGameCreationPanel", "client2.displayGameCreationPanel");
-
+		
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: Client2 getting gameCreation interface");
+		
 		// client1GameCreation.getGameConfig()
 		ServerGameCreation client2GameCreation;
 		GameConfig gameCfg;
@@ -336,6 +354,9 @@ public class TestSEP
 
 		assertTrue("Unexpected default value.", gameCfg.getDimZ() > 1);
 
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: GameConfig update NOK/OK cases");
+		
 		boolean expectedExceptionThrown = false;
 
 		gameCfg.setDimZ(3);
@@ -384,6 +405,9 @@ public class TestSEP
 
 		// Client 3
 
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: Client3 connection");
+		
 		TestClientUserInterface ui3 = new TestClientUserInterface("client3", "localhost", PORT, TIMEOUT);
 		SEPClient client3 = ui3.getClient();
 
@@ -399,6 +423,9 @@ public class TestSEP
 		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "refreshPlayerList", new String[] { "client1.refreshPlayerList([client1, client2, client3])", "client2.refreshPlayerList([client1, client2, client3])", "client3.refreshPlayerList([client1, client2, client3])" });
 		tester.checkNextTrace(clientOut, TestSEP.TestClientUserInterface.class, "displayGameCreationPanel", "client3.displayGameCreationPanel");
 
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: Client3 getting gameCreation interface");
+		
 		// client1GameCreation.getGameConfig()
 		ServerGameCreation client3GameCreation;
 		try
@@ -412,6 +439,9 @@ public class TestSEP
 			return;
 		}
 
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: running game");
+		
 		AITest client1AITest = ui1.getAITest();
 		AITest client2AITest = ui2.getAITest();
 		AITest client3AITest = ui3.getAITest();
@@ -441,6 +471,9 @@ public class TestSEP
 		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "onGameRan", new String[] { "client1.onGameRan", "client2.onGameRan", "client3.onGameRan" });
 		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gameRan", "gameRan");
 
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: getting clients runningGame interfaces");
+		
 		// client.getRunningGameInterface()
 		ServerRunningGame client1RunningGame;
 		ServerRunningGame client2RunningGame;
@@ -469,9 +502,13 @@ public class TestSEP
 		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
 
 		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: Build");
 
 		// T0, client1 build a starship plant on its home planet, client2 too.
 
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: T0, build");
+		
 		client1AITest.checkBuilding(startingPlanet1, StarshipPlant.class, 0);
 		client2AITest.checkBuilding(startingPlanet2, StarshipPlant.class, 0);
 		client3AITest.checkBuilding(startingPlanet3, ExtractionModule.class, 0);
@@ -520,10 +557,10 @@ public class TestSEP
 		client2AITest.checkBuilding(startingPlanet2, StarshipPlant.class, 1);
 		client3AITest.checkBuilding(startingPlanet3, ExtractionModule.class, 1);
 
-		assertTrue("Unexpected remaining log", tester.flush());
-
 		// T1, client1 & client2 make starships, form fleets and change diplomacy, client3 demolish ExtractionModule, build a StarshipPlant and change diplomacy.
 
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: T1, make starships, form fleets, change diplomacies, move fleets");
 		String t1Fleets = "fleet1";
 
 		Map<String, PlayerPolicies> client1diplomacy = new HashMap<String, PlayerPolicies>();
@@ -655,10 +692,11 @@ public class TestSEP
 		client3diplomacy.remove(client3.getLogin());
 		client3AITest.checkDiplomacy(client3diplomacy);
 
-		assertTrue("Unexpected remaining log", tester.flush());
-
 		// T2, client1 dismantle formed fleet on starting planet, client3 build starships and form a fleet. 
 
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: dismantle/build/form fleets");
+		
 		String t2Fleets = "fleet2";
 
 		try
@@ -723,6 +761,9 @@ public class TestSEP
 
 		// T3..n loop untill client1 and client2 fleets arrive to client3 starting planet. 
 
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: waiting for fleets to arrive on destination");
+		
 		boolean arrived = false;
 
 		do
@@ -769,6 +810,10 @@ public class TestSEP
 		client2AITest.checkFleetLocation(t1Fleets, 4, startingPlanet3);
 		client3AITest.checkFleetLocation(t2Fleets, 5, startingPlanet3);
 		
+		
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: save game");
+		
 		String saveName = "junitTest";
 		try
 		{
@@ -810,6 +855,7 @@ public class TestSEP
 		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
 
 		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: looping load game & battle test");
 		
 		int client1Win=0, client2Win=0, client3Win=0, totalRuns=0;
 		long startTime, sumTime=0;
@@ -923,6 +969,8 @@ public class TestSEP
 		assertEquals("Unexpected result", totalRuns, client1Win);
 		
 		// DefenseModule test
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: load game / max defenseModule battle test");
 		try
 		{
 			client1.loadGame(saveName);
@@ -1033,6 +1081,8 @@ public class TestSEP
 		client1AITest.checkBuilding(startingPlanet3, DefenseModule.class, nbDefenseModule);
 		
 		// Test case: DefenseModule owner is defeated, DefenseModule is supposed to be destroyed.
+		assertTrue("Unexpected remaining log", tester.flush());
+		System.out.println("Step: load game / defenseModule defeat case");
 		try
 		{
 			client1.loadGame(saveName);
