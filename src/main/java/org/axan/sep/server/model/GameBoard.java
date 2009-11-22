@@ -95,16 +95,11 @@ public class GameBoard implements Serializable
 				locationOk = true;
 				for(Location l : playersPlanetLocations)
 				{
-					Stack<RealLocation> path = org.axan.sep.common.SEPUtils.getAllPathLoc(planetLocation.asRealLocation(), l.asRealLocation());
-					for(RealLocation pl : path)
+					if (isTravellingTheSun(planetLocation.asRealLocation(), l.asRealLocation()))
 					{
-						a = db.getArea(pl.asLocation());
-						if (a != null && a.isSun())
-						{
-							locationOk = false;
-							break;
-						}
-					}
+						locationOk = false;
+						break;
+					}										
 
 					if (!locationOk) break;
 				}
@@ -634,6 +629,8 @@ public class GameBoard implements Serializable
 		
 		if (productiveCelestialBody.getOwnerName() == null || !survivalFleets.keySet().contains(productiveCelestialBody.getOwnerName()))
 		{
+			productiveCelestialBody.demolishBuilding(DefenseModule.class);
+			
 			Random rnd = new Random();
 			String newOwner = survivalFleets.keySet().toArray(new String[survivalFleets.keySet().size()])[rnd.nextInt(survivalFleets.keySet().size())];
 			productiveCelestialBody.changeOwner(newOwner);
@@ -880,7 +877,7 @@ public class GameBoard implements Serializable
 	public void demolish(String playerLogin, String celestialBodyName, Class<? extends org.axan.sep.common.IBuilding> buildingType) throws RunningGameCommandException
 	{
 		DemolishCheckResult demolishCheckResult = checkDemolish(playerLogin, celestialBodyName, buildingType);
-		demolishCheckResult.productiveCelestialBody.demolishBuilding(demolishCheckResult.existingBuilding);
+		demolishCheckResult.productiveCelestialBody.downgradeBuilding(demolishCheckResult.existingBuilding);
 	}
 
 	public CommandCheckResult canDemolish(String playerLogin, String celestialBodyName, Class<? extends org.axan.sep.common.IBuilding> buildingType)
@@ -1276,9 +1273,9 @@ public class GameBoard implements Serializable
 		if (destination.y < 0 || destination.y >= db.getGameConfig().getDimY()) throw new RunningGameCommandException("Probe '" + probeName + "' destination is incorrect (y).");
 		if (destination.z < 0 || destination.z >= db.getGameConfig().getDimZ()) throw new RunningGameCommandException("Probe '" + probeName + "' destination is incorrect (z).");
 
-		for(RealLocation pathStep : SEPUtils.getAllPathLoc(probe.getRealLocation(), destination))
+		if (isTravellingTheSun(probe.getRealLocation(), destination))
 		{
-			if (db.getArea(pathStep.asLocation()) != null && db.getArea(pathStep.asLocation()).isSun()) throw new RunningGameCommandException("Impossible path : " + probe.getRealLocation() + " to " + destination + ", cannot travel the sun.");
+			throw new RunningGameCommandException("Impossible path : " + probe.getRealLocation() + " to " + destination + ", cannot travel the sun.");
 		}
 
 		return new LaunchProbeCheckResult(probe, destination);
@@ -1315,6 +1312,17 @@ public class GameBoard implements Serializable
 		}
 	}
 
+	private boolean isTravellingTheSun(RealLocation a, RealLocation b)
+	{
+		for(RealLocation pathStep : SEPUtils.getAllPathLoc(a, b))
+		{
+			Area area = db.getArea(pathStep.asLocation());
+			if (area != null && area.isSun()) return true;
+		}
+		
+		return false;
+	}
+	
 	public MoveFleetCheckResult checkMoveFleet(String playerLogin, String fleetName, Stack<org.axan.sep.common.Fleet.Move> checkpoints) throws RunningGameCommandException
 	{
 		Fleet fleet = db.getUnit(Fleet.class, playerLogin, fleetName);
@@ -1329,9 +1337,9 @@ public class GameBoard implements Serializable
 			Location destinationLocation = db.getCelestialBody(move.getDestinationName()).getLocation();
 			if (destinationLocation == null) throw new RunningGameCommandException("Unexpected error : checkpoint destination '" + move.getDestinationName() + "' not found.");
 
-			for(RealLocation pathStep : SEPUtils.getAllPathLoc(currentStart, destinationLocation.asRealLocation()))
+			if (isTravellingTheSun(currentStart, destinationLocation.asRealLocation()))
 			{
-				if (db.getArea(pathStep.asLocation()) != null && db.getArea(pathStep.asLocation()).isSun()) throw new RunningGameCommandException("Impossible path : " + currentStart + " to " + destinationLocation + ", cannot travel the sun.");
+				throw new RunningGameCommandException("Impossible path : " + currentStart + " to " + destinationLocation.asRealLocation() + ", cannot travel the sun.");
 			}
 
 			currentStart = destinationLocation.asRealLocation();
@@ -1832,9 +1840,9 @@ public class GameBoard implements Serializable
 			throw new RunningGameCommandException("'"+sourceName+"' already has a space road linked from '"+sourceName+"'");
 		}
 		
-		for(RealLocation pathStep : SEPUtils.getAllPathLoc(source.getLocation().asRealLocation(), destination.getLocation().asRealLocation()))
+		if (isTravellingTheSun(source.getLocation().asRealLocation(), destination.getLocation().asRealLocation()))
 		{
-			if (db.getArea(pathStep.asLocation()) != null && db.getArea(pathStep.asLocation()).isSun()) throw new RunningGameCommandException("Impossible path : " + source.getLocation() + " to " + destination.getLocation() + ", cannot travel the sun.");
+			throw new RunningGameCommandException("Impossible path : " + source.getLocation() + " to " + destination.getLocation() + ", cannot travel the sun.");
 		}
 		
 		double distance = SEPUtils.getDistance(source.getLocation().asRealLocation(), destination.getLocation().asRealLocation());
@@ -1954,9 +1962,9 @@ public class GameBoard implements Serializable
 		
 			if (amount < db.getGameConfig().getCarbonMinimalFreight()) throw new RunningGameCommandException("Carbon amount must be greater than 0.");
 			
-			for(RealLocation pathStep : SEPUtils.getAllPathLoc(source.getLocation().asRealLocation(), destination.getLocation().asRealLocation()))
+			if (isTravellingTheSun(source.getLocation().asRealLocation(), destination.getLocation().asRealLocation()))
 			{
-				if (db.getArea(pathStep.asLocation()) != null && db.getArea(pathStep.asLocation()).isSun()) throw new RunningGameCommandException("Impossible path : " + source.getLocation() + " to " + destination.getLocation() + ", cannot travel the sun.");
+				throw new RunningGameCommandException("Impossible path : " + source.getLocation() + " to " + destination.getLocation() + ", cannot travel the sun.");
 			}
 		}
 		

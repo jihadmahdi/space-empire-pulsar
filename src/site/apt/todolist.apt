@@ -33,7 +33,6 @@ TODO List
 ** Notes (brouillon)  
 	
 	* Implémenter la résolution des conflits.
-		* Intégrer les bonus des DefenseModule lors des combats.
 		* Ajouter les logs de combat (nb de vaisseaux/unités perdues)
 		
 	* Perte de contrôle/visibilité lorsque le gouvernement est en voyage.

@@ -951,8 +951,10 @@ public class TestSEP
 		tester.checkAllUnorderedTraces(clientOut, TestClientUserInterface.class, "onGameResumed", "client1.onGameResumed", "client2.onGameResumed", "client3.onGameResumed");		
 
 		assertTrue("Unexpected remaining log", tester.flush());
-				
-		int i = 0;
+
+		client1AITest.checkBuilding(startingPlanet3, DefenseModule.class, 0);
+		
+		int nbDefenseModule = 0;
 		CommandCheckResult chr;
 		
 		do
@@ -962,7 +964,7 @@ public class TestSEP
 				chr = client3RunningGame.canBuild(startingPlanet3, DefenseModule.class);
 				if (!chr.isPossible()) continue;
 				
-				++i;
+				++nbDefenseModule;
 				client3RunningGame.build(startingPlanet3, DefenseModule.class);				
 				
 				client1RunningGame.endTurn();
@@ -987,9 +989,12 @@ public class TestSEP
 			tester.checkNextTrace(serverOut, SEPServer.class, "checkForNextTurn", "Resolving new turn");
 			tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
 			tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
+			
+			client1AITest.checkBuilding(startingPlanet3, DefenseModule.class, nbDefenseModule);
+			
 		}while(chr.isPossible());
 		
-		assertTrue("Unexpected numbers of built ("+i+").", i > 3);
+		assertTrue("Unexpected numbers of built ("+nbDefenseModule+").", nbDefenseModule > 3);
 		
 		try
 		{
@@ -1025,8 +1030,114 @@ public class TestSEP
 			fail("Unexpected winner.");
 		}
 		assertTrue(client3AITest.isCelestialBodyOwner(startingPlanet3));
+		client1AITest.checkBuilding(startingPlanet3, DefenseModule.class, nbDefenseModule);
 		
-		//SUIS LA, ajouter le cas de test: le propriétaire des DefenseModule perds le combat, s'assurer que les modules sont détruits.
+		// Test case: DefenseModule owner is defeated, DefenseModule is supposed to be destroyed.
+		try
+		{
+			client1.loadGame(saveName);
+			turn-=(nbDefenseModule+1);
+			
+			while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
+			{
+				Thread.sleep(200);
+			}
+		}
+		catch(Throwable t)
+		{
+			t.printStackTrace();
+			fail("Unexpected exception thrown : " + t.getMessage());
+			return;
+		}
+		
+		assertEquals("Unexpected result", turn, client1AITest.getDate());
+		System.out.println("After loading: turn "+turn);
+
+		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gamePaused", "gamePaused");
+		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gameResumed", "gameResumed");
+		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)");
+
+		tester.checkAllUnorderedTraces(clientOut, TestClientUserInterface.class, "onGamePaused", "client1.onGamePaused", "client2.onGamePaused", "client3.onGamePaused");
+		tester.checkAllUnorderedTraces(clientOut, TestClientUserInterface.class, "onGameResumed", "client1.onGameResumed", "client2.onGameResumed", "client3.onGameResumed");		
+
+		assertTrue("Unexpected remaining log", tester.flush());
+
+		client1AITest.checkBuilding(startingPlanet3, DefenseModule.class, 0);
+		
+		nbDefenseModule = 0;
+			
+		try
+		{	
+			++nbDefenseModule;
+			client3RunningGame.build(startingPlanet3, DefenseModule.class);				
+			
+			client1RunningGame.endTurn();
+			client2RunningGame.endTurn();
+			client3RunningGame.endTurn();
+			++turn;
+			
+			while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
+			{
+				Thread.sleep(200);
+			}			
+		}
+		catch(Throwable t)
+		{
+			t.printStackTrace();
+			fail("Unexpected exception thrown : " + t.getMessage());
+			return;
+		}
+
+		assertEquals("Unexpected result", turn, client1AITest.getDate());
+		
+		tester.checkNextTrace(serverOut, SEPServer.class, "checkForNextTurn", "Resolving new turn");
+		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
+		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
+		
+		assertEquals("Unexpected numbers of built ("+nbDefenseModule+").", 1, nbDefenseModule);
+		client1AITest.checkBuilding(startingPlanet3, DefenseModule.class, nbDefenseModule);
+		
+		try
+		{
+			Stack<Move> checkpoints = new Stack<Move>();
+			checkpoints.add(new Move(startingPlanet3, 0, true));
+			client2RunningGame.moveFleet(t1Fleets, checkpoints);
+			
+			client1RunningGame.endTurn();
+			client2RunningGame.endTurn();
+			client3RunningGame.endTurn();
+			++turn;
+			
+			while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
+			{
+				Thread.sleep(200);
+			}			
+		}
+		catch(Throwable t)
+		{
+			t.printStackTrace();
+			fail("Unexpected exception thrown : " + t.getMessage());
+			return;
+		}
+
+		assertEquals("Unexpected result", turn, client1AITest.getDate());
+		
+		tester.checkNextTrace(serverOut, SEPServer.class, "checkForNextTurn", "Resolving new turn");
+		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
+		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
+		
+		if (client3AITest.isCelestialBodyOwner(startingPlanet3))
+		{
+			fail("Unexpected winner.");
+		}
+		else if (client1AITest.isCelestialBodyOwner(startingPlanet3))
+		{
+			client1AITest.checkBuilding(startingPlanet3, DefenseModule.class, 0);
+		}
+		else if (client2AITest.isCelestialBodyOwner(startingPlanet3))
+		{
+			client2AITest.checkBuilding(startingPlanet3, DefenseModule.class, 0);
+		}		
 		
 		/*=======================================================
 		

@@ -85,8 +85,16 @@ public class AITest
 			return;
 		}
 		
-		if (building == null && buildSlotsCount > 0) fail("No building but "+buildSlotsCount+" expected.");
-		if (building != null && building.getBuildSlotsCount() != buildSlotsCount) fail(buildSlotsCount+" building slots count expected but "+building.getBuildSlotsCount()+" found.");
+		if (building == null && buildSlotsCount > 0)
+		{
+			fail("No building but "+buildSlotsCount+" expected.");
+			return;
+		}
+		if (building != null && building.getBuildSlotsCount() != buildSlotsCount)
+		{
+			fail(buildSlotsCount+" building slots count expected but "+building.getBuildSlotsCount()+" found.");
+			return;
+		}
 	}
 	
 	public void checkFleetNotMoved(String fleetName, int expectedQt)
@@ -169,7 +177,7 @@ public class AITest
 			
 			boolean shouldMove = !SEPUtils.getMobileLocation(source, destination, progress, true).asLocation().equals(destination.asLocation());						
 			
-			return shouldMove ? (int) distance : 0;			
+			return shouldMove ? (int) totalTime : 0;			
 		}
 		catch(PlayerGameBoardQueryException e)
 		{
@@ -230,7 +238,8 @@ public class AITest
 		
 		try
 		{
-			return playerName.equals(gameBoard.getCelestialBody(celestialBodyName, ProductiveCelestialBody.class).getOwnerName());
+			ProductiveCelestialBody productiveCelestialBody = gameBoard.getCelestialBody(celestialBodyName, ProductiveCelestialBody.class);			
+			return productiveCelestialBody.isVisible() && playerName.equals(productiveCelestialBody.getOwnerName());
 		}
 		catch(PlayerGameBoardQueryException e)
 		{
