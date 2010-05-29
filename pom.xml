@@ -105,8 +105,8 @@
 		<authorMail>p.escallier@laposte.net</authorMail>
 
 		<!-- External tools -->
-		<izpack2exeDirectory>/media/data/code/IzPack/utils/izpack2exe</izpack2exeDirectory>
-		<izpack2appDirectory>/media/data/code/IzPack/utils/izpack2app</izpack2appDirectory>
+		<izpack2exeDirectory>${basedir}/izpack/izpack2exe</izpack2exeDirectory>
+		<izpack2appDirectory>${basedir}/izpack/izpack2app</izpack2appDirectory>
 
 		<!-- Env -->
 		<tmp>/tmp</tmp>

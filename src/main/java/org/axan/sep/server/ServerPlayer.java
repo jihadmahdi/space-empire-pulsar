@@ -6,7 +6,6 @@
 package org.axan.sep.server;
 
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.gameserver.server.GameServer.ServerUser;
@@ -20,8 +19,6 @@ import org.axan.sep.common.Protocol;
  */
 class ServerPlayer
 {	
-	static final Logger log = SEPServer.log;
-	
 	private final String		name;
 	private PlayerConfig	config;
 	private ServerUser			serverUser;
@@ -84,9 +81,9 @@ class ServerPlayer
 	{
 		String msg = String.format("Player %s abort connection : %s", getName(), (t != null && t.getMessage() != null)?t.getMessage():(t != null)?t.getClass().getName():"no reason");
 		
-		log.log(Level.WARNING, msg);
+		SEPServer.log.log(Level.WARNING, msg);
 		
-		if (log.isLoggable(Level.WARNING))
+		if (SEPServer.log.isLoggable(Level.WARNING))
 		{
 			t.printStackTrace();
 		}

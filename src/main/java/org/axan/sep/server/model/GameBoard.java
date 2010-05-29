@@ -13,7 +13,6 @@ import java.util.Stack;
 import java.util.Vector;
 import java.util.Map.Entry;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.CarbonOrder;
@@ -38,8 +37,6 @@ import org.axan.sep.server.model.SpaceCounter.SpaceRoad;
 public class GameBoard implements Serializable
 {
 	private static final long			serialVersionUID	= 1L;
-
-	private static final Logger			log					= SEPServer.log;
 
 	private static final Random			rnd					= new Random();
 	
@@ -164,8 +161,8 @@ public class GameBoard implements Serializable
 	 * @param playerLogin
 	 */
 	public org.axan.sep.common.PlayerGameBoard getPlayerGameBoard(String playerLogin)
-	{
-		log.log(Level.INFO, "getGameBoard(" + playerLogin + ")");
+	{		
+		SEPServer.log.log(Level.INFO, "getGameBoard(" + playerLogin + ")");
 		
 		GameConfig config = db.getGameConfig();
 		
