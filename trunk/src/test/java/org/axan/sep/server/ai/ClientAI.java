@@ -19,14 +19,14 @@ import org.axan.sep.common.Diplomacy.PlayerPolicies;
 import org.axan.sep.common.PlayerGameBoard.PlayerGameBoardQueryException;
 import org.axan.sep.common.SEPUtils.RealLocation;
 
-public class AITest
+public class ClientAI
 {
 	private final Stack<PlayerGameBoard> previousGameBoards = new Stack<PlayerGameBoard>();
 	private PlayerGameBoard gameBoard;
 	private final String playerName;
 	private String startingPlanet;
 	
-	public AITest(String playerName)
+	public ClientAI(String playerName)
 	{
 		this.playerName = playerName;
 	}
@@ -101,11 +101,11 @@ public class AITest
 	{
 		checkFleetMove(fleetName, expectedQt, null, null, -1);
 	}
-	public int checkFleetMove(String fleetName, int expectedQt, String sourceCelestialBody, String destinationCelestialBody, int departureDate)
+	public double checkFleetMove(String fleetName, int expectedQt, String sourceCelestialBody, String destinationCelestialBody, int departureDate)
 	{
 		if (gameBoard == null) fail("Test code error: Gameboard not refreshed yet.");
 		
-		int expectedMoved = 0;
+		double expectedMoved = 0;
 		
 		try
 		{
@@ -121,13 +121,25 @@ public class AITest
 					Fleet pf = previousGameBoards.lastElement().getUnit(playerName, fleetName, Fleet.class);
 					if (pf.getCurrentLocation().equals(f.getCurrentLocation()) == (expectedMoved > 0))
 					{
-						//shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getDate()-1);												
+						//shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getDate()-1);
+						System.err.println("checkFleetMove('"+fleetName+"', "+expectedQt+", '"+sourceCelestialBody+"', '"+destinationCelestialBody+"', "+departureDate+") ERROR");
+						System.err.println("Fleet: "+f.toString());
+						System.err.println("\tpreviousSourceLocation: "+pf.getSourceLocation());
+						System.err.println("\tpreviousCurrentLocation: "+pf.getCurrentLocation());
+						System.err.println("\tpreviousDestinationLocation: "+pf.getDestinationLocation());
+						
+						System.err.println("\tsourceLocation: "+f.getSourceLocation());
+						System.err.println("\tcurrentLocation: "+f.getCurrentLocation());
+						System.err.println("\tdestinationLocation: "+f.getDestinationLocation());
+						
+						System.err.println("ExpectedMoved : "+expectedMoved);
+						
 						fail("Unexpected fleet move state ("+(expectedMoved<=0)+").");
 					}
 				}
 				catch(PlayerGameBoardQueryException e)
 				{
-					if ((f.getDestinationLocation() == null || f.getSourceLocation().equals(f.getCurrentLocation())) == (expectedMoved>=1))
+					if ((f.getDestinationLocation() == null || f.getSourceLocation().equals(f.getCurrentLocation())) == (expectedMoved>1))
 					{
 						//shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getDate()-1);
 						System.err.println("checkFleetMove('"+fleetName+"', "+expectedQt+", '"+sourceCelestialBody+"', '"+destinationCelestialBody+"', "+departureDate+") ERROR");
@@ -160,7 +172,7 @@ public class AITest
 		assertEquals(expectedDiplomacy, gameBoard.getPlayersPolicies().get(playerName));
 	}
 	
-	public int shouldMove(String sourceCelestialBody, String destinationCelestialBody, int departureDate, double speed, int date)
+	public double shouldMove(String sourceCelestialBody, String destinationCelestialBody, int departureDate, double speed, int date)
 	{
 		if (gameBoard == null) fail("Test code error: Gameboard not refreshed yet.");
 		
@@ -177,7 +189,7 @@ public class AITest
 			
 			boolean shouldMove = !SEPUtils.getMobileLocation(source, destination, progress, true).asLocation().equals(destination.asLocation());						
 			
-			return shouldMove ? (int) totalTime : 0;			
+			return shouldMove ? totalTime : 0;			
 		}
 		catch(PlayerGameBoardQueryException e)
 		{

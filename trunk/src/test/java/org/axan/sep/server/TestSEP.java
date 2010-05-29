@@ -42,7 +42,7 @@ import org.axan.sep.common.Fleet.Move;
 import org.axan.sep.common.Protocol.ServerGameCreation;
 import org.axan.sep.common.Protocol.ServerRunningGame;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
-import org.axan.sep.server.ai.AITest;
+import org.axan.sep.server.ai.ClientAI;
 import org.axan.sep.server.model.GameBoard;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -53,13 +53,13 @@ import org.junit.Test;
 public class TestSEP
 {
 
-	private BufferedReader			serverOut;
+	static private BufferedReader			serverOut;
 
-	private BufferedReader			clientOut;
+	static private BufferedReader			clientOut;
 
 	private static ExecutorService	threadPool	= Executors.newCachedThreadPool();
 
-	private org.axan.eplib.utils.Test tester;
+	static private org.axan.eplib.utils.Test tester;
 	
 	/**
 	 * @throws java.lang.Exception
@@ -92,7 +92,7 @@ public class TestSEP
 		clientOut = new BufferedReader(new InputStreamReader(clientPipeOut));
 		SEPClient.log = org.axan.eplib.utils.Test.getTestLogger(new PipedOutputStream(clientPipeOut));
 		
-		tester = new org.axan.eplib.utils.Test("Clients", clientOut, "Server", serverOut);
+		tester = new org.axan.eplib.utils.Test(5000, "Clients", clientOut, "Server", serverOut);
 	}
 
 	/**
@@ -105,20 +105,20 @@ public class TestSEP
 
 	static class TestClientUserInterface implements IUserInterface
 	{
-		private final AITest	ai;
+		private final ClientAI	ai;
 		private final SEPClient	client;
 		private final Logger	log	= SEPClient.log;
 
 		public TestClientUserInterface(String login, String pwd, String server, int port, int timeOut)
 		{
 			this.client = new SEPClient(this, login, pwd, server, port, timeOut);
-			this.ai = new AITest(login);
+			this.ai = new ClientAI(login);
 		}
 
 		public TestClientUserInterface(String login, String server, int port, int timeOut)
 		{
 			this.client = new SEPClient(this, login, server, port, timeOut);
-			this.ai = new AITest(login);
+			this.ai = new ClientAI(login);
 		}
 
 		public SEPClient getClient()
@@ -126,7 +126,7 @@ public class TestSEP
 			return client;
 		}
 
-		public AITest getAITest()
+		public ClientAI getAITest()
 		{
 			return ai;
 		}
@@ -442,9 +442,9 @@ public class TestSEP
 		assertTrue("Unexpected remaining log", tester.flush());
 		System.out.println("Step: running game");
 		
-		AITest client1AITest = ui1.getAITest();
-		AITest client2AITest = ui2.getAITest();
-		AITest client3AITest = ui3.getAITest();
+		ClientAI client1AITest = ui1.getAITest();
+		ClientAI client2AITest = ui2.getAITest();
+		ClientAI client3AITest = ui3.getAITest();
 
 		turn = -1;
 		assertEquals("Unexpected result", turn, client1AITest.getDate());
@@ -468,8 +468,8 @@ public class TestSEP
 
 		assertEquals("Unexpected result", turn, client1AITest.getDate());
 
-		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "onGameRan", new String[] { "client1.onGameRan", "client2.onGameRan", "client3.onGameRan" });
-		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gameRan", "gameRan");
+		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "onGameRan", new String[] { "client1.onGameRan", "client2.onGameRan", "client3.onGameRan" });		
+		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gameRan", "gameRan");						
 		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
 		
 		assertTrue("Unexpected remaining log", tester.flush());
@@ -847,7 +847,6 @@ public class TestSEP
 		}
 
 		assertEquals("Unexpected result", turn, client1AITest.getDate());
-		System.out.println("Before loading: turn "+turn);
 
 		tester.checkNextTrace(serverOut, SEPServer.class, "checkForNextTurn", "Resolving new turn");
 		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
@@ -881,7 +880,6 @@ public class TestSEP
 			}
 			
 			assertEquals("Unexpected result", turn, client1AITest.getDate());
-			System.out.println("After loading: turn "+turn);
 	
 			tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gamePaused", "gamePaused");
 			tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gameResumed", "gameResumed");
@@ -988,7 +986,6 @@ public class TestSEP
 		}
 		
 		assertEquals("Unexpected result", turn, client1AITest.getDate());
-		System.out.println("After loading: turn "+turn);
 
 		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gamePaused", "gamePaused");
 		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gameResumed", "gameResumed");
@@ -1100,7 +1097,6 @@ public class TestSEP
 		}
 		
 		assertEquals("Unexpected result", turn, client1AITest.getDate());
-		System.out.println("After loading: turn "+turn);
 
 		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gamePaused", "gamePaused");
 		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gameResumed", "gameResumed");
