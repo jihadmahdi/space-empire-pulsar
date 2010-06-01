@@ -1,6 +1,6 @@
-package org.axan.sep.server.model;
+package org.axan.sep.common;
 
-import org.axan.sep.common.eStarshipSpecializationClass;
+import org.axan.sep.server.model.IFleetBattleSkillsModifier;
 
 public class FleetBattleSkillsModifierAdaptor implements IFleetBattleSkillsModifier
 {

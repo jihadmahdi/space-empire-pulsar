@@ -478,7 +478,7 @@ class DataBase implements Serializable
 		}
 	}
 	
-	public genericResultSet<ProductiveCelestialBody, Unit, ABuilding> getBuilding(String celestialBodyName, String playerName, Class<? extends org.axan.sep.common.IBuilding> clientBuildingType)
+	public genericResultSet<ProductiveCelestialBody, Unit, ABuilding> getBuilding(String celestialBodyName, String playerName, Class<? extends org.axan.sep.common.ABuilding> clientBuildingType)
 	{
 		ICelestialBody celestialBody = getCelestialBody(celestialBodyName);		
 		if (celestialBody == null) throw new DataBaseError("Celestial body '" + celestialBodyName + "' does not exist.");

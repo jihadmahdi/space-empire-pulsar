@@ -30,7 +30,7 @@ public class AsteroidField extends ProductiveCelestialBody implements Serializab
 	/**
 	 * Full constructor.
 	 */
-	public AsteroidField(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, String ownerName, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits)
+	public AsteroidField(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<ABuilding> buildings, String ownerName, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits)
 	{
 		super(isVisible, lastObservation, name, startingCarbonStock, carbonStock, carbon, slots, buildings, ownerName, unasignedFleetStarships, unasignedFleetSpecialUnits);
 	}
@@ -39,7 +39,7 @@ public class AsteroidField extends ProductiveCelestialBody implements Serializab
 	 * @see common.ProductiveCelestialBody#canBuildType(java.lang.Class)
 	 */
 	@Override
-	public boolean canBuildType(Class<? extends IBuilding> buildingType)
+	public boolean canBuildType(Class<? extends ABuilding> buildingType)
 	{
 		if (ExtractionModule.class.equals(buildingType)) return true;
 		if (DefenseModule.class.equals(buildingType)) return true;

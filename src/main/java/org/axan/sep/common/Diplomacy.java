@@ -113,4 +113,14 @@ public class Diplomacy implements Serializable, IObservable
 	{
 		return (isVisible?"":"last observation on "+lastObservation+": ")+"["+ownerName+"] "+playersPolicies.toString();
 	}
+	
+	public void update(Map<String, PlayerPolicies> newPolicies)
+	{
+		playersPolicies.clear();
+		
+		for(String playerLogin : newPolicies.keySet())
+		{
+			playersPolicies.put(playerLogin, newPolicies.get(playerLogin));
+		}
+	}
 }

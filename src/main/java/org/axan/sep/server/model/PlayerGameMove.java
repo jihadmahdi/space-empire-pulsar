@@ -5,17 +5,33 @@
  */
 package org.axan.sep.server.model;
 
-import java.util.Map;
-import java.util.Set;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Stack;
 
 import org.axan.eplib.utils.Basic;
-import org.axan.sep.common.CarbonOrder;
 import org.axan.sep.common.CommandCheckResult;
-import org.axan.sep.common.IBuilding;
-import org.axan.sep.common.Diplomacy.PlayerPolicies;
+import org.axan.sep.common.ILocalGameCommand;
+import org.axan.sep.common.LocalGame.AttackEnemiesFleetParams;
+import org.axan.sep.common.LocalGame.BuildParams;
+import org.axan.sep.common.LocalGame.BuildSpaceRoadParams;
+import org.axan.sep.common.LocalGame.ChangeDiplomacyParams;
+import org.axan.sep.common.LocalGame.DemolishParams;
+import org.axan.sep.common.LocalGame.DemolishSpaceRoadParams;
+import org.axan.sep.common.LocalGame.DismantleFleetParams;
+import org.axan.sep.common.LocalGame.EmbarkGovernmentParams;
+import org.axan.sep.common.LocalGame.FireAntiProbeMissileParams;
+import org.axan.sep.common.LocalGame.FormFleetParams;
+import org.axan.sep.common.LocalGame.LaunchProbeParams;
+import org.axan.sep.common.LocalGame.MakeAntiProbeMissilesParams;
+import org.axan.sep.common.LocalGame.MakeProbesParams;
+import org.axan.sep.common.LocalGame.MakeStarshipsParams;
+import org.axan.sep.common.LocalGame.ModifyCarbonOrderParams;
+import org.axan.sep.common.LocalGame.MoveFleetParams;
+import org.axan.sep.common.LocalGame.SettleGovernmentParams;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
-import org.axan.sep.common.SEPUtils.RealLocation;
+import org.axan.sep.server.SEPServer.SEPImplementationException;
 import org.axan.sep.server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 
 
@@ -26,17 +42,11 @@ import org.axan.sep.server.model.ProductiveCelestialBody.CelestialBodyBuildExcep
  */
 public class PlayerGameMove
 {
-	static class BuildCommand extends GameMoveCommand
+	public static class BuildCommand extends GameMoveCommand<BuildParams>
 	{
-
-		private final String celestialBodyName;
-		private final Class<? extends org.axan.sep.common.IBuilding> buildingType;
-		
-		public BuildCommand(String playerLogin, String celestialBodyName, Class<? extends org.axan.sep.common.IBuilding> buildingType)
+		public BuildCommand(String playerLogin, BuildParams params)
 		{
-			super(playerLogin);
-			this.celestialBodyName = celestialBodyName;
-			this.buildingType = buildingType;
+			super(playerLogin, params);		
 		}
 
 		@Override
@@ -45,7 +55,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.build(playerLogin, celestialBodyName, buildingType);
+				newGameBoard.build(playerLogin, params.celestialBodyName, params.buildingType);
 			}
 			catch(CelestialBodyBuildException e)
 			{
@@ -58,17 +68,11 @@ public class PlayerGameMove
 
 	}
 	
-	static class DemolishCommand extends GameMoveCommand
-	{
-
-		private final String celestialBodyName;
-		private final Class<? extends org.axan.sep.common.IBuilding> buildingType;
-
-		public DemolishCommand(String playerLogin, String celestialBodyName, Class<? extends org.axan.sep.common.IBuilding> buildingType)
+	static class DemolishCommand extends GameMoveCommand<DemolishParams>
+	{		
+		public DemolishCommand(String playerLogin, DemolishParams params)
 		{
-			super(playerLogin);
-			this.celestialBodyName = celestialBodyName;
-			this.buildingType = buildingType;
+			super(playerLogin, params);
 		}
 
 		@Override
@@ -77,7 +81,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.demolish(playerLogin, celestialBodyName, buildingType);
+				newGameBoard.demolish(playerLogin, params.celestialBodyName, params.buildingType);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -90,20 +94,11 @@ public class PlayerGameMove
 
 	}
 	
-	static class FormFleetCommand extends GameMoveCommand
+	static class FormFleetCommand extends GameMoveCommand<FormFleetParams>
 	{
-		private final String planetName;
-		private final String fleetName;
-		private final Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships;
-		private final Set<String> fleetToFormSpecialUnits;
-		
-		public FormFleetCommand(String playerLogin, String planetName, String fleetName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships, Set<String> fleetToFormSpecialUnits)
+		public FormFleetCommand(String playerLogin, FormFleetParams params)
 		{
-			super(playerLogin);
-			this.planetName = planetName;
-			this.fleetName = fleetName;
-			this.fleetToFormStarships = fleetToFormStarships;
-			this.fleetToFormSpecialUnits = fleetToFormSpecialUnits;
+			super(playerLogin, params);			
 		}
 
 		@Override
@@ -112,7 +107,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.formFleet(playerLogin, planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits);
+				newGameBoard.formFleet(playerLogin, params.productiveCelestialBodyName, params.fleetName, params.fleetToFormStarships, params.fleetToFormSpecialUnits);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -124,14 +119,11 @@ public class PlayerGameMove
 
 	}
 	
-	static class DismantleFleetCommand extends GameMoveCommand
+	static class DismantleFleetCommand extends GameMoveCommand<DismantleFleetParams>
 	{
-		private final String fleetName;
-		
-		public DismantleFleetCommand(String playerLogin, String fleetName)
+		public DismantleFleetCommand(String playerLogin, DismantleFleetParams params)
 		{
-			super(playerLogin);
-			this.fleetName = fleetName;
+			super(playerLogin, params);
 		}
 
 		@Override
@@ -140,7 +132,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.dismantleFleet(playerLogin, fleetName);
+				newGameBoard.dismantleFleet(playerLogin, params.fleetName);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -152,16 +144,11 @@ public class PlayerGameMove
 
 	}
 	
-	static class MakeStarshipsCommand extends GameMoveCommand
+	static class MakeStarshipsCommand extends GameMoveCommand<MakeStarshipsParams>
 	{
-		private final String planetName;
-		private final Map<org.axan.sep.common.StarshipTemplate, Integer> starshipsToMake;
-		
-		public MakeStarshipsCommand(String playerLogin, String planetName, Map<org.axan.sep.common.StarshipTemplate, Integer> starshipsToMake)
+		public MakeStarshipsCommand(String playerLogin, MakeStarshipsParams params)
 		{
-			super(playerLogin);
-			this.planetName = planetName;
-			this.starshipsToMake = starshipsToMake;
+			super(playerLogin, params);			
 		}
 
 		@Override
@@ -170,7 +157,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.makeStarships(playerLogin, planetName, starshipsToMake);
+				newGameBoard.makeStarships(playerLogin, params.planetName, params.starshipsToMake);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -182,18 +169,11 @@ public class PlayerGameMove
 
 	}
 	
-	static class MakeProbesCommand extends GameMoveCommand
+	static class MakeProbesCommand extends GameMoveCommand<MakeProbesParams>
 	{
-		private final String planetName;
-		private final String probeName;
-		private final int quantity;
-		
-		public MakeProbesCommand(String playerLogin, String planetName, String probeName, int quantity)
+		public MakeProbesCommand(String playerLogin, MakeProbesParams params)
 		{
-			super(playerLogin);
-			this.planetName = planetName;
-			this.probeName = probeName;
-			this.quantity = quantity;
+			super(playerLogin, params);
 		}
 		
 		@Override
@@ -202,7 +182,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.makeProbes(playerLogin, planetName, probeName, quantity);
+				newGameBoard.makeProbes(playerLogin, params.planetName, params.probeName, params.quantity);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -213,18 +193,11 @@ public class PlayerGameMove
 		}
 	}
 	
-	static class MakeAntiProbeMissilesCommand extends GameMoveCommand
+	static class MakeAntiProbeMissilesCommand extends GameMoveCommand<MakeAntiProbeMissilesParams>
 	{
-		private final String planetName;
-		private final String antiProbeMissileName;
-		private final int quantity;
-		
-		public MakeAntiProbeMissilesCommand(String playerLogin, String planetName, String antiProbeMissileName, int quantity)
+		public MakeAntiProbeMissilesCommand(String playerLogin, MakeAntiProbeMissilesParams params)
 		{
-			super(playerLogin);
-			this.planetName = planetName;
-			this.antiProbeMissileName = antiProbeMissileName;
-			this.quantity = quantity;
+			super(playerLogin, params);
 		}
 		
 		@Override
@@ -233,7 +206,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.makeAntiProbeMissiles(playerLogin, planetName, antiProbeMissileName, quantity);
+				newGameBoard.makeAntiProbeMissiles(playerLogin, params.planetName, params.antiProbeMissileName, params.quantity);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -244,11 +217,11 @@ public class PlayerGameMove
 		}
 	}
 	
-	static class EmbarkGovernmentCommand extends GameMoveCommand
+	static class EmbarkGovernmentCommand extends GameMoveCommand<EmbarkGovernmentParams>
 	{
-		public EmbarkGovernmentCommand(String playerLogin)
+		public EmbarkGovernmentCommand(String playerLogin, EmbarkGovernmentParams params)
 		{
-			super(playerLogin);
+			super(playerLogin, params);
 		}
 
 		@Override
@@ -269,16 +242,11 @@ public class PlayerGameMove
 
 	}
 	
-	static class MoveFleetCommand extends GameMoveCommand
+	static class MoveFleetCommand extends GameMoveCommand<MoveFleetParams>
 	{
-		private final String fleetName;
-		private final Stack<org.axan.sep.common.Fleet.Move> checkpoints;
-		
-		public MoveFleetCommand(String playerLogin, String fleetName, Stack<org.axan.sep.common.Fleet.Move> checkpoints)
+		public MoveFleetCommand(String playerLogin, MoveFleetParams params)
 		{
-			super(playerLogin);
-			this.fleetName = fleetName;
-			this.checkpoints = checkpoints;
+			super(playerLogin, params);
 		}
 		
 		@Override
@@ -287,7 +255,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.moveFleet(playerLogin, fleetName, checkpoints);
+				newGameBoard.moveFleet(playerLogin, params.fleetName, params.checkpoints);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -298,14 +266,11 @@ public class PlayerGameMove
 		}
 	}
 	
-	static class SettleGovernmentCommand extends GameMoveCommand
+	static class SettleGovernmentCommand extends GameMoveCommand<SettleGovernmentParams>
 	{
-		private final String planetName;
-		
-		public SettleGovernmentCommand(String playerLogin, String planetName)
+		public SettleGovernmentCommand(String playerLogin, SettleGovernmentParams params)
 		{
-			super(playerLogin);
-			this.planetName = planetName;
+			super(playerLogin, params);
 		}
 		
 		@Override
@@ -314,7 +279,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.settleGovernment(playerLogin, planetName);
+				newGameBoard.settleGovernment(playerLogin, params.planetName);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -325,16 +290,11 @@ public class PlayerGameMove
 		}
 	}
 	
-	static class LaunchProbeCommand extends GameMoveCommand
+	static class LaunchProbeCommand extends GameMoveCommand<LaunchProbeParams>
 	{
-		private final String probeName;
-		private final RealLocation destination;
-		
-		public LaunchProbeCommand(String playerLogin, String probeName, RealLocation destination)
+		public LaunchProbeCommand(String playerLogin, LaunchProbeParams params)
 		{
-			super(playerLogin);
-			this.probeName = probeName;
-			this.destination = destination;
+			super(playerLogin, params);
 		}
 		
 		@Override
@@ -343,7 +303,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.launchProbe(playerLogin, probeName, destination);
+				newGameBoard.launchProbe(playerLogin, params.probeName, params.destination);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -354,18 +314,11 @@ public class PlayerGameMove
 		}
 	}
 	
-	static class FireAntiProbeMissileCommand extends GameMoveCommand
+	static class FireAntiProbeMissileCommand extends GameMoveCommand<FireAntiProbeMissileParams>
 	{
-		private final String antiProbeMissileName;
-		private final String targetProbeName;
-		private final String targetOwnerName;
-		
-		public FireAntiProbeMissileCommand(String playerLogin, String antiProbeMissileName, String targetOwnerName, String targetProbeName)
+		public FireAntiProbeMissileCommand(String playerLogin, FireAntiProbeMissileParams params)
 		{
-			super(playerLogin);
-			this.antiProbeMissileName = antiProbeMissileName;
-			this.targetProbeName = targetProbeName;
-			this.targetOwnerName = targetOwnerName;
+			super(playerLogin, params);
 		}
 		
 		@Override
@@ -374,7 +327,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.fireAntiProbeMissile(playerLogin, antiProbeMissileName, targetOwnerName, targetProbeName);
+				newGameBoard.fireAntiProbeMissile(playerLogin, params.antiProbeMissileName, params.targetOwnerName, params.targetProbeName);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -385,14 +338,11 @@ public class PlayerGameMove
 		}
 	}
 	
-	static class ChangeDiplomacyCommand extends GameMoveCommand
+	static class ChangeDiplomacyCommand extends GameMoveCommand<ChangeDiplomacyParams>
 	{
-		private final Map<String,PlayerPolicies> newPolicies;
-		
-		public ChangeDiplomacyCommand(String playerLogin, Map<String,PlayerPolicies> newPolicies)
+		public ChangeDiplomacyCommand(String playerLogin, ChangeDiplomacyParams params)
 		{
-			super(playerLogin);
-			this.newPolicies = newPolicies;
+			super(playerLogin, params);
 		}
 		
 		@Override
@@ -401,7 +351,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.changeDiplomacy(playerLogin, newPolicies);
+				newGameBoard.changeDiplomacy(playerLogin, params.newPolicies);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -412,14 +362,11 @@ public class PlayerGameMove
 		}
 	}
 		
-	static class AttackEnemiesFleetCommand extends GameMoveCommand
+	static class AttackEnemiesFleetCommand extends GameMoveCommand<AttackEnemiesFleetParams>
 	{
-		private final String celestialBodyName;
-		
-		public AttackEnemiesFleetCommand(String playerLogin, String celestialBodyName)
+		public AttackEnemiesFleetCommand(String playerLogin, AttackEnemiesFleetParams params)
 		{
-			super(playerLogin);
-			this.celestialBodyName = celestialBodyName;
+			super(playerLogin, params);
 		}
 		
 		@Override
@@ -428,7 +375,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.attackEnemiesFleet(playerLogin, celestialBodyName);
+				newGameBoard.attackEnemiesFleet(playerLogin, params.celestialBodyName);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -439,16 +386,11 @@ public class PlayerGameMove
 		}
 	}
 		
-	static class BuildSpaceRoadCommand extends GameMoveCommand
+	static class BuildSpaceRoadCommand extends GameMoveCommand<BuildSpaceRoadParams>
 	{
-		private final String productiveCelestialBodyNameA;
-		private final String productiveCelestialBodyNameB;
-		
-		public BuildSpaceRoadCommand(String playerLogin, String productiveCelestialBodyNameA, String productiveCelestialBodyNameB)
+		public BuildSpaceRoadCommand(String playerLogin, BuildSpaceRoadParams params)
 		{
-			super(playerLogin);
-			this.productiveCelestialBodyNameA = productiveCelestialBodyNameA;
-			this.productiveCelestialBodyNameB = productiveCelestialBodyNameB;
+			super(playerLogin, params);
 		}
 		
 		@Override
@@ -457,7 +399,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.buildSpaceRoad(playerLogin, productiveCelestialBodyNameA, productiveCelestialBodyNameB);
+				newGameBoard.buildSpaceRoad(playerLogin, params.productiveCelestialBodyNameA, params.productiveCelestialBodyNameB);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -468,16 +410,11 @@ public class PlayerGameMove
 		}
 	}
 	
-	static class DemolishSpaceRoadCommand extends GameMoveCommand
+	static class DemolishSpaceRoadCommand extends GameMoveCommand<DemolishSpaceRoadParams>
 	{
-		private final String productiveCelestialBodyNameA;
-		private final String productiveCelestialBodyNameB;
-		
-		public DemolishSpaceRoadCommand(String playerLogin, String productiveCelestialBodyNameA, String productiveCelestialBodyNameB)
+		public DemolishSpaceRoadCommand(String playerLogin, DemolishSpaceRoadParams params)
 		{
-			super(playerLogin);
-			this.productiveCelestialBodyNameA = productiveCelestialBodyNameA;
-			this.productiveCelestialBodyNameB = productiveCelestialBodyNameB;
+			super(playerLogin, params);			
 		}
 		
 		@Override
@@ -486,7 +423,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.demolishSpaceRoad(playerLogin, productiveCelestialBodyNameA, productiveCelestialBodyNameB);
+				newGameBoard.demolishSpaceRoad(playerLogin, params.sourceName, params.destinationName);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -497,16 +434,11 @@ public class PlayerGameMove
 		}
 	}
 	
-	static class ModifyCarbonOrder extends GameMoveCommand
+	static class ModifyCarbonOrder extends GameMoveCommand<ModifyCarbonOrderParams>
 	{
-		private final String originCelestialBodyName;
-		private final Stack<CarbonOrder> nextCarbonOrders;
-		
-		public ModifyCarbonOrder(String playerLogin, String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders)
+		public ModifyCarbonOrder(String playerLogin, ModifyCarbonOrderParams params)
 		{
-			super(playerLogin);
-			this.originCelestialBodyName = originCelestialBodyName;
-			this.nextCarbonOrders = nextCarbonOrders;
+			super(playerLogin, params);
 		}
 		
 		@Override
@@ -515,7 +447,7 @@ public class PlayerGameMove
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
 			try
 			{
-				newGameBoard.modifyCarbonOrder(playerLogin, originCelestialBodyName, nextCarbonOrders);
+				newGameBoard.modifyCarbonOrder(playerLogin, params.originCelestialBodyName, params.nextCarbonOrders);
 			}
 			catch(RunningGameCommandException e)
 			{
@@ -574,7 +506,8 @@ public class PlayerGameMove
 		}
 	}
 	
-	public void addBuildCommand(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RunningGameCommandException
+	/*
+	public void addBuildCommand(String celestialBodyName, Class<? extends org.axan.sep.common.ABuilding> buildingType) throws RunningGameCommandException
 	{
 		checkTurnIsNotEnded();
 		
@@ -584,7 +517,7 @@ public class PlayerGameMove
 		addGameMoveCommand(new BuildCommand(playerLogin, celestialBodyName, buildingType));
 	}
 
-    public void addDemolishCommand(String celestialBodyName, Class<? extends IBuilding> buildingType) throws RunningGameCommandException
+    public void addDemolishCommand(String celestialBodyName, Class<? extends org.axan.sep.common.ABuilding> buildingType) throws RunningGameCommandException
 	{
 		checkTurnIsNotEnded();
 
@@ -751,6 +684,31 @@ public class PlayerGameMove
 		currentGameBoard = command.apply(getGameBoard());
 		commands.push(command);
 	}
+	*/
+	
+	private void executeCommand(GameMoveCommand command) throws RunningGameCommandException
+	{
+		checkTurnIsNotEnded();
+		
+		Method method;
+		CommandCheckResult result;
+		try
+		{
+			String methodName = "can"+command.getClass().getSimpleName();
+			if (methodName.endsWith("Command")) methodName = methodName.replaceAll("Command", "");
+			method = GameBoard.class.getMethod(methodName, String.class, command.getParams().getClass());
+			result = (CommandCheckResult) method.invoke(getGameBoard(), command.playerLogin, command.getParams());
+		}
+		catch(Throwable t)
+		{
+			throw new RunningGameCommandException(t);
+		}
+		
+		checkCommandResult(result);
+		
+		currentGameBoard = command.apply(getGameBoard());
+		commands.push(command);
+	}
 
 	public void resetTurn() throws RunningGameCommandException
 	{
@@ -759,8 +717,30 @@ public class PlayerGameMove
 		commands.removeAllElements();
 	}
 
-	public void endTurn()
-	{
+	public void endTurn(List<ILocalGameCommand> commands) throws SEPImplementationException, RunningGameCommandException
+	{	
+		for(ILocalGameCommand command : commands)
+		{
+			if (command == null) continue;
+			
+			GameMoveCommand<?> gameMoveCommand;
+			
+			String serverClassName = PlayerGameMove.class.getCanonicalName()+"$"+command.getClass().getSimpleName()+"Command";
+			try
+			{
+				Class<? extends GameMoveCommand<?>> serverCommandClass = (Class<? extends GameMoveCommand<Object>>) Class.forName(serverClassName);
+				Constructor<? extends GameMoveCommand<?>> serverCommandClassConstructor;
+				serverCommandClassConstructor = serverCommandClass.getConstructor(String.class, command.getParams().getClass());
+				gameMoveCommand = serverCommandClassConstructor.newInstance(playerLogin, command.getParams());
+			}
+			catch(Throwable t)
+			{
+				throw new SEPImplementationException("Client command '"+command.getClass().getSimpleName()+"' cannot match server expected class '"+serverClassName+"'", t);
+			}
+			
+			executeCommand(gameMoveCommand);
+		}
+		
 		isTurnEnded = true;
 	}
 

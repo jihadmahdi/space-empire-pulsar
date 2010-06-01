@@ -11,6 +11,9 @@
 TODO List
 	
 * Work flow en cours.
+
+	* Refonte du protocole: Tacher de ne communiquer entre client/serveur que lors de la fin/début de tour (simulation locale des effets des commandes du tour courrant).
+		PlayerGameBoard est au client ce que DataBase est au serveur, définir une interface commune ?
 	
 ** Interface
 

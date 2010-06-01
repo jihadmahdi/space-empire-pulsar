@@ -43,7 +43,7 @@ class ExtractionModule extends ABuilding implements Serializable
 	@Override
 	public org.axan.sep.common.ExtractionModule getPlayerView(int date, String playerLogin)
 	{
-		return new org.axan.sep.common.ExtractionModule(nbBuild, getCarbonProductionPerTurn(), getUpgradeCarbonCost());
+		return new org.axan.sep.common.ExtractionModule(lastBuildDate, nbBuild);
 	}
 	
 	public int getCarbonProductionPerTurn()
@@ -86,6 +86,12 @@ class ExtractionModule extends ABuilding implements Serializable
 	ExtractionModule getUpgraded(int date)
 	{
 		return new ExtractionModule(date, nbBuild+1);
+	}
+	
+	@Override
+	boolean canUpgrade()
+	{
+		return true;
 	}
 	
 	@Override

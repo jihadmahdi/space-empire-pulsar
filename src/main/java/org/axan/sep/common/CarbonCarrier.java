@@ -28,6 +28,11 @@ public class CarbonCarrier extends Unit implements Serializable
 		this.order = order;
 	}
 	
+	public int getOrderAmount()
+	{
+		return order.getAmount();
+	}
+	
 	@Override
 	public String toString()
 	{

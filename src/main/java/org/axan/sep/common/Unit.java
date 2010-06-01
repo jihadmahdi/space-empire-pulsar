@@ -29,7 +29,7 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	
 	// Only if owner
 	private final RealLocation sourceLocation;
-	private final RealLocation destinationLocation;
+	private RealLocation destinationLocation;
 	private final double	travellingProgress;
 	
 	/**
@@ -91,6 +91,11 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	public RealLocation getDestinationLocation()
 	{
 		return destinationLocation;
+	}
+	
+	public void setDestinationLocation(RealLocation destinationLocation)
+	{
+		this.destinationLocation = destinationLocation;
 	}
 
 	/* (non-Javadoc)

@@ -7,6 +7,8 @@ package org.axan.sep.server.model;
 
 import java.io.Serializable;
 
+import org.axan.sep.common.FleetBattleSkillsModifierAdaptor;
+
 /**
  * 
  */
@@ -97,7 +99,7 @@ class DefenseModule extends ABuilding implements Serializable
 	@Override
 	public org.axan.sep.common.DefenseModule getPlayerView(int date, String playerLogin)
 	{
-		return new org.axan.sep.common.DefenseModule(nbBuild, getTotalBonus(), getUpgradeCarbonCost());
+		return new org.axan.sep.common.DefenseModule(lastBuildDate, nbBuild);
 	}
 	
 	private int getTotalBonus()
@@ -139,6 +141,12 @@ class DefenseModule extends ABuilding implements Serializable
 	DefenseModule getUpgraded(int date)
 	{
 		return new DefenseModule(date, nbBuild+1);
+	}
+	
+	@Override
+	boolean canUpgrade()
+	{
+		return true;
 	}
 
 	@Override

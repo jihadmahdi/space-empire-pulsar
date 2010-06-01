@@ -40,4 +40,16 @@ public class GovernmentStarship implements ISpecialUnit, Serializable
 	{
 		return name;
 	}
+
+	@Override
+	public boolean canJoinFleet()
+	{
+		return true;
+	}
+
+	@Override
+	public boolean isVisibleToClients()
+	{
+		return true;
+	}
 }

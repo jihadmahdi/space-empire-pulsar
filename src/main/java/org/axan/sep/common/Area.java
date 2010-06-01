@@ -8,9 +8,10 @@ package org.axan.sep.common;
 import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.axan.sep.common.PlayerGameBoard.PlayerGameBoardQueryException;
 
 
 /**
@@ -37,12 +38,12 @@ public class Area implements IObservable, Serializable
 	 * Each unit has its own observation turn date.
 	 * But units remain until the area is visible and the unit has leaved.
 	 */
-	private transient Set<Unit> units;
+	private Set<Unit> units;
 	
 	/**
 	 * Set of markers applied to this area.
 	 */
-	private transient Set<IMarker> markers;
+	private Set<IMarker> markers;
 
 	
 	public Area()
@@ -59,8 +60,8 @@ public class Area implements IObservable, Serializable
 		this.lastObservation = lastObservation;
 		this.isSun = isSun;
 		this.celestialBody = celestialBody;
-		this.units = (units == null)?null:Collections.unmodifiableSet(units);
-		this.markers = (markers == null)?null:Collections.unmodifiableSet(markers);
+		this.units = (units == null)? new HashSet<Unit>() : units;
+		this.markers = (markers == null)? new HashSet<IMarker>() : markers;
 	}
 
 	/* (non-Javadoc)
@@ -107,6 +108,11 @@ public class Area implements IObservable, Serializable
 		return null;
 	}
 	
+	public void addUnit(Unit unit)
+	{
+		units.add(unit);
+	}
+	
 	public <U extends Unit> Set<U> getUnits(Class<U> unitType)
 	{
 		Set<U> filteredUnits = new HashSet<U>();
@@ -148,6 +154,23 @@ public class Area implements IObservable, Serializable
 		}
 		
 		return getMarkedUnit(ownerName, unitName);
+	}
+	
+	public <U extends Unit> void removeUnit(String ownerName, String unitName, Class<U> unitType) throws PlayerGameBoardQueryException
+	{
+		if (units != null) for(Unit u : units)
+		{
+			if (!ownerName.equals(u.getOwnerName())) continue;
+			
+			if (!unitName.equals(u.getName())) continue;
+			
+			if (!unitType.isInstance(u)) continue;
+						
+			units.remove(u);
+			return;
+		}
+		
+		throw new PlayerGameBoardQueryException("Cannot found "+unitType.getSimpleName()+" '"+ownerName+"@"+unitName+"'");
 	}
 	
 	public <M extends IMarker> Set<M> getMarkers(Class<M> markerType)

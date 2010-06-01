@@ -6,25 +6,27 @@
 package org.axan.sep.common;
 
 import java.io.Serializable;
-import java.util.Map;
 
 
 /**
  * Represent a starship plant build on a celestial body.
  */
-public class StarshipPlant implements IBuilding, Serializable
+public class StarshipPlant extends ABuilding implements Serializable
 {
 	private static final long	serialVersionUID	= 1L;
 	
 	public static final int POPULATION_COST = 500;
 	public static final int CARBON_COST = 2000;
 		
+	// Constants
+	private final int lastBuildDate;
+	
 	/**
 	 * Full constructor.
 	 */
-	public StarshipPlant()
+	public StarshipPlant(int lastBuildDate)
 	{
-		
+		this.lastBuildDate = lastBuildDate;
 	}
 	
 	/* (non-Javadoc)
@@ -34,6 +36,48 @@ public class StarshipPlant implements IBuilding, Serializable
 	public int getBuildSlotsCount()
 	{
 		return 1;
+	}
+	
+	@Override
+	public int getLastBuildDate()
+	{
+		return lastBuildDate;
+	}
+	
+	@Override
+	public int getUpgradeCarbonCost()
+	{
+		return 0;
+	}
+
+	@Override
+	int getUpgradePopulationCost()
+	{
+		return 0;
+	}
+	
+	@Override
+	boolean canUpgrade()
+	{
+		return false;
+	}
+
+	@Override
+	ABuilding getUpgraded(int date)
+	{
+		return null;
+	}
+	
+	@Override
+	SpaceCounter getDowngraded()
+	{
+		return null;
+	}
+
+	@Override
+	boolean canDowngrade()
+	{
+		return true;
 	}
 	
 	/* (non-Javadoc)

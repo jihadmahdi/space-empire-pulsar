@@ -19,6 +19,16 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 {
 	private static final long		serialVersionUID	= 1L;
 	
+	public static class CelestialBodyBuildException extends Exception
+	{
+		private static final long	serialVersionUID	= 1L;
+
+		public CelestialBodyBuildException(String msg)
+		{
+			super(msg);
+		}
+	}
+	
 	public static final int NATURAL_CARBON_PER_TURN = 2000; // TODO : A revoir
 	
 	public static final int MAX_NATURAL_CARBON = 2000;
@@ -36,19 +46,23 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 
 	// Only if visible
 	private final int				carbonStock;
-	private final int				carbon;
+	private int				carbon;
 
-	private final Set<IBuilding>	buildings;
+	private final Set<ABuilding>	buildings;
 
 	private final String			ownerName;
 	
-	private final Map<StarshipTemplate, Integer>				unasignedFleetStarships; // For viewer point of view, not owner.
-	private final Set<ISpecialUnit>								unasignedFleetSpecialUnits;
+	private final Map<StarshipTemplate, Integer>				unasignedFleetStarships = new HashMap<StarshipTemplate, Integer>(); // For viewer point of view, not owner.
+	private final Set<ISpecialUnit>								unasignedFleetSpecialUnits = new HashSet<ISpecialUnit>();
+	
+	// Local
+	private boolean attackEnemiesFleet = false;
+	private boolean hasAlreadyBuiltThisTurn = false;
 
 	/**
 	 * Full constructor.
 	 */
-	public ProductiveCelestialBody(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, String ownerName, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits)
+	public ProductiveCelestialBody(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<ABuilding> buildings, String ownerName, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits)
 	{
 		this.isVisible = isVisible;
 		this.lastObservation = lastObservation;
@@ -59,23 +73,8 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 		this.slots = slots;
 		this.buildings = buildings;
 		this.ownerName = ownerName;
-		if (unasignedFleetStarships == null)
-		{
-			this.unasignedFleetStarships = new HashMap<StarshipTemplate, Integer>();
-		}
-		else
-		{
-			this.unasignedFleetStarships = unasignedFleetStarships;
-		}
-		
-		if (unasignedFleetSpecialUnits == null)
-		{
-			this.unasignedFleetSpecialUnits = new HashSet<ISpecialUnit>();
-		}
-		else
-		{
-			this.unasignedFleetSpecialUnits = unasignedFleetSpecialUnits;
-		}
+		if (unasignedFleetStarships != null) this.unasignedFleetStarships.putAll(unasignedFleetStarships);
+		if (unasignedFleetSpecialUnits != null) this.unasignedFleetSpecialUnits.addAll(unasignedFleetSpecialUnits);
 	}
 
 	/*
@@ -131,14 +130,14 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 		return carbon;
 	}
 
-	public Set<IBuilding> getBuildings()
+	public Set<ABuilding> getBuildings()
 	{
 		return buildings;
 	}
 	
-	public <T extends IBuilding> T getBuilding(Class<T> buildingType)
+	public <T extends ABuilding> T getBuilding(Class<T> buildingType)
 	{
-		if (buildings != null) for(IBuilding b : buildings)
+		if (buildings != null) for(ABuilding b : buildings)
 		{
 			if (buildingType.isInstance(b)) return buildingType.cast(b);
 		}
@@ -162,13 +161,14 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 
 		sb.append((ownerName == null) ? "" : "[" + ownerName + "] ");
 		sb.append(name + " (" + getClass().getSimpleName() + ")\n");
+		if (attackEnemiesFleet) {sb.append("Enemies fleet will be attacked next turn\n");}
 		sb.append("  Carbon : " + carbon + " / " + carbonStock + " ("+startingCarbonStock+")\n");
 		sb.append("  Slots : " + getBuildSlotsCount() + " / " + slots + "\n");
 		if (buildings != null)
 		{
 			sb.append("  Buildings :\n");
 
-			for (IBuilding b : buildings)
+			for (ABuilding b : buildings)
 			{
 				sb.append("    " + b.getClass().getSimpleName() + " : " + b.getBuildSlotsCount() + "\n");
 			}
@@ -180,7 +180,7 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 	public int getBuildSlotsCount()
 	{
 		int i = 0;
-		if (buildings != null) for (IBuilding b : buildings)
+		if (buildings != null) for (ABuilding b : buildings)
 		{
 			i += b.getBuildSlotsCount();
 		}
@@ -202,5 +202,106 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 		return unasignedFleetSpecialUnits;
 	}
 	
-	public abstract boolean canBuildType(Class<? extends IBuilding> buildingType);
+	public abstract boolean canBuildType(Class<? extends ABuilding> buildingType);
+
+	public void setAttackEnemiesFleetFlag(boolean attackEnemiesFleet)
+	{
+		this.attackEnemiesFleet = attackEnemiesFleet;
+	}
+	
+	public boolean getAttackEnemiesFleetFlag()
+	{
+		return attackEnemiesFleet;
+	}
+	
+	public boolean hasAlreadyBuiltThisTurn()
+	{
+		return hasAlreadyBuiltThisTurn;
+	}
+	
+	public void setAlreadyBuiltThisTurn(boolean hasAlreadyBuiltThisTurn)
+	{
+		this.hasAlreadyBuiltThisTurn = hasAlreadyBuiltThisTurn;
+	}
+	
+	public void updateBuilding(ABuilding building) throws CelestialBodyBuildException
+	{
+		ABuilding oldBuilding = null;
+		
+		int buildSlotsCount = 0;
+		
+		if (buildings != null) for(ABuilding b : buildings)
+		{
+			if (b.getClass().equals(building.getClass()))
+			{
+				buildSlotsCount += building.getBuildSlotsCount();
+				oldBuilding = b;
+			}
+			else if (b != null)
+			{
+				buildSlotsCount += b.getBuildSlotsCount();
+			}
+		}
+		
+		if (oldBuilding == null)
+		{
+			buildSlotsCount += building.getBuildSlotsCount();
+		}
+		
+		if (buildSlotsCount > slots) throw new CelestialBodyBuildException("Not enough free slots");
+		
+		if (oldBuilding != null) buildings.remove(oldBuilding);
+		buildings.add(building);
+	}
+	
+	void setCarbon(int carbon)
+	{
+		this.carbon = carbon;
+	}
+	
+	public void downgradeBuilding(ABuilding existingBuilding)
+	{
+		ABuilding downgradedBuilding = existingBuilding.getDowngraded();
+		if (downgradedBuilding == null)
+		{
+			buildings.remove(existingBuilding.getClass());
+		}
+		else
+		{
+			buildings.add(downgradedBuilding);
+		}
+	}
+	
+	public void removeBuilding(Class<? extends ABuilding> buildingType)
+	{
+		buildings.remove(getBuilding(buildingType));
+	}
+	
+	public void removeFromUnasignedFleet(Map<StarshipTemplate, Integer> starshipsToRemove, Set<ISpecialUnit> specialUnitsToRemove)
+	{
+		if (starshipsToRemove != null) for(Map.Entry<StarshipTemplate, Integer> e : starshipsToRemove.entrySet())
+		{
+			if (e.getValue() == null || e.getValue() <= 0) continue;
+			
+			if (!unasignedFleetStarships.containsKey(e.getKey()) || unasignedFleetStarships.get(e.getKey()) < e.getValue()) throw new SEPCommonImplementationException("Try to remove non existing unasigned starships '"+e.getKey().getName()+"' on '"+getName()+"'");
+			
+			unasignedFleetStarships.put(e.getKey(), unasignedFleetStarships.get(e.getKey()) - e.getValue());
+		}
+		
+		if (specialUnitsToRemove != null) for(ISpecialUnit u : specialUnitsToRemove)
+		{
+			if (!unasignedFleetSpecialUnits.remove(u)) throw new SEPCommonImplementationException("Try to remove non existing unasigned special unit '"+u.getName()+"' on '"+getName()+"'");
+		}				
+	}
+	
+	public void mergeToUnasignedFleet(Map<StarshipTemplate, Integer> starshipsToMerge, Set<ISpecialUnit> specialUnitsToMerge)
+	{
+		if (starshipsToMerge != null) for(Map.Entry<StarshipTemplate, Integer> e : starshipsToMerge.entrySet())
+		{
+			if (!unasignedFleetStarships.containsKey(e.getKey())) unasignedFleetStarships.put(e.getKey(), 0);			
+			unasignedFleetStarships.put(e.getKey(), unasignedFleetStarships.get(e.getKey()) + e.getValue());
+		}
+		
+		if (specialUnitsToMerge != null) unasignedFleetSpecialUnits.addAll(specialUnitsToMerge);					
+	}
 }

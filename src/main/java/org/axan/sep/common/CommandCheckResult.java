@@ -2,8 +2,6 @@ package org.axan.sep.common;
 
 import java.io.Serializable;
 
-import org.omg.CORBA.BooleanHolder;
-
 /**
  * This class represent a command possibility result (is the command possible or not), it provide optional impossibility reason message.
  */

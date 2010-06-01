@@ -7,10 +7,6 @@ package org.axan.sep.server.model;
 
 import java.io.Serializable;
 
-import org.axan.sep.common.Player;
-import org.axan.sep.common.Protocol;
-import org.axan.sep.server.SEPServer;
-
 
 
 /**
@@ -34,7 +30,7 @@ class GovernmentModule extends ABuilding implements Serializable
 	@Override
 	public org.axan.sep.common.GovernmentModule getPlayerView(int date, String playerLogin)
 	{
-		return new org.axan.sep.common.GovernmentModule();
+		return new org.axan.sep.common.GovernmentModule(buildDate);
 	}
 
 	@Override
@@ -65,6 +61,12 @@ class GovernmentModule extends ABuilding implements Serializable
 	GovernmentModule getUpgraded(int date)
 	{
 		throw new Error("Cannot upgrade GovernmentModule");
+	}
+	
+	@Override
+	boolean canUpgrade()
+	{
+		return false;
 	}
 
 	@Override
