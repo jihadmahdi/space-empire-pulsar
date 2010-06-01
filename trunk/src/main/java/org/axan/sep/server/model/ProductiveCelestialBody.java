@@ -53,7 +53,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	private PlayerDatedView<Integer> playersCarbonStockView = new PlayerDatedView<Integer>();
 	private PlayerDatedView<Integer> playersCarbonView = new PlayerDatedView<Integer>();
 	private PlayerDatedView<String> playersOwnerNameView = new PlayerDatedView<String>();
-	private PlayerDatedView<HashSet<org.axan.sep.common.IBuilding>> playersBuildingsView = new PlayerDatedView<HashSet<org.axan.sep.common.IBuilding>>();
+	private PlayerDatedView<HashSet<org.axan.sep.common.ABuilding>> playersBuildingsView = new PlayerDatedView<HashSet<org.axan.sep.common.ABuilding>>();
 	private Map<String, PlayerDatedView<org.axan.sep.common.Fleet>> playersUnasignedFleetsView = new HashMap<String, PlayerDatedView<org.axan.sep.common.Fleet>>();
 	
 	// Turn resolution variables
@@ -245,13 +245,13 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		return slots;
 	}
 	
-	protected Set<org.axan.sep.common.IBuilding> getBuildingsView(int date, String playerLogin, boolean isVisible)
+	protected Set<org.axan.sep.common.ABuilding> getBuildingsView(int date, String playerLogin, boolean isVisible)
 	{
-		HashSet<org.axan.sep.common.IBuilding> buildingsView;
+		HashSet<org.axan.sep.common.ABuilding> buildingsView;
 		
 		if (isVisible)
 		{
-			buildingsView = new HashSet<org.axan.sep.common.IBuilding>();
+			buildingsView = new HashSet<org.axan.sep.common.ABuilding>();
 			
 			for(ABuilding b : buildings.values())
 			{
@@ -352,7 +352,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		unasignedFleet.remove(fleetToRemove, specialUnitsToRemove);
 	}
 	
-	public ABuilding getBuildingFromClientType(Class<? extends org.axan.sep.common.IBuilding> clientBuildingType)
+	public ABuilding getBuildingFromClientType(Class<? extends org.axan.sep.common.ABuilding> clientBuildingType)
 	{
 		return getBuilding(ABuilding.getServerBuildingClass(clientBuildingType));
 	}

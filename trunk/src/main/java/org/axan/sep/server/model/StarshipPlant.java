@@ -34,7 +34,7 @@ class StarshipPlant extends ABuilding implements Serializable
 	@Override
 	public org.axan.sep.common.StarshipPlant getPlayerView(int date, String playerLogin)
 	{
-		return new org.axan.sep.common.StarshipPlant();
+		return new org.axan.sep.common.StarshipPlant(lastBuildDate);
 	}
 
 	@Override
@@ -64,7 +64,13 @@ class StarshipPlant extends ABuilding implements Serializable
 	@Override
 	ABuilding getUpgraded(int date)
 	{
-		throw new Error("Cannot upgrade Starship plant.");
+		return null;
+	}
+	
+	@Override
+	boolean canUpgrade()
+	{
+		return false;
 	}
 	
 	@Override

@@ -25,6 +25,8 @@ public class Probe extends Unit implements Serializable
 	
 	private final boolean deployed;
 	
+	private transient boolean launched = false;
+	
 	/**
 	 * Full constructor. 
 	 */
@@ -45,5 +47,16 @@ public class Probe extends Unit implements Serializable
 	public boolean isDeployed()
 	{
 		return deployed;
+	}
+	
+	public boolean isLaunched()
+	{
+		return launched;
+	}
+	
+	void launch(RealLocation destination)
+	{
+		launched = true;
+		setDestinationLocation(destination);
 	}
 }

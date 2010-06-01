@@ -143,7 +143,7 @@ class SpaceCounter extends ABuilding implements Serializable
 			nextOrdersSet.push(o);
 		}
 		
-		return new org.axan.sep.common.SpaceCounter(nbBuild, spaceRoadsBuiltSet, spaceRoadsLinkedSet, ordersToReceiveSet, currentSentOrderSet, nextOrdersSet, getMaxCarbonFreight(), getCurrentCarbonFreight());
+		return new org.axan.sep.common.SpaceCounter(lastBuildDate, nbBuild, spaceRoadsBuiltSet, spaceRoadsLinkedSet, ordersToReceiveSet, currentSentOrderSet, nextOrdersSet);
 	}
 
 	@Override
@@ -191,6 +191,12 @@ class SpaceCounter extends ABuilding implements Serializable
 	SpaceCounter getUpgraded(int date)
 	{
 		return new SpaceCounter(date, nbBuild+1, spaceRoadsBuilt, spaceRoadsLinked, ordersToReceive, currentSentOrder, nextOrders);
+	}
+	
+	@Override
+	boolean canUpgrade()
+	{
+		return true;
 	}
 	
 	@Override

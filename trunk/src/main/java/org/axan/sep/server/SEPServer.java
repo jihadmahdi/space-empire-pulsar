@@ -13,9 +13,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,19 +30,16 @@ import org.axan.eplib.gameserver.server.GameServer.ExecutorFactory;
 import org.axan.eplib.gameserver.server.GameServer.GameServerListener;
 import org.axan.eplib.gameserver.server.GameServer.ServerUser;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
-import org.axan.sep.common.CarbonOrder;
 import org.axan.sep.common.CommandCheckResult;
 import org.axan.sep.common.GameConfig;
-import org.axan.sep.common.IBuilding;
+import org.axan.sep.common.ILocalGameCommand;
 import org.axan.sep.common.Player;
 import org.axan.sep.common.PlayerConfig;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.Protocol;
-import org.axan.sep.common.Diplomacy.PlayerPolicies;
 import org.axan.sep.common.Protocol.ServerGameCreation;
 import org.axan.sep.common.Protocol.ServerPausedGame;
 import org.axan.sep.common.Protocol.ServerRunningGame;
-import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.model.GameBoard;
 import org.axan.sep.server.model.PlayerGameMove;
 import org.axan.sep.server.model.ServerGame;
@@ -318,6 +315,7 @@ public class SEPServer implements IServer
 			});
 		}
 
+		/*
 		@Override
 		public CommandCheckResult canAttackEnemiesFleet(String celestialBodyName) throws RpcException, StateMachineNotExpectedEventException
 		{
@@ -553,23 +551,7 @@ public class SEPServer implements IServer
 		{
 			getGameMove().addSettleGovernmentCommand(planetName);
 		}
-
-		@Override
-		public void endTurn() throws RpcException, StateMachineNotExpectedEventException
-		{
-			getGameMove().endTurn();
-
-			sepServer.threadPool.execute(new Runnable()
-			{
-
-				@Override
-				public void run()
-				{
-					sepServer.checkForNextTurn();
-				}
-			});
-		}
-
+		
 		@Override
 		public void resetTurn() throws RpcException, StateMachineNotExpectedEventException, RunningGameCommandException
 		{
@@ -589,6 +571,23 @@ public class SEPServer implements IServer
 			if (getGameMove().isTurnEnded()) return new CommandCheckResult("Turn already ended.");
 			return new CommandCheckResult();
 		}
+		*/
+
+		@Override
+		public void endTurn(List<ILocalGameCommand> commands) throws RpcException, StateMachineNotExpectedEventException, SEPImplementationException, RunningGameCommandException
+		{
+			getGameMove().endTurn(commands);
+			
+			sepServer.threadPool.execute(new Runnable()
+			{
+
+				@Override
+				public void run()
+				{
+					sepServer.checkForNextTurn();
+				}
+			});
+		}				
 
 	}
 

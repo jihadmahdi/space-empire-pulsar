@@ -31,10 +31,13 @@ public class PlayerGameBoard implements Serializable
 		{
 			super(msg);
 		}
-	}
+	}		
 
 	private static final long			serialVersionUID	= 1L;
 
+	/** Game config. */
+	private final GameConfig config;
+	
 	/** 3 dimensional array of universe area. */
 	private transient Area[][][]	universe;
 
@@ -42,16 +45,21 @@ public class PlayerGameBoard implements Serializable
 	private final RealLocation				sunLocation;
 
 	private final int					date;
+	private int localDate = 0;
 	
 	private final Map<String, Diplomacy>	playersPolicies;
+	
+	private final String	playerName;
 
 	// TODO : add last turn resolution informations.
 
 	/**
 	 * Full constructor.
 	 */
-	public PlayerGameBoard(Area[][][] universe, RealLocation sunLocation, int date, Map<String, Diplomacy> playersPolicies)
+	public PlayerGameBoard(GameConfig config, String playerName, Area[][][] universe, RealLocation sunLocation, int date, Map<String, Diplomacy> playersPolicies)
 	{
+		this.config = config;
+		this.playerName = playerName;
 		this.universe = universe;
 		this.sunLocation = sunLocation;
 		this.date = date;
@@ -78,6 +86,16 @@ public class PlayerGameBoard implements Serializable
 		return universe[0][0].length;
 	}
 
+	public int getLocalDate()
+	{
+		return localDate;
+	}
+	
+	public void incLocalDate()
+	{
+		++localDate;
+	}
+	
 	public Area getArea(int x, int y, int z)
 	{
 		return getArea(new RealLocation(x + 0.5, y + 0.5, z + 0.5));
@@ -96,6 +114,11 @@ public class PlayerGameBoard implements Serializable
 	{
 		return date;
 	}
+	
+	public GameConfig getConfig()
+	{
+		return config;
+	}
 
 	public RealLocation getUnitLocation(String ownerName, String unitName) throws PlayerGameBoardQueryException
 	{
@@ -113,9 +136,19 @@ public class PlayerGameBoard implements Serializable
 		throw new PlayerGameBoardQueryException("Unknown unit '"+ownerName+"@"+unitName+"'");
 	}
 
+	public <U extends Unit> void removeUnit(String ownerName, String unitName, Class<U> unitType) throws PlayerGameBoardQueryException
+	{
+		U unit = getUnit(ownerName, unitName, unitType);
+		if (unit == null) throw new PlayerGameBoardQueryException("Unit '"+ownerName+"@"+unitName+"' does not exist.");
+		Area a = getArea(unit.getCurrentLocation());
+		if (a == null) throw new PlayerGameBoardQueryException("Cannot find unit '"+ownerName+"@"+unitName+"' area");
+		a.removeUnit(ownerName, unitName, unitType);
+	}
+	
 	public <U extends Unit> U getUnit(String ownerName, String unitName, Class<U> unitType) throws PlayerGameBoardQueryException
 	{
 		Unit u = getUnit(ownerName, unitName);
+		if (u == null) return null;		
 		if (!unitType.isInstance(u)) throw new PlayerGameBoardQueryException("Unit '"+ownerName+"@"+unitName+"' is not of unitType '"+unitType.getSimpleName()+"'");
 		return unitType.cast(u);
 	}
@@ -133,7 +166,8 @@ public class PlayerGameBoard implements Serializable
 					if (unit != null) return unit;
 				}
 
-		throw new PlayerGameBoardQueryException("Unknown unit '"+ownerName+"@"+unitName+"'");
+		return null;
+		//throw new PlayerGameBoardQueryException("Unknown unit '"+ownerName+"@"+unitName+"'");
 	}
 
 	public <U extends Unit> Set<U> getUnits(Class<U> unitType)
@@ -191,6 +225,16 @@ public class PlayerGameBoard implements Serializable
 		throw new PlayerGameBoardQueryException("Unknown celestial body '"+celestialBodyName+"'");
 	}
 	
+	public <C extends ICelestialBody> C getCelestialBody(RealLocation location, Class<C> celestialBodyType) throws PlayerGameBoardQueryException
+	{
+		Area a = getArea(location);
+		if (a == null) throw new PlayerGameBoardQueryException("Cannot find area in location '"+location.asLocation().toString()+"'");
+		ICelestialBody c = a.getCelestialBody();
+		if (c == null) return null;
+		if (!celestialBodyType.isInstance(c)) throw new PlayerGameBoardQueryException("Celestial body in area '"+location.asLocation().toString()+"' is not a '"+celestialBodyType.getSimpleName()+"' one.");
+		return celestialBodyType.cast(c);
+	}
+	
 	public <C extends ICelestialBody> C getCelestialBody(String celestialBodyName, Class<C> celestialBodyType) throws PlayerGameBoardQueryException
 	{
 		ICelestialBody celestialBody = getCelestialBody(celestialBodyName);
@@ -216,7 +260,7 @@ public class PlayerGameBoard implements Serializable
 		throw new PlayerGameBoardQueryException("Unknown celestial body '"+celestialBodyName+"'");
 	}
 	
-	public <B extends IBuilding> B getBuilding(String celestialBodyName, Class<B> buildingType) throws PlayerGameBoardQueryException
+	public <B extends ABuilding> B getBuilding(String celestialBodyName, Class<B> buildingType) throws PlayerGameBoardQueryException
 	{
 		ICelestialBody celestialBody = getCelestialBody(celestialBodyName);
 		if (celestialBody == null || !ProductiveCelestialBody.class.isInstance(celestialBody)) throw new PlayerGameBoardQueryException("Unknown productive celestial body '"+celestialBodyName+"'");
@@ -225,7 +269,7 @@ public class PlayerGameBoard implements Serializable
 		return productiveCelestialBody.getBuilding(buildingType);		
 	}
 	
-	public Set<ProductiveCelestialBody> getCelestialBodiesWithBuilding(Class<? extends IBuilding> buildingType)
+	public Set<ProductiveCelestialBody> getCelestialBodiesWithBuilding(Class<? extends ABuilding> buildingType)
 	{
 		Set<ProductiveCelestialBody> result = new HashSet<ProductiveCelestialBody>();
 		for(int x = 0; x < getDimX(); ++x)
@@ -240,7 +284,7 @@ public class PlayerGameBoard implements Serializable
 						if (ProductiveCelestialBody.class.isInstance(area.getCelestialBody()))
 						{
 							ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(area.getCelestialBody());
-							IBuilding building = productiveCelestialBody.getBuilding(buildingType);
+							ABuilding building = productiveCelestialBody.getBuilding(buildingType);
 
 							if (building != null)
 							{
@@ -251,6 +295,54 @@ public class PlayerGameBoard implements Serializable
 				}
 
 		return result;
+	}
+	
+	public String getPlayerName()
+	{
+		return playerName;
+	}
+	
+	public boolean isValidLocation(RealLocation location)
+	{
+		if (location.x < 0 || location.x >= getDimX()) return false;
+		if (location.y < 0 || location.y >= getDimY()) return false;
+		if (location.z < 0 || location.z >= getDimZ()) return false;
+		return true;
+	}
+	
+	public boolean isTravellingTheSun(RealLocation a, RealLocation b)
+	{
+		for(RealLocation pathStep : SEPUtils.getAllPathLoc(a, b))
+		{
+			Area area = getArea(pathStep);
+			if (area != null && area.isSun()) return true;
+		}
+		
+		return false;
+	}
+	
+	public Fleet getGovernmentalFleet(String playerName)
+	{
+		for(Fleet f : getUnits(Fleet.class))
+		{
+			if (!f.isGovernmentFleet()) continue;
+			
+			if (!playerName.equals(f.getOwnerName())) continue;
+			
+			return f;
+		}
+		
+		return null;
+	}
+	
+	public Planet locateGovernmentModule(String playerName) throws PlayerGameBoardQueryException
+	{
+		for(ProductiveCelestialBody p : getCelestialBodiesWithBuilding(GovernmentModule.class))
+		{
+			if (playerName.equals(p.getOwnerName())) return Planet.class.cast(p);
+		}
+		
+		throw new PlayerGameBoardQueryException("Cannot find government module for player '"+playerName+"'");
 	}
 
 	private void writeObject(java.io.ObjectOutputStream out) throws IOException
@@ -304,5 +396,4 @@ public class PlayerGameBoard implements Serializable
 	{
 
 	}
-
 }

@@ -52,7 +52,7 @@ class PulsarLauchingPad extends ABuilding implements Serializable
 	@Override
 	public org.axan.sep.common.PulsarLauchingPad getPlayerView(int date, String playerLogin)
 	{
-		return new org.axan.sep.common.PulsarLauchingPad(nbBuild, nbFired, getTotalBonus(), getUpgradeCarbonCost());
+		return new org.axan.sep.common.PulsarLauchingPad(lastBuildDate, nbBuild, nbFired);
 	}
 
 	@Override
@@ -95,6 +95,12 @@ class PulsarLauchingPad extends ABuilding implements Serializable
 	PulsarLauchingPad getUpgraded(int date)
 	{
 		return new PulsarLauchingPad(date, nbBuild+1, nbFired);
+	}
+	
+	@Override
+	boolean canUpgrade()
+	{
+		return true;
 	}
 	
 	@Override

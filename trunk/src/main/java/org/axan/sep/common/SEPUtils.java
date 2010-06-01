@@ -161,11 +161,11 @@ public abstract class SEPUtils
 		return result;
 	}
 	
-	public static final Set<Class<? extends IBuilding>> buildingTypes;
+	public static final Set<Class<? extends ABuilding>> buildingTypes;
 	
 	static
 	{
-		Set<Class<? extends IBuilding>> buildingsTypesSet = new HashSet<Class<? extends IBuilding>>();
+		Set<Class<? extends ABuilding>> buildingsTypesSet = new HashSet<Class<? extends ABuilding>>();
 		buildingsTypesSet.add(DefenseModule.class);
 		buildingsTypesSet.add(ExtractionModule.class);
 		buildingsTypesSet.add(GovernmentModule.class);

@@ -11,4 +11,9 @@ public class SpaceRoadDeliverer extends Unit implements Serializable
 	{
 		super(isVisible, lastObervation, name, ownerName, sourceLocation, destinationLocation, currentLocation, travellingProgress, speed);
 	}
+	
+	public void launch(RealLocation destinationLocation)
+	{
+		setDestinationLocation(destinationLocation);		
+	}
 }

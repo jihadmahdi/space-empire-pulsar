@@ -21,7 +21,10 @@ public class AntiProbeMissile extends Unit implements Serializable
 	
 	public static final int PRICE_POPULATION  = 0;
 	
-	private final boolean fired;
+	private boolean fired;
+	
+	private String targetOwnerName;
+	private String targetProbeName;
 	
 	/**
 	 * Full constructor. 
@@ -36,7 +39,24 @@ public class AntiProbeMissile extends Unit implements Serializable
 	public String toString()
 	{
 		StringBuffer sb = new StringBuffer(super.toString());
-		sb.append("\nStatus : "+(fired?"fired":"not fired"));
+		sb.append("\nStatus : "+(fired?"fired on '"+targetOwnerName+"@"+targetProbeName+"' ("+getDestinationLocation().toString()+")":"not fired"));
 		return sb.toString();
+	}
+	
+	public boolean isFired()
+	{
+		return fired;
+	}
+	
+	void fire(String targetOwnerName, String targetProbeName, RealLocation destination)
+	{
+		if (fired) throw new SEPCommonImplementationException("Error: Anti-probe missile '"+getName()+"' already fired.");
+		
+		fired = true;
+		
+		this.targetOwnerName = targetOwnerName;
+		this.targetProbeName = targetProbeName;
+		
+		setDestinationLocation(destination);
 	}
 }

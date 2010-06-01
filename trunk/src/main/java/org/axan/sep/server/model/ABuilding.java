@@ -21,7 +21,7 @@ abstract class ABuilding
 	 * @param playerLogin
 	 * @return
 	 */
-	abstract org.axan.sep.common.IBuilding getPlayerView(int date, String playerLogin);
+	abstract org.axan.sep.common.ABuilding getPlayerView(int date, String playerLogin);
 
 	/**
 	 * Return number of slots used by current building.
@@ -50,6 +50,12 @@ abstract class ABuilding
 	abstract int getUpgradePopulationCost();
 
 	/**
+	 * Return true if the building can currently be upgraded
+	 * @return
+	 */
+	abstract boolean canUpgrade();
+	
+	/**
 	 * Return a new building instance which represent the current one next upgrade (at the given date).
 	 * @param date Last build (upgrade) date.
 	 * @return
@@ -61,60 +67,8 @@ abstract class ABuilding
 	 * @return
 	 */
 	abstract ABuilding getDowngraded();
-
-	/**
-	 * Get the carbon cost for the first build of the given building type.
-	 * @param buildingType
-	 * @return
-	 */
-	static int getFirstCarbonCost(Class<? extends org.axan.sep.common.IBuilding> buildingType)
-	{
-		int result = 0;
-		try
-		{
-			result = buildingType.getField("FIRST_CARBON_COST").getInt(null);
-		}
-		catch(Exception e)
-		{
-			try
-			{
-				result = buildingType.getField("CARBON_COST").getInt(null);
-			}
-			catch(Exception e1)
-			{
-				result = 0;
-			}
-		}
-
-		return result;
-	}
-
-	/**
-	 * Get the population cost for the first build of the given building type.
-	 * @param buildingType
-	 * @return
-	 */
-	static int getFirstPopulationCost(Class<? extends org.axan.sep.common.IBuilding> buildingType)
-	{
-		int result = 0;
-		try
-		{
-			result = buildingType.getField("FIRST_POPULATION_COST").getInt(null);
-		}
-		catch(Exception e)
-		{
-			try
-			{
-				result = buildingType.getField("POPULATION_COST").getInt(null);
-			}
-			catch(Exception e1)
-			{
-				result = 0;
-			}
-		}
-
-		return result;
-	}
+	
+	/////
 
 	/**
 	 * Get the first build of the given building type dated with the given date.
@@ -122,7 +76,7 @@ abstract class ABuilding
 	 * @param date
 	 * @return
 	 */
-	static ABuilding getFirstBuild(Class<? extends org.axan.sep.common.IBuilding> buildingType, int date)
+	static ABuilding getFirstBuild(Class<? extends org.axan.sep.common.ABuilding> buildingType, int date)
 	{
 		try
 		{
@@ -138,7 +92,7 @@ abstract class ABuilding
 		}
 	}
 
-	public static Class<? extends ABuilding> getServerBuildingClass(Class<? extends org.axan.sep.common.IBuilding> clientBuildingType) throws SEPImplementationException
+	public static Class<? extends ABuilding> getServerBuildingClass(Class<? extends org.axan.sep.common.ABuilding> clientBuildingType) throws SEPImplementationException
 	{
 		Class<?> serverClass;
 		try

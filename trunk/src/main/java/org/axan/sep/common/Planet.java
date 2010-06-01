@@ -44,12 +44,12 @@ public class Planet extends ProductiveCelestialBody implements Serializable
 	private final int populationPerTurn;
 	
 	// Only if visible
-	private final int population;
+	private int population;
 	
 	/**
 	 * Full constructor.
 	 */
-	public Planet(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<IBuilding> buildings, String ownerName, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits, int populationLimit, int populationPerTurn, int population)
+	public Planet(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<ABuilding> buildings, String ownerName, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits, int populationLimit, int populationPerTurn, int population)
 	{
 		super(isVisible, lastObservation, name, startingCarbonStock, carbonStock, carbon, slots, buildings, ownerName, unasignedFleetStarships, unasignedFleetSpecialUnits);
 		this.populationLimit = populationLimit;
@@ -79,7 +79,7 @@ public class Planet extends ProductiveCelestialBody implements Serializable
 	 * @see common.ProductiveCelestialBody#canBuildType(java.lang.Class)
 	 */
 	@Override
-	public boolean canBuildType(Class<? extends IBuilding> buildingType)
+	public boolean canBuildType(Class<? extends ABuilding> buildingType)
 	{
 		return true;
 	}
@@ -98,12 +98,17 @@ public class Planet extends ProductiveCelestialBody implements Serializable
 		{
 			sb.append("  Buildings :\n");
 
-			for (IBuilding b : getBuildings())
+			for (ABuilding b : getBuildings())
 			{
 				sb.append("    " + b.getClass().getSimpleName() + " : " + b.getBuildSlotsCount() + "\n");
 			}
 		}
 
 		return sb.toString();
+	}
+	
+	void setPopulation(int population)
+	{
+		this.population = population;
 	}
 }

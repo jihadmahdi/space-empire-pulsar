@@ -7,6 +7,8 @@ package org.axan.sep.common;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
@@ -89,7 +91,7 @@ public class Fleet extends Unit implements Serializable
 	private final Map<StarshipTemplate, Integer> starships;
 	private final Set<ISpecialUnit> specialUnits;
 	private final Stack<Move> checkpoints;
-	private final Move currentMove;
+	private Move currentMove;
 	private final boolean isUnasignedFleet;
 	
 	/**
@@ -98,10 +100,10 @@ public class Fleet extends Unit implements Serializable
 	public Fleet(boolean isVisible, int lastObservation, String name, String ownerName, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress, double speed, Map<StarshipTemplate, Integer> starships, Set<ISpecialUnit> specialUnits, Move currentMove, Stack<Move> checkpoints, boolean isUnasignedFleet)
 	{
 		super(isVisible, lastObservation, name, ownerName, sourceLocation, destinationLocation, currentLocation, travellingProgress, speed);
-		this.starships = starships;
-		this.specialUnits = specialUnits;
+		this.starships = (starships == null ? new HashMap<StarshipTemplate, Integer>() : starships);
+		this.specialUnits = (specialUnits == null ? new HashSet<ISpecialUnit>() : specialUnits);
 		this.currentMove = currentMove;
-		this.checkpoints = checkpoints;
+		this.checkpoints = (checkpoints == null ? new Stack<Move>() : checkpoints);
 		this.isUnasignedFleet = isUnasignedFleet;
 	}
 	
@@ -121,6 +123,20 @@ public class Fleet extends Unit implements Serializable
 		}
 		
 		return false;
+	}
+	
+	void removeGovernment()
+	{
+		for(ISpecialUnit specialUnit : specialUnits)
+		{
+			if (GovernmentStarship.class.isInstance(specialUnit))
+			{
+				specialUnits.remove(specialUnit);
+				return;
+			}
+		}
+		
+		throw new SEPCommonImplementationException("Government starship not found.");
 	}
 	
 	@Override
@@ -188,5 +204,22 @@ public class Fleet extends Unit implements Serializable
 	public Set<ISpecialUnit> getSpecialUnits()
 	{
 		return Collections.unmodifiableSet(specialUnits);
+	}
+	
+	public void updateMoveOrder(Stack<Move> newCheckpoints)
+	{
+		checkpoints.removeAllElements();
+		
+		if (!isMoving()) currentMove = null;
+		
+		for(Move checkpoint : newCheckpoints)
+		{
+			if (checkpoints.size() > 0 && checkpoints.peek().getDestinationName().equals(checkpoint.getDestinationName()))
+			{
+				checkpoints.pop();
+			}
+			
+			checkpoints.push(checkpoint);
+		}
 	}
 }

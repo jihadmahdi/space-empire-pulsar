@@ -2,49 +2,79 @@ package org.axan.sep.server.ai;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import org.axan.sep.client.SEPClient;
+import org.axan.sep.common.ABuilding;
 import org.axan.sep.common.Diplomacy;
 import org.axan.sep.common.Fleet;
-import org.axan.sep.common.IBuilding;
 import org.axan.sep.common.ICelestialBody;
+import org.axan.sep.common.ILocalGameCommand;
+import org.axan.sep.common.LocalGame;
 import org.axan.sep.common.Planet;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.ProductiveCelestialBody;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.Diplomacy.PlayerPolicies;
+import org.axan.sep.common.LocalGame.Client;
 import org.axan.sep.common.PlayerGameBoard.PlayerGameBoardQueryException;
 import org.axan.sep.common.SEPUtils.RealLocation;
 
-public class ClientAI
+public class ClientAI implements Client
 {
 	private final Stack<PlayerGameBoard> previousGameBoards = new Stack<PlayerGameBoard>();
-	private PlayerGameBoard gameBoard;
 	private final String playerName;
 	private String startingPlanet;
+	private LocalGame currentLocalGame;
+	private final SEPClient client;
 	
-	public ClientAI(String playerName)
+	public ClientAI(String playerName, SEPClient client)
 	{
 		this.playerName = playerName;
+		this.client = client;
+	}
+	
+	public LocalGame getLocalGame()
+	{
+		return currentLocalGame;
+	}
+	
+	public SEPClient getClient()
+	{
+		return client;
+	}
+	
+	@Override
+	public void endTurn(List<ILocalGameCommand> commands) throws Throwable
+	{
+		client.getRunningGameInterface().endTurn(commands);
+	}
+	
+	@Override
+	public void refreshLocalGameBoard(PlayerGameBoard gameBoard)
+	{
+		getStartingPlanetName();
 	}
 	
 	public void refreshGameBoard(PlayerGameBoard gameBoard)
 	{
-		if (this.gameBoard != null) previousGameBoards.add(this.gameBoard);
-		this.gameBoard = gameBoard;
-		getStartingPlanetName();
+		if (currentLocalGame != null) previousGameBoards.add(currentLocalGame.getGameBoard());
+		currentLocalGame = new LocalGame(this, gameBoard);
+		refreshLocalGameBoard(gameBoard);
 	}
 	
 	public String getStartingPlanetName()
 	{
 		if (startingPlanet == null)
 		{
-			if (previousGameBoards.isEmpty() && gameBoard == null) throw new IllegalStateException("Gameboard not refreshed yet.");
+			if (previousGameBoards.isEmpty() && currentLocalGame == null) throw new IllegalStateException("Gameboard not refreshed yet.");
 			
-			PlayerGameBoard initial = (previousGameBoards.isEmpty()?gameBoard:previousGameBoards.firstElement());
+			PlayerGameBoard initial = (previousGameBoards.isEmpty()?currentLocalGame.getGameBoard():previousGameBoards.firstElement());
 			
 			for(ICelestialBody c : initial.getCelestialBodies())
 			{
@@ -65,18 +95,18 @@ public class ClientAI
 	
 	public int getDate()
 	{
-		if (gameBoard == null) return -1;		
-		return gameBoard.getDate();
+		if (currentLocalGame == null) return -1;		
+		return currentLocalGame.getGameBoard().getDate();
 	}
 	
-	public void checkBuilding(String celestialBodyName, Class<? extends IBuilding> buildingType, int buildSlotsCount)
+	public void checkBuilding(String celestialBodyName, Class<? extends ABuilding> buildingType, int buildSlotsCount)
 	{
-		if (gameBoard == null) fail("Test code error: Gameboard not refreshed yet.");
+		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
 		
-		IBuilding building;
+		ABuilding building;
 		try
 		{
-			building = gameBoard.getBuilding(celestialBodyName, buildingType);
+			building = currentLocalGame.getGameBoard().getBuilding(celestialBodyName, buildingType);
 		}
 		catch(PlayerGameBoardQueryException e)
 		{
@@ -103,13 +133,15 @@ public class ClientAI
 	}
 	public double checkFleetMove(String fleetName, int expectedQt, String sourceCelestialBody, String destinationCelestialBody, int departureDate)
 	{
-		if (gameBoard == null) fail("Test code error: Gameboard not refreshed yet.");
+		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
 		
 		double expectedMoved = 0;
 		
 		try
 		{
-			Fleet f = gameBoard.getUnit(playerName, fleetName, Fleet.class);
+			Fleet f = currentLocalGame.getGameBoard().getUnit(playerName, fleetName, Fleet.class);
+			assertNotNull("Cannot find fleet '"+playerName+"@"+fleetName+"' : Unknown unit '"+playerName+"@"+fleetName+"'", f);
+			
 			if (f.getTotalQt() != expectedQt) fail("Unexpected starships quantity.");
 			
 			expectedMoved = (departureDate < 0 || sourceCelestialBody == null || destinationCelestialBody == null) ? 0 : shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getDate()-1);
@@ -166,20 +198,20 @@ public class ClientAI
 
 	public void checkDiplomacy(Map<String, PlayerPolicies> diplomacy)
 	{
-		if (gameBoard == null) fail("Test code error: Gameboard not refreshed yet.");
+		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
 		
-		Diplomacy expectedDiplomacy = new Diplomacy(true, gameBoard.getDate(), playerName, diplomacy);
-		assertEquals(expectedDiplomacy, gameBoard.getPlayersPolicies().get(playerName));
+		Diplomacy expectedDiplomacy = new Diplomacy(true, currentLocalGame.getGameBoard().getDate(), playerName, diplomacy);
+		assertEquals(expectedDiplomacy, currentLocalGame.getGameBoard().getPlayersPolicies().get(playerName));
 	}
 	
 	public double shouldMove(String sourceCelestialBody, String destinationCelestialBody, int departureDate, double speed, int date)
 	{
-		if (gameBoard == null) fail("Test code error: Gameboard not refreshed yet.");
+		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
 		
 		try
 		{
-			RealLocation source = gameBoard.getCelestialBodyLocation(sourceCelestialBody);
-			RealLocation destination = gameBoard.getCelestialBodyLocation(destinationCelestialBody);			
+			RealLocation source = currentLocalGame.getGameBoard().getCelestialBodyLocation(sourceCelestialBody);
+			RealLocation destination = currentLocalGame.getGameBoard().getCelestialBodyLocation(destinationCelestialBody);			
 			double distance = SEPUtils.getDistance(source, destination);
 			double totalTime = distance / speed;
 			
@@ -201,12 +233,12 @@ public class ClientAI
 
 	public boolean testFleetLocation(String fleetName, String expectedLocationName) throws PlayerGameBoardQueryException
 	{
-		if (gameBoard == null) fail("Test code error: Gameboard not refreshed yet.");
+		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
 		
-		Fleet f = gameBoard.getUnit(playerName, fleetName, Fleet.class);
+		Fleet f = currentLocalGame.getGameBoard().getUnit(playerName, fleetName, Fleet.class);
 		
-		RealLocation fleetLoc = gameBoard.getUnitLocation(playerName, fleetName);
-		RealLocation expectedLoc = gameBoard.getCelestialBodyLocation(expectedLocationName);
+		RealLocation fleetLoc = currentLocalGame.getGameBoard().getUnitLocation(playerName, fleetName);
+		RealLocation expectedLoc = currentLocalGame.getGameBoard().getCelestialBodyLocation(expectedLocationName);
 		
 		if (expectedLoc == null) fail("Cannot locate celestial body '"+expectedLocationName+"'");
 		return (expectedLoc.equals(fleetLoc));
@@ -221,14 +253,14 @@ public class ClientAI
 	
 	public Fleet checkFleetLocation(String fleetName, String expectedLocationName)
 	{
-		if (gameBoard == null) fail("Test code error: Gameboard not refreshed yet.");
+		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
 		
 		try
 		{
-			Fleet f = gameBoard.getUnit(playerName, fleetName, Fleet.class);			
+			Fleet f = currentLocalGame.getGameBoard().getUnit(playerName, fleetName, Fleet.class);			
 			
-			RealLocation fleetLoc = gameBoard.getUnitLocation(playerName, fleetName);
-			RealLocation expectedLoc = gameBoard.getCelestialBodyLocation(expectedLocationName);
+			RealLocation fleetLoc = currentLocalGame.getGameBoard().getUnitLocation(playerName, fleetName);
+			RealLocation expectedLoc = currentLocalGame.getGameBoard().getCelestialBodyLocation(expectedLocationName);
 			
 			if (fleetLoc == null) fail("Cannot locate fleet : '"+playerName+"@"+fleetName+"'");
 			if (expectedLoc == null) fail("Cannot locate celestial body '"+expectedLocationName+"'");
@@ -246,11 +278,11 @@ public class ClientAI
 	
 	public boolean isCelestialBodyOwner(String celestialBodyName)
 	{
-		if (gameBoard == null) fail("Test code error: Gameboard not refreshed yet.");
+		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
 		
 		try
 		{
-			ProductiveCelestialBody productiveCelestialBody = gameBoard.getCelestialBody(celestialBodyName, ProductiveCelestialBody.class);			
+			ProductiveCelestialBody productiveCelestialBody = currentLocalGame.getGameBoard().getCelestialBody(celestialBodyName, ProductiveCelestialBody.class);			
 			return productiveCelestialBody.isVisible() && playerName.equals(productiveCelestialBody.getOwnerName());
 		}
 		catch(PlayerGameBoardQueryException e)
@@ -262,12 +294,12 @@ public class ClientAI
 	
 	public void checkFleetDestroyed(String fleetName)
 	{
-		if (gameBoard == null) fail("Test code error: Gameboard not refreshed yet.");
+		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
 		
 		Fleet currentFleet = null;
 		try
 		{
-			currentFleet = gameBoard.getUnit(playerName, fleetName, Fleet.class);
+			currentFleet = currentLocalGame.getGameBoard().getUnit(playerName, fleetName, Fleet.class);
 			if (currentFleet != null) fail("Fleet is not destroyed : "+currentFleet);
 		}
 		catch(PlayerGameBoardQueryException e)
@@ -293,11 +325,11 @@ public class ClientAI
 	
 	public void checkInvisibleLocation(String celestialBodyName)
 	{
-		if (gameBoard == null) fail("Test code error: Gameboard not refreshed yet.");
+		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
 		
 		try
 		{
-			assertFalse("Unexpected result", gameBoard.getCelestialBody(celestialBodyName).isVisible());
+			assertFalse("Unexpected result", currentLocalGame.getGameBoard().getCelestialBody(celestialBodyName).isVisible());
 		}
 		catch(PlayerGameBoardQueryException e)
 		{

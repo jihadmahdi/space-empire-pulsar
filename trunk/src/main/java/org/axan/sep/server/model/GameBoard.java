@@ -24,6 +24,23 @@ import org.axan.sep.common.TravellingLogEntryUnitSeen;
 import org.axan.sep.common.eStarshipSpecializationClass;
 import org.axan.sep.common.Diplomacy.PlayerPolicies;
 import org.axan.sep.common.Diplomacy.PlayerPolicies.eForeignPolicy;
+import org.axan.sep.common.LocalGame.AttackEnemiesFleetParams;
+import org.axan.sep.common.LocalGame.BuildParams;
+import org.axan.sep.common.LocalGame.BuildSpaceRoadParams;
+import org.axan.sep.common.LocalGame.ChangeDiplomacyParams;
+import org.axan.sep.common.LocalGame.DemolishParams;
+import org.axan.sep.common.LocalGame.DemolishSpaceRoadParams;
+import org.axan.sep.common.LocalGame.DismantleFleetParams;
+import org.axan.sep.common.LocalGame.EmbarkGovernmentParams;
+import org.axan.sep.common.LocalGame.FireAntiProbeMissileParams;
+import org.axan.sep.common.LocalGame.FormFleetParams;
+import org.axan.sep.common.LocalGame.LaunchProbeParams;
+import org.axan.sep.common.LocalGame.MakeAntiProbeMissilesParams;
+import org.axan.sep.common.LocalGame.MakeProbesParams;
+import org.axan.sep.common.LocalGame.MakeStarshipsParams;
+import org.axan.sep.common.LocalGame.ModifyCarbonOrderParams;
+import org.axan.sep.common.LocalGame.MoveFleetParams;
+import org.axan.sep.common.LocalGame.SettleGovernmentParams;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
@@ -245,7 +262,7 @@ public class GameBoard implements Serializable
 			playersPoliciesView.put(playerName, db.getPlayerPolicies(playerName).getPlayerView(db.getDate(), playerLogin, false));
 		}
 		
-		return new org.axan.sep.common.PlayerGameBoard(playerUniverseView, db.getSunLocation(), db.getDate(), playersPoliciesView);
+		return new org.axan.sep.common.PlayerGameBoard(config, playerLogin, playerUniverseView, db.getSunLocation(), db.getDate(), playersPoliciesView);
 	}
 	
 	
@@ -871,17 +888,17 @@ public class GameBoard implements Serializable
 	////////////
 	
 	
-	public void demolish(String playerLogin, String celestialBodyName, Class<? extends org.axan.sep.common.IBuilding> buildingType) throws RunningGameCommandException
+	public void demolish(String playerLogin, String celestialBodyName, Class<? extends org.axan.sep.common.ABuilding> buildingType) throws RunningGameCommandException
 	{
 		DemolishCheckResult demolishCheckResult = checkDemolish(playerLogin, celestialBodyName, buildingType);
 		demolishCheckResult.productiveCelestialBody.downgradeBuilding(demolishCheckResult.existingBuilding);
 	}
 
-	public CommandCheckResult canDemolish(String playerLogin, String celestialBodyName, Class<? extends org.axan.sep.common.IBuilding> buildingType)
+	public CommandCheckResult canDemolish(String playerLogin, DemolishParams p)
 	{
 		try
 		{
-			checkDemolish(playerLogin, celestialBodyName, buildingType);
+			checkDemolish(playerLogin, p.celestialBodyName, p.buildingType);
 		}
 		catch(Throwable t)
 		{
@@ -902,7 +919,7 @@ public class GameBoard implements Serializable
 		}
 	}
 
-	public DemolishCheckResult checkDemolish(String playerName, String celestialBodyName, Class<? extends org.axan.sep.common.IBuilding> buildingType) throws RunningGameCommandException
+	public DemolishCheckResult checkDemolish(String playerName, String celestialBodyName, Class<? extends org.axan.sep.common.ABuilding> buildingType) throws RunningGameCommandException
 	{
 		ProductiveCelestialBody productiveCelestialBody = db.getCelestialBody(celestialBodyName, ProductiveCelestialBody.class, playerName);		
 		if (productiveCelestialBody == null) throw new RunningGameCommandException("Celestial body '" + celestialBodyName + "' does not exist, is not a productive one, or is not owned by '"+playerName+"'.");
@@ -928,7 +945,7 @@ public class GameBoard implements Serializable
 		embarkGovernmentCheckResult.planet.setPopulation(embarkGovernmentCheckResult.planet.getPopulation() - embarkGovernmentCheckResult.populationCost);
 	}
 
-	public CommandCheckResult canEmbarkGovernment(String playerLogin)
+	public CommandCheckResult canEmbarkGovernment(String playerLogin, EmbarkGovernmentParams p)
 	{
 		EmbarkGovernmentCheckResult check;
 		try
@@ -1019,11 +1036,11 @@ public class GameBoard implements Serializable
 		}
 	}
 	
-	public CommandCheckResult canSettleGovernment(String playerLogin, String planetName)
+	public CommandCheckResult canSettleGovernment(String playerLogin, SettleGovernmentParams p)
 	{
 		try
 		{
-			checkSettleGovernment(playerLogin, planetName);
+			checkSettleGovernment(playerLogin, p.planetName);
 		}
 		catch(Throwable t)
 		{
@@ -1070,7 +1087,7 @@ public class GameBoard implements Serializable
 		return new SettleGovernmentCheckResult(planet, governmentalFleet, governmentModule);
 	}
 
-	public void build(String playerLogin, String celestialBodyName, Class<? extends org.axan.sep.common.IBuilding> buildingType) throws CelestialBodyBuildException
+	public void build(String playerLogin, String celestialBodyName, Class<? extends org.axan.sep.common.ABuilding> buildingType) throws CelestialBodyBuildException
 	{
 		BuildCheckResult buildCheckResult = checkBuild(playerLogin, celestialBodyName, buildingType);
 		buildCheckResult.productiveCelestialBody.updateBuilding(buildCheckResult.newBuilding);
@@ -1085,12 +1102,12 @@ public class GameBoard implements Serializable
 		buildCheckResult.productiveCelestialBody.setLastBuildDate(db.getDate());
 	}
 
-	public CommandCheckResult canBuild(String playerLogin, String celestialBodyName, Class<? extends org.axan.sep.common.IBuilding> buildingType)
+	public CommandCheckResult canBuild(String playerLogin, BuildParams p)
 	{
 		BuildCheckResult check;
 		try
 		{
-			check = checkBuild(playerLogin, celestialBodyName, buildingType);
+			check = checkBuild(playerLogin, p.celestialBodyName, p.buildingType);
 		}
 		catch(Throwable t)
 		{
@@ -1115,7 +1132,7 @@ public class GameBoard implements Serializable
 		}
 	}
 
-	private BuildCheckResult checkBuild(String playerName, String celestialBodyName, Class<? extends org.axan.sep.common.IBuilding> buildingType) throws CelestialBodyBuildException
+	private BuildCheckResult checkBuild(String playerName, String celestialBodyName, Class<? extends org.axan.sep.common.ABuilding> buildingType) throws CelestialBodyBuildException
 	{
 		ProductiveCelestialBody productiveCelestialBody = db.getCelestialBody(celestialBodyName, ProductiveCelestialBody.class, playerName);
 		if (productiveCelestialBody == null) throw new CelestialBodyBuildException("Celestial body '" + celestialBodyName + "' does not exist, is not a productive one, or is not owned by '"+playerName+"'.");
@@ -1135,14 +1152,19 @@ public class GameBoard implements Serializable
 
 		if (building != null)
 		{
-			carbonCost = building.getUpgradeCarbonCost();
-			populationCost = building.getUpgradePopulationCost();
+			if (!building.canUpgrade())
+			{
+				throw new CelestialBodyBuildException(building.getClass().getSimpleName()+" cannot be upgraded.");
+			}
+			
 			newBuilding = building.getUpgraded(db.getDate());
+			carbonCost = building.getUpgradeCarbonCost();
+			populationCost = building.getUpgradePopulationCost();			
 		}
 		else
 		{
-			carbonCost = ABuilding.getFirstCarbonCost(buildingType);
-			populationCost = ABuilding.getFirstPopulationCost(buildingType);
+			carbonCost = org.axan.sep.common.ABuilding.getFirstCarbonCost(buildingType);
+			populationCost = org.axan.sep.common.ABuilding.getFirstPopulationCost(buildingType);
 			newBuilding = ABuilding.getFirstBuild(buildingType, db.getDate());
 		}
 
@@ -1158,11 +1180,11 @@ public class GameBoard implements Serializable
 		return new BuildCheckResult(productiveCelestialBody, carbonCost, populationCost, newBuilding);
 	}
 
-	public CommandCheckResult canFireAntiProbeMissile(String playerLogin, String antiProbeMissileName, String targetOwnerName, String targetProbeName)
+	public CommandCheckResult canFireAntiProbeMissile(String playerLogin, FireAntiProbeMissileParams p)
 	{
 		try
 		{
-			checkFireAntiProbeMissile(playerLogin, antiProbeMissileName, targetOwnerName, targetProbeName);
+			checkFireAntiProbeMissile(playerLogin, p.antiProbeMissileName, p.targetOwnerName, p.targetProbeName);
 		}
 		catch(Throwable t)
 		{
@@ -1226,11 +1248,11 @@ public class GameBoard implements Serializable
 		return new FireAntiProbeMissileCheckResult(antiProbeMissile, antiProbeMissile.getRealLocation(), destination);
 	}
 
-	public CommandCheckResult canLaunchProbe(String playerLogin, String probeName, RealLocation destination)
+	public CommandCheckResult canLaunchProbe(String playerLogin, LaunchProbeParams p)
 	{
 		try
 		{
-			checkLaunchProbe(playerLogin, probeName, destination);
+			checkLaunchProbe(playerLogin, p.probeName, p.destination);
 		}
 		catch(Throwable t)
 		{
@@ -1278,11 +1300,11 @@ public class GameBoard implements Serializable
 		return new LaunchProbeCheckResult(probe, destination);
 	}
 
-	public CommandCheckResult canMoveFleet(String playerLogin, String fleetName, Stack<org.axan.sep.common.Fleet.Move> checkpoints)
+	public CommandCheckResult canMoveFleet(String playerLogin, MoveFleetParams p)
 	{
 		try
 		{
-			checkMoveFleet(playerLogin, fleetName, checkpoints);
+			checkMoveFleet(playerLogin, p.fleetName, p.checkpoints);
 		}
 		catch(Throwable t)
 		{
@@ -1347,11 +1369,11 @@ public class GameBoard implements Serializable
 		return new MoveFleetCheckResult(fleet, locatedCheckpoints);
 	}
 
-	public CommandCheckResult canFormFleet(String playerLogin, String planetName, String fleetName, Map<org.axan.sep.common.StarshipTemplate, Integer> fleetToFormStarships, Set<String> fleetToFormSpecialUnits)
+	public CommandCheckResult canFormFleet(String playerLogin, FormFleetParams p)
 	{
 		try
 		{
-			checkFormFleet(playerLogin, planetName, fleetName, fleetToFormStarships, fleetToFormSpecialUnits);
+			checkFormFleet(playerLogin, p.productiveCelestialBodyName, p.fleetName, p.fleetToFormStarships, p.fleetToFormSpecialUnits);
 		}
 		catch(Throwable t)
 		{
@@ -1418,11 +1440,11 @@ public class GameBoard implements Serializable
 		return new FormFleetCheckResult(productiveCelestialBody, newFleet);
 	}
 
-	public CommandCheckResult canDismantleFleet(String playerLogin, String fleetName)
+	public CommandCheckResult canDismantleFleet(String playerLogin, DismantleFleetParams p)
 	{
 		try
 		{
-			checkDismantleFleet(playerLogin, fleetName);
+			checkDismantleFleet(playerLogin, p.fleetName);
 		}
 		catch(Throwable t)
 		{
@@ -1462,12 +1484,12 @@ public class GameBoard implements Serializable
 		return new DismantleFleetCheckResult(productiveCelestialBody, fleet);
 	}
 
-	public CommandCheckResult canMakeProbes(String playerLogin, String planetName, String probeName, int quantity)
+	public CommandCheckResult canMakeProbes(String playerLogin, MakeProbesParams p)
 	{
 		MakeProbesCheckResult check;
 		try
 		{
-			check = checkMakeProbes(playerLogin, planetName, probeName, quantity);
+			check = checkMakeProbes(playerLogin, p.planetName, p.probeName, p.quantity);
 		}
 		catch(Throwable t)
 		{
@@ -1540,12 +1562,12 @@ public class GameBoard implements Serializable
 		return new MakeProbesCheckResult(planet, carbonCost, populationCost, newProbes);
 	}
 
-	public CommandCheckResult canMakeAntiProbeMissiles(String playerLogin, String planetName, String antiProbeMissileName, int quantity)
+	public CommandCheckResult canMakeAntiProbeMissiles(String playerLogin, MakeAntiProbeMissilesParams p)
 	{
 		MakeAntiProbeMissilesCheckResult check;
 		try
 		{
-			check = checkMakeAntiProbeMissiles(playerLogin, planetName, antiProbeMissileName, quantity);
+			check = checkMakeAntiProbeMissiles(playerLogin, p.planetName, p.antiProbeMissileName, p.quantity);
 		}
 		catch(Throwable t)
 		{
@@ -1618,12 +1640,12 @@ public class GameBoard implements Serializable
 		return new MakeAntiProbeMissilesCheckResult(planet, carbonCost, populationCost, newAntiProbeMissiles);
 	}
 
-	public CommandCheckResult canMakeStarships(String playerLogin, String planetName, Map<org.axan.sep.common.StarshipTemplate, Integer> starshipsToMake)
+	public CommandCheckResult canMakeStarships(String playerLogin, MakeStarshipsParams p)
 	{
 		MakeStarshipsCheckResult check;
 		try
 		{
-			check = checkMakeStarships(playerLogin, planetName, starshipsToMake);
+			check = checkMakeStarships(playerLogin, p.planetName, p.starshipsToMake);
 		}
 		catch(Throwable t)
 		{
@@ -1701,11 +1723,11 @@ public class GameBoard implements Serializable
 		return new MakeStarshipsCheckResult(planet, carbonCost, populationCost);
 	}
 
-	public CommandCheckResult canChangeDiplomacy(String playerLogin, Map<String,PlayerPolicies> newPolicies)
+	public CommandCheckResult canChangeDiplomacy(String playerLogin, ChangeDiplomacyParams p)
 	{
 		try
 		{
-			checkChangeDiplomacy(playerLogin, newPolicies);
+			checkChangeDiplomacy(playerLogin, p.newPolicies);
 		}
 		catch(Throwable t)
 		{
@@ -1735,11 +1757,11 @@ public class GameBoard implements Serializable
 		return new ChangeDiplomacyCheckResult();
 	}
 	
-	public CommandCheckResult canAttackEnemiesFleet(String playerLogin, String celestialBodyName)
+	public CommandCheckResult canAttackEnemiesFleet(String playerLogin, AttackEnemiesFleetParams p)
 	{
 		try
 		{
-			checkAttackEnemiesFleet(playerLogin, celestialBodyName);
+			checkAttackEnemiesFleet(playerLogin, p.celestialBodyName);
 		}
 		catch(Throwable t)
 		{
@@ -1754,7 +1776,7 @@ public class GameBoard implements Serializable
 		AttackEnemiesFleetCheckResult attackEnemiesFleetCheckResult = checkAttackEnemiesFleet(playerLogin, celestialBodyName);
 		attackEnemiesFleetCheckResult.productiveCelestialBody.addConflictInititor(playerLogin);
 	}
-
+	
 	private static class AttackEnemiesFleetCheckResult
 	{
 		final ProductiveCelestialBody productiveCelestialBody;
@@ -1774,12 +1796,12 @@ public class GameBoard implements Serializable
 	
 	/////
 	
-	public CommandCheckResult canBuildSpaceRoad(String playerLogin, String productiveCelestialBodyNameA, String productiveCelestialBodyNameB)
+	public CommandCheckResult canBuildSpaceRoad(String playerLogin, BuildSpaceRoadParams p)
 	{
 		BuildSpaceRoadCheckResult check;
 		try
 		{
-			check = checkBuildSpaceRoad(playerLogin, productiveCelestialBodyNameA, productiveCelestialBodyNameB);
+			check = checkBuildSpaceRoad(playerLogin, p.productiveCelestialBodyNameA, p.productiveCelestialBodyNameB);
 		}
 		catch(Throwable t)
 		{
@@ -1857,11 +1879,11 @@ public class GameBoard implements Serializable
 		return new BuildSpaceRoadCheckResult(source, price, deliverer, destination.getLocation());			
 	}
 	
-	public CommandCheckResult canDemolishSpaceRoad(String playerLogin, String sourceName, String destinationName)
+	public CommandCheckResult canDemolishSpaceRoad(String playerLogin, DemolishSpaceRoadParams p)
 	{
 		try
 		{
-			checkDemolishSpaceRoad(playerLogin, sourceName, destinationName);
+			checkDemolishSpaceRoad(playerLogin, p.sourceName, p.destinationName);
 		}
 		catch(Throwable t)
 		{
@@ -1904,11 +1926,11 @@ public class GameBoard implements Serializable
 	
 	////
 	
-	public CommandCheckResult canModifyCarbonOrder(String playerLogin, String originCelestialBodyName, Stack<CarbonOrder> nextCarbonOrders)
+	public CommandCheckResult canModifyCarbonOrder(String playerLogin, ModifyCarbonOrderParams p)
 	{
 		try
 		{
-			checkModifyCarbonOrder(playerLogin, originCelestialBodyName, nextCarbonOrders);
+			checkModifyCarbonOrder(playerLogin, p.originCelestialBodyName, p.nextCarbonOrders);
 		}
 		catch(Throwable t)
 		{

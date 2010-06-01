@@ -1572,6 +1572,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 				}
 			}
 		});
+
 	}
 
 	private JPanel getGameCreationConfigEditionPanel()
