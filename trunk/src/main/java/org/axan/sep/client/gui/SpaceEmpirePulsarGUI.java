@@ -17,7 +17,9 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.Date;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Random;
@@ -30,6 +32,7 @@ import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JColorChooser;
+import javax.swing.JComboBox;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -59,6 +62,7 @@ import org.axan.sep.common.Planet;
 import org.axan.sep.common.Player;
 import org.axan.sep.common.PlayerConfig;
 import org.axan.sep.common.PlayerGameBoard;
+import org.axan.sep.common.SEPUtils;
 import org.axan.sep.server.SEPServer;
 
 
@@ -665,9 +669,39 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		}
 		catch(Throwable t)
 		{
-			t.printStackTrace();
+			showError("Refresh game board", t);
 		}
 	}
+	
+	private Integer stackedErrors = 0;
+	private void showError(final String title, final String msg, final Throwable t)
+	{
+		synchronized(stackedErrors)
+		{
+			++stackedErrors;
+			
+			if (stackedErrors > 3) return;
+			
+			t.printStackTrace();
+			
+			SwingUtilities.invokeLater(new Runnable()
+			{
+				
+				@Override
+				public void run()
+				{
+					JOptionPane.showMessageDialog(null, "Error"+(msg!=null ? ", "+msg : "")+" : ("+t.getClass().getSimpleName()+") "+t.getMessage(), title, JOptionPane.ERROR_MESSAGE);
+					
+					synchronized(stackedErrors)
+					{
+						--stackedErrors;
+					}
+				}
+			});
+		}
+	}
+	
+	private void showError(String title, Throwable t) {showError(title, null, t);}
 
 	private void refreshGameConfig()
 	{
@@ -694,7 +728,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		}
 		catch(Throwable t)
 		{
-			t.printStackTrace();
+			showError("Refresh game config", t);
 			return;
 		}
 
@@ -755,18 +789,19 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		{
 			if (gameState == GameState.Creation)
 			{
-				Set<Player> players = client.getGameCreationInterface().getPlayerList();
-				refreshPlayerList(players);
+				this.playerList = client.getGameCreationInterface().getPlayerList();
+				refreshPlayerList(this.playerList);
 			}
 			else if (gameState == GameState.Paused)
 			{
 				Map<Player, Boolean> players = client.getPausedGameInterface().getPlayerStateList();
+				this.playerList = players.keySet();
 				refreshPausedGamePlayerList(players);
 			}
 		}
 		catch(Throwable t)
 		{
-			t.printStackTrace();
+			showError("Refresh player list", t);
 		}
 	}
 
@@ -801,7 +836,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		}
 		catch(Throwable t)
 		{
-			t.printStackTrace();
+			showError("Display running game panel", t);
 		}
 	}
 
@@ -1004,6 +1039,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		super.dispose();
 	}
 
+	private Set<Player> playerList;	
+	
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -1012,6 +1049,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 	@Override
 	public void refreshPlayerList(final Set<Player> playerList)
 	{
+		this.playerList = playerList;
+		
 		SwingUtilities.invokeLater(new Runnable()
 		{
 
@@ -1128,9 +1167,67 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 			FlowLayout gameCreationBtnsPanelLayout = new FlowLayout();
 			gameCreationBtnsPanel.setLayout(gameCreationBtnsPanelLayout);
 			gameCreationBtnsPanel.setPreferredSize(new java.awt.Dimension(10, 30));
-			if (isAdmin) gameCreationBtnsPanel.add(getGameCreationBtnsStartBtn());
+			if (isAdmin)
+			{
+				gameCreationBtnsPanel.add(getGameCreationBtnsStartBtn());
+				gameCreationBtnsPanel.add(getGameCreationBtnsLoadGameComboBox());
+				gameCreationBtnsPanel.add(getGameCreationBtnsLoadGameBtn());
+			}
 		}
 		return gameCreationBtnsPanel;
+	}
+	
+	private JComboBox gameCreationBtnsLoadGameComboBox;
+	private JComboBox getGameCreationBtnsLoadGameComboBox()
+	{
+		if (gameCreationBtnsLoadGameComboBox == null)
+		{
+			File workingDir = new File(SEPUtils.SAVE_SUBDIR);
+			gameCreationBtnsLoadGameComboBox = new JComboBox();
+			
+			for(String fileName : workingDir.list(new FilenameFilter()
+			{
+				
+				@Override
+				public boolean accept(File dir, String name)
+				{
+					return name.matches("^.+\\.sav$");
+				}
+			}))
+			{
+				gameCreationBtnsLoadGameComboBox.addItem(SEPUtils.getSaveID(fileName));
+			}
+		}
+		
+		return gameCreationBtnsLoadGameComboBox;
+	}
+	
+	private JButton gameCreationBtnsLoadGameBtn;
+	private JButton getGameCreationBtnsLoadGameBtn()
+	{
+		if (gameCreationBtnsLoadGameBtn == null)
+		{
+			gameCreationBtnsLoadGameBtn = new JButton("Load game");
+			
+			gameCreationBtnsLoadGameBtn.addActionListener(new ActionListener()
+			{
+				
+				@Override
+				public void actionPerformed(ActionEvent arg0)
+				{
+					try
+					{
+						client.loadGame(getGameCreationBtnsLoadGameComboBox().getSelectedItem().toString());
+					}
+					catch(Throwable t)
+					{
+						showError("Loading game", t);						
+					}
+				}
+			});
+		}
+		
+		return gameCreationBtnsLoadGameBtn;
 	}
 
 	private JLabel getGameCreationConfigLabel1()
@@ -2661,10 +2758,47 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 			}
 		});
 	}
+	
+	private String saveFileBaseName;
+	private String getSaveFileBaseName()
+	{
+		if (saveFileBaseName == null)
+		{
+			if (playerList == null) return "Error";
+			
+			StringBuffer sb = new StringBuffer();
+			sb.append(new Date().toString()+" - ");			
+			for(Player p : playerList) sb.append(p.getName()+", ");
+			if (playerList.size() > 0) sb.setLength(sb.length() - 2);
+			sb.append(" - T");
+						
+			saveFileBaseName = sb.toString();
+		}
+		return saveFileBaseName;
+	}
 
 	@Override
 	public void receiveNewTurnGameBoard(final PlayerGameBoard gameBoard)
 	{
+		if (isAdmin)
+		{
+			SwingUtilities.invokeLater(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					try
+					{
+						client.saveGame(getSaveFileBaseName()+gameBoard.getDate());
+					}
+					catch(Throwable t)
+					{
+						showError("Saving game", t);
+					}
+				}
+			});
+		}
+		
 		SwingUtilities.invokeLater(new Runnable()
 		{
 		

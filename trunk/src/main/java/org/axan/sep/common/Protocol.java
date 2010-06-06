@@ -464,7 +464,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void endTurn(List<ILocalGameCommand> commands) throws RpcException, StateMachineNotExpectedEventException, SEPImplementationException, RunningGameCommandException;
+		void endTurn(List<IGameCommand> commands) throws RpcException, StateMachineNotExpectedEventException, SEPImplementationException, RunningGameCommandException;
 	}
 	
 	/**

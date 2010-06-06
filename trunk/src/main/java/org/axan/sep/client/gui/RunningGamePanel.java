@@ -72,7 +72,8 @@ import org.axan.sep.common.ExtractionModule;
 import org.axan.sep.common.Fleet;
 import org.axan.sep.common.GovernmentModule;
 import org.axan.sep.common.ICelestialBody;
-import org.axan.sep.common.ILocalGameCommand;
+import org.axan.sep.common.IGame;
+import org.axan.sep.common.IGameCommand;
 import org.axan.sep.common.ISpecialUnit;
 import org.axan.sep.common.LaunchedPulsarMissile;
 import org.axan.sep.common.LocalGame;
@@ -93,34 +94,34 @@ import org.axan.sep.common.UnitMarker;
 import org.axan.sep.common.Diplomacy.PlayerPolicies;
 import org.axan.sep.common.Diplomacy.PlayerPolicies.eForeignPolicy;
 import org.axan.sep.common.Fleet.Move;
-import org.axan.sep.common.ILocalGameCommand.LocalGameCommandException;
-import org.axan.sep.common.LocalGame.AttackEnemiesFleetCheck;
-import org.axan.sep.common.LocalGame.Build;
-import org.axan.sep.common.LocalGame.BuildCheck;
-import org.axan.sep.common.LocalGame.BuildSpaceRoad;
-import org.axan.sep.common.LocalGame.ChangeDiplomacy;
-import org.axan.sep.common.LocalGame.DemolishCheck;
-import org.axan.sep.common.LocalGame.DemolishSpaceRoad;
-import org.axan.sep.common.LocalGame.DismantleFleet;
-import org.axan.sep.common.LocalGame.DismantleFleetCheck;
-import org.axan.sep.common.LocalGame.EmbarkGovernment;
-import org.axan.sep.common.LocalGame.EmbarkGovernmentCheck;
-import org.axan.sep.common.LocalGame.FireAntiProbeMissile;
-import org.axan.sep.common.LocalGame.FireAntiProbeMissileCheck;
-import org.axan.sep.common.LocalGame.FormFleet;
-import org.axan.sep.common.LocalGame.FormFleetCheck;
-import org.axan.sep.common.LocalGame.LaunchProbe;
-import org.axan.sep.common.LocalGame.LaunchProbeCheck;
-import org.axan.sep.common.LocalGame.MakeAntiProbeMissiles;
-import org.axan.sep.common.LocalGame.MakeAntiProbeMissilesCheck;
-import org.axan.sep.common.LocalGame.MakeProbes;
-import org.axan.sep.common.LocalGame.MakeProbesCheck;
-import org.axan.sep.common.LocalGame.MakeStarships;
-import org.axan.sep.common.LocalGame.MakeStarshipsCheck;
-import org.axan.sep.common.LocalGame.ModifyCarbonOrder;
-import org.axan.sep.common.LocalGame.MoveFleet;
-import org.axan.sep.common.LocalGame.SettleGovernment;
-import org.axan.sep.common.LocalGame.SettleGovernmentCheck;
+import org.axan.sep.common.IGame.AttackEnemiesFleetCheck;
+import org.axan.sep.common.IGame.Build;
+import org.axan.sep.common.IGame.BuildCheck;
+import org.axan.sep.common.IGame.BuildSpaceRoad;
+import org.axan.sep.common.IGame.ChangeDiplomacy;
+import org.axan.sep.common.IGame.DemolishCheck;
+import org.axan.sep.common.IGame.DemolishSpaceRoad;
+import org.axan.sep.common.IGame.DismantleFleet;
+import org.axan.sep.common.IGame.DismantleFleetCheck;
+import org.axan.sep.common.IGame.EmbarkGovernment;
+import org.axan.sep.common.IGame.EmbarkGovernmentCheck;
+import org.axan.sep.common.IGame.FireAntiProbeMissile;
+import org.axan.sep.common.IGame.FireAntiProbeMissileCheck;
+import org.axan.sep.common.IGame.FormFleet;
+import org.axan.sep.common.IGame.FormFleetCheck;
+import org.axan.sep.common.IGame.LaunchProbe;
+import org.axan.sep.common.IGame.LaunchProbeCheck;
+import org.axan.sep.common.IGame.MakeAntiProbeMissiles;
+import org.axan.sep.common.IGame.MakeAntiProbeMissilesCheck;
+import org.axan.sep.common.IGame.MakeProbes;
+import org.axan.sep.common.IGame.MakeProbesCheck;
+import org.axan.sep.common.IGame.MakeStarships;
+import org.axan.sep.common.IGame.MakeStarshipsCheck;
+import org.axan.sep.common.IGame.ModifyCarbonOrder;
+import org.axan.sep.common.IGame.MoveFleet;
+import org.axan.sep.common.IGame.SettleGovernment;
+import org.axan.sep.common.IGame.SettleGovernmentCheck;
+import org.axan.sep.common.IGameCommand.GameCommandException;
 import org.axan.sep.common.PlayerGameBoard.PlayerGameBoardQueryException;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.common.SEPUtils.RealLocation;
@@ -174,7 +175,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		initGUI();
 	}
 	
-	public void endTurn(List<ILocalGameCommand> commands) throws StateMachineNotExpectedEventException, RpcException
+	public void endTurn(List<IGameCommand> commands) throws StateMachineNotExpectedEventException, RpcException
 	{
 		try
 		{
@@ -316,7 +317,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					{
 						currentLocalGame.undo();
 					}
-					catch(LocalGameCommandException e1)
+					catch(GameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}					
@@ -345,7 +346,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					{
 						currentLocalGame.redo();
 					}
-					catch(LocalGameCommandException e1)
+					catch(GameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}					
@@ -374,7 +375,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					{
 						currentLocalGame.resetTurn();
 					}
-					catch(LocalGameCommandException e1)
+					catch(GameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}					
@@ -403,7 +404,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					{
 						currentLocalGame.endTurn();
 					}
-					catch(LocalGameCommandException e1)
+					catch(GameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}
@@ -599,7 +600,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					{
 						currentLocalGame.executeCommand(new LocalGame.AttackEnemiesFleet(productiveCelestialBody.getName()));
 					}
-					catch(LocalGameCommandException e1)
+					catch(GameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}
@@ -863,7 +864,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return universeRenderer;
 	}
 
-	private LocalGame		currentLocalGame;
+	private IGame		currentLocalGame;
 
 	private Area			currentSelectedArea;
 	private RealLocation	currentSelectedLocation;
@@ -999,7 +1000,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				{
 					currentLocalGame.executeCommand(new LocalGame.Build(productiveCelestialBody.getName(), buildingType));
 				}
-				catch(LocalGameCommandException e1)
+				catch(GameCommandException e1)
 				{
 					showRunningGameCommandExceptionMsg(e1);
 				}				
@@ -1022,7 +1023,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				{
 					currentLocalGame.executeCommand(new LocalGame.Demolish(productiveCelestialBody.getName(), buildingType));
 				}
-				catch(LocalGameCommandException e1)
+				catch(GameCommandException e1)
 				{
 					showRunningGameCommandExceptionMsg(e1);
 				}				
@@ -1134,7 +1135,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 								{
 									currentLocalGame.executeCommand(new DismantleFleet(unit.getName()));									
 								}
-								catch(LocalGameCommandException e1)
+								catch(GameCommandException e1)
 								{
 									showRunningGameCommandExceptionMsg(e1);
 								}
@@ -1160,7 +1161,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 									{
 										currentLocalGame.executeCommand(new SettleGovernment(celestialBody.getName()));
 									}
-									catch(LocalGameCommandException e1)
+									catch(GameCommandException e1)
 									{
 										showRunningGameCommandExceptionMsg(e1);
 									}
@@ -1212,7 +1213,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 									JOptionPane.showMessageDialog(null, "Cannot fire antiprobe missile '" + infos.unit.getName() + "' onto '" + target.toString() + "'\n" + checkFireAPM.getReason(), "Error", JOptionPane.ERROR_MESSAGE);
 								}
 							}
-							catch(LocalGameCommandException e)
+							catch(GameCommandException e)
 							{
 								showRunningGameCommandExceptionMsg(e);
 							}							
@@ -1294,7 +1295,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 								currentLocalGame.executeCommand(new LaunchProbe(infos.unit.getName(), dest));
 							}
-							catch(LocalGameCommandException e1)
+							catch(GameCommandException e1)
 							{
 								showRunningGameCommandExceptionMsg(e1);
 							}
@@ -1534,7 +1535,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 								{
 									currentLocalGame.executeCommand(new EmbarkGovernment());
 								}
-								catch(LocalGameCommandException e1)
+								catch(GameCommandException e1)
 								{
 									showRunningGameCommandExceptionMsg(e1);
 								}
@@ -1565,7 +1566,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 									{
 										currentLocalGame.executeCommand(new SettleGovernment(productiveCelestialBody.getName()));										
 									}
-									catch(LocalGameCommandException e1)
+									catch(GameCommandException e1)
 									{
 										showRunningGameCommandExceptionMsg(e1);
 									}							
@@ -1611,7 +1612,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 							{
 								currentLocalGame.executeCommand(new Build(productiveCelestialBody.getName(), PulsarLauchingPad.class));
 							}
-							catch(LocalGameCommandException e1)
+							catch(GameCommandException e1)
 							{
 								showRunningGameCommandExceptionMsg(e1);
 							}							
@@ -1882,7 +1883,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 						getStarshipPlantNewFleetNameTextField().setText(Unit.generateName());
 					}
-					catch(LocalGameCommandException e1)
+					catch(GameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}
@@ -1921,7 +1922,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 							getAntiProbeMissileMakeQtTextField().setText("0");
 						}
 					}
-					catch(LocalGameCommandException e1)
+					catch(GameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}
@@ -1960,7 +1961,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 							getProbeMakeQtTextField().setText("0");
 						}
 					}
-					catch(LocalGameCommandException e1)
+					catch(GameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}
@@ -2002,7 +2003,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 							getStarshipPlantWorkshopStarshipQtToMakeTextField(starshipType).setText("0");
 						}
 					}
-					catch(LocalGameCommandException e1)
+					catch(GameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}
@@ -2272,7 +2273,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					{
 						currentLocalGame.executeCommand(new DemolishSpaceRoad(infos.productiveCelestialBody.getName(), (infos.productiveCelestialBody.getName().compareTo(spaceRoad.getSource()) == 0 ? spaceRoad.getDestination() : spaceRoad.getSource())));
 					}
-					catch(LocalGameCommandException e1)
+					catch(GameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}
@@ -2354,7 +2355,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					{
 						currentLocalGame.executeCommand(new BuildSpaceRoad(infos.productiveCelestialBody.getName(), selectedSpaceRoadDestination.getName()));
 					}					
-					catch(LocalGameCommandException e1)
+					catch(GameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}
@@ -2512,7 +2513,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						currentLocalGame.executeCommand(new ModifyCarbonOrder(infos.productiveCelestialBody.getName(), orders));
 						getNextCarbonOrdersList().add(newCarbonOrder);
 					}
-					catch(LocalGameCommandException e1)
+					catch(GameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}
@@ -2555,7 +2556,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						getNextCarbonOrdersList().remove(selectedIndex);
 						getNextCarbonOrdersList().add(selectedIndex - 1, movedCarbonOrder);
 					}
-					catch(LocalGameCommandException e1)
+					catch(GameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}
@@ -2599,7 +2600,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						getNextCarbonOrdersList().remove(selectedIndex);
 						getNextCarbonOrdersList().add(selectedIndex + 1, movedCarbonOrder);
 					}
-					catch(LocalGameCommandException e1)
+					catch(GameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}
@@ -2638,7 +2639,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						currentLocalGame.executeCommand(new ModifyCarbonOrder(infos.productiveCelestialBody.getName(), orders));
 						getNextCarbonOrdersList().remove(selectedIndex);
 					}
-					catch(LocalGameCommandException e1)
+					catch(GameCommandException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}
@@ -2951,7 +2952,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		{
 			currentLocalGame.executeCommand(new ChangeDiplomacy(policies));
 		}
-		catch(LocalGameCommandException e)
+		catch(GameCommandException e)
 		{
 			showRunningGameCommandExceptionMsg(e);
 		}
@@ -3133,7 +3134,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		{
 			currentLocalGame.executeCommand(new MoveFleet(infos.unit.getName(), checkpoints));
 		}
-		catch(LocalGameCommandException e)
+		catch(GameCommandException e)
 		{
 			showRunningGameCommandExceptionMsg(e);
 		}
@@ -3795,7 +3796,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		if (runningGameChatContentEditorPane == null)
 		{
 			runningGameChatContentEditorPane = new JEditorPane("text/html", "<i>Chat</i> <b>editor</b> <u>pane</u>");
-			runningGameChatContentEditorPane.setEditable(false);
+			runningGameChatContentEditorPane.setEditable(false);			
 		}
 		return runningGameChatContentEditorPane;
 	}

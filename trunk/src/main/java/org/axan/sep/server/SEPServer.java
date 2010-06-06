@@ -32,11 +32,12 @@ import org.axan.eplib.gameserver.server.GameServer.ServerUser;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.sep.common.CommandCheckResult;
 import org.axan.sep.common.GameConfig;
-import org.axan.sep.common.ILocalGameCommand;
+import org.axan.sep.common.IGameCommand;
 import org.axan.sep.common.Player;
 import org.axan.sep.common.PlayerConfig;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.Protocol;
+import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.Protocol.ServerGameCreation;
 import org.axan.sep.common.Protocol.ServerPausedGame;
 import org.axan.sep.common.Protocol.ServerRunningGame;
@@ -574,7 +575,7 @@ public class SEPServer implements IServer
 		*/
 
 		@Override
-		public void endTurn(List<ILocalGameCommand> commands) throws RpcException, StateMachineNotExpectedEventException, SEPImplementationException, RunningGameCommandException
+		public void endTurn(List<IGameCommand> commands) throws RpcException, StateMachineNotExpectedEventException, SEPImplementationException, RunningGameCommandException
 		{
 			getGameMove().endTurn(commands);
 			
@@ -941,13 +942,13 @@ public class SEPServer implements IServer
 		@Override
 		public ObjectInputStream getGameLoadingStream(String savedGameId) throws FileNotFoundException, IOException
 		{
-			return new ObjectInputStream(new FileInputStream(ServerGame.getSaveFileName(savedGameId)));
+			return new ObjectInputStream(new FileInputStream(SEPUtils.SAVE_SUBDIR+SEPUtils.getSaveFileName(savedGameId)));
 		}
 
 		@Override
 		public ObjectOutputStream getGameSavingStream(String saveGameId) throws FileNotFoundException, IOException
 		{
-			return new ObjectOutputStream(new FileOutputStream(ServerGame.getSaveFileName(saveGameId)));			
+			return new ObjectOutputStream(new FileOutputStream(SEPUtils.SAVE_SUBDIR+SEPUtils.getSaveFileName(saveGameId)));			
 		}
 
 		@Override

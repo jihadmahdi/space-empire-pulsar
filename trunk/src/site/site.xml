@@ -22,7 +22,7 @@
 
 		<menu name="Projet">
 			<item name="Présentation" href="/index.html" />
-			<item name="Téléchargement" href="${downloadUrl}" />
+			<item name="Téléchargement" href="/releases" />
 			<item name="Doc" href="/wiki" />
 			<item name="FAQ" href="/faq.html" />
 			<item name="TODO list" href="/todolist.html" />
