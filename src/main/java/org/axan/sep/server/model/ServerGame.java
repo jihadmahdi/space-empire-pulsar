@@ -83,11 +83,6 @@ public class ServerGame implements Serializable
 		}
 	}
 
-	public static String getSaveFileName(String saveName)
-	{
-		return "SEPGameSave_" + saveName + ".sav";
-	}
-
 	public void save(ObjectOutputStream oos) throws IOException
 	{
 		oos.writeObject(this);

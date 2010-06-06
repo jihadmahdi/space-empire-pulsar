@@ -5,7 +5,7 @@ import java.lang.reflect.Field;
 
 import org.axan.eplib.utils.Basic;
 
-public abstract class AbstractGameCommand<P, O extends AbstractGameCommandCheck> implements ILocalGameCommand, Serializable
+public abstract class AbstractGameCommand<P, O extends AbstractGameCommandCheck> implements IGameCommand, Serializable
 {
 	P params;
 	
@@ -22,14 +22,14 @@ public abstract class AbstractGameCommand<P, O extends AbstractGameCommandCheck>
 	abstract protected O check(PlayerGameBoard gameBoard);
 	
 	@Override
-	public PlayerGameBoard apply(PlayerGameBoard gameBoard) throws LocalGameCommandException
+	public PlayerGameBoard apply(PlayerGameBoard gameBoard) throws GameCommandException
 	{
 		PlayerGameBoard nextGameBoard = Basic.clone(gameBoard);
 		O check = check(nextGameBoard);
 		if (!check.isPossible())
 		{
 			//if (check.getReason() != null) throw new LocalGameCommandException(check.getReason());
-			throw new LocalGameCommandException(check.toString());
+			throw new GameCommandException(check.toString());
 		}
 		
 		return apply(check);
@@ -41,7 +41,7 @@ public abstract class AbstractGameCommand<P, O extends AbstractGameCommandCheck>
 		return params;
 	}
 	
-	abstract protected PlayerGameBoard apply(O check) throws LocalGameCommandException;
+	abstract protected PlayerGameBoard apply(O check) throws GameCommandException;
 	
 	public String toString()
 	{

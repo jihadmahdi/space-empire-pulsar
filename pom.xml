@@ -97,7 +97,8 @@
 		<libSubDirectory>lib</libSubDirectory>
 		<installersDirectory>${project.build.directory}/distribs</installersDirectory>
 		<siteDirectory>${basedir}/src/site</siteDirectory>
-		<downloadUrl>${url}/releases</downloadUrl>
+		<!-- <downloadUrl>${url}/releases</downloadUrl> -->
+		<downloadUrl>/releases</downloadUrl>
 		<hostDomain>axan.org</hostDomain>
 
 		<!-- Auteur -->
@@ -112,7 +113,7 @@
 		<tmp>/tmp</tmp>
 
 		<!-- computed -->
-		<url>http://${projectArtifactId}.${hostDomain}</url>
+		<url>http://${projectArtifactId}.${hostDomain}</url>		
 		<finalReleaseResourcesDirectory>${packagingDirectory}</finalReleaseResourcesDirectory>
 		<packagingLibDirectory>${packagingDirectory}/${libSubDirectory}</packagingLibDirectory>
 	</properties>

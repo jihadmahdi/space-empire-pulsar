@@ -29,6 +29,8 @@ import org.axan.sep.common.DefenseModule;
 import org.axan.sep.common.ExtractionModule;
 import org.axan.sep.common.Fleet;
 import org.axan.sep.common.GameConfig;
+import org.axan.sep.common.IGame;
+import org.axan.sep.common.IGameCommand;
 import org.axan.sep.common.Planet;
 import org.axan.sep.common.Player;
 import org.axan.sep.common.PlayerGameBoard;
@@ -38,18 +40,19 @@ import org.axan.sep.common.StarshipTemplate;
 import org.axan.sep.common.Diplomacy.PlayerPolicies;
 import org.axan.sep.common.Diplomacy.PlayerPolicies.eForeignPolicy;
 import org.axan.sep.common.Fleet.Move;
-import org.axan.sep.common.ILocalGameCommand.LocalGameCommandException;
-import org.axan.sep.common.LocalGame.Build;
-import org.axan.sep.common.LocalGame.BuildCheck;
-import org.axan.sep.common.LocalGame.ChangeDiplomacy;
-import org.axan.sep.common.LocalGame.Demolish;
-import org.axan.sep.common.LocalGame.DismantleFleet;
-import org.axan.sep.common.LocalGame.FormFleet;
-import org.axan.sep.common.LocalGame.MakeStarships;
-import org.axan.sep.common.LocalGame.MoveFleet;
+import org.axan.sep.common.IGame.Build;
+import org.axan.sep.common.IGame.BuildCheck;
+import org.axan.sep.common.IGame.ChangeDiplomacy;
+import org.axan.sep.common.IGame.Demolish;
+import org.axan.sep.common.IGame.DismantleFleet;
+import org.axan.sep.common.IGame.FormFleet;
+import org.axan.sep.common.IGame.MakeStarships;
+import org.axan.sep.common.IGame.MoveFleet;
+import org.axan.sep.common.IGameCommand.GameCommandException;
 import org.axan.sep.common.Protocol.ServerGameCreation;
 import org.axan.sep.common.Protocol.ServerRunningGame;
 import org.axan.sep.server.ai.ClientAI;
+import org.axan.sep.server.ai.UncheckedLocalGame;
 import org.axan.sep.server.model.GameBoard;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -116,16 +119,16 @@ public class TestSEP
 		//private final SEPClient	client;
 		private final Logger	log	= SEPClient.log;
 
-		public TestClientUserInterface(String login, String pwd, String server, int port, int timeOut)
+		public TestClientUserInterface(boolean isClientTest, String login, String pwd, String server, int port, int timeOut)
 		{
 			SEPClient client = new SEPClient(this, login, pwd, server, port, timeOut);
-			this.ai = new ClientAI(login, client);
+			this.ai = new ClientAI(login, client, isClientTest);
 		}
 
-		public TestClientUserInterface(String login, String server, int port, int timeOut)
+		public TestClientUserInterface(boolean isClientTest, String login, String server, int port, int timeOut)
 		{
 			SEPClient client = new SEPClient(this, login, server, port, timeOut);
-			this.ai = new ClientAI(login, client);
+			this.ai = new ClientAI(login, client, isClientTest);
 		}
 
 		public SEPClient getClient()
@@ -236,12 +239,77 @@ public class TestSEP
 		}
 
 	}
+	
+	private static void checkErronedCommand(IGameCommand erronedCommand, IGame game, boolean isClientTest)
+	{
+		boolean exceptionThrown = false;
+		try
+		{
+			game.executeCommand(erronedCommand);
+		}
+		catch(GameCommandException e)
+		{
+			exceptionThrown = true;
+		}
+		
+		if (isClientTest != exceptionThrown)
+		{
+			fail(isClientTest ? "Expected exception not thrown." : "Client thrown unexpected exception, assumed that unchecked version is used.");
+		}
+		
+		if (!isClientTest)
+		{
+			exceptionThrown = false;
+			
+			try
+			{
+				game.endTurn();
+			}
+			catch(GameCommandException e)
+			{
+				exceptionThrown = true;
+			}
+			
+			if (!exceptionThrown) fail("Expected exception not thrown.");
 
+			((UncheckedLocalGame) game).undo(erronedCommand);			
+		}
+	}
+	
+	private static void waitForNextTurn(int turn, ClientAI ... ias) throws InterruptedException
+	{	
+		boolean finished;
+		do
+		{
+			finished = true;
+			
+			for(ClientAI ia : ias)
+			{
+				if (ia.getDate() != turn)
+				{
+					finished = false;
+					break;
+				}
+			}
+			
+			Thread.sleep(200);
+			
+		}while(!finished);		
+	}
+	
 	/**
-	 * Test for {@link SEPServer} and {@link SEPClient}
+	 * Test for client side.
 	 */
 	@Test
-	public void allCases()
+	public void testClient() {test(true);}
+	
+	/**
+	 * Test for server side.
+	 */
+	@Test
+	public void testServer() {test(false);}
+	
+	private void test(boolean isClientTest)
 	{
 		final int PORT = 3131;
 		final int TIMEOUT = 999999*1000;//10000;
@@ -288,7 +356,7 @@ public class TestSEP
 		
 		// Client 1
 
-		TestClientUserInterface ui1 = new TestClientUserInterface("client1", SERVER_ADMIN_KEY, "localhost", PORT, TIMEOUT);
+		TestClientUserInterface ui1 = new TestClientUserInterface(isClientTest, "client1", SERVER_ADMIN_KEY, "localhost", PORT, TIMEOUT);
 		SEPClient client1 = ui1.getClient();
 
 		assertEquals("Unexpected client login", "client1", client1.getLogin());
@@ -323,7 +391,7 @@ public class TestSEP
 
 		// Client 2
 
-		TestClientUserInterface ui2 = new TestClientUserInterface("client2", "localhost", PORT, TIMEOUT);
+		TestClientUserInterface ui2 = new TestClientUserInterface(isClientTest, "client2", "localhost", PORT, TIMEOUT);
 		SEPClient client2 = ui2.getClient();
 
 		assertEquals("Unexpected client login", "client2", client2.getLogin());
@@ -415,7 +483,7 @@ public class TestSEP
 		assertTrue("Unexpected remaining log", tester.flush());
 		System.out.println("Step: Client3 connection");
 		
-		TestClientUserInterface ui3 = new TestClientUserInterface("client3", "localhost", PORT, TIMEOUT);
+		TestClientUserInterface ui3 = new TestClientUserInterface(isClientTest, "client3", "localhost", PORT, TIMEOUT);
 		SEPClient client3 = ui3.getClient();
 
 		assertEquals("Unexpected client login", "client3", client3.getLogin());
@@ -461,10 +529,7 @@ public class TestSEP
 		{
 			client1.runGame();
 			turn = 0;
-			while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
-			{
-				Thread.sleep(200);
-			}
+			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
 		}
 		catch(Throwable t)
 		{
@@ -527,28 +592,19 @@ public class TestSEP
 
 			expectedExceptionThrown = false;
 
-			try
-			{
-				client1AITest.getLocalGame().executeCommand(new Build(startingPlanet1, ExtractionModule.class));
-			}
-			catch(LocalGameCommandException e)
-			{
-				expectedExceptionThrown = true;
-			}
-			if (!expectedExceptionThrown) fail("Expected exception not thrown.");
+			IGameCommand erronedCommand = new Build(startingPlanet1, ExtractionModule.class);
+			checkErronedCommand(erronedCommand, client1AITest.getLocalGame(), isClientTest);						
 
 			client1AITest.getLocalGame().endTurn();
 			client2AITest.getLocalGame().endTurn();
 			client3AITest.getLocalGame().endTurn();
 			turn = 1;
 
-			while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
-			{
-				Thread.sleep(200);
-			}
+			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
 		}
 		catch(Throwable t)
 		{
+			t.printStackTrace();
 			fail("Unexpected exception thrown : " + t.getMessage());
 			return;
 		}
@@ -581,17 +637,9 @@ public class TestSEP
 			starshipsToMake.put(starshipTemplates[0], 10);
 			client1AITest.getLocalGame().executeCommand(new MakeStarships(startingPlanet1, starshipsToMake));
 
-			expectedExceptionThrown = false;
-			try
-			{
-				starshipsToMake.put(starshipTemplates[0], 999999);
-				client1AITest.getLocalGame().executeCommand(new MakeStarships(startingPlanet1, starshipsToMake));
-			}
-			catch(LocalGameCommandException e)
-			{
-				expectedExceptionThrown = true;
-			}
-			if (!expectedExceptionThrown) fail("Expected exception not thrown.");
+			starshipsToMake.put(starshipTemplates[0], 999999);
+			IGameCommand erronedCommand = new MakeStarships(startingPlanet1, starshipsToMake);
+			checkErronedCommand(erronedCommand, client1AITest.getLocalGame(), isClientTest);						
 
 			starshipsToMake.put(starshipTemplates[0], 5);
 			client1AITest.getLocalGame().executeCommand(new FormFleet(startingPlanet1, t1Fleets, starshipsToMake, null));
@@ -599,17 +647,9 @@ public class TestSEP
 			starshipsToMake.put(starshipTemplates[0], 3);
 			client1AITest.getLocalGame().executeCommand(new FormFleet(startingPlanet1, t1Fleets + "bis", starshipsToMake, null));
 
-			expectedExceptionThrown = false;
-			try
-			{
-				starshipsToMake.put(starshipTemplates[0], 3);
-				client1AITest.getLocalGame().executeCommand(new FormFleet(startingPlanet1, "incorrectFleet", starshipsToMake, null));
-			}
-			catch(LocalGameCommandException e)
-			{
-				expectedExceptionThrown = true;
-			}
-			if (!expectedExceptionThrown) fail("Expected exception not thrown.");
+			starshipsToMake.put(starshipTemplates[0], 3);
+			erronedCommand = new FormFleet(startingPlanet1, "incorrectFleet", starshipsToMake, null);
+			checkErronedCommand(erronedCommand, client1AITest.getLocalGame(), isClientTest);						
 
 			starshipsToMake.remove(starshipTemplates[0]);
 			starshipsToMake.put(starshipTemplates[3], 11);
@@ -626,18 +666,10 @@ public class TestSEP
 			client3diplomacy.put(client2.getLogin(), client32policies);
 			client3AITest.getLocalGame().executeCommand(new ChangeDiplomacy(client3diplomacy));
 
-			expectedExceptionThrown = false;
-			try
-			{
-				PlayerPolicies client33policies = new PlayerPolicies(client3.getLogin(), true, eForeignPolicy.HOSTILE);
-				client3diplomacy.put(client3.getLogin(), client33policies);
-				client3AITest.getLocalGame().executeCommand(new ChangeDiplomacy(client3diplomacy));
-			}
-			catch(LocalGameCommandException e)
-			{
-				expectedExceptionThrown = true;
-			}
-			if (!expectedExceptionThrown) fail("Expected exception not thrown.");
+			PlayerPolicies client33policies = new PlayerPolicies(client3.getLogin(), true, eForeignPolicy.HOSTILE);
+			client3diplomacy.put(client3.getLogin(), client33policies);
+			erronedCommand = new ChangeDiplomacy(client3diplomacy);
+			checkErronedCommand(erronedCommand, client3AITest.getLocalGame(), isClientTest);
 
 			PlayerPolicies client12policies = new PlayerPolicies(client2.getLogin(), false, eForeignPolicy.HOSTILE_IF_OWNER);
 			PlayerPolicies client13policies = new PlayerPolicies(client3.getLogin(), false, eForeignPolicy.HOSTILE_IF_OWNER);
@@ -666,10 +698,7 @@ public class TestSEP
 			client3AITest.getLocalGame().endTurn();
 			turn = 2;
 
-			while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
-			{
-				Thread.sleep(200);
-			}
+			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
 		}
 		catch(Throwable t)
 		{
@@ -689,9 +718,9 @@ public class TestSEP
 		client3AITest.checkBuilding(startingPlanet3, ExtractionModule.class, 0);
 		client3AITest.checkBuilding(startingPlanet3, StarshipPlant.class, 1);
 
-		client1AITest.checkFleetMove(t1Fleets, 5, startingPlanet1, startingPlanet3, 1);
-		client1AITest.checkFleetNotMoved(t1Fleets + "bis", 3);
-		client2AITest.checkFleetNotMoved(t1Fleets, 4);
+		client1AITest.checkFleetMove(t1Fleets, 5, startingPlanet1, startingPlanet3, 1, isClientTest);		
+		client1AITest.checkFleetNotMoved(t1Fleets + "bis", 3, isClientTest);
+		client2AITest.checkFleetNotMoved(t1Fleets, 4, isClientTest);
 
 		client1AITest.checkDiplomacy(client1diplomacy);
 		client2AITest.checkDiplomacy(client2diplomacy);
@@ -723,10 +752,7 @@ public class TestSEP
 			client3AITest.getLocalGame().endTurn();
 			turn = 3;
 
-			while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
-			{
-				Thread.sleep(200);
-			}
+			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
 		}
 		catch(Throwable t)
 		{
@@ -746,12 +772,12 @@ public class TestSEP
 		client3AITest.checkBuilding(startingPlanet3, ExtractionModule.class, 0);
 		client3AITest.checkBuilding(startingPlanet3, StarshipPlant.class, 1);
 
-		client1AITest.checkFleetMove(t1Fleets, 5, startingPlanet1, startingPlanet3, 1);
-
+		client1AITest.checkFleetMove(t1Fleets, 5, startingPlanet1, startingPlanet3, 1, true);		
+		
 		expectedExceptionThrown = false;
 		try
 		{
-			client1AITest.checkFleetNotMoved(t1Fleets + "bis", 3);
+			client1AITest.checkFleetNotMoved(t1Fleets + "bis", 3, true);
 		}
 		catch(AssertionError e)
 		{
@@ -760,8 +786,8 @@ public class TestSEP
 		}
 		assertTrue("Expected exception not thrown", expectedExceptionThrown);
 
-		client2AITest.checkFleetMove(t1Fleets, 4, startingPlanet2, startingPlanet3, 2);
-		client3AITest.checkFleetNotMoved(t2Fleets, 5);
+		client2AITest.checkFleetMove(t1Fleets, 4, startingPlanet2, startingPlanet3, 2, true);
+		client3AITest.checkFleetNotMoved(t2Fleets, 5, isClientTest);
 
 		assertTrue("Unexpected remaining log", tester.flush());
 
@@ -781,10 +807,7 @@ public class TestSEP
 				client3AITest.getLocalGame().endTurn();
 				++turn;
 				
-				while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
-				{
-					Thread.sleep(200);
-				}
+				waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
 			}
 			catch(Throwable t)
 			{
@@ -799,9 +822,9 @@ public class TestSEP
 			tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard(" + turn + ")", "client2.receiveNewTurnGameBoard(" + turn + ")", "client3.receiveNewTurnGameBoard(" + turn + ")" });
 			tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
 
-			boolean fleet1moved = client1AITest.checkFleetMove(t1Fleets, 5, startingPlanet1, startingPlanet3, 1) > 0;
-			boolean fleet2moved = client2AITest.checkFleetMove(t1Fleets, 4, startingPlanet2, startingPlanet3, 2) > 0;
-			client3AITest.checkFleetNotMoved(t2Fleets, 5);
+			boolean fleet1moved = client1AITest.checkFleetMove(t1Fleets, 5, startingPlanet1, startingPlanet3, 1, true) > 0;
+			boolean fleet2moved = client2AITest.checkFleetMove(t1Fleets, 4, startingPlanet2, startingPlanet3, 2, true) > 0;
+			client3AITest.checkFleetNotMoved(t2Fleets, 5, true);
 
 			if (!fleet1moved && !fleet2moved)
 			{
@@ -841,10 +864,7 @@ public class TestSEP
 			client3AITest.getLocalGame().endTurn();
 			++turn;
 			
-			while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
-			{
-				Thread.sleep(200);
-			}
+			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
 		}
 		catch(Throwable t)
 		{
@@ -874,10 +894,7 @@ public class TestSEP
 				client1.loadGame(saveName);
 				--turn;
 				
-				while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
-				{
-					Thread.sleep(200);
-				}
+				waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
 			}
 			catch(Throwable t)
 			{
@@ -909,10 +926,7 @@ public class TestSEP
 				++turn;
 				
 				startTime = System.currentTimeMillis();
-				while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
-				{
-					Thread.sleep(200);
-				}
+				waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
 				sumTime += System.currentTimeMillis() - startTime;
 			}
 			catch(Throwable t)
@@ -980,10 +994,7 @@ public class TestSEP
 			client1.loadGame(saveName);
 			--turn;
 			
-			while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
-			{
-				Thread.sleep(200);
-			}
+			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
 		}
 		catch(Throwable t)
 		{
@@ -1023,10 +1034,7 @@ public class TestSEP
 				client3AITest.getLocalGame().endTurn();
 				++turn;
 				
-				while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
-				{
-					Thread.sleep(200);
-				}			
+				waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);			
 			}
 			catch(Throwable t)
 			{
@@ -1058,10 +1066,7 @@ public class TestSEP
 			client3AITest.getLocalGame().endTurn();
 			++turn;
 			
-			while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
-			{
-				Thread.sleep(200);
-			}			
+			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);			
 		}
 		catch(Throwable t)
 		{
@@ -1091,10 +1096,7 @@ public class TestSEP
 			client1.loadGame(saveName);
 			turn-=(nbDefenseModule+1);
 			
-			while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
-			{
-				Thread.sleep(200);
-			}
+			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
 		}
 		catch(Throwable t)
 		{
@@ -1128,10 +1130,7 @@ public class TestSEP
 			client3AITest.getLocalGame().endTurn();
 			++turn;
 			
-			while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
-			{
-				Thread.sleep(200);
-			}			
+			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);			
 		}
 		catch(Throwable t)
 		{
@@ -1160,10 +1159,7 @@ public class TestSEP
 			client3AITest.getLocalGame().endTurn();
 			++turn;
 			
-			while(client1AITest.getDate() != turn || client2AITest.getDate() != turn || client3AITest.getDate() != turn)
-			{
-				Thread.sleep(200);
-			}			
+			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);			
 		}
 		catch(Throwable t)
 		{

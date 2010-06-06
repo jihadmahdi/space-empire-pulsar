@@ -402,6 +402,7 @@ class DataBase implements Serializable
 	
 	protected ICelestialBody getCelestialBody(String celestialBodyName)
 	{
+		if (celestialBodyName == null) return null;
 		return celestialBodies.get(new ICelestialBody.Key(celestialBodyName));
 	}
 	

@@ -14,7 +14,8 @@ import org.axan.sep.common.ABuilding;
 import org.axan.sep.common.Diplomacy;
 import org.axan.sep.common.Fleet;
 import org.axan.sep.common.ICelestialBody;
-import org.axan.sep.common.ILocalGameCommand;
+import org.axan.sep.common.IGame;
+import org.axan.sep.common.IGameCommand;
 import org.axan.sep.common.LocalGame;
 import org.axan.sep.common.Planet;
 import org.axan.sep.common.PlayerGameBoard;
@@ -26,20 +27,22 @@ import org.axan.sep.common.PlayerGameBoard.PlayerGameBoardQueryException;
 import org.axan.sep.common.SEPUtils.RealLocation;
 
 public class ClientAI implements Client
-{
+{		
 	private final Stack<PlayerGameBoard> previousGameBoards = new Stack<PlayerGameBoard>();
 	private final String playerName;
 	private String startingPlanet;
-	private LocalGame currentLocalGame;
+	private IGame currentLocalGame;
 	private final SEPClient client;
+	private final boolean isClientTest;
 	
-	public ClientAI(String playerName, SEPClient client)
+	public ClientAI(String playerName, SEPClient client, boolean isClientTest)
 	{
 		this.playerName = playerName;
 		this.client = client;
+		this.isClientTest = isClientTest;
 	}
 	
-	public LocalGame getLocalGame()
+	public IGame getLocalGame()
 	{
 		return currentLocalGame;
 	}
@@ -50,7 +53,7 @@ public class ClientAI implements Client
 	}
 	
 	@Override
-	public void endTurn(List<ILocalGameCommand> commands) throws Throwable
+	public void endTurn(List<IGameCommand> commands) throws Throwable
 	{
 		client.getRunningGameInterface().endTurn(commands);
 	}
@@ -64,7 +67,7 @@ public class ClientAI implements Client
 	public void refreshGameBoard(PlayerGameBoard gameBoard)
 	{
 		if (currentLocalGame != null) previousGameBoards.add(currentLocalGame.getGameBoard());
-		currentLocalGame = new LocalGame(this, gameBoard);
+		currentLocalGame = isClientTest ? new LocalGame(this, gameBoard) : new UncheckedLocalGame(this, gameBoard);
 		refreshLocalGameBoard(gameBoard);
 	}
 	
@@ -125,13 +128,13 @@ public class ClientAI implements Client
 			fail(buildSlotsCount+" building slots count expected but "+building.getBuildSlotsCount()+" found.");
 			return;
 		}
-	}
+	}		
 	
-	public void checkFleetNotMoved(String fleetName, int expectedQt)
+	public void checkFleetNotMoved(String fleetName, int expectedQt, boolean checkPreviousGameBoard)
 	{
-		checkFleetMove(fleetName, expectedQt, null, null, -1);
+		checkFleetMove(fleetName, expectedQt, null, null, -1, checkPreviousGameBoard);
 	}
-	public double checkFleetMove(String fleetName, int expectedQt, String sourceCelestialBody, String destinationCelestialBody, int departureDate)
+	public double checkFleetMove(String fleetName, int expectedQt, String sourceCelestialBody, String destinationCelestialBody, int departureDate, boolean checkPreviousGameBoard)
 	{
 		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
 		
@@ -146,11 +149,14 @@ public class ClientAI implements Client
 			
 			expectedMoved = (departureDate < 0 || sourceCelestialBody == null || destinationCelestialBody == null) ? 0 : shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getDate()-1);
 			
+			if (!checkPreviousGameBoard) return expectedMoved;
+			
 			if (!previousGameBoards.isEmpty())
 			{
 				try
 				{
 					Fleet pf = previousGameBoards.lastElement().getUnit(playerName, fleetName, Fleet.class);
+					assertNotNull("Cannot find fleet on previous game board '"+playerName+"@"+fleetName+"'", pf);
 					if (pf.getCurrentLocation().equals(f.getCurrentLocation()) == (expectedMoved > 0))
 					{
 						//shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getDate()-1);

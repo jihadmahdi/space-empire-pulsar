@@ -20,12 +20,19 @@ TODO List
 	* Implémenter un UniverseRenderer en 3d.
 	
 	* Refaire une interface adapté au renderer 3d (plein écran).
+	
+	* Vider les valeurs des formulaires après l'execution des commandes.
+	
+	* Faire défiler automatiquement le chat.
+	
 					
 ** Permanent, récurent
 	
 ** Améliorations
 	
 	* Rendre importable la configuration de partie depuis un fichier type *.properties. Lister de façon exhaustive tout les paramètres possibles.
+	
+	* Ajouter un ping à coté des pseudo.	
 	
 ** Nouvelles fonctionnalités
 

@@ -12,24 +12,24 @@ import java.util.Stack;
 
 import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.CommandCheckResult;
-import org.axan.sep.common.ILocalGameCommand;
-import org.axan.sep.common.LocalGame.AttackEnemiesFleetParams;
-import org.axan.sep.common.LocalGame.BuildParams;
-import org.axan.sep.common.LocalGame.BuildSpaceRoadParams;
-import org.axan.sep.common.LocalGame.ChangeDiplomacyParams;
-import org.axan.sep.common.LocalGame.DemolishParams;
-import org.axan.sep.common.LocalGame.DemolishSpaceRoadParams;
-import org.axan.sep.common.LocalGame.DismantleFleetParams;
-import org.axan.sep.common.LocalGame.EmbarkGovernmentParams;
-import org.axan.sep.common.LocalGame.FireAntiProbeMissileParams;
-import org.axan.sep.common.LocalGame.FormFleetParams;
-import org.axan.sep.common.LocalGame.LaunchProbeParams;
-import org.axan.sep.common.LocalGame.MakeAntiProbeMissilesParams;
-import org.axan.sep.common.LocalGame.MakeProbesParams;
-import org.axan.sep.common.LocalGame.MakeStarshipsParams;
-import org.axan.sep.common.LocalGame.ModifyCarbonOrderParams;
-import org.axan.sep.common.LocalGame.MoveFleetParams;
-import org.axan.sep.common.LocalGame.SettleGovernmentParams;
+import org.axan.sep.common.IGameCommand;
+import org.axan.sep.common.IGame.AttackEnemiesFleetParams;
+import org.axan.sep.common.IGame.BuildParams;
+import org.axan.sep.common.IGame.BuildSpaceRoadParams;
+import org.axan.sep.common.IGame.ChangeDiplomacyParams;
+import org.axan.sep.common.IGame.DemolishParams;
+import org.axan.sep.common.IGame.DemolishSpaceRoadParams;
+import org.axan.sep.common.IGame.DismantleFleetParams;
+import org.axan.sep.common.IGame.EmbarkGovernmentParams;
+import org.axan.sep.common.IGame.FireAntiProbeMissileParams;
+import org.axan.sep.common.IGame.FormFleetParams;
+import org.axan.sep.common.IGame.LaunchProbeParams;
+import org.axan.sep.common.IGame.MakeAntiProbeMissilesParams;
+import org.axan.sep.common.IGame.MakeProbesParams;
+import org.axan.sep.common.IGame.MakeStarshipsParams;
+import org.axan.sep.common.IGame.ModifyCarbonOrderParams;
+import org.axan.sep.common.IGame.MoveFleetParams;
+import org.axan.sep.common.IGame.SettleGovernmentParams;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.server.SEPServer.SEPImplementationException;
 import org.axan.sep.server.model.ProductiveCelestialBody.CelestialBodyBuildException;
@@ -434,9 +434,9 @@ public class PlayerGameMove
 		}
 	}
 	
-	static class ModifyCarbonOrder extends GameMoveCommand<ModifyCarbonOrderParams>
+	static class ModifyCarbonOrderCommand extends GameMoveCommand<ModifyCarbonOrderParams>
 	{
-		public ModifyCarbonOrder(String playerLogin, ModifyCarbonOrderParams params)
+		public ModifyCarbonOrderCommand(String playerLogin, ModifyCarbonOrderParams params)
 		{
 			super(playerLogin, params);
 		}
@@ -717,9 +717,11 @@ public class PlayerGameMove
 		commands.removeAllElements();
 	}
 
-	public void endTurn(List<ILocalGameCommand> commands) throws SEPImplementationException, RunningGameCommandException
-	{	
-		for(ILocalGameCommand command : commands)
+	public void endTurn(List<IGameCommand> commands) throws SEPImplementationException, RunningGameCommandException
+	{
+		GameBoard savedGameBoard = getGameBoard();
+		
+		for(IGameCommand command : commands)
 		{
 			if (command == null) continue;
 			
@@ -738,7 +740,24 @@ public class PlayerGameMove
 				throw new SEPImplementationException("Client command '"+command.getClass().getSimpleName()+"' cannot match server expected class '"+serverClassName+"'", t);
 			}
 			
-			executeCommand(gameMoveCommand);
+			try
+			{
+				executeCommand(gameMoveCommand);
+			}
+			catch(Throwable t)
+			{				
+				this.commands.removeAll(commands);
+				currentGameBoard = savedGameBoard;
+				
+				if (RunningGameCommandException.class.isInstance(t))
+				{
+					throw RunningGameCommandException.class.cast(t);
+				}
+				else
+				{
+					throw new RunningGameCommandException(t);
+				}
+			}
 		}
 		
 		isTurnEnded = true;

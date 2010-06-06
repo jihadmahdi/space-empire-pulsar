@@ -5,6 +5,7 @@
  */
 package org.axan.sep.common;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashSet;
@@ -226,5 +227,35 @@ public abstract class SEPUtils
 			System.out.println(loc);
 			path = getAllPathLoc(loc, B);
 		}while(!loc.equals(B));
+	}
+	
+	public static String getSaveFileName(String saveId)
+	{		
+		return "SEPGameSave_" + saveId + ".sav";
+	}
+	
+	public static String getSaveID(String saveFileName)
+	{
+		if (!saveFileName.startsWith("SEPGameSave_")) throw new IllegalArgumentException("Saves filenames expected to start with 'SEPGameSave_'");
+		if (!saveFileName.endsWith(".sav")) throw new IllegalArgumentException("Saves filenames expected to end with '.sav'");
+		
+		return saveFileName.substring("SEPGameSave_".length(), saveFileName.length() - ".sav".length());
+	}
+	
+	public static String SAVE_SUBDIR = "saves"+File.separatorChar;
+	static
+	{
+		File dir = new File(SAVE_SUBDIR);
+		if (!dir.exists())
+		{
+			try
+			{
+				dir.mkdir();
+			}
+			catch(Throwable t)
+			{
+				System.err.println("Cannot make saves games directory.");
+			}
+		}
 	}
 }
