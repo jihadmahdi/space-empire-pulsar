@@ -152,7 +152,7 @@ public class Fleet extends Unit implements Serializable
 			}
 		}
 		
-		if (specialUnits != null)
+		if (specialUnits != null && !specialUnits.isEmpty())
 		{
 			sb.append("\nSpecial units :\n");
 			

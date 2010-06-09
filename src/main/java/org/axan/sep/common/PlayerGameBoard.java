@@ -11,6 +11,7 @@ import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
@@ -51,12 +52,14 @@ public class PlayerGameBoard implements Serializable
 	
 	private final String	playerName;
 
+	private final SortedSet<ALogEntry> log;
+	
 	// TODO : add last turn resolution informations.
 
 	/**
 	 * Full constructor.
 	 */
-	public PlayerGameBoard(GameConfig config, String playerName, Area[][][] universe, RealLocation sunLocation, int date, Map<String, Diplomacy> playersPolicies)
+	public PlayerGameBoard(GameConfig config, String playerName, Area[][][] universe, RealLocation sunLocation, int date, Map<String, Diplomacy> playersPolicies, SortedSet<ALogEntry> log)
 	{
 		this.config = config;
 		this.playerName = playerName;
@@ -64,8 +67,14 @@ public class PlayerGameBoard implements Serializable
 		this.sunLocation = sunLocation;
 		this.date = date;
 		this.playersPolicies = playersPolicies;
+		this.log = log;
 	}
 
+	public Set<ALogEntry> getLogs()
+	{
+		return log;
+	}
+	
 	public Map<String, Diplomacy> getPlayersPolicies()
 	{
 		return playersPolicies;

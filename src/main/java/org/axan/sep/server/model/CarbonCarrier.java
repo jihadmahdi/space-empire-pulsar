@@ -1,7 +1,9 @@
 package org.axan.sep.server.model;
 
 import java.io.Serializable;
+import java.util.Set;
 
+import org.axan.sep.common.ALogEntry;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.SEPServer;
 
@@ -17,9 +19,9 @@ class CarbonCarrier extends Unit implements Serializable
 	 * @param name
 	 * @param owner
 	 */
-	public CarbonCarrier(DataBase db, String name, String ownerName, RealLocation sourceLocation, org.axan.sep.common.CarbonOrder order)
+	public CarbonCarrier(DataBase db, String name, String ownerName, RealLocation sourceLocation, org.axan.sep.common.CarbonOrder order, Set<ALogEntry> travellingLogs)
 	{
-		super(db, name, ownerName, sourceLocation);
+		super(db, name, ownerName, sourceLocation, travellingLogs);
 		this.order = order;
 	}
 

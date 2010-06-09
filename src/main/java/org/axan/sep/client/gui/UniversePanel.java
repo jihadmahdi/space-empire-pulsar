@@ -19,6 +19,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
+import javax.swing.border.EtchedBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -27,6 +28,7 @@ import org.axan.sep.client.gui.lib.JImagePanel;
 import org.axan.sep.common.Area;
 import org.axan.sep.common.ICelestialBody;
 import org.axan.sep.common.PlayerGameBoard;
+import org.axan.sep.common.ProductiveCelestialBody;
 import org.axan.sep.common.Unit;
 import org.axan.sep.common.UnitMarker;
 import org.axan.sep.common.SEPUtils.RealLocation;
@@ -200,13 +202,21 @@ public class UniversePanel extends javax.swing.JPanel implements UniverseRendere
 
 				String toolTipText = "Location [" + x + ";" + y + ";" + z + "]\n" + area.toString();
 
-				// If visible, border is green.				
-				image.setBorder((area.isVisible() ? BorderFactory.createLineBorder(Color.green) : null));
+				// Default background is black.
+				image.setBackground(Color.black);
+				
+				// Default border is null.
+				image.setBorder(null);
+				
+				// If visible, background is gray				
+				//image.setBorder((area.isVisible() ? BorderFactory.createLineBorder(Color.green) : null));
+				if (area.isVisible()) image.setBackground(Color.gray);
 
 				// If sun, background is red.
-				image.setBackground(area.isSun() ? Color.red : Color.black);
+				if (area.isSun()) image.setBackground(Color.red);
 
 				// Celestial body
+				boolean ownedCelestialBody = false;
 				ICelestialBody celestialBody = area.getCelestialBody();
 				if (celestialBody != null)
 				{
@@ -222,6 +232,11 @@ public class UniversePanel extends javax.swing.JPanel implements UniverseRendere
 
 					int tile = getCelestialBodyTile(celestialBody.getName(), nbTiles);
 					image.setImage(SpaceEmpirePulsarGUI.IMG_PATH + type + File.separatorChar + type + tile + ".png");
+					
+					if (ProductiveCelestialBody.class.isInstance(celestialBody) && currentGameBoard.getPlayerName().equals(ProductiveCelestialBody.class.cast(celestialBody).getOwnerName()))
+					{
+						ownedCelestialBody = true;
+					}
 				}
 				else
 				{
@@ -229,10 +244,17 @@ public class UniversePanel extends javax.swing.JPanel implements UniverseRendere
 				}
 
 				Set<UnitMarker> unitMarkers = area.getMarkers(UnitMarker.class);
-				Set<Unit> units = area.getUnits();
-
+				Set<Unit> units = area.getUnits();				
+				
+				Color borderColor = null;
+				
 				if ((units != null && units.size() > 0) || (unitMarkers != null && unitMarkers.size() > 0))
 				{
+					boolean ownedUnit = false;
+					boolean otherUnit = false;
+					boolean ownedMarker = false;
+					boolean otherMarker = false;
+					
 					toolTipText += "Units :\n";
 
 					if (units != null && units.size() > 0)
@@ -240,6 +262,14 @@ public class UniversePanel extends javax.swing.JPanel implements UniverseRendere
 						for(Unit u : units)
 						{
 							toolTipText += "\t" + u.toString() + "\n";
+							if (currentGameBoard.getPlayerName().equals(u.getOwnerName()))
+							{
+								ownedUnit = true;
+							}
+							else
+							{
+								otherUnit = true;
+							}
 						}
 					}
 					
@@ -248,10 +278,32 @@ public class UniversePanel extends javax.swing.JPanel implements UniverseRendere
 						for(UnitMarker um : unitMarkers)
 						{
 							toolTipText += "\t" + um.getUnit().toString() + "\n";
+							
+							if (currentGameBoard.getPlayerName().equals(um.getUnit().getOwnerName()))
+							{
+								ownedMarker = true;
+							}
+							else
+							{
+								otherMarker = true;
+							}
 						}						
 					}
-					
-					if (celestialBody == null) image.setBorder(BorderFactory.createLineBorder(Color.blue));
+															
+					if (ownedMarker) 	borderColor = Color.blue;
+					if (ownedUnit)		borderColor = Color.green;
+					if (otherMarker)	borderColor = Color.red.darker();
+					if (otherUnit)		borderColor = Color.red;										
+				}
+				
+				if (!ownedCelestialBody || borderColor == null)
+				{
+					if (borderColor == null && ownedCelestialBody) borderColor = Color.green.darker();
+					if (borderColor != null) image.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED, borderColor, Color.darkGray));//(borderColor, 2));
+				}
+				else
+				{
+					image.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.green.darker(), 2), BorderFactory.createEtchedBorder(EtchedBorder.LOWERED, borderColor, Color.darkGray)));
 				}
 
 				// Border is yellow if selected

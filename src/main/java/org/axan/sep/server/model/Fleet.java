@@ -10,9 +10,11 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
 
+import org.axan.sep.common.ALogEntry;
 import org.axan.sep.common.FleetBattleSkillsModifierAdaptor;
 import org.axan.sep.common.StarshipTemplate;
 import org.axan.sep.common.eStarshipSpecializationClass;
+import org.axan.sep.common.Fleet.Move;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.SEPServer;
 
@@ -48,16 +50,16 @@ class Fleet extends Unit implements Serializable
 	PlayerDatedView<HashMap<org.axan.sep.common.StarshipTemplate, Integer>>	playersStarshipsView	= new PlayerDatedView<HashMap<org.axan.sep.common.StarshipTemplate, Integer>>();
 	PlayerDatedView<HashSet<org.axan.sep.common.ISpecialUnit>> playersSpecialUnitsView = new PlayerDatedView<HashSet<org.axan.sep.common.ISpecialUnit>>();
 
-	public Fleet(DataBase db, String name, String ownerName, RealLocation sourceLocation, Map<org.axan.sep.common.StarshipTemplate, Integer> starships, Set<ISpecialUnit> specialUnits, boolean isUnassigned)
+	public Fleet(DataBase db, String name, String ownerName, RealLocation sourceLocation, Map<org.axan.sep.common.StarshipTemplate, Integer> starships, Set<ISpecialUnit> specialUnits, boolean isUnassigned, Stack<Move> checkpoints, Set<ALogEntry> travellingLogs)
 	{
-		this(db, new Key(name, ownerName), sourceLocation, starships, specialUnits, isUnassigned);		
+		this(db, new Key(name, ownerName), sourceLocation, starships, specialUnits, isUnassigned, checkpoints, travellingLogs);		
 	}
 	
-	public Fleet(DataBase db, Key key, RealLocation sourceLocation, Map<org.axan.sep.common.StarshipTemplate, Integer> starships, Set<ISpecialUnit> specialUnits, boolean isUnassigned)
+	public Fleet(DataBase db, Key key, RealLocation sourceLocation, Map<org.axan.sep.common.StarshipTemplate, Integer> starships, Set<ISpecialUnit> specialUnits, boolean isUnassigned, Stack<Move> checkpoints, Set<ALogEntry> travellingLogs)
 	{
-		super(db, key, sourceLocation);		
+		super(db, key, sourceLocation, travellingLogs);		
 		merge(starships, specialUnits);
-		this.checkpoints = new Stack<org.axan.sep.common.Fleet.Move>();
+		this.checkpoints = checkpoints == null ? new Stack<org.axan.sep.common.Fleet.Move>() : checkpoints;
 		this.isUnassigned = isUnassigned;
 	}	
 
@@ -532,7 +534,7 @@ class Fleet extends Unit implements Serializable
 
 	private Fleet(String defender, Set<Fleet> mergers)
 	{
-		this(null, "Merged attackers agains "+defender, null, null, null, null, false);
+		this(null, "Merged attackers agains "+defender, null, null, null, null, false, null, null);
 		
 		for(Fleet merger : mergers)
 		{
@@ -577,6 +579,11 @@ class Fleet extends Unit implements Serializable
 		}
 		
 		return new Fleet(defender, mergers);
+	}
+	
+	public Stack<Move> getCheckpoints()
+	{
+		return checkpoints;
 	}
 
 	public SpecializedEquivalentFleet getSpecializedFleet(eStarshipSpecializationClass specialization)

@@ -10,10 +10,7 @@
 
 TODO List
 	
-* Work flow en cours.
-
-	* Refonte du protocole: Tacher de ne communiquer entre client/serveur que lors de la fin/début de tour (simulation locale des effets des commandes du tour courrant).
-		PlayerGameBoard est au client ce que DataBase est au serveur, définir une interface commune ?
+* Work flow en cours.	
 	
 ** Interface
 
@@ -56,3 +53,5 @@ TODO List
 	* Valider le nouveau gameplay des échanges de carbones.
 		
 	* DataBase, vérifier à chaque fois les paramètres d'entrée, retourner null si un paramètre est null.
+
+	* Régler quelques faiblesses du protocole (possibilité de l'envoi d'un message en création de partie alors que la partie est en cours de lancement, ce qui peut déconnecter le client); Ajouter un checkbox manuel "prêt" ?

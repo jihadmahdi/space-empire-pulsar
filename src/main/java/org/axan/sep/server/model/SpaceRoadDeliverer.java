@@ -1,7 +1,9 @@
 package org.axan.sep.server.model;
 
 import java.io.Serializable;
+import java.util.Set;
 
+import org.axan.sep.common.ALogEntry;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.model.SpaceCounter.SpaceRoad;
@@ -15,9 +17,9 @@ class SpaceRoadDeliverer extends Unit implements Serializable
 	private final String sourceName;
 	private final String destinationName;
 
-	public SpaceRoadDeliverer(DataBase db, String name, String ownerName, RealLocation sourceLocation, String sourceName, String destinationName)
+	public SpaceRoadDeliverer(DataBase db, String name, String ownerName, RealLocation sourceLocation, String sourceName, String destinationName, Set<ALogEntry> travellingLogs)
 	{
-		super(db, name, ownerName, sourceLocation);
+		super(db, name, ownerName, sourceLocation, travellingLogs);
 		this.sourceName = sourceName;
 		this.destinationName = destinationName;
 	}

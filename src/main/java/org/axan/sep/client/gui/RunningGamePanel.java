@@ -61,6 +61,7 @@ import org.axan.sep.client.gui.lib.TristateCheckBox;
 import org.axan.sep.client.gui.lib.TypedListWrapper;
 import org.axan.sep.client.gui.lib.WrappedJLabel;
 import org.axan.sep.common.ABuilding;
+import org.axan.sep.common.ALogEntry;
 import org.axan.sep.common.AbstractGameCommandCheck;
 import org.axan.sep.common.AntiProbeMissile;
 import org.axan.sep.common.Area;
@@ -91,6 +92,7 @@ import org.axan.sep.common.StarshipPlant;
 import org.axan.sep.common.StarshipTemplate;
 import org.axan.sep.common.Unit;
 import org.axan.sep.common.UnitMarker;
+import org.axan.sep.common.UnitSeenLogEntry;
 import org.axan.sep.common.Diplomacy.PlayerPolicies;
 import org.axan.sep.common.Diplomacy.PlayerPolicies.eForeignPolicy;
 import org.axan.sep.common.Fleet.Move;
@@ -175,20 +177,9 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		initGUI();
 	}
 	
-	public void endTurn(List<IGameCommand> commands) throws StateMachineNotExpectedEventException, RpcException
+	public void endTurn(List<IGameCommand> commands) throws StateMachineNotExpectedEventException, RpcException, SEPImplementationException, RunningGameCommandException
 	{
-		try
-		{
-			client.getRunningGameInterface().endTurn(commands);
-		}
-		catch(SEPImplementationException e)
-		{
-			e.printStackTrace();
-		}
-		catch(RunningGameCommandException e)
-		{
-			showRunningGameCommandExceptionMsg(e);
-		}
+		client.getRunningGameInterface().endTurn(commands);		
 	}
 
 	private static void checkCommandBtn(JComponent component, AbstractGameCommandCheck result)
@@ -263,6 +254,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 			runningGameSouthPanel.add(getRunningGameShortcutBarLabel());
 			runningGameSouthPanel.add(getDiplomacyBtn());
+			runningGameSouthPanel.add(getLogsBtn());
 			runningGameSouthPanel.add(getRunningGameRedoBtn());
 			runningGameSouthPanel.add(getRunningGameUndoBtn());
 			runningGameSouthPanel.add(getRunningGameCancelTurnBtn());
@@ -277,8 +269,27 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		JOptionPane.showMessageDialog(null, e.getMessage(), "Game command exception", JOptionPane.ERROR_MESSAGE);
 	}
 
+	private JButton logsBtn;
+	private JButton getLogsBtn()
+	{
+		if (logsBtn == null)
+		{
+			logsBtn = new JButton("Logs");
+			logsBtn.setPreferredSize(new Dimension(logsBtn.getPreferredSize().width, 20));
+			logsBtn.addActionListener(new ActionListener()
+			{
+				
+				@Override
+				public void actionPerformed(ActionEvent arg0)
+				{
+					getRunningGameTabbedPanel().setSelectedComponent(getRunningGameLogPanel());
+				}
+			});
+		}
+		return logsBtn;
+	}
+	
 	private JButton	diplomacyBtn;
-
 	private JButton getDiplomacyBtn()
 	{
 		if (diplomacyBtn == null)
@@ -295,6 +306,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					getRunningGameTabbedPanel().setSelectedComponent(getActionPanel());
 				}
 			});
+			diplomacyBtn.setEnabled(true);
 		}
 		return diplomacyBtn;
 	}
@@ -468,6 +480,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			runningGameTabbedPanel = new JTabbedPane();
 			runningGameTabbedPanel.setPreferredSize(new Dimension(4, 200));
 			runningGameTabbedPanel.addTab("Chat panel", getRunningGameChatPanel());
+			runningGameTabbedPanel.addTab("Log", getRunningGameLogPanel());
 			runningGameTabbedPanel.addTab("Action", getActionPanel());
 		}
 		return runningGameTabbedPanel;
@@ -498,6 +511,18 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			runningGameChatPanel.add(getRunningGameChatPlayerListScrollPane(), BorderLayout.EAST);
 		}
 		return runningGameChatPanel;
+	}
+	
+	private JPanel runningGameLogPanel;
+	
+	private JPanel getRunningGameLogPanel()
+	{
+		if (runningGameLogPanel == null)
+		{
+			runningGameLogPanel = new JPanel(new BorderLayout());
+			runningGameLogPanel.add(getRunningGameLogScrollPane(), BorderLayout.CENTER);
+		}
+		return runningGameLogPanel;		
 	}
 
 	private JPanel	runningGameUniverseRenderingPanel;
@@ -594,7 +619,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					if (currentSelectedArea == null) return;
 					if (currentSelectedArea.getCelestialBody() == null || !ProductiveCelestialBody.class.isInstance(currentSelectedArea.getCelestialBody())) return;
 					ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(currentSelectedArea.getCelestialBody());
-					if (!currentPlayer.isNamed(productiveCelestialBody.getOwnerName())) return;
+					if (currentPlayer.isNamed(productiveCelestialBody.getOwnerName())) return;
 
 					try
 					{
@@ -922,7 +947,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			}
 			getRunningGameCelestialBodyDetailsBuildingsList().setVisible(true);
 
-			if (currentPlayer.isNamed(productiveCelestialBody.getOwnerName()))
+			if (!currentPlayer.isNamed(productiveCelestialBody.getOwnerName()))
 			{
 				AttackEnemiesFleetCheck check = new LocalGame.AttackEnemiesFleet(productiveCelestialBody.getName()).can(currentLocalGame.getGameBoard());
 				checkCommandBtn(getRunningGameCelestialBodyDetailsAttackFleetsBtn(), check);
@@ -930,16 +955,13 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			else
 			{
 				getRunningGameCelestialBodyDetailsAttackFleetsBtn().setEnabled(false);
-			}
-			
-			getDiplomacyBtn().setEnabled(true);
+			}		
 		}
 		else
 		{
 			getRunningGameCelestialBodyDetailsBuildingsList().setVisible(false);
 			
 			getRunningGameCelestialBodyDetailsAttackFleetsBtn().setEnabled(false);
-			getDiplomacyBtn().setEnabled(false);
 		}
 
 		// Units list	
@@ -3684,6 +3706,66 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		if (comp != null) getActionPanel().add(comp);
 		if (actionTabTitle != null) getRunningGameTabbedPanel().setTitleAt(getRunningGameTabbedPanel().indexOfComponent(getActionPanel()), actionTabTitle);
+		
+		addLog(gameBoard);
+	}
+	
+	private final Set<ALogEntry> logged = new HashSet<ALogEntry>(); 
+	
+	private void addLog(PlayerGameBoard gameBoard)
+	{
+		boolean newLog = false;
+		for(ALogEntry log : gameBoard.getLogs())
+		{
+			boolean found = false;
+			for(ALogEntry oldLog : logged)
+			{
+				if (oldLog.getUID().equals(log.getUID()))
+				{
+					if (!UnitSeenLogEntry.class.isInstance(oldLog))
+					{
+						found = true;
+						break;
+					}
+					else
+					{
+						UnitSeenLogEntry old = UnitSeenLogEntry.class.cast(oldLog);
+						UnitSeenLogEntry up = UnitSeenLogEntry.class.cast(log);
+						
+						if (old.getLastUpdateInstantDate() < up.getLastUpdateInstantDate())
+						{
+							logged.remove(old);
+							break;
+						}
+					}
+				}
+			}
+			
+			if (found) continue;
+													
+			String htmlText = "<p><b>"+log.getClass().getSimpleName()+"</b> "+log.toString().replaceAll("\n", "<br/>")+"</p>";
+			HTMLDocument doc = ((HTMLDocument) getRunningGameLogContentEditorPane().getDocument());
+
+			try
+			{
+				newLog = true;
+				doc.insertBeforeEnd(doc.getDefaultRootElement(), htmlText);
+				logged.add(log);					
+			}
+			catch(BadLocationException e)
+			{
+				e.printStackTrace();
+			}
+			catch(IOException e)
+			{
+				e.printStackTrace();
+			}								
+		}
+		
+		if (newLog)
+		{
+			getRunningGameTabbedPanel().setTitleAt(getRunningGameTabbedPanel().indexOfComponent(getRunningGameLogPanel()), "Logs");
+		}
 	}
 	
 	void refreshGameBoard(PlayerGameBoard gameBoard)
@@ -3756,6 +3838,39 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		}
 		return runningGameChatPlayerListPanel;
 	}
+	
+	private JScrollPane runningGameLogScrollPane;
+	private JScrollPane getRunningGameLogScrollPane()
+	{
+		if (runningGameLogScrollPane == null)
+		{
+			runningGameLogScrollPane = new JScrollPane();
+			runningGameLogScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+			runningGameLogScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+			runningGameLogScrollPane.setViewportView(getRunningGameLogContentEditorPane());
+			
+			runningGameLogScrollPane.getVerticalScrollBar().addAdjustmentListener(new AdjustmentListener()
+			{
+
+				@Override
+				public void adjustmentValueChanged(AdjustmentEvent e)
+				{
+					if (!e.getValueIsAdjusting())
+					{
+						JScrollBar vBar = runningGameLogScrollPane.getVerticalScrollBar();
+						int newVal = (vBar.getMinimum() + (vBar.getMaximum() - vBar.getMinimum()) * 1);
+
+						if (vBar.getValue() >= (vBar.getMaximum() - vBar.getVisibleAmount() - 30))
+						{
+							vBar.setValue(newVal);
+							RunningGamePanel.this.updateUI();
+						}
+					}
+				}
+			});
+		}
+		return runningGameLogScrollPane;
+	}
 
 	private JScrollPane getRunningGameChatScrollPane()
 	{
@@ -3789,6 +3904,17 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			});
 		}
 		return runningGameChatScrollPane;
+	}
+	
+	private JEditorPane runningGameLogEditorPane;
+	private JEditorPane getRunningGameLogContentEditorPane()
+	{
+		if (runningGameLogEditorPane == null)
+		{
+			runningGameLogEditorPane = new JEditorPane("text/html", "<i>Logs</i>");
+			runningGameLogEditorPane.setEditable(false);
+		}
+		return runningGameLogEditorPane;
 	}
 
 	private JEditorPane getRunningGameChatContentEditorPane()
