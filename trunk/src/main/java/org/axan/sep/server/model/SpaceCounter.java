@@ -302,12 +302,60 @@ class SpaceCounter extends ABuilding implements Serializable
 		nextOrders.addAll(nextCarbonOrders);	
 	}
 
+	private static int delivererId = 0;
+	/**
+	 * Order list is iterated untill we cannot aford the next order.
+	 * Automated orders are rewritten for <u>next</u> turn (it also avoid to spawn huge amount of little carrier).
+	 * @param db
+	 * @param source
+	 */
 	public void prepareCarbonDelivery(DataBase db, ProductiveCelestialBody source)
-	{
-		int delivererId = 0;
+	{			
+		//boolean allAutomated = false;
+		Stack<CarbonOrder> automatedOrders = new Stack<CarbonOrder>();
 		
 		while(!nextOrders.isEmpty() && nextOrders.firstElement().getAmount() + getCurrentCarbonFreight() <= getMaxCarbonFreight() && nextOrders.firstElement().getAmount() <= source.getCarbon())
 		{
+			/*
+			if (!allAutomated)
+			{
+				allAutomated = true;
+				// Test it all remaining orders are automated, to avoid lood of ridiculous order to spawn huge number of Carrier.
+				// If all remaining orders are automated, we only spawn one carrier per destination, with the correct share of the current available carbon.
+				Map<String, Integer> automatedOrders = new HashMap<String, Integer>();
+				
+				int totalAutomatedCarbon = 0;
+				for(CarbonOrder order : nextOrders)
+				{
+					if (order.isAutomated())
+					{
+						if (!automatedOrders.containsKey(order.getDestinationName())) automatedOrders.put(order.getDestinationName(), 0);
+						automatedOrders.put(order.getDestinationName(), automatedOrders.get(order.getDestinationName()) + order.getAmount());
+						totalAutomatedCarbon += order.getAmount();
+					}
+					else
+					{
+						allAutomated = false;
+						break;
+					}
+				}
+				
+				if (allAutomated)
+				{
+					Stack<CarbonOrder> correctedNextOrders = new Stack<CarbonOrder>();
+					for(CarbonOrder order : nextOrders)
+					{
+						int correctedAmount = (int) Math.floor(source.getCarbon() * (((double) automatedOrders.get(order.getDestinationName()) / (double) totalAutomatedCarbon)));
+						CarbonOrder correctedOrder = new CarbonOrder(order.getSourceName(), order.getDestinationName(), correctedAmount, true);
+						correctedNextOrders.add(correctedOrder);
+					}
+					
+					nextOrders.clear();
+					nextOrders.addAll(correctedNextOrders);
+				}
+			}
+			*/
+			
 			CarbonOrder order = nextOrders.firstElement();
 			
 			if (!source.getName().equals(order.getSourceName())) throw new Error("SpaceCounter / Order source inconsistency : "+source.getName()+" != "+order.getSourceName());
@@ -318,7 +366,7 @@ class SpaceCounter extends ABuilding implements Serializable
 			SpaceCounter destinationSpaceCounter = destination.getBuilding(SpaceCounter.class);
 			if (destinationSpaceCounter == null) throw new SEPServer.SEPImplementationException("Cannot found destination space counter on "+destination.getName());
 			
-			CarbonCarrier carrier = new CarbonCarrier(db, String.format("CarbonDeliverer-%d%x", db.getDate(), delivererId), source.getOwnerName(), source.getLocation().asRealLocation(), order);
+			CarbonCarrier carrier = new CarbonCarrier(db, String.format("CarbonDeliverer-%d%x", db.getDate(), delivererId), source.getOwnerName(), source.getLocation().asRealLocation(), order, null);
 			carrier.launch(destination.getLocation().asRealLocation());			
 			db.insertUnit(carrier);
 			
@@ -327,15 +375,17 @@ class SpaceCounter extends ABuilding implements Serializable
 			
 			source.setCarbon(source.getCarbon() - order.getAmount());
 			
-			++delivererId;
+			delivererId = delivererId + 1;
 			
 			if (order.isAutomated())
 			{
-				nextOrders.add(order);
+				automatedOrders.add(order);
 			}
 			
 			nextOrders.remove(0);
 		}
+		
+		nextOrders.addAll(automatedOrders);
 	}
 	
 	public void validateSentCarbonDelivery(CarbonCarrier carrier)

@@ -111,11 +111,11 @@ public class BattleReporter
 	{
 		Map<StarshipTemplate, Integer> starships = new HashMap<StarshipTemplate, Integer>();
 		starships.put(vaisseauFORT, nb_FORT);
-		Fleet flotteForte = new Fleet(null, sNomFORT, "fort", null, starships, null, false);
+		Fleet flotteForte = new Fleet(null, sNomFORT, "fort", null, starships, null, false, null, null);
 				
 		starships.clear();
 		starships.put(vaisseauFAIBLE, nb_FAIBLE);
-		Fleet flotteFaible = new Fleet(null, sNomFAIBLE, "faible", null, starships, null, false);
+		Fleet flotteFaible = new Fleet(null, sNomFAIBLE, "faible", null, starships, null, false, null, null);
 		
 		return testCombat(output, flotteForte, flotteFaible);
 	}

@@ -1,7 +1,9 @@
 package org.axan.sep.server.model;
 
 import java.io.Serializable;
+import java.util.Set;
 
+import org.axan.sep.common.ALogEntry;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.SEPServer;
 
@@ -22,9 +24,9 @@ public class AntiProbeMissile extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public AntiProbeMissile(DataBase db, String name, String ownerName, RealLocation sourceLocation, boolean fired)
+	public AntiProbeMissile(DataBase db, String name, String ownerName, RealLocation sourceLocation, boolean fired, Set<ALogEntry> travellingLogs)
 	{
-		super(db, name, ownerName, sourceLocation);
+		super(db, name, ownerName, sourceLocation, travellingLogs);
 		this.fired = fired;
 	}
 

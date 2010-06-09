@@ -152,7 +152,7 @@ public abstract class Unit implements IObservable, IMobile, Serializable
 	public static String generateName()
 	{
 		// TODO
-		return "TODO"+(++generatedNameCount);
+		return "Unit"+(++generatedNameCount);
 	}
 	
 	public boolean isMoving()

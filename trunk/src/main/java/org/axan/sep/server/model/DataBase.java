@@ -5,7 +5,10 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
+import org.axan.sep.common.ALogEntry;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.Player;
 import org.axan.sep.common.SEPUtils.Location;
@@ -35,6 +38,8 @@ class DataBase implements Serializable
 	private final Hashtable<String, org.axan.sep.common.Player> players;
 	
 	private final Map<String, Diplomacy>	playersPolicies;
+	
+	private final Map<String, SortedSet<ALogEntry>>	playersLogs;
 
 	private final Hashtable<Location, Area>	areas;
 	
@@ -50,7 +55,7 @@ class DataBase implements Serializable
 
 	private int							date;
 	
-	public DataBase(Hashtable<String, org.axan.sep.common.Player> players, org.axan.sep.common.GameConfig config, int date, Hashtable<Location, Area> areas, Hashtable<ICelestialBody.Key, ICelestialBody> celestialBodies, Hashtable<String, Hashtable<IMarker.Key, IMarker>> playersMarkers, RealLocation sunLocation, Hashtable<Unit.Key, Unit> units, Map<String, Diplomacy> playersPolicies)
+	public DataBase(Hashtable<String, org.axan.sep.common.Player> players, org.axan.sep.common.GameConfig config, int date, Hashtable<Location, Area> areas, Hashtable<ICelestialBody.Key, ICelestialBody> celestialBodies, Hashtable<String, Hashtable<IMarker.Key, IMarker>> playersMarkers, RealLocation sunLocation, Hashtable<Unit.Key, Unit> units, Map<String, Diplomacy> playersPolicies, Map<String, SortedSet<ALogEntry>> playersLogs)
 	{
 		this.players = players;
 		this.config = config;
@@ -61,6 +66,7 @@ class DataBase implements Serializable
 		this.playersMarkers = playersMarkers;
 		this.sunLocation = sunLocation;
 		this.playersPolicies = playersPolicies;
+		this.playersLogs = playersLogs;
 	}
 	
 	/// INSERT
@@ -75,6 +81,18 @@ class DataBase implements Serializable
 		}		
 	}	
 
+	public void writeLog(String playerName, ALogEntry logEntry)
+	{
+		if (!playersLogs.containsKey(playerName)) playersLogs.put(playerName, new TreeSet<ALogEntry>());
+		ALogEntry.addUpdateLogEntry(playersLogs.get(playerName), logEntry);		
+	}
+	
+	public SortedSet<ALogEntry> getPlayerLogs(String playerName)
+	{
+		if (!playersLogs.containsKey(playerName)) playersLogs.put(playerName, new TreeSet<ALogEntry>());
+		return playersLogs.get(playerName);
+	}
+	
 	public void insertCelestialBody(ICelestialBody celestialBody)
 	{
 		if (celestialBodies.containsKey(celestialBody.getKey())) throw new DataBaseError("Already contains celestial body '"+celestialBody.getKey()+"'");
@@ -517,4 +535,23 @@ class DataBase implements Serializable
 		return sourceSpaceCounter.getSpaceRoad(destination.getName());					
 	}
 
+	/*
+	private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException
+	{
+		ois.defaultReadObject();
+		//if (playersLogs == null) playersLogs = new HashMap<String, SortedSet<ILogEntry>>();
+		if (playersLogs != null && !playersLogs.isEmpty())
+		{
+			for(String k : playersLogs.keySet())
+			{
+				if (playersLogs.get(k) == null) continue;
+				if (HashSet.class.isInstance(playersLogs.get(k)))
+				{
+					Set<ILogEntry> s = playersLogs.get(k);
+					playersLogs.put(k, new TreeSet<ILogEntry>(s));
+				}
+			}
+		}
+	}
+	*/
 }

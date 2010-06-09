@@ -268,7 +268,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		{
 			setTitle("SpaceEmpirePulsar");
 			setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-			this.setPreferredSize(new java.awt.Dimension(800, 600));
+			this.setPreferredSize(new java.awt.Dimension(1024, 768));
 			this.addWindowListener(new WindowAdapter()
 			{
 				public void windowClosing(WindowEvent evt)
@@ -346,7 +346,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 				}
 			}
 			pack();
-			this.setSize(800, 600);
+			this.setSize(1024, 768);
 		}
 		catch(Exception e)
 		{
@@ -664,8 +664,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 	{
 		try
 		{
-			currentGameBoard = client.getRunningGameInterface().getPlayerGameBoard();
-			refreshGameBoard(currentGameBoard);
+			refreshGameBoard(client.getRunningGameInterface().getPlayerGameBoard());
 		}
 		catch(Throwable t)
 		{
@@ -832,7 +831,16 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 			setContentPane(getRunningGamePanel());
 			getRunningGamePanel().setVisible(false);
 			getRunningGamePanel().setVisible(true);
-			getRunningGamePanel().refreshGameBoard();
+			
+			SwingUtilities.invokeLater(new Runnable()
+			{
+
+				@Override
+				public void run()
+				{
+					refreshGameBoard();
+				}
+			});
 		}
 		catch(Throwable t)
 		{
@@ -1464,6 +1472,11 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 	private void refreshGameBoard(PlayerGameBoard gameBoard)
 	{
+		if (currentGameBoard == null)
+		{
+			saveGame(gameBoard.getDate());
+		}
+		
 		currentGameBoard = gameBoard;
 		log.log(Level.INFO, "GUI : refreshGameBoard : " + ((gameBoard == null) ? "not implemented" : gameBoard.toString()));
 		getRunningGamePanel().refreshGameBoard(gameBoard);
@@ -2777,8 +2790,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 		return saveFileBaseName;
 	}
 
-	@Override
-	public void receiveNewTurnGameBoard(final PlayerGameBoard gameBoard)
+	private void saveGame(final int date)
 	{
 		if (isAdmin)
 		{
@@ -2789,7 +2801,9 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 				{
 					try
 					{
-						client.saveGame(getSaveFileBaseName()+gameBoard.getDate());
+						String saveId = getSaveFileBaseName()+date;
+						log.log(Level.INFO, "saveGame('"+saveId+"')");
+						client.saveGame(saveId);
 					}
 					catch(Throwable t)
 					{
@@ -2798,6 +2812,12 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 				}
 			});
 		}
+	}
+	
+	@Override
+	public void receiveNewTurnGameBoard(final PlayerGameBoard gameBoard)
+	{
+		saveGame(gameBoard.getDate());
 		
 		SwingUtilities.invokeLater(new Runnable()
 		{

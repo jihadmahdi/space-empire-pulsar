@@ -9,18 +9,21 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.Stack;
 import java.util.Vector;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 
 import org.axan.eplib.utils.Basic;
+import org.axan.sep.common.ALogEntry;
 import org.axan.sep.common.CarbonOrder;
 import org.axan.sep.common.CommandCheckResult;
+import org.axan.sep.common.ConflictLogEntry;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.StarshipTemplate;
-import org.axan.sep.common.TravellingLogEntryUnitSeen;
+import org.axan.sep.common.UnitSeenLogEntry;
 import org.axan.sep.common.eStarshipSpecializationClass;
 import org.axan.sep.common.Diplomacy.PlayerPolicies;
 import org.axan.sep.common.Diplomacy.PlayerPolicies.eForeignPolicy;
@@ -59,9 +62,9 @@ public class GameBoard implements Serializable
 	
 	private final DataBase				db;
 
-	private GameBoard(Hashtable<String, org.axan.sep.common.Player> players, org.axan.sep.common.GameConfig config, int date, Hashtable<Location, Area> areas, Hashtable<ICelestialBody.Key, ICelestialBody> celestialBodies, Hashtable<String, Hashtable<IMarker.Key, IMarker>> playersMarkers, RealLocation sunLocation, Hashtable<Unit.Key, Unit> units, Map<String, Diplomacy> playersPolicies)
+	private GameBoard(Hashtable<String, org.axan.sep.common.Player> players, org.axan.sep.common.GameConfig config, int date, Hashtable<Location, Area> areas, Hashtable<ICelestialBody.Key, ICelestialBody> celestialBodies, Hashtable<String, Hashtable<IMarker.Key, IMarker>> playersMarkers, RealLocation sunLocation, Hashtable<Unit.Key, Unit> units, Map<String, Diplomacy> playersPolicies, Map<String, SortedSet<ALogEntry>> playersLogs)
 	{
-		this.db = new DataBase(players, config, date, areas, celestialBodies, playersMarkers, sunLocation, units, playersPolicies);
+		this.db = new DataBase(players, config, date, areas, celestialBodies, playersMarkers, sunLocation, units, playersPolicies, playersLogs);
 	}
 
 	/**
@@ -72,7 +75,7 @@ public class GameBoard implements Serializable
 	 */
 	public GameBoard(Set<org.axan.sep.common.Player> players, org.axan.sep.common.GameConfig config, int date)
 	{
-		this(new Hashtable<String, org.axan.sep.common.Player>(),  config, date, new Hashtable<Location, Area>(players.size()*2), new Hashtable<ICelestialBody.Key, ICelestialBody>(players.size()*2), new Hashtable<String, Hashtable<IMarker.Key, IMarker>>(players.size()*2), new RealLocation(Double.valueOf(config.getDimX()) / 2.0, Double.valueOf(config.getDimY()) / 2.0, Double.valueOf(config.getDimZ()) / 2.0), new Hashtable<Unit.Key, Unit>(), new Hashtable<String, Diplomacy>());
+		this(new Hashtable<String, org.axan.sep.common.Player>(),  config, date, new Hashtable<Location, Area>(players.size()*2), new Hashtable<ICelestialBody.Key, ICelestialBody>(players.size()*2), new Hashtable<String, Hashtable<IMarker.Key, IMarker>>(players.size()*2), new RealLocation(Double.valueOf(config.getDimX()) / 2.0, Double.valueOf(config.getDimY()) / 2.0, Double.valueOf(config.getDimZ()) / 2.0), new Hashtable<Unit.Key, Unit>(), new Hashtable<String, Diplomacy>(), new Hashtable<String, SortedSet<ALogEntry>>());
 
 		// Make the sun
 		RealLocation sunLocation = db.getSunLocation();
@@ -262,7 +265,7 @@ public class GameBoard implements Serializable
 			playersPoliciesView.put(playerName, db.getPlayerPolicies(playerName).getPlayerView(db.getDate(), playerLogin, false));
 		}
 		
-		return new org.axan.sep.common.PlayerGameBoard(config, playerLogin, playerUniverseView, db.getSunLocation(), db.getDate(), playersPoliciesView);
+		return new org.axan.sep.common.PlayerGameBoard(config, playerLogin, playerUniverseView, db.getSunLocation(), db.getDate(), playersPoliciesView, db.getPlayerLogs(playerLogin));
 	}
 	
 	
@@ -328,26 +331,33 @@ public class GameBoard implements Serializable
 				for(Unit movedUnit : currentStepMovedUnits)
 				{
 					RealLocation movedUnitCurrentLocation = movedUnit.getRealLocation();
+					
+					if (movedUnit.getOwnerName().equals(u.getOwnerName())) continue;
 					if (SEPUtils.getDistance(currentStepLocation, movedUnitCurrentLocation) <= 1)
 					{
-						u.addTravelligLogEntry(new TravellingLogEntryUnitSeen("Unit seen", db.getDate(), currentStep, movedUnitCurrentLocation, movedUnit.getPlayerView(db.getDate(), u.getOwnerName(), true)));
-						movedUnit.addTravelligLogEntry(new TravellingLogEntryUnitSeen("Unit seen", db.getDate(), currentStep, currentStepLocation, u.getPlayerView(db.getDate(), movedUnit.getOwnerName(), true)));
+						UnitSeenLogEntry log = new UnitSeenLogEntry(db.getDate(), currentStep, movedUnitCurrentLocation, movedUnit.getPlayerView(db.getDate(), u.getOwnerName(), true));
+						u.addTravellingLogEntry(log);
+						log = new UnitSeenLogEntry(db.getDate(), currentStep, currentStepLocation, u.getPlayerView(db.getDate(), movedUnit.getOwnerName(), true));
+						movedUnit.addTravellingLogEntry(log);
 					}
 				}
 				
 				for(Probe probe : deployedProbes)
 				{
+					if (probe.getOwnerName().equals(u.getOwnerName())) continue;
 					RealLocation probeLocation = probe.getRealLocation();
 					distance = SEPUtils.getDistance(probeLocation, currentStepLocation);
 
 					if (distance <= db.getGameConfig().getProbeScope())
 					{
-						probe.addTravelligLogEntry(new TravellingLogEntryUnitSeen("Unit seen", db.getDate(), currentStep, currentStepLocation, u.getPlayerView(db.getDate(), probe.getOwnerName(), true)));
+						UnitSeenLogEntry log = new UnitSeenLogEntry(db.getDate(), currentStep, currentStepLocation, u.getPlayerView(db.getDate(), probe.getOwnerName(), true));
+						db.writeLog(probe.getOwnerName(), log);
 					}
 
 					if (distance <= 1)
 					{
-						u.addTravelligLogEntry(new TravellingLogEntryUnitSeen("Probe seen", db.getDate(), currentStep, probeLocation, probe.getPlayerView(db.getDate(), u.getOwnerName(), true)));
+						UnitSeenLogEntry log = new UnitSeenLogEntry(db.getDate(), currentStep, probeLocation, probe.getPlayerView(db.getDate(), u.getOwnerName(), true));
+						u.addTravellingLogEntry(log);
 					}
 				}
 
@@ -356,6 +366,8 @@ public class GameBoard implements Serializable
 		}
 		
 		Set<AntiProbeMissile> explodingAntiProbeMissiles = new HashSet<AntiProbeMissile>();
+		
+		Map<Unit, ProductiveCelestialBody> justFinishedToMove = new HashMap<Unit, ProductiveCelestialBody>();
 		
 		for(Entry<Unit, Double> e : movingUnitsSpeeds.entrySet())
 		{
@@ -372,15 +384,18 @@ public class GameBoard implements Serializable
 				u.endMove();
 				
 				ProductiveCelestialBody productiveCelestialBody = db.getCelestialBody(endTurnLocation.asLocation(), ProductiveCelestialBody.class);
+				
 				if (productiveCelestialBody != null)
 				{
 					productiveCelestialBody.controlNewcomer(u);
-				}
+				}								
 				
 				if (AntiProbeMissile.class.isInstance(u))
 				{
 					explodingAntiProbeMissiles.add(AntiProbeMissile.class.cast(u));
 				}
+				
+				justFinishedToMove.put(u, productiveCelestialBody);
 			}
 			else
 			{
@@ -456,12 +471,24 @@ public class GameBoard implements Serializable
 		
 		Set<ProductiveCelestialBody> productiveCelestialBodies = db.getCelestialBodies(ProductiveCelestialBody.class);
 		
+		// Travelling Logs for pacifist landing.
+		for(Unit u : justFinishedToMove.keySet())
+		{
+			if (justFinishedToMove.get(u) == null || justFinishedToMove.get(u).getConflictInitiators().isEmpty())
+			{
+				for(ALogEntry log : u.getTravellingLogs())
+				{
+					db.writeLog(u.getOwnerName(), log);
+				}
+			}
+		}
+		
 		// Conflicts
 		for(ProductiveCelestialBody productiveCelestialBody : productiveCelestialBodies)
 		{
 			if (!productiveCelestialBody.getConflictInitiators().isEmpty())
 			{
-				resolveConflict(productiveCelestialBody);
+				resolveConflict(productiveCelestialBody, 1);
 			}
 		}
 		
@@ -477,7 +504,7 @@ public class GameBoard implements Serializable
 		db.incDate();
 	}
 
-	public void resolveConflict(ProductiveCelestialBody productiveCelestialBody)
+	public void resolveConflict(ProductiveCelestialBody productiveCelestialBody, int round)
 	{
 		// Initiate conflicts table : PlayerName/PlayerName: boolean
 		Map<String, Map<String, Boolean>> conflictDiplomacy = resolveConflictDiplomacy(productiveCelestialBody);
@@ -493,7 +520,7 @@ public class GameBoard implements Serializable
 		{
 			if (productiveCelestialBody.getUnasignedFleet(p) != null)
 			{												
-				mergedFleets.put(p, new Fleet(db, p+" forces in conflict on "+productiveCelestialBody.getName()+" at turn "+db.getDate(), p, location.asRealLocation(), productiveCelestialBody.getUnasignedFleetStarships(p), productiveCelestialBody.getUnasignedFleetSpecialUnits(p), false));
+				mergedFleets.put(p, new Fleet(db, p+" forces in conflict on "+productiveCelestialBody.getName()+" at turn "+db.getDate(), p, location.asRealLocation(), productiveCelestialBody.getUnasignedFleetStarships(p), productiveCelestialBody.getUnasignedFleetSpecialUnits(p), false, null, null));
 				productiveCelestialBody.removeFromUnasignedFleet(p, productiveCelestialBody.getUnasignedFleetStarships(p), productiveCelestialBody.getUnasignedFleetSpecialUnits(p));
 			}
 		}
@@ -503,7 +530,7 @@ public class GameBoard implements Serializable
 		{						
 			if (!mergedFleets.containsKey(f.getOwnerName()))
 			{
-				mergedFleets.put(f.getOwnerName(), new Fleet(db, f.getOwnerName()+" forces in conflict on "+productiveCelestialBody.getName()+" at turn "+db.getDate(), f.getOwnerName(), location.asRealLocation(), f.getStarships(), f.getSpecialUnits(), false));
+				mergedFleets.put(f.getOwnerName(), new Fleet(db, f.getOwnerName()+" forces in conflict on "+productiveCelestialBody.getName()+" at turn "+db.getDate(), f.getOwnerName(), location.asRealLocation(), f.getStarships(), f.getSpecialUnits(), false, null, null));
 			}
 			else
 			{
@@ -525,7 +552,7 @@ public class GameBoard implements Serializable
 		{
 			if (!mergedFleets.containsKey(productiveCelestialBody.getOwnerName()))
 			{	
-				mergedFleets.put(productiveCelestialBody.getOwnerName(), new Fleet(db, productiveCelestialBody.getOwnerName()+" forces in conflict on "+productiveCelestialBody.getName()+" at turn "+db.getDate(), productiveCelestialBody.getOwnerName(), location.asRealLocation(), null, null, false));				
+				mergedFleets.put(productiveCelestialBody.getOwnerName(), new Fleet(db, productiveCelestialBody.getOwnerName()+" forces in conflict on "+productiveCelestialBody.getName()+" at turn "+db.getDate(), productiveCelestialBody.getOwnerName(), location.asRealLocation(), null, null, false, null, null));				
 			}
 			
 			Set<ISpecialUnit> specialUnits = new HashSet<ISpecialUnit>();
@@ -533,15 +560,34 @@ public class GameBoard implements Serializable
 			mergedFleets.get(productiveCelestialBody.getOwnerName()).merge(null, specialUnits);
 		}
 		
-		// Run battle
+		// Run battle				
 		Map<String, Fleet> survivalFleets = resolveBattle(conflictDiplomacy, mergedFleets);
+		
+		for(String survivor : survivalFleets.keySet())
+		{
+			Map<String, org.axan.sep.common.Fleet> startingForces = new HashMap<String, org.axan.sep.common.Fleet>();
+			for(String player : mergedFleets.keySet())
+			{
+				startingForces.put(player, mergedFleets.get(player).getPlayerView(db.getDate(), survivor, true));
+			}
+						
+			Map<String, org.axan.sep.common.Fleet> survivingForces = new HashMap<String, org.axan.sep.common.Fleet>();
+			for(String player : survivalFleets.keySet())
+			{
+				survivalFleets.get(player).rest();
+				survivingForces.put(player, survivalFleets.get(player).getPlayerView(db.getDate(), survivor, true));
+			}
+			
+			ConflictLogEntry conflictLog = new ConflictLogEntry(db.getDate(), (float) .999, round, productiveCelestialBody.getName(), startingForces, conflictDiplomacy, survivingForces);			
+			
+			db.writeLog(survivor, conflictLog);
+		}				
 		
 		// Restore original fleets from survived ones.
 		for(Map.Entry<String, Fleet> e : survivalFleets.entrySet())
 		{
 			String playerName = e.getKey();
-			Fleet survivalFleet = e.getValue();
-			survivalFleet.rest();
+			Fleet survivalFleet = e.getValue();			
 			
 			Set<Fleet> originalFleets = originalPlayersFleets.get(playerName);
 			Vector<Fleet> originalFleetsCopy = new Vector<Fleet>();
@@ -624,7 +670,7 @@ public class GameBoard implements Serializable
 				Fleet recoveredFleet = null;
 				if (resultantFleetsStarships.get(originalFleet.getName()) != null)
 				{
-					recoveredFleet = new Fleet(db, originalFleet.getKey(), originalFleet.getSourceLocation(), resultantFleetsStarships.get(originalFleet.getName()), resultantFleetsSpecialUnits.get(originalFleet.getName()), false);
+					recoveredFleet = new Fleet(db, originalFleet.getKey(), originalFleet.getSourceLocation(), resultantFleetsStarships.get(originalFleet.getName()), resultantFleetsSpecialUnits.get(originalFleet.getName()), false, originalFleet.getCheckpoints(), originalFleet.getTravellingLogs());
 					if (!recoveredFleet.hasNoMoreStarships()) db.insertUnit(recoveredFleet);
 				}
 				
@@ -650,7 +696,7 @@ public class GameBoard implements Serializable
 			productiveCelestialBody.changeOwner(newOwner);
 			
 			productiveCelestialBody.addConflictInititor(newOwner);
-			resolveConflict(productiveCelestialBody);
+			resolveConflict(productiveCelestialBody, ++round);
 		}
 	}
 	
@@ -701,14 +747,14 @@ public class GameBoard implements Serializable
 							SpecializedEquivalentFleet targetSubFleet = mergedEnnemyFleet.getNextTarget(specialization);
 							double attack = attackerFleet.getBattleSkillsModifier().getFixedAttackBonus() + (attackerSubFleet.getAttack() * (1 + (specialization.getTdT() == targetSubFleet.getSpecialization() ? attackerSubFleet.getAttackSpecializationBonus() : (specialization.getBN() == targetSubFleet.getSpecialization() ? -1 * targetSubFleet.getDefenseSpecializationBonus() : 0))));
 							
-							while(attack > 0)
+							while((attack > 0) && (!ennemies.isEmpty())) // We would not lose remaining attack, because in the worst case, the current round stops with the last specialized sub fleet death. 
 							{
 								int i = rnd.nextInt(ennemies.size());
 								String ennemy = ennemies.keySet().toArray(new String[ennemies.size()])[i];
 								
 								if (!ennemies.get(ennemy) || !survivors.containsKey(ennemy))
 								{
-									ennemies.remove(ennemy);
+									ennemies.remove(ennemy);									
 									continue;
 								}
 								else
@@ -1435,7 +1481,7 @@ public class GameBoard implements Serializable
 			specialUnits.add(specialUnit);
 		}
 				
-		Fleet newFleet = new Fleet(db, fleetName, playerLogin, productiveCelestialBody.getLocation().asRealLocation(), fleetToFormStarships, specialUnits, false);
+		Fleet newFleet = new Fleet(db, fleetName, playerLogin, productiveCelestialBody.getLocation().asRealLocation(), fleetToFormStarships, specialUnits, false, null, null);
 
 		return new FormFleetCheckResult(productiveCelestialBody, newFleet);
 	}
@@ -1556,7 +1602,7 @@ public class GameBoard implements Serializable
 		Set<Probe> newProbes = new HashSet<Probe>();
 		for(int i = 0; i < quantity; ++i)
 		{
-			newProbes.add(new Probe(db, probeName + i, playerName, planet.getLocation().asRealLocation(), false));
+			newProbes.add(new Probe(db, probeName + i, playerName, planet.getLocation().asRealLocation(), false, null));
 		}
 
 		return new MakeProbesCheckResult(planet, carbonCost, populationCost, newProbes);
@@ -1634,7 +1680,7 @@ public class GameBoard implements Serializable
 		Set<AntiProbeMissile> newAntiProbeMissiles = new HashSet<AntiProbeMissile>();
 		for(int i = 0; i < quantity; ++i)
 		{
-			newAntiProbeMissiles.add(new AntiProbeMissile(db, antiProbeMissileName + i, playerName, planet.getLocation().asRealLocation(), false));
+			newAntiProbeMissiles.add(new AntiProbeMissile(db, antiProbeMissileName + i, playerName, planet.getLocation().asRealLocation(), false, null));
 		}
 
 		return new MakeAntiProbeMissilesCheckResult(planet, carbonCost, populationCost, newAntiProbeMissiles);
@@ -1788,7 +1834,7 @@ public class GameBoard implements Serializable
 
 	private AttackEnemiesFleetCheckResult checkAttackEnemiesFleet(String playerName, String celestialBodyName) throws RunningGameCommandException
 	{
-		ProductiveCelestialBody productiveCelestialBody = db.getCelestialBody(celestialBodyName, ProductiveCelestialBody.class, playerName);
+		ProductiveCelestialBody productiveCelestialBody = db.getCelestialBody(celestialBodyName, ProductiveCelestialBody.class);
 		if (productiveCelestialBody == null) throw new RunningGameCommandException("Celestial body '"+celestialBodyName+"' is not a productive celestial body.");
 		
 		return new AttackEnemiesFleetCheckResult(productiveCelestialBody);			
@@ -1874,7 +1920,7 @@ public class GameBoard implements Serializable
 		
 		String delivererId = sourceName+" to "+destinationName+" space road deliverer";
 		if (db.getUnit(SpaceRoadDeliverer.class, playerLogin, delivererId) != null) throw new RunningGameCommandException("Space road from '"+sourceName+"' to '"+destinationName+"' is already in delivery.");
-		SpaceRoadDeliverer deliverer = new SpaceRoadDeliverer(db, sourceName+" to "+destinationName+" space road deliverer", playerLogin, source.getLocation().asRealLocation(), sourceName, destinationName);
+		SpaceRoadDeliverer deliverer = new SpaceRoadDeliverer(db, sourceName+" to "+destinationName+" space road deliverer", playerLogin, source.getLocation().asRealLocation(), sourceName, destinationName, null);
 		
 		return new BuildSpaceRoadCheckResult(source, price, deliverer, destination.getLocation());			
 	}

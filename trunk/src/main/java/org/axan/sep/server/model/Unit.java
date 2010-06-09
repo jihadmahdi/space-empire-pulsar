@@ -6,9 +6,10 @@
 package org.axan.sep.server.model;
 
 import java.io.Serializable;
-import java.util.Stack;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.axan.sep.common.ATravellingLogEntry;
+import org.axan.sep.common.ALogEntry;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.SEPUtils.RealLocation;
 
@@ -78,26 +79,27 @@ abstract class Unit implements Serializable
 
 	private double								travellingProgress = -1;
 	
-	private Stack<ATravellingLogEntry>			travellingLog;
+	private final Set<ALogEntry>			travellingLogs;
 
 	// Views
 	private final PlayerDatedView<Integer>	playersLastObservation	= new PlayerDatedView<Integer>();
 	private final PlayerDatedView<RealLocation> playersCurrentLocationView = new PlayerDatedView<RealLocation>();
 	private final PlayerDatedView<Double> playersSpeedView = new PlayerDatedView<Double>();
 
-	public Unit(DataBase db, Key key, RealLocation sourceLocation)
+	public Unit(DataBase db, Key key, RealLocation sourceLocation, Set<ALogEntry> travellingLogs)
 	{
 		this.db = db;
 		this.key = key;
 		this.sourceLocation = sourceLocation;
+		this.travellingLogs = travellingLogs == null ? new HashSet<ALogEntry>() : travellingLogs;
 	}
 	
 	/**
 	 * Full constructor.
 	 */
-	public Unit(DataBase db, String name, String ownerName, RealLocation sourceLocation)
+	public Unit(DataBase db, String name, String ownerName, RealLocation sourceLocation, Set<ALogEntry> travellingLogs)
 	{
-		this(db, new Key(name, ownerName), sourceLocation);		
+		this(db, new Key(name, ownerName), sourceLocation, travellingLogs);		
 	}
 
 	public Key getKey()
@@ -209,14 +211,14 @@ abstract class Unit implements Serializable
 		this.travellingProgress = travellingProgress;
 	}
 	
-	public void addTravelligLogEntry(ATravellingLogEntry logEntry)
+	public void addTravellingLogEntry(ALogEntry logEntry)
 	{
-		if (travellingLog == null)
-		{
-			travellingLog = new Stack<ATravellingLogEntry>();
-		}
-		
-		travellingLog.push(logEntry);
+		ALogEntry.addUpdateLogEntry(travellingLogs, logEntry);		
+	}	
+	
+	public Set<ALogEntry> getTravellingLogs()
+	{
+		return travellingLogs;
 	}
 	
 	public boolean isMoving()
@@ -256,5 +258,13 @@ abstract class Unit implements Serializable
 		setTravellingProgress(1);
 		setSourceLocation(getRealLocation());
 		destinationLocation = null;
-	}	
+	}
+	
+	/*
+	private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException
+	{
+		ois.defaultReadObject();
+		if (travellingLogs == null) travellingLogs = new HashSet<ATravellingLogEntry>();
+	}
+	*/
 }

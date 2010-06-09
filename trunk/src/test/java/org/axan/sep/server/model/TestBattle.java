@@ -119,8 +119,8 @@ public class TestBattle
 			chalengerStarships.clear();
 			chalengerStarships.put(chalenger, championIsWeak ? scale : nb);
 			forces.clear();
-			forces.put(championName, new Fleet(null, champion.getName(), championName, null, championStarships, null, false));
-			forces.put(chalengerName, new Fleet(null, chalenger.getName(), chalengerName, null, chalengerStarships, null, false));
+			forces.put(championName, new Fleet(null, champion.getName(), championName, null, championStarships, null, false, null, null));
+			forces.put(chalengerName, new Fleet(null, chalenger.getName(), chalengerName, null, chalengerStarships, null, false, null, null));
 
 			try
 			{
