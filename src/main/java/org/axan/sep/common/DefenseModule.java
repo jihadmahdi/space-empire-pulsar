@@ -13,7 +13,7 @@ import java.io.Serializable;
  */
 public class DefenseModule extends ABuilding implements Serializable
 {
-	public static class DefenseModuleSpecialUnit extends FleetBattleSkillsModifierAdaptor implements ISpecialUnit
+	public static class DefenseModuleSpecialUnit extends FleetBattleSkillsModifierAdaptor implements ISpecialUnit, Serializable
 	{
 		private final int fixedAttackBonus;
 		private final String name;

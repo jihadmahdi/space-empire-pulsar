@@ -151,8 +151,8 @@ class Fleet extends Unit implements Serializable
 	}
 	
 	public Set<ISpecialUnit> getSpecialUnits()
-	{
-		return Collections.unmodifiableSet(specialUnits);
+	{		
+		return Collections.unmodifiableSet((HashSet<ISpecialUnit>) specialUnits.clone());
 	}
 	
 	public boolean hasNoMoreStarships()

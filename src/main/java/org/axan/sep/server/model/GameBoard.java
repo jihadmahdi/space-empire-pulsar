@@ -725,7 +725,19 @@ public class GameBoard implements Serializable
 			if (!isFinished)
 			{
 				boolean thereIsVictims = false;
-				do
+				
+				Iterator<Entry<String, Fleet>> it = survivors.entrySet().iterator();
+				while(it.hasNext())
+				{
+					Entry<String, Fleet> e = it.next();
+					if (e.getValue().isDestroyed())
+					{
+						thereIsVictims = true;
+						it.remove();
+					}							
+				}
+				
+				while(!thereIsVictims)
 				{
 					Map<String, Map<eStarshipSpecializationClass, Double>> attackPromises = new HashMap<String, Map<eStarshipSpecializationClass,Double>>();
 					Map<String, Fleet> mergedEnnemyFleets = new HashMap<String, Fleet>();
@@ -804,20 +816,9 @@ public class GameBoard implements Serializable
 											
 							survivors.get(target).getSpecializedFleet(specialization).takeDamage(dmg);																												
 						}
-					}
+					}																				
 					
-					Iterator<Entry<String, Fleet>> it = survivors.entrySet().iterator();
-					while(it.hasNext())
-					{
-						Entry<String, Fleet> e = it.next();
-						if (e.getValue().isDestroyed())
-						{
-							thereIsVictims = true;
-							it.remove();
-						}							
-					}										
-					
-				}while(!thereIsVictims);
+				}
 				
 				/*
 				DO

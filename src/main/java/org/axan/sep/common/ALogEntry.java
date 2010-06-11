@@ -83,7 +83,9 @@ public abstract class ALogEntry implements Comparable<ALogEntry>, Serializable
 	}
 
 	public static abstract class AUpdatableLogEntry<T extends ALogEntry> extends ALogEntry
-	{
+	{		
+		private static final long	serialVersionUID	= 1829417193080914290L;
+		
 		public AUpdatableLogEntry(int creationDate, double instantTime)
 		{
 			super(creationDate, instantTime);

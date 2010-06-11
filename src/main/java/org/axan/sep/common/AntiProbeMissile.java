@@ -39,7 +39,7 @@ public class AntiProbeMissile extends Unit implements Serializable
 	public String toString()
 	{
 		StringBuffer sb = new StringBuffer(super.toString());
-		sb.append("\nStatus : "+(fired?"fired on '"+targetOwnerName+"@"+targetProbeName+"' ("+getDestinationLocation().toString()+")":"not fired"));
+		sb.append("\nStatus : "+(fired?"fired on '"+targetOwnerName+"@"+targetProbeName+"' ("+(getDestinationLocation() == null ? "null" : getDestinationLocation().toString())+")":"not fired"));
 		return sb.toString();
 	}
 	
