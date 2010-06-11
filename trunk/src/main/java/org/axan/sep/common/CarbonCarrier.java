@@ -36,6 +36,6 @@ public class CarbonCarrier extends Unit implements Serializable
 	@Override
 	public String toString()
 	{
-		return "Order: "+order.toString()+", Carrier: "+super.toString();
+		return "Order: "+(order == null ? "null" : order.toString())+", Carrier: "+super.toString();
 	}
 }

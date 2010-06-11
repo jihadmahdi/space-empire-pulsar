@@ -3961,16 +3961,25 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				Set<Player> players;
 				try
 				{
-					players = client.getRunningGameInterface().getPlayerList();
-					refreshPlayerList(players);
+					while(!client.isConnected()) { Thread.sleep(2000); }
+					Thread.sleep(3000);
+					
+					refreshPlayerList(client.getRunningGameInterface().getPlayerList());
 				}
 				catch(StateMachineNotExpectedEventException e)
 				{
+					System.err.println("refreshPlayerList error");
 					e.printStackTrace();
 				}
-				catch(RpcException e)
+				catch(RpcException e2)
 				{
-					e.printStackTrace();
+					System.err.println("refreshPlayerList error");
+					e2.printStackTrace();
+				}
+				catch(InterruptedException e3)
+				{
+					System.err.println("refreshPlayerList error");
+					e3.printStackTrace();
 				}
 			}
 		});
