@@ -6,7 +6,6 @@
 package org.axan.sep.common;
 
 import java.io.Serializable;
-import java.util.Map;
 import java.util.Set;
 
 
@@ -30,9 +29,9 @@ public class Nebula extends ProductiveCelestialBody implements Serializable
 	/**
 	 * Full constructor.
 	 */
-	public Nebula(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<ABuilding> buildings, String ownerName, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits)
+	public Nebula(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<ABuilding> buildings, String ownerName)
 	{
-		super(isVisible, lastObservation, name, startingCarbonStock, carbonStock, carbon, slots, buildings, ownerName, unasignedFleetStarships, unasignedFleetSpecialUnits);
+		super(isVisible, lastObservation, name, startingCarbonStock, carbonStock, carbon, slots, buildings, ownerName);
 	}
 
 	/* (non-Javadoc)

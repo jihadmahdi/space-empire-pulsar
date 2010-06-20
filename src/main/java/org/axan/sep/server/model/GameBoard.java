@@ -520,8 +520,9 @@ public class GameBoard implements Serializable
 		{
 			if (productiveCelestialBody.getUnasignedFleet(p) != null)
 			{												
-				mergedFleets.put(p, new Fleet(db, p+" forces in conflict on "+productiveCelestialBody.getName()+" at turn "+db.getDate(), p, location.asRealLocation(), productiveCelestialBody.getUnasignedFleetStarships(p), productiveCelestialBody.getUnasignedFleetSpecialUnits(p), false, null, null));
-				productiveCelestialBody.removeFromUnasignedFleet(p, productiveCelestialBody.getUnasignedFleetStarships(p), productiveCelestialBody.getUnasignedFleetSpecialUnits(p));
+				Fleet unasignedFleet = productiveCelestialBody.getUnasignedFleet(p);
+				mergedFleets.put(p, new Fleet(db, p+" forces in conflict on "+productiveCelestialBody.getName()+" at turn "+db.getDate(), p, location.asRealLocation(), unasignedFleet.getStarships(), unasignedFleet.getSpecialUnits(), false, null, null));				
+				productiveCelestialBody.removeFromUnasignedFleet(p, unasignedFleet.getStarships(), unasignedFleet.getSpecialUnits());
 			}
 		}
 		
@@ -723,22 +724,24 @@ public class GameBoard implements Serializable
 			
 			// If yes, play the battle round to next victim.
 			if (!isFinished)
-			{
+			{				
 				boolean thereIsVictims = false;
 				
-				Iterator<Entry<String, Fleet>> it = survivors.entrySet().iterator();
-				while(it.hasNext())
-				{
-					Entry<String, Fleet> e = it.next();
-					if (e.getValue().isDestroyed())
+				do
+				{										
+					Iterator<Entry<String, Fleet>> it = survivors.entrySet().iterator();
+					while(it.hasNext())
 					{
-						thereIsVictims = true;
-						it.remove();
-					}							
-				}
-				
-				while(!thereIsVictims)
-				{
+						Entry<String, Fleet> e = it.next();
+						if (e.getValue().isDestroyed())
+						{
+							thereIsVictims = true;
+							it.remove();
+						}							
+					}
+					
+					if (thereIsVictims) continue;
+					
 					Map<String, Map<eStarshipSpecializationClass, Double>> attackPromises = new HashMap<String, Map<eStarshipSpecializationClass,Double>>();
 					Map<String, Fleet> mergedEnnemyFleets = new HashMap<String, Fleet>();
 					
@@ -818,7 +821,7 @@ public class GameBoard implements Serializable
 						}
 					}																				
 					
-				}
+				}while(!thereIsVictims);
 				
 				/*
 				DO

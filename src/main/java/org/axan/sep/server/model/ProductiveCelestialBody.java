@@ -273,8 +273,8 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		if (!playersUnasignedFleetsKeys.containsKey(playerName)) return null;
 		return db.getUnit(getLocation(), Fleet.class, playerName, playersUnasignedFleetsKeys.get(playerName).getName());
 	}
-	
-	protected Map<String, org.axan.sep.common.Fleet> getUnasignedFleetView(int date, String playerLogin, boolean isVisible)
+
+	protected Map<String, org.axan.sep.common.Fleet> getUnasignedFleetsView(int date, String playerLogin, boolean isVisible)
 	{
 		Map<String, org.axan.sep.common.Fleet> result = new HashMap<String, org.axan.sep.common.Fleet>();
 		
@@ -304,6 +304,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		return result;
 	}
 	
+	/*
 	protected Map<org.axan.sep.common.StarshipTemplate, Integer> getUnasignedFleetStarships(String playerName)
 	{
 		Fleet unasignedFleet = getUnasignedFleet(playerName);
@@ -316,6 +317,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		return unasignedFleet == null ? null : unasignedFleet.getPlayerView(date, playerName, isVisible).getStarships();
 	}
 	
+	
 	protected Set<ISpecialUnit> getUnasignedFleetSpecialUnits(String playerName)
 	{
 		Fleet unasignedFleet = getUnasignedFleet(playerName);
@@ -327,6 +329,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		Fleet unasignedFleet = getUnasignedFleet(playerName);
 		return unasignedFleet == null ? null : unasignedFleet.getPlayerView(date, playerName, isVisible).getSpecialUnits();
 	}
+	*/
 	
 	public void mergeToUnasignedFleet(String playerName, Map<org.axan.sep.common.StarshipTemplate, Integer> starshipsToMerge, Set<ISpecialUnit> specialUnitsToMerge)
 	{
@@ -334,7 +337,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 		
 		if (unasignedFleet == null)
 		{
-			Fleet.Key key = new Fleet.Key("Unasigned fleet on "+getName(), playerName);
+			Fleet.Key key = new Fleet.Key(org.axan.sep.common.Fleet.getUnasignedFleetName(getName()), playerName);
 			db.insertUnit(new Fleet(db, key, getLocation().asRealLocation(), starshipsToMerge, specialUnitsToMerge, true, null, null));
 			playersUnasignedFleetsKeys.put(playerName, key);
 		}

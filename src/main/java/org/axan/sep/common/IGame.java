@@ -403,6 +403,8 @@ public interface IGame
 	{
 		ProductiveCelestialBody productiveCelestialBody;
 		Fleet fleet;
+		Fleet unasignedFleet;
+		Area area;
 		
 		public DismantleFleetCheck(PlayerGameBoard gameBoard)
 		{
@@ -424,20 +426,27 @@ public interface IGame
 			try
 			{
 				check.getGameBoard().removeUnit(check.getGameBoard().getPlayerName(), check.fleet.getName(), Fleet.class);
+				if (check.unasignedFleet == null)
+				{
+					check.area.addUnit(new Fleet(true, -1, Fleet.getUnasignedFleetName(check.productiveCelestialBody.getName()), check.getGameBoard().getPlayerName(), null, null, check.fleet.getCurrentLocation(), 0.0, 0.0, check.fleet.getStarships(), check.fleet.getSpecialUnits(), null, null, true));
+				}
+				else
+				{
+					check.unasignedFleet.merge(check.fleet.getStarships(), check.fleet.getSpecialUnits());
+				}
 			}
 			catch(PlayerGameBoardQueryException e)
 			{
 				throw new GameCommandException(e);
 			}
 			
-			check.productiveCelestialBody.mergeToUnasignedFleet(check.fleet.getStarships(), check.fleet.getSpecialUnits());
 			return check.getGameBoard();
 		}
 
 		@Override
 		protected DismantleFleetCheck check(PlayerGameBoard gameBoard)
 		{
-			DismantleFleetCheck check = new DismantleFleetCheck(gameBoard);
+			DismantleFleetCheck check = new DismantleFleetCheck(gameBoard);						
 			
 			try
 			{
@@ -446,6 +455,13 @@ public interface IGame
 			catch(PlayerGameBoardQueryException e)
 			{
 				check.setException(e);
+				return check;
+			}
+			
+			check.area = gameBoard.getArea(check.fleet.getCurrentLocation());
+			if (check.area == null)
+			{
+				check.setImpossibilityReason("Cannot find fleet area.");
 				return check;
 			}
 			
@@ -464,6 +480,17 @@ public interface IGame
 				check.setImpossibilityReason("Fleet is in travel");
 				return check;
 			}
+			
+			try
+			{
+				check.unasignedFleet = gameBoard.getUnit(gameBoard.getPlayerName(), Fleet.getUnasignedFleetName(check.productiveCelestialBody.getName()), Fleet.class);
+			}
+			catch(PlayerGameBoardQueryException e)
+			{
+				check.setException(e);
+				return check;
+			}
+			// (check.unasignedFleet == null) is OK.
 			
 			return check;
 		}
@@ -786,6 +813,10 @@ public interface IGame
 		int carbonCost;
 		int populationCost;
 		
+		Area area;
+		RealLocation location;
+		Fleet unasignedFleet;
+		
 		public EmbarkGovernmentCheck(PlayerGameBoard gameBoard)
 		{
 			super(gameBoard);
@@ -808,7 +839,15 @@ public interface IGame
 			specialUnitsToMake.add(new GovernmentStarship(check.getGameBoard().getPlayerName()+" government starship"));
 			check.planet.setCarbon(check.planet.getCarbon() - check.carbonCost);
 			check.planet.setPopulation(check.planet.getPopulation() - check.populationCost);
-			check.planet.mergeToUnasignedFleet(null, specialUnitsToMake);
+			
+			if (check.unasignedFleet == null)
+			{
+				check.area.addUnit(new Fleet(true, -1, Fleet.getUnasignedFleetName(check.planet.getName()), check.getGameBoard().getPlayerName(), null, null, check.location, 0.0, 0.0, null, specialUnitsToMake, null, null, true));
+			}
+			else
+			{
+				check.unasignedFleet.merge(null, specialUnitsToMake);
+			}						
 			
 			return check.getGameBoard();
 		}
@@ -816,7 +855,7 @@ public interface IGame
 		@Override
 		protected EmbarkGovernmentCheck check(PlayerGameBoard gameBoard)
 		{
-			EmbarkGovernmentCheck check = new EmbarkGovernmentCheck(gameBoard);
+			EmbarkGovernmentCheck check = new EmbarkGovernmentCheck(gameBoard);								
 			
 			try
 			{
@@ -833,6 +872,38 @@ public interface IGame
 				check.setImpossibilityReason("Cannot find government module.");
 				return check;
 			}
+			try
+			{
+				check.location = gameBoard.getCelestialBodyLocation(check.planet.getName());
+			}
+			catch(PlayerGameBoardQueryException e)
+			{
+				check.setException(e);
+				return check;
+			}
+			if (check.location == null)
+			{
+				check.setImpossibilityReason("Cannot locate planet '"+check.planet.getName()+"'");
+				return check;
+			}
+			
+			check.area = gameBoard.getArea(check.location);
+			if (check.area == null)
+			{
+				check.setImpossibilityReason("Cannot find fleet area.");
+				return check;
+			}
+			
+			try
+			{
+				check.unasignedFleet = gameBoard.getUnit(gameBoard.getPlayerName(), Fleet.getUnasignedFleetName(check.planet.getName()), Fleet.class);
+			}
+			catch(PlayerGameBoardQueryException e)
+			{
+				check.setException(e);
+				return check;
+			}
+			// (check.unasignedFleet == null) is OK.
 			
 			GovernmentModule governmentModule = check.planet.getBuilding(GovernmentModule.class);
 			if (governmentModule == null)
@@ -893,6 +964,9 @@ public interface IGame
 		Planet planet;
 		int carbonCost;
 		int populationCost;
+		Fleet unasignedFleet;
+		Area area;
+		RealLocation location;
 		
 		public MakeStarshipsCheck(PlayerGameBoard gameBoard)
 		{
@@ -912,8 +986,16 @@ public interface IGame
 		{
 			check.planet.setCarbon(check.planet.getCarbon() - check.carbonCost);
 			check.planet.setPopulation(check.planet.getPopulation() - check.populationCost);
-			check.planet.mergeToUnasignedFleet(params.starshipsToMake, null);
 			
+			if (check.unasignedFleet == null)
+			{
+				check.area.addUnit(new Fleet(true, -1, Fleet.getUnasignedFleetName(check.planet.getName()), check.getGameBoard().getPlayerName(), null, null, check.location, 0.0, 0.0, params.starshipsToMake, null, null, null, true));
+			}
+			else
+			{
+				check.unasignedFleet.merge(params.starshipsToMake, null);
+			}			
+
 			return check.getGameBoard();
 		}
 
@@ -944,6 +1026,39 @@ public interface IGame
 				check.setImpossibilityReason("No starship plant (or still in construction).");
 				return check;
 			}
+			
+			try
+			{
+				check.location = gameBoard.getCelestialBodyLocation(check.planet.getName());
+			}
+			catch(PlayerGameBoardQueryException e)
+			{
+				check.setException(e);
+				return check;
+			}
+			if (check.location == null)
+			{
+				check.setImpossibilityReason("Cannot locate planet '"+check.planet.getName()+"'");
+				return check;
+			}
+			
+			check.area = gameBoard.getArea(check.location);
+			if (check.area == null)
+			{
+				check.setImpossibilityReason("Cannot find fleet area.");
+				return check;
+			}
+			
+			try
+			{
+				check.unasignedFleet = gameBoard.getUnit(gameBoard.getPlayerName(), Fleet.getUnasignedFleetName(check.planet.getName()), Fleet.class);
+			}
+			catch(PlayerGameBoardQueryException e)
+			{
+				check.setException(e);
+				return check;
+			}
+			// (check.unasignedFleet == null) is OK.
 			
 			check.carbonCost = 0;
 			check.populationCost = 0;
@@ -1012,6 +1127,7 @@ public interface IGame
 		Area area;
 		ProductiveCelestialBody productiveCelestialBody;
 		Fleet newFleet;
+		Fleet unasignedFleet;
 		
 		public FormFleetCheck(PlayerGameBoard gameBoard)
 		{
@@ -1029,7 +1145,7 @@ public interface IGame
 		@Override
 		protected PlayerGameBoard apply(FormFleetCheck check) throws GameCommandException
 		{
-			check.productiveCelestialBody.removeFromUnasignedFleet(params.fleetToFormStarships, check.newFleet.getSpecialUnits());
+			check.unasignedFleet.remove(params.fleetToFormStarships, check.newFleet.getSpecialUnits());			
 			check.area.addUnit(check.newFleet);
 			return check.getGameBoard();
 		}
@@ -1055,6 +1171,21 @@ public interface IGame
 				return check;
 			}
 			
+			try
+			{
+				check.unasignedFleet = gameBoard.getUnit(gameBoard.getPlayerName(), Fleet.getUnasignedFleetName(check.productiveCelestialBody.getName()), Fleet.class);
+			}
+			catch(PlayerGameBoardQueryException e)
+			{
+				check.setException(e);
+				return check;
+			}
+			if (check.unasignedFleet == null)
+			{
+				check.setImpossibilityReason("No unasigned fleet on '"+params.productiveCelestialBodyName+"'");
+				return check;
+			}
+			
 			Fleet fleet;
 			try
 			{
@@ -1070,9 +1201,9 @@ public interface IGame
 			{
 				check.setImpossibilityReason("Fleet '"+params.fleetName+"' already exist.");
 				return check;
-			}
+			}						
 			
-			Map<StarshipTemplate, Integer> unasignedStarships = check.productiveCelestialBody.getUnasignedStarships();
+			Map<StarshipTemplate, Integer> unasignedStarships = check.unasignedFleet.getStarships();
 			if (unasignedStarships == null)
 			{
 				check.setImpossibilityReason("No unasigned starships on '"+params.productiveCelestialBodyName+"'");
@@ -1093,7 +1224,7 @@ public interface IGame
 			}
 			
 			Set<ISpecialUnit> specialUnits = new HashSet<ISpecialUnit>();
-			Set<ISpecialUnit> unasignedSpecialUnits = check.productiveCelestialBody.getUnasignedSpecialUnits();
+			Set<ISpecialUnit> unasignedSpecialUnits = check.unasignedFleet.getSpecialUnits();
 			
 			if (params.fleetToFormSpecialUnits != null) for(String specialUnitName : params.fleetToFormSpecialUnits)
 			{

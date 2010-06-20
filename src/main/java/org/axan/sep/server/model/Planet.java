@@ -161,7 +161,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 			playersPopulationView.updateView(playerLogin, population, date);			
 		}
 		
-		return new org.axan.sep.common.Planet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getStartingCarbonStock(), getCarbonStockView(date, playerLogin, isVisible), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerNameView(date, playerLogin, isVisible), getUnasignedFleetStarshipViews(date, playerLogin, isVisible), getUnasignedFleetSpecialUnitViews(date, playerLogin, isVisible), populationLimit, populationPerTurn, playersPopulationView.getLastValue(playerLogin, -1));
+		return new org.axan.sep.common.Planet(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getStartingCarbonStock(), getCarbonStockView(date, playerLogin, isVisible), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerNameView(date, playerLogin, isVisible), populationLimit, populationPerTurn, playersPopulationView.getLastValue(playerLogin, -1));
 	}
 	
 	public int getPopulation()

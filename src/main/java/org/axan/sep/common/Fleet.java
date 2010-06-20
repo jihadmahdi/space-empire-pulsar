@@ -88,8 +88,8 @@ public class Fleet extends Unit implements Serializable
 		}
 	}
 	
-	private final Map<StarshipTemplate, Integer> starships;
-	private final Set<ISpecialUnit> specialUnits;
+	private final Map<StarshipTemplate, Integer> starships = new HashMap<StarshipTemplate, Integer>();
+	private final Set<ISpecialUnit> specialUnits = new HashSet<ISpecialUnit>();
 	private final Stack<Move> checkpoints;
 	private Move currentMove;
 	private final boolean isUnasignedFleet;
@@ -100,8 +100,8 @@ public class Fleet extends Unit implements Serializable
 	public Fleet(boolean isVisible, int lastObservation, String name, String ownerName, RealLocation sourceLocation, RealLocation destinationLocation, RealLocation currentLocation, double travellingProgress, double speed, Map<StarshipTemplate, Integer> starships, Set<ISpecialUnit> specialUnits, Move currentMove, Stack<Move> checkpoints, boolean isUnasignedFleet)
 	{
 		super(isVisible, lastObservation, name, ownerName, sourceLocation, destinationLocation, currentLocation, travellingProgress, speed);
-		this.starships = (starships == null ? new HashMap<StarshipTemplate, Integer>() : starships);
-		this.specialUnits = (specialUnits == null ? new HashSet<ISpecialUnit>() : specialUnits);
+		if (starships != null) this.starships.putAll(starships);
+		if (specialUnits != null) this.specialUnits.addAll(specialUnits);		
 		this.currentMove = currentMove;
 		this.checkpoints = (checkpoints == null ? new Stack<Move>() : checkpoints);
 		this.isUnasignedFleet = isUnasignedFleet;
@@ -221,5 +221,38 @@ public class Fleet extends Unit implements Serializable
 			
 			checkpoints.push(checkpoint);
 		}
+	}
+	
+	void remove(Map<StarshipTemplate, Integer> starshipsToRemove, Set<ISpecialUnit> specialUnitsToRemove)
+	{
+		if (starshipsToRemove != null) for(Map.Entry<StarshipTemplate, Integer> e : starshipsToRemove.entrySet())
+		{
+			if (e.getValue() == null || e.getValue() <= 0) continue;
+			
+			if (!starships.containsKey(e.getKey()) || starships.get(e.getKey()) < e.getValue()) throw new SEPCommonImplementationException("Try to remove non existing unasigned starships '"+e.getKey().getName()+"' on '"+getName()+"'");
+			
+			starships.put(e.getKey(), starships.get(e.getKey()) - e.getValue());
+		}
+		
+		if (specialUnitsToRemove != null) for(ISpecialUnit u : specialUnitsToRemove)
+		{
+			if (!specialUnits.remove(u)) throw new SEPCommonImplementationException("Try to remove non existing unasigned special unit '"+u.getName()+"' on '"+getName()+"'");
+		}
+	}
+	
+	void merge(Map<StarshipTemplate, Integer> starshipsToMerge, Set<ISpecialUnit> specialUnitsToMerge)
+	{
+		if (starshipsToMerge != null) for(Map.Entry<StarshipTemplate, Integer> e : starshipsToMerge.entrySet())
+		{
+			if (!starships.containsKey(e.getKey())) starships.put(e.getKey(), 0);			
+			starships.put(e.getKey(), starships.get(e.getKey()) + e.getValue());
+		}
+		
+		if (specialUnitsToMerge != null) specialUnits.addAll(specialUnitsToMerge);
+	}
+	
+	public static String getUnasignedFleetName(String celestialBodyName)
+	{
+		return "Unasigned fleet on "+celestialBodyName;
 	}
 }

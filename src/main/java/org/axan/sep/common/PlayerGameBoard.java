@@ -154,6 +154,22 @@ public class PlayerGameBoard implements Serializable
 		a.removeUnit(ownerName, unitName, unitType);
 	}
 	
+	public Fleet getUnsignedFleet(String ownerName, String productiveCelestialBodyName) throws PlayerGameBoardQueryException
+	{
+		Area area = getArea(getCelestialBodyLocation(productiveCelestialBodyName));
+		if (!ProductiveCelestialBody.class.isInstance(area.getCelestialBody()))
+		{
+			throw new PlayerGameBoardQueryException("Celestial body '"+productiveCelestialBodyName+"' is not a productive one.");			
+		}
+		
+		for(Fleet f : area.getUnits(Fleet.class))
+		{
+			if (f.isUnasignedFleet() && ownerName.equals(f.getOwnerName())) return f;
+		}
+		
+		return null;
+	}
+	
 	public <U extends Unit> U getUnit(String ownerName, String unitName, Class<U> unitType) throws PlayerGameBoardQueryException
 	{
 		Unit u = getUnit(ownerName, unitName);

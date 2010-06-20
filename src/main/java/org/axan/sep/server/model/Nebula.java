@@ -47,7 +47,7 @@ class Nebula extends ProductiveCelestialBody implements Serializable
 	@Override
 	public org.axan.sep.common.Nebula getPlayerView(int date, String playerLogin, boolean isVisible)
 	{
-		return new org.axan.sep.common.Nebula(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getStartingCarbonStock(), getCarbonStockView(date, playerLogin, isVisible), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerNameView(date, playerLogin, isVisible), getUnasignedFleetStarshipViews(date, playerLogin, isVisible), getUnasignedFleetSpecialUnitViews(date, playerLogin, isVisible));
+		return new org.axan.sep.common.Nebula(isVisible, getLastObservation(date, playerLogin, isVisible), getName(), getStartingCarbonStock(), getCarbonStockView(date, playerLogin, isVisible), getCarbonView(date, playerLogin, isVisible), getSlots(), getBuildingsView(date, playerLogin, isVisible), getOwnerNameView(date, playerLogin, isVisible));
 	}
 
 }

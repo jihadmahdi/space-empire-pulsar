@@ -1,6 +1,7 @@
 package org.axan.sep.client.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -10,6 +11,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
@@ -26,6 +29,8 @@ import java.util.Stack;
 import java.util.TreeSet;
 import java.util.Vector;
 
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -147,6 +152,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	private static final int	EAST_AREA_COMPONENTS_MAX_WIDTH		= EAST_AREA_WIDTH - 25;
 	private static final int	CELESTIALBODY_DETAILS_AREA_HEIGHT	= 530;
 	private static final int	TEXTAREA_MAX_HEIGHT					= 100;
+	private static final int	UNIT_DETAILS_MIN_HEIGHT				= 200;
 
 	/**
 	 * Auto-generated main method to display this JPanel inside a new JFrame.
@@ -213,8 +219,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 			add(getRunningGameEastPanel(), BorderLayout.EAST);
 			add(getRunningGameSouthPanel(), BorderLayout.SOUTH);
-			add(getRunningGameCenterPanel(), BorderLayout.CENTER);
-
+			add(getRunningGameCenterPanel(), BorderLayout.CENTER);						
 		}
 		catch(Exception e)
 		{
@@ -451,7 +456,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			runningGameFleetDetails = new JPanel();
 			BorderLayout runningGameFleetDetailsLayout = new BorderLayout();
 			runningGameFleetDetails.setLayout(runningGameFleetDetailsLayout);
-			runningGameFleetDetails.setPreferredSize(new Dimension(Integer.MAX_VALUE, 400));
+			runningGameFleetDetails.setPreferredSize(new Dimension(400, UNIT_DETAILS_MIN_HEIGHT));
 
 			runningGameFleetDetails.add(getRunningGameFleetDetailsContent(), BorderLayout.NORTH);
 			runningGameFleetDetails.add(getRunningGameFleetDetailsSpecificDetailsPanel(), BorderLayout.CENTER);
@@ -509,6 +514,16 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			runningGameChatPanel.add(getRunningGameChatTextField(), BorderLayout.SOUTH);
 			runningGameChatPanel.add(getRunningGameChatScrollPane(), BorderLayout.CENTER);
 			runningGameChatPanel.add(getRunningGameChatPlayerListScrollPane(), BorderLayout.EAST);
+			
+			runningGameChatPanel.addComponentListener(new ComponentAdapter()
+			{
+				@Override
+				public void componentShown(ComponentEvent e)
+				{
+					getRunningGameTabbedPanel().setForegroundAt(getRunningGameTabbedPanel().indexOfComponent(getRunningGameChatPanel()), null);
+					super.componentShown(e);
+				}
+			});
 		}
 		return runningGameChatPanel;
 	}
@@ -911,8 +926,10 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		currentSelectedLocation = location;
 
 		String selectedAreaDisplay = currentSelectedArea.toString();
-		getRunningGameCelestialBodyDetailsContentLabel().setText(selectedAreaDisplay.substring(0, (selectedAreaDisplay.indexOf("Buildings") < 0) ? selectedAreaDisplay.length() : selectedAreaDisplay.indexOf("Buildings")));
-
+		getRunningGameCelestialBodyDetailsContentLabel().setText(selectedAreaDisplay.substring(0, (selectedAreaDisplay.indexOf("Buildings") < 0) ? selectedAreaDisplay.length() : selectedAreaDisplay.indexOf("Buildings")));		
+		
+		// Celestial body
+		
 		ICelestialBody celestialBody = currentSelectedArea.getCelestialBody();
 
 		if (celestialBody != null && celestialBody.getLastObservation() >= 0 && ProductiveCelestialBody.class.isInstance(celestialBody))
@@ -921,7 +938,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 			Set<Class<? extends ABuilding>> buildingsTypes = new HashSet<Class<? extends ABuilding>>(SEPUtils.buildingTypes);
 
-			ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
+			ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);						
+			
 			if (productiveCelestialBody.getBuildings() != null)
 			{
 				for(ABuilding b : productiveCelestialBody.getBuildings())
@@ -964,14 +982,25 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			getRunningGameCelestialBodyDetailsAttackFleetsBtn().setEnabled(false);
 		}
 
-		// Units list	
+		// Units list
 		Unit lastSelectedUnit = getRunningGameCelestialBodyDetailsUnitsList().getSelectedElement();
 		getRunningGameCelestialBodyDetailsUnitsList().clear();
 
 		Set<Unit> units = currentSelectedArea.getUnits();
-		if (units != null)
+		if (units != null) for(Unit u : units)
 		{
-			getRunningGameCelestialBodyDetailsUnitsList().addAll(units);
+			if (!Fleet.class.isInstance(u))
+			{
+				getRunningGameCelestialBodyDetailsUnitsList().add(u);
+			}
+			else
+			{
+				Fleet f = Fleet.class.cast(u);
+				if (!f.isUnasignedFleet() || !f.isEmpty())
+				{
+					getRunningGameCelestialBodyDetailsUnitsList().add(f);
+				}
+			}
 		}
 
 		Set<UnitMarker> unitsMarker = currentSelectedArea.getMarkers(UnitMarker.class);
@@ -1732,17 +1761,29 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		Set<StarshipTemplate> starshipTemplates = new TreeSet<StarshipTemplate>();
 		starshipTemplates.addAll(SEPUtils.starshipTypes);
-		if (infos.productiveCelestialBody.getUnasignedStarships() != null) starshipTemplates.addAll(infos.productiveCelestialBody.getUnasignedStarships().keySet());
+		
+		Fleet unasignedFleet;
+		try
+		{
+			unasignedFleet = currentLocalGame.getGameBoard().getUnsignedFleet(player.getName(), infos.productiveCelestialBody.getName());
+		}
+		catch(PlayerGameBoardQueryException e)
+		{
+			showRunningGameCommandExceptionMsg(e);
+			unasignedFleet = null;
+		}
+		
+		if (unasignedFleet != null && unasignedFleet.getStarships() != null) starshipTemplates.addAll(unasignedFleet.getStarships().keySet());
 
 		for(StarshipTemplate starshipType : starshipTemplates)
 		{
-			if (infos.productiveCelestialBody.getUnasignedStarships() == null)
+			if (unasignedFleet == null || unasignedFleet.getStarships() == null)
 			{
 				availableQt = 0;
 			}
 			else
 			{
-				availableQt = (infos.productiveCelestialBody.getUnasignedStarships().get(starshipType) == null) ? 0 : infos.productiveCelestialBody.getUnasignedStarships().get(starshipType);
+				availableQt = (unasignedFleet.getStarships().get(starshipType) == null) ? 0 : unasignedFleet.getStarships().get(starshipType);
 			}
 
 			toMake = Basic.intValueOf(getStarshipPlantWorkshopStarshipQtToMakeTextField(starshipType).getText(), 0);
@@ -1764,7 +1805,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		}
 
-		if (infos.productiveCelestialBody.getUnasignedSpecialUnits() != null) for(ISpecialUnit specialUnit : infos.productiveCelestialBody.getUnasignedSpecialUnits())
+		if (unasignedFleet != null && unasignedFleet.getSpecialUnits() != null) for(ISpecialUnit specialUnit : unasignedFleet.getSpecialUnits())
 		{
 			if (specialUnit == null) continue;
 
@@ -1875,7 +1916,19 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 					Set<StarshipTemplate> starshipTemplates = new TreeSet<StarshipTemplate>();
 					starshipTemplates.addAll(SEPUtils.starshipTypes);
-					if (infos.productiveCelestialBody.getUnasignedStarships() != null) starshipTemplates.addAll(infos.productiveCelestialBody.getUnasignedStarships().keySet());
+					
+					Fleet unasignedFleet;
+					try
+					{
+						unasignedFleet = currentLocalGame.getGameBoard().getUnsignedFleet(player.getName(), infos.productiveCelestialBody.getName());
+					}
+					catch(PlayerGameBoardQueryException e1)
+					{
+						showRunningGameCommandExceptionMsg(e1);
+						unasignedFleet = null;
+					}
+										
+					if (unasignedFleet != null && unasignedFleet.getStarships() != null) starshipTemplates.addAll(unasignedFleet.getStarships().keySet());
 
 					for(StarshipTemplate starshipType : starshipTemplates)
 					{
@@ -1883,7 +1936,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 						if (fleetToFormQt > 0) fleetToFormStarships.put(starshipType, fleetToFormQt);
 					}
 
-					if (infos.productiveCelestialBody.getUnasignedSpecialUnits() != null) for(ISpecialUnit specialUnit : infos.productiveCelestialBody.getUnasignedSpecialUnits())
+					if (unasignedFleet != null && unasignedFleet.getSpecialUnits() != null) for(ISpecialUnit specialUnit : unasignedFleet.getSpecialUnits())
 					{
 						int fleetToFormQt = Basic.intValueOf(getStarshipPlantWorkshopSpecialUnitNewFleetQtTextField(specialUnit).getText(), 0);
 						if (fleetToFormQt > 0) fleetToFormSpecialUnits.add(specialUnit.getName());
@@ -1898,7 +1951,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 							getStarshipPlantWorkshopStarshipNewFleetQtTextField(starshipType).setText("0");
 						}
 
-						if (infos.productiveCelestialBody.getUnasignedSpecialUnits() != null) for(ISpecialUnit specialUnit : infos.productiveCelestialBody.getUnasignedSpecialUnits())
+						if (unasignedFleet != null && unasignedFleet.getSpecialUnits() != null) for(ISpecialUnit specialUnit : unasignedFleet.getSpecialUnits())
 						{
 							getStarshipPlantWorkshopSpecialUnitNewFleetQtTextField(specialUnit).setText("0");
 						}
@@ -3387,7 +3440,19 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 
 		Set<StarshipTemplate> starshipTemplates = new TreeSet<StarshipTemplate>();
 		starshipTemplates.addAll(SEPUtils.starshipTypes);
-		if (infos.productiveCelestialBody.getUnasignedStarships() != null) starshipTemplates.addAll(infos.productiveCelestialBody.getUnasignedStarships().keySet());
+		
+		Fleet unasignedFleet;
+		try
+		{
+			unasignedFleet = currentLocalGame.getGameBoard().getUnsignedFleet(player.getName(), infos.productiveCelestialBody.getName());
+		}
+		catch(PlayerGameBoardQueryException e)
+		{
+			showRunningGameCommandExceptionMsg(e);
+			unasignedFleet = null;
+		}
+		
+		if (unasignedFleet != null && unasignedFleet.getStarships() != null) starshipTemplates.addAll(unasignedFleet.getStarships().keySet());
 
 		for(StarshipTemplate starshipType : starshipTemplates)
 		{
@@ -3396,7 +3461,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			starshipPlantActionPanel.add(typeLabel);
 
 			JLabel qtLabel = getStarshipPlantWorkshopStarshipQtLabel(starshipType);
-			int qt = infos.productiveCelestialBody.getUnasignedStarships().containsKey(starshipType) ? infos.productiveCelestialBody.getUnasignedStarships().get(starshipType) : 0;
+			int qt = (unasignedFleet != null && unasignedFleet.getStarships() != null && unasignedFleet.getStarships().containsKey(starshipType)) ? unasignedFleet.getStarships().get(starshipType) : 0;
 			qtLabel.setText(qt + " (" + qt + ")");
 			qtLabel.setBounds(200, y, 100, 20);
 			starshipPlantActionPanel.add(qtLabel);
@@ -3413,7 +3478,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 			y += 25;
 		}
 
-		if (infos.productiveCelestialBody.getUnasignedSpecialUnits() != null) for(ISpecialUnit specialUnit : infos.productiveCelestialBody.getUnasignedSpecialUnits())
+		if (unasignedFleet != null && unasignedFleet.getSpecialUnits() != null) for(ISpecialUnit specialUnit : unasignedFleet.getSpecialUnits())
 		{
 			if (specialUnit == null) continue;
 
@@ -3889,8 +3954,6 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				{
 					if (!e.getValueIsAdjusting())
 					{
-						System.out.println("runningGameChatScrollPane adjusmentValueChanged");
-
 						JScrollBar vBar = runningGameChatScrollPane.getVerticalScrollBar();
 						int newVal = (vBar.getMinimum() + (vBar.getMaximum() - vBar.getMinimum()) * 1);
 
@@ -3931,6 +3994,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	 * @param fromPlayer
 	 * @param msg
 	 */
+	private static Icon chatNewIcon = new ImageIcon(SpaceEmpirePulsarGUI.IMG_PATH+"planet1.png");
+	
 	public void receiveRunningGameMessage(Player fromPlayer, String msg)
 	{
 		String htmlText = "<br><font color='#" + GUIUtils.getHTMLColor(fromPlayer.getConfig().getColor()) + "'>" + fromPlayer.getName() + "</font> : " + msg + "</br>";
@@ -3947,6 +4012,12 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		catch(IOException e)
 		{
 			e.printStackTrace();
+		}
+		
+		int chatPanelIndex = getRunningGameTabbedPanel().indexOfComponent(getRunningGameChatPanel());
+		if (getRunningGameTabbedPanel().getSelectedIndex() != chatPanelIndex)
+		{
+			getRunningGameTabbedPanel().setForegroundAt(chatPanelIndex, Color.yellow);
 		}
 	}
 
