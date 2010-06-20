@@ -6,9 +6,6 @@
 package org.axan.sep.common;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 
@@ -52,8 +49,12 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 
 	private final String			ownerName;
 	
+	/*
 	private final Map<StarshipTemplate, Integer>				unasignedFleetStarships = new HashMap<StarshipTemplate, Integer>(); // For viewer point of view, not owner.
 	private final Set<ISpecialUnit>								unasignedFleetSpecialUnits = new HashSet<ISpecialUnit>();
+	*/
+	
+	//private final Map<String, Fleet> unasignedFleets = new HashMap<String, Fleet>();
 	
 	// Local
 	private boolean attackEnemiesFleet = false;
@@ -62,7 +63,7 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 	/**
 	 * Full constructor.
 	 */
-	public ProductiveCelestialBody(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<ABuilding> buildings, String ownerName, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits)
+	public ProductiveCelestialBody(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<ABuilding> buildings, String ownerName/*, Map<String, Fleet> unasignedFleets*/)
 	{
 		this.isVisible = isVisible;
 		this.lastObservation = lastObservation;
@@ -73,8 +74,7 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 		this.slots = slots;
 		this.buildings = buildings;
 		this.ownerName = ownerName;
-		if (unasignedFleetStarships != null) this.unasignedFleetStarships.putAll(unasignedFleetStarships);
-		if (unasignedFleetSpecialUnits != null) this.unasignedFleetSpecialUnits.addAll(unasignedFleetSpecialUnits);
+		//if (unasignedFleets != null) this.unasignedFleets.putAll(unasignedFleets);
 	}
 
 	/*
@@ -192,6 +192,19 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 		return slots - getBuildSlotsCount();
 	}
 	
+	/*	
+	public Fleet getUnasignedFleet(String ownerName)
+	{
+		return unasignedFleets.containsKey(ownerName) ? unasignedFleets.get(ownerName) : null;
+	}
+	
+	public Map<String, Fleet> getUnasignedFleets()
+	{
+		return Collections.unmodifiableMap(unasignedFleets);
+	}
+	*/
+	
+	/*
 	public Map<StarshipTemplate, Integer> getUnasignedStarships()
 	{
 		return unasignedFleetStarships;
@@ -201,6 +214,7 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 	{
 		return unasignedFleetSpecialUnits;
 	}
+	*/
 	
 	public abstract boolean canBuildType(Class<? extends ABuilding> buildingType);
 
@@ -277,31 +291,28 @@ public abstract class ProductiveCelestialBody implements ICelestialBody, Seriali
 		buildings.remove(getBuilding(buildingType));
 	}
 	
+	/*
 	public void removeFromUnasignedFleet(Map<StarshipTemplate, Integer> starshipsToRemove, Set<ISpecialUnit> specialUnitsToRemove)
 	{
-		if (starshipsToRemove != null) for(Map.Entry<StarshipTemplate, Integer> e : starshipsToRemove.entrySet())
-		{
-			if (e.getValue() == null || e.getValue() <= 0) continue;
-			
-			if (!unasignedFleetStarships.containsKey(e.getKey()) || unasignedFleetStarships.get(e.getKey()) < e.getValue()) throw new SEPCommonImplementationException("Try to remove non existing unasigned starships '"+e.getKey().getName()+"' on '"+getName()+"'");
-			
-			unasignedFleetStarships.put(e.getKey(), unasignedFleetStarships.get(e.getKey()) - e.getValue());
-		}
+		Fleet unasignedFleet = getUnasignedFleet(getOwnerName());
 		
-		if (specialUnitsToRemove != null) for(ISpecialUnit u : specialUnitsToRemove)
-		{
-			if (!unasignedFleetSpecialUnits.remove(u)) throw new SEPCommonImplementationException("Try to remove non existing unasigned special unit '"+u.getName()+"' on '"+getName()+"'");
-		}				
+		if (unasignedFleet == null) throw new SEPCommonImplementationException("Try to remove units from unexisting unasigned fleet");
+		unasignedFleet.remove(starshipsToRemove, specialUnitsToRemove);								
 	}
 	
 	public void mergeToUnasignedFleet(Map<StarshipTemplate, Integer> starshipsToMerge, Set<ISpecialUnit> specialUnitsToMerge)
 	{
-		if (starshipsToMerge != null) for(Map.Entry<StarshipTemplate, Integer> e : starshipsToMerge.entrySet())
-		{
-			if (!unasignedFleetStarships.containsKey(e.getKey())) unasignedFleetStarships.put(e.getKey(), 0);			
-			unasignedFleetStarships.put(e.getKey(), unasignedFleetStarships.get(e.getKey()) + e.getValue());
-		}
+		Fleet unasignedFleet = getUnasignedFleet(getOwnerName());
 		
-		if (specialUnitsToMerge != null) unasignedFleetSpecialUnits.addAll(specialUnitsToMerge);					
+		if (unasignedFleet == null)
+		{
+			unasignedFleet = new Fleet(true, lastObservation, todo, getOwnerName(), null, null, null, 0.0, 0.0, starshipsToMerge, specialUnitsToMerge, null, null, true);
+			unasignedFleets.put(getOwnerName(), unasignedFleet);
+		}
+		else
+		{
+			unasignedFleet.merge(starshipsToMerge, specialUnitsToMerge);
+		}
 	}
+	*/
 }

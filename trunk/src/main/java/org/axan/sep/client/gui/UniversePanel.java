@@ -87,7 +87,21 @@ public class UniversePanel extends javax.swing.JPanel implements UniverseRendere
 			}
 			{
 				this.add(getUniverseViewPanel(), BorderLayout.CENTER);
-			}
+				this.addMouseListener(new MouseAdapter()
+				{
+					@Override
+					public void mouseClicked(MouseEvent e)
+					{					
+						if (e.getButton() == MouseEvent.BUTTON3)
+						{
+							System.out.println("UniversePanel (un)show.");
+							getUniverseViewPanel().setVisible(!getUniverseViewPanel().isVisible());
+						}
+						
+						super.mouseClicked(e);
+					}
+				});
+			}						
 		}
 		catch(Exception e)
 		{
@@ -134,8 +148,8 @@ public class UniversePanel extends javax.swing.JPanel implements UniverseRendere
 					}
 					*/
 					super.componentResized(e);
-				}
-			});
+				}							
+			});						
 		}
 		return universeViewPanel;
 	}

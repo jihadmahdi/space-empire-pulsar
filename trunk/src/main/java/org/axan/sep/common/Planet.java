@@ -6,7 +6,6 @@
 package org.axan.sep.common;
 
 import java.io.Serializable;
-import java.util.Map;
 import java.util.Set;
 
 
@@ -49,9 +48,9 @@ public class Planet extends ProductiveCelestialBody implements Serializable
 	/**
 	 * Full constructor.
 	 */
-	public Planet(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<ABuilding> buildings, String ownerName, Map<StarshipTemplate, Integer> unasignedFleetStarships, Set<ISpecialUnit> unasignedFleetSpecialUnits, int populationLimit, int populationPerTurn, int population)
+	public Planet(boolean isVisible, int lastObservation, String name, int startingCarbonStock, int carbonStock, int carbon, int slots, Set<ABuilding> buildings, String ownerName, int populationLimit, int populationPerTurn, int population)
 	{
-		super(isVisible, lastObservation, name, startingCarbonStock, carbonStock, carbon, slots, buildings, ownerName, unasignedFleetStarships, unasignedFleetSpecialUnits);
+		super(isVisible, lastObservation, name, startingCarbonStock, carbonStock, carbon, slots, buildings, ownerName);
 		this.populationLimit = populationLimit;
 		this.populationPerTurn = populationPerTurn;
 		this.population = population;

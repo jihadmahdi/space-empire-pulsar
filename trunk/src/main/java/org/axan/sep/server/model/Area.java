@@ -175,14 +175,14 @@ class Area implements Serializable
 			
 			// TODO: remove marker for existing units if (unit != null) db.removeMarker(...) ?
 		}
-		
+				
 		ICelestialBody celestialBody = getCelestialBody();
 		
 		if (celestialBody != null && ProductiveCelestialBody.class.isInstance(celestialBody))
 		{
 			ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(celestialBody);
 			
-			Map<String, org.axan.sep.common.Fleet> unasignedFleetsView = productiveCelestialBody.getUnasignedFleetView(date, playerLogin, isVisible);
+			Map<String, org.axan.sep.common.Fleet> unasignedFleetsView = productiveCelestialBody.getUnasignedFleetsView(date, playerLogin, isVisible);
 			
 			if (unasignedFleetsView != null) for(org.axan.sep.common.Fleet unasignedFleetView : unasignedFleetsView.values())
 			{
