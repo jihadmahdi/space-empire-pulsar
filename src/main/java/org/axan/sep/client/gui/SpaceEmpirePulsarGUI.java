@@ -446,6 +446,12 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 						return;
 					}
 
+					if (client != null && client.isConnected())
+					{
+						if (JOptionPane.YES_OPTION != JOptionPane.showConfirmDialog(null, "It seems you are already connected, are you sure you want to close and make a new connection ?", "Already connected", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE)) return;						
+						client.disconnect();
+					}
+					
 					client = new SEPClient(SpaceEmpirePulsarGUI.this, login, null, host, port, timeOut);
 					isAdmin = false;
 					client.connect();
@@ -1085,6 +1091,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 							{
 								currentPlayer = player;
 								getGameCreationPlayerConfigEditionColoredNameLabel().setBackground(null);
+								getGameCreationPlayerConfigEditionColoredNameLabel().setText(player.getName());
 								getGameCreationPlayerConfigEditionColoredNameLabel().setForeground(player.getConfig().getColor());
 							}
 
