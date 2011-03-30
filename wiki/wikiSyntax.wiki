@@ -1,1 +1,0 @@
-/home/axan/dev/web/CustomGiki/localWikiTemplate/initial_pages/wikiSyntax.wiki
