@@ -1,0 +1,219 @@
+#summary Index : Méta : Utilisation du Wiki : Syntaxe
+=Syntaxe=
+{{
+Cette page énumère les syntaxes reconnues par le moteur wiki.
+	# Ligne #summary pour indiquer la rubrique de la page dans le sommaire.
+	# Balises <nowiki></nowiki> pour afficher le contenu sans modification.
+	# Balises {{{  }}} pour mettre le texte en préformaté classe CSS "quote", sans html.
+	# Balises {{  }} pour mettre le texte en pré-formaté, sans html.
+	# Balises <QUOTE  QUOTE> pour mettre le contenu dans un div classe CSS "quote".
+	# Hors balises, remplace toutes les url par leur lien.
+	# [ ] pour créer des liens ou des images.
+		# [ext_link|text] pour créer un lien externe si celui-ci commence par "http"
+		# [int_link|text] pour créer un lien interne.
+		# [img|w,h] pour afficher une image (fichier terminant par .jpg, .jpeg, .png, .gif ou .bmp).	
+	# Balise <math></math> pour afficher des formules math avec phpmathpublisher.
+	# Balises <nohtml></nohtml> pour afficher le code html tel quel.
+	# Balise // // pour mettre le texte en italique.
+	# Balise ## ## pour mettre le texte en gras.
+	# Balise __ __ pour mettre le texte en souligné.
+	# Balise ~~ ~~ pour mettre le texte en barré.
+	# Balises = = pour mettre le texte en titre.
+	# Hors balises, plus de 10 tirets '-' alignés sont remplacés par une ligne.
+	# Caractère ¤ indenté en début de ligne pour insérer une liste non ordonnée.
+	# Caractère # indenté en début de ligne pour insérer une liste ordonnée.
+	# Marqueur || pour dessiner des tableaux.
+	# Sauter une ligne revient à faire un nouveau paragraphe p.
+	# Revenir à la ligne revient à faire un retour chariot br.
+}}
+------------------------------------------------
+{{{
+#summary nom de rubrique[ : nom de sous rubrique[...]]
+}}}
+<nohtml>Est utilisé en première ligne du document pour spécifier la position de la page dans le sommaire, et n'est pas affiché sur la page.</nohtml>
+------------------------------------------------
+TODO: nowiki
+------------------------------------------------
+{{{
+<nowiki>{{{</nowiki>
+Contenu pouvant inclure des <html> balises </html> et autres caractères non interprétés.
+	Garde la mise en forme (sauts de lignes, indentations).
+<nowiki>}}}</nowiki>
+}}}
+<nohtml>Hors de balises HTML, affiche le contenu comme source, en pré-formaté en appliquant la classe de style 'quote'.</nohtml>
+
+{{{
+Contenu pouvant inclure des <html> balises </html> et autres caractères non interprétés.
+	Garde la mise en forme (sauts de lignes, indentations).
+}}}
+------------------------------------------------
+{{{
+<nowiki>{{</nowiki>
+Contenu pouvant inclure des <html> balises </html> et autres caractères non interprétés.
+	Garde la mise en forme (sauts de lignes, indentations).
+<nowiki>}}</nowiki>
+}}}
+<nohtml>Hors de balises HTML, affiche le contenu comme source, en pré-formaté.</nohtml>
+
+{{
+Contenu pouvant inclure des <html> balises </html> et autres caractères non interprétés.
+	Garde la mise en forme (sauts de lignes, indentations).
+}}
+------------------------------------------------
+{{{
+<nowiki><QUOTE</nowiki>
+Contenu affiché dans un div de classe CSS "quote". Le contenu est également ##interprété## wiki, et les balises html sont <u>conservées</u>.
+<nowiki>QUOTE></nowiki>
+}}}
+<nohtml>Englobe le contenu dans un div de classe CSS "quote".</html>
+
+<QUOTE
+Contenu affiché dans un div de classe CSS "quote". Le contenu est également ##interprété## wiki, et les balises html sont <u>conservées</u>.
+QUOTE>
+------------------------------------------------
+{{{
+http://www.google.fr/
+}}}
+<nowiki nohtml>Hors de balises HTML, les liens commençant par http:// ou ftp:// sont automatiquement remplacé par leur balise <a href='http://www.google.fr' target='_blank'>http://www.google.fr</a>.</nowiki>
+
+http://www.google.fr/
+------------------------------------------------
+{{{
+[http://www.google.fr/|Recherche sur Google]
+[http://www.google.fr]
+[pageWiki|Label du lien]
+[pageWiki]
+[img/logo.png|100,30]
+[img/logo.png]
+}}}
+<nohtml>Insère un lien vers une page wiki, un url, ou une image.</nohtml>
+
+[http://www.google.fr/|Recherche sur Google]
+[http://www.google.fr]
+[pageWiki|Label du lien]
+[pageWiki]
+[img/logo.png|100,30]
+[img/logo.png]
+------------------------------------------------
+{{{
+<math size=10>FlotteEquivalente_Défense = sum{pour~chaque~vaisseau~V}{dernier~vaisseau}{V_Défense}</math>
+}}}
+<nohtml>Génère l'image de la formule écrite, à la taille donnée, cf. la doc de la lib utilisée (phpmathpublisher).</nohtml>
+
+<math size=10>FlotteEquivalente_Défense = sum{pour~chaque~vaisseau~V}{dernier~vaisseau}{V_Défense}</math>
+------------------------------------------------
+{{{
+<nohtml>
+Je peux <b>écrire</b> des balises <s>HTML</s> qui seront affichées <u>comme</u> source.
+</nohtml>
+}}}
+<nohtml>Tout les caractères html contenu entre les balises nohtml seront converti en code caractère, et seront donc affiché comme le source.</nohtml>
+
+<nohtml>Je peux <b>écrire</b> des balises <s>HTML</s> qui seront affichées <u>comme</u> source.</nohtml>
+------------------------------------------------
+{{{
+//Texte en italique//
+}}}
+<nohtml>Hors de balises HTML, est remplacé par <i>Texte en italique</i>.</nohtml>
+
+//Texte en italique//
+------------------------------------------------
+{{{
+##Texte en gras##
+}}}
+<nohtml>Hors de balises HTML, est remplacé par <b>Texte en gras</b>.</nohtml>
+
+##Texte en gras##
+------------------------------------------------
+{{{
+__Texte souligné__
+}}}
+<nohtml>Hors de balises HTML, est remplacé par <u>Texte souligné</u>.</nohtml>
+
+__Texte souligné__
+------------------------------------------------
+{{{
+~~Texte barré~~
+}}}
+<nohtml>Hors de balises HTML, est remplacé par <s>Texte barré</s>.</nohtml>
+
+~~Texte barré~~
+------------------------------------------------
+{{{
+==Titre de niveau 2==
+}}}
+<nohtml>Les lignes dont le premier caractère est = et dont le même nombre de caractère = encadrent un texte sont changé en titre du niveau correspondant au nombre de caractère = utilisé.
+Le titre est également automatiquement encadré d'une ancre <a name='<?php urlencode('Titre de niveau 4');?>', et suivi d'un retour chariot <p>.</nohtml>
+
+==Titre de niveau 2==
+------------------------------------------------
+{{{
+----------
+}}}
+<nohtml>Hors de balises HTML, une suite de 10 tiret '-' ou plus est remplacée par une ligne horizontale, <hr>.</nohtml>
+
+----------
+------------------------------------------------
+{{{
+¤ Liste non ordonné 1
+	¤ Liste non ordonnée 1.1
+	¤ Liste non ordonnée 1.2
+		¤ Liste non ordonnée 1.2.1
+	¤ Liste non ordonnée 1.3
+}}}
+<nohtml>Hors de balises HTML, les lignes dont le premier caractère est ¤ sont changé en liste non ordonnée, du rang donné par leur indentation (tab).</nohtml>
+
+¤ Liste non ordonné 1
+	¤ Liste non ordonnée 1.1
+	¤ Liste non ordonnée 1.2
+		¤ Liste non ordonnée 1.2.1
+	¤ Liste non ordonnée 1.3
+------------------------------------------------
+{{{
+# Liste ordonné 1
+	# Liste ordonnée 1.1
+	# Liste ordonnée 1.2
+		# Liste ordonnée 1.2.1
+	# Liste ordonnée 1.3
+}}}
+<nohtml>Hors de balises HTML, les lignes dont le premier caractère est # sont changé en liste ordonnée, du rang donné par leur indentation (tab).</nohtml>
+
+# Liste ordonné 1
+	# Liste ordonnée 1.1
+	# Liste ordonnée 1.2
+		# Liste ordonnée 1.2.1
+	# Liste ordonnée 1.3
+------------------------------------------------
+{{{
+||Colonne 1 Ligne 1||Colonne 2 Ligne 1||
+||Colonne 1 Ligne 2|| Colonne 2 Ligne 2||
+||Colonne 1 Ligne 3||
+||||Colonne 2 Ligne 4||
+}}}
+<nohtml>Hors de balises HTML, le marqueur || est utilisé pour dessiner des tableaux.</nohtml>
+
+||Colonne 1 Ligne 1||Colonne 2 Ligne 1||
+||Colonne 1 Ligne 2|| Colonne 2 Ligne 2||
+||Colonne 1 Ligne 3||
+||||Colonne 2 Ligne 4||
+------------------------------------------------
+{{{
+Pour séparer deux paragraphes, je laisse une ligne vide entre ceux-ci.
+
+Ici débute mon second paragraphe.
+}}}
+<nohtml>Insère un saut de ligne <p> à la place de chaque ligne vide.</nohtml>
+
+Pour séparer deux paragraphes, je laisse une ligne vide entre ceux-ci.
+
+Ici débute mon second paragraphe.
+------------------------------------------------
+{{{
+Je peut utiliser le retour à la ligne normalement, et couper mon paragraphe après ce point.
+De sorte qu'il continue sans saut de ligne à la ligne suivante.
+}}}
+<nohtml>Insère un saut de ligne <br/> à chaque retour à la ligne.</nohtml>
+
+Je peut utiliser le retour à la ligne normalement, et couper mon paragraphe après ce point.
+De sorte qu'il continue sans saut de ligne à la ligne suivante.
+------------------------------------------------
