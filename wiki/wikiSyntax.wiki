@@ -1,4 +1,13 @@
 #summary Index : Méta : Utilisation du Wiki : Syntaxe
+<nowiki>
+<style type="text/css">
+#quote, .quote
+{
+	border: 2px black dashed;
+	padding: 5px;
+}
+</style>
+</nowiki>
 =Syntaxe=
 {{
 Cette page énumère les syntaxes reconnues par le moteur wiki.
@@ -61,11 +70,11 @@ Contenu pouvant inclure des <html> balises </html> et autres caractères non int
 }}
 ------------------------------------------------
 {{{
-<nowiki><QUOTE</nowiki>
+<nowiki>&lt;QUOTE</nowiki>
 Contenu affiché dans un div de classe CSS "quote". Le contenu est également ##interprété## wiki, et les balises html sont <u>conservées</u>.
-<nowiki>QUOTE></nowiki>
+<nowiki>QUOTE&gt;</nowiki>
 }}}
-<nohtml>Englobe le contenu dans un div de classe CSS "quote".</html>
+<nohtml>Englobe le contenu dans un div de classe CSS "quote".</nohtml>
 
 <QUOTE
 Contenu affiché dans un div de classe CSS "quote". Le contenu est également ##interprété## wiki, et les balises html sont <u>conservées</u>.
@@ -143,7 +152,7 @@ __Texte souligné__
 ==Titre de niveau 2==
 }}}
 <nohtml>Les lignes dont le premier caractère est = et dont le même nombre de caractère = encadrent un texte sont changé en titre du niveau correspondant au nombre de caractère = utilisé.
-Le titre est également automatiquement encadré d'une ancre <a name='<?php urlencode('Titre de niveau 4');?>', et suivi d'un retour chariot <p>.</nohtml>
+Le titre est également automatiquement encadré d'une ancre <a name='<?php urlencode('Titre de niveau 2');?>', et suivi d'un retour chariot <p>.</nohtml>
 
 ==Titre de niveau 2==
 ------------------------------------------------
@@ -188,14 +197,16 @@ Le titre est également automatiquement encadré d'une ancre <a name='<?php urle
 ||Colonne 1 Ligne 1||Colonne 2 Ligne 1||
 ||Colonne 1 Ligne 2|| Colonne 2 Ligne 2||
 ||Colonne 1 Ligne 3||
-||||Colonne 2 Ligne 4||
+||		   ||Colonne 2 Ligne 4||
+||||Colonne 2 Ligne 5||
 }}}
 <nohtml>Hors de balises HTML, le marqueur || est utilisé pour dessiner des tableaux.</nohtml>
 
 ||Colonne 1 Ligne 1||Colonne 2 Ligne 1||
 ||Colonne 1 Ligne 2|| Colonne 2 Ligne 2||
 ||Colonne 1 Ligne 3||
-||||Colonne 2 Ligne 4||
+||		   ||Colonne 2 Ligne 4||
+||||Colonne 2 Ligne 5||
 ------------------------------------------------
 {{{
 Pour séparer deux paragraphes, je laisse une ligne vide entre ceux-ci.
