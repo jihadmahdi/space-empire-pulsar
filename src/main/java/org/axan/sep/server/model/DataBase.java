@@ -18,6 +18,8 @@ import org.axan.sep.server.model.SpaceCounter.SpaceRoad;
 
 class DataBase implements Serializable
 {
+	//SUIS LA, recoder DataBase avec SQLite.
+	
 	public static class DataBaseError extends Error
 	{
 		private static final long	serialVersionUID	= 1L;

@@ -292,6 +292,14 @@ public class GameBoard implements Serializable
 
 	public void resolveCurrentTurn()
 	{
+		/*
+		 * TODO:
+		 * Repenser la résolution des tours en terme d'évènements.
+		 * La résolution d'un tour génère l'évènement "le temps s'écoule d'un tour".
+		 * C'est évènement engendre plusieurs effets, et l'on teste pour chaque nouvel état de l'univers si de nouveaux évènements se sont produits (avec des requetes tests).
+		 * Celà permet de décomposer la résolution d'un tour en résolution plus "modulaire" par évènement/traitement que l'on organise ensuite par ordre de priorité.
+		 */
+		
 		// TODO : Résolve mobile units movement, attacks, etc... On Current instance.
 
 		Map<Unit, Double> movingUnitsSpeeds = new HashMap<Unit, Double>();

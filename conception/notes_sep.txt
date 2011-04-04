@@ -1,5 +1,36 @@
 NOTES A METTRE A JOUR :
 
+Légende:
+JJ/MM/AA [priorité de 0 à 10]
+Explication du problème
+>Proposition de solution, hypothèse
+X> Refus, infirmation (raisons)
+<Nouvelle proposition
+/>Confirmation, adoption
+
+01/04/11 [7]
+Dans le cas ou une flotte se déplace vers un Vortex qui disparait avant qu'elle n'y arrive. L'idée que la flotte puisse à ce moment là faire demi-tour (dans une zone vide) n'est pas satisfaisante.
+<Faire continuer la flotte en ligne droite jusqu'à rencontrer un autre corps céleste (lucky!) ou sortir de la zone de jeu (et considérée perdue) ?
+
+01/04/11 [0]
+Idée de nouveau type de game, à au moins 3 joueurs avec un joueur largement avantagé par une planète de départ avec une population et une génération de population sur-dimensionées.
+
+01/04/11 [8]
+Dans le CdC (Constructions) il est écrit que seuls les corps célestes disposant d'une usine sont capable de réorganiser les flottes. Est-ce satisfaisant ?
+<Non, tout corps céleste o`u une flotte peut s'arrêter et communiquer devrait lui permettre de se réorganiser.
+
+01/04/11 [7]
+Dans le CdC (Constructions) il est suggéré qu'il n'y a qu'un seul transporteur par comptoir. Hors dans le modèle actuellement implémenté le joueur est libre de faire plusieurs envois simultanés pour une montant de ressource fixée (en fonction du niveau d'upgrade du comptoir).
+<On valide ? 
+<Celà à t'il un sens d'envoyer simultanément 2 livraisons a des destinations différentes ? Oui, on peut être inquiet de ne plus controler la destination et donc préférer splitter. 
+
+01/04/11 [0]
+Concernant les pactes hard-ally, et les phases de jeu ou un vote ferait perdre 1 tour de jeu à l'ensemble.
+<Un secrétaire général est éli dès la constitution de l'alliance. Celui-ci gère toutes les phases de distribution, et peut etre renversé par la majorité+1 car chaque membre peut à tout instant émettre (ou retirer) une demande de nouvelle élection.
+<Alternative: Chaque membre défini à tout instant une liste ordonnées des autres membres pour lesquels il voterait, ainsi le changement peut lui même se faire sans qu'il y ai de tour "mort".
+
+----------
+
 // Le système diplomatique est-il satisfaisant ? Permet t'il une vrai stratégie diplomatique dans le jeu ?
 
 Une grille diplomatique par corps céleste, avec la liste des joueurs et une checkbox "hostile/neutre", plus des options générales "défendre corps céleste", "takeover corps céleste", 
