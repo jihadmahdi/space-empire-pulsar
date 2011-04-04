@@ -1,0 +1,25 @@
+Liste des paramètres de configuration d'une partie:
+
+Prévoir une config par défaut et la charger automatiquement dans chaque nouvelle partie.
+TODO: Convertir autant que possible les mécanismes de base du jeu (ex: ISpecialUnit.canJoinFleet(): boolean) en paramètres (specialUnit_[type final]_canJointFleet : boolean).
+NOTE: Difficultés pour les valeurs dynamiques (ex: prix des upgrades exponentiels)
+<Mettre en config les paramètres de base du calcul, et le choix de la méthode de calcul.
+
+
+production naturelle de carbone : Nombre d'unités de carbone extraites naturellement par tour en l'absence de module d'extraction.
+seuil minimal de carbone : Seuil jusqu'au quel les corps célestes produisent naturellement du carbonne (sans module d'extraction).
+armée de départ des planètes sauvages : Facteur de puissance des armées de départ des planètes sauvages.
+fourcherte pop par tour (planètes) : Fourchette min-max de la population par tour généré sur les planètes. 
+fourchette pop max (planètes) : Fourchette min-max de la population max des planètes.
+fourchette carbone de départ (planètes, champs d'astéroïdes, nébuleuses) : Fourchette min-max de la quantité de carbone de départ des corps célestes.
+constructions autorisées (planètes, champs d'astéroïdes, nébuleuses) : Liste des types de bâtiments autorisés sur le type de corps céleste en question.
+facteur de génération (planètes, champs d'astéroïdes, nébuleuses) : Facteur de chance qu'un corps céleste généré appartienne au type considéré.
+bâtiment_cout (module d'extraction, usine de vaisseaux, module de défense) : Coût en population et carbone de la construction du bâtiment considéré. /!\ Parfois le coût est dynamique en fonction du nombre d'upgrade..
+production_module_extraction(nbSlots) : Production de carbone par tour de nbSlots modules d'extraction.
+prix_vaisseaux(type de vaisseau) : Prix en pop et carbone du type de vaisseau.
+bonus_module_defense(nbSlots) : Bonus octroyé par nbSlots modules de défenses.
+bonus_module_gouvernemental : Bonus octroyés par le module gouvernemental à la planète sur laquelle il est établi.
+prix_spaceroad : Prix de construction d'une route de l'espace, par zone.
+vitesse_spaceroad : Vitesse de substitution qu'octroient les routes de l'espace.
+porté_sondes : Porté des sondes.
+ressources de début de jeu : Ressources dispos sur les planètes de départ des joueurs.

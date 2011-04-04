@@ -1,0 +1,21 @@
+Si les tables versionnés et leur relation, les UPDATE sont interdits, on oblige à faire des INSERT de nouvelles versions.
+Ex: une mise à jour d'un batiment entraine l'insert d'un nouveau batiment versioné, 
+
+Nettoyer les CHECK fait sur des attributs qui sont déjà checkés dans une autre table en clé étrangère.
+	Sauf pour les clés étrangères pouvant être NULL.
+Restreindre les valeurs possibles pour le type de building dans toutes les clefs étrangères référençant Building.
+Celestial body cannot be on sun area
+Unit cannot be on sun area
+Une seule flotte par joueur peut être "assigned" à un même corps céleste
+Une flotte "assigned" ne peut pas bouger
+Une unité spéciale ne peut joindre qu'une flotte du même owner.
+Contraintes lourdes sur la validité du "plan" de déplacement d'une flotte (validité du path qui ne doit pas passer par le soleil). Probablement impossible à implémenter au niveau de la DB.
+Une flotte contenant le governmentStarship ne peut coexister avec un GouvernmentModule pour un même joueur.
+La source d'une commande de carbone en cours de livraison est nécéssairemnt la même que le corps céleste de départ du livreur.
+Building.type doit forcément correspondre à une table existante héritant de Building.
+Pour chaque table permettant l'héritage, vérifier qu'une seule table héritière directe match l'ID.
+Héritage:
+	1 seule instance:
+		A l'INSERT dans TableMère on vérifie qu'un seul champ tableFille soit non null.
+		A l'INSERT dans TableFille on vérifie que TableMère.tableFille == TableFille.id
+	

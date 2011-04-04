@@ -3,7 +3,7 @@ define("APP_CONFIG", true);
 
 if (defined("CGIKI_CONFIG") === false)
 {
-	require_once("../cgiki/config.php");
+	require_once("cgiki/config.php");
 }
 
 $ENABLE_TRACE = false;
@@ -60,7 +60,7 @@ $option_reverse_links = true;
  <li><a href="files.ext">files.ext</a></li>
  <li><a href="OneNode.wiki">OneNode.wiki</a></li>
  */
-$nodedir_index_parser = "/^<li><a href=\"(.*\.wiki)\">(.*\.wiki)<\/a><\/li>$/";
+$nodedir_index_parser = "/^<li><a href=\"(.*\.".$wiki_ext.")\">(.*\.".$wiki_ext.")<\/a><\/li>$/";
 $nodedir_index_parser_match = 1;
 
 // new option to disable login (disable login + guests can't post = readonly).
