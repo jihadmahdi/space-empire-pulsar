@@ -1,0 +1,133 @@
+Principe d'affichage des infos
+Les infos sont triés suivant leur visibilité, certaines sont constament connues (ex: taille de l'univers), d'autres nécéssitent d'avoir la visibilité sur la zone source (ex: nombre de module de défense sur un corps céleste, la zone du corps céleste doit être visible).
+On distingue ainsi plusieurs niveaux d'informations :
+Information basique : éléments connus de tous (qui n'évoluent en principe pas), ex: taille de l'univers, position des corps célestes.
+Information à jour : information connue du fait que la zone source est actuellement visible.
+Information datée : information connue d'une zone qui n'est plus actuellement visible.
+
+Univers :		taille x;y;z, Corps Célestes
+
+CORPS CELESTES	nom, position x;y;z, carbone max, nb slots
+				[zone visible] carbone, Constructions, owner
+Planètes :		pop. max, pop./tour
+			[zone visible] pop
+Champs d'astéroïdes :
+Nébuleuses :
+
+// Un vortex est un corps céleste (bien que temporaire) car il ne peut pas occuper la même zone qu'un autre corps céleste (et il peut d'ailleurs être une destination).
+Vortex :		position x;y;z
+
+PHENOMENES :
+Pulsar :		[owner] marqueur de la zone estimée du pulsar (pulsar moyen + bonus/malus de tir)
+
+CONSTRUCTIONS
+Module d'extraction :	[zone visible] nombre de modules construits, bonus de production total
+			[owner] prix du suivant
+Usine de vaisseaux :	[zone visible] types et quantités des vaisseaux en attente dans l'usine
+Module de défense :	[zone visible] nombre de modules construits, bonus de défense total
+Module gouvernemental :	[zone visible] -
+Plateforme de lancement de missile pulsar : [zone visible] nombre de slots alloués, état (tiré/non-tiré), bonus de puissance total
+											[owner] prix du suivant
+Comptoir :		[zone visible] nombre de comptoir construits, Routes de l'espace, routes commerciales (+commande en attente)
+
+UNITES
+Flottes			[zone visible] owner, nom, types et quantités des vaisseaux qui la compose
+Sondes			[zone visible] owner, nom, zone ?
+
+MARQUES (routes, ...)
+Routes de l'espace :	[une zone visible]
+Pulsar : 				[une zone visible du faisceau] on sait que la zone est sous effet pulsar sans indication de direction.
+Unité aperçue en déplacement : [zone visible]
+
+EVENEMENTS
+départ/arrivé d'un transporteur
+rapport de combat
+
+=====
+
+commandes serveur
+* La GUI cliente eut demander au server pour chaque commande si celle-ci est possible ou pas afin de griser les boutons ou masquer l'access des commandes impossibles.
+* L'état de possibilité d'une commande pouvant changer dans un même tour suivant les commandes précédement envisagées, le client doit prendre l'initiative de se rafraichir après chaque commande.
+
+construire bâtiment (corps céleste, type construction)
+détruire bâtiment(corps céleste, type construction)
+fabriquer vaisseau (corps céleste, type vaisseau, nombre)
+constituer flotte(corps céleste, constitution vaisseaux, nom nouvelle flotte)
+démanteler flotte(flotte)
+embarquer gouvernement()
+installer module gouvernemental()
+tirer missile pulsar(corps céleste, répartition bonus puissance)
+construire route de l'espace(corps céleste origine, corps céleste destination)
+détruire route de l'espace(route de l'espace)
+modifier commmande carbone(corps céleste origine, corps céleste destination, montant)
+déplacer flotte(aller/attaquer, retard/synchro, étapes)
+lancer sonde(zone destination)
+chasser flottes ennemis(corps céleste)
+changer politique interrieure(politique interrieure)
+changer politique de conquète(politique conquète)
+envoyer message (tous/alliés/ennemis/Player)
+
+=====
+
+A chaque commande du client, on regénère sa vue de l'univers et on la lui envoie.
+
+Ordre de résolution du tour :
+
+[immédiat, avant résolution du tour]
+détruire bâtiment(corps céleste, type construction)
+fabriquer vaisseau (corps céleste, type vaisseau, nombre)
+constituer flotte(corps céleste, constitution vaisseaux, nom nouvelle flotte)
+démanteler flotte(flotte)
+embarquer gouvernement()
+détruire route de l'espace(route de l'espace)
+changer politique interrieure(politique interrieure)
+changer politique de conquète(politique conquète)
+envoyer message (tous/alliés/ennemis/Player)
+
+[résolution du tour]
+récolte des ressources
+installer module gouvernemental()
+construire bâtiment (corps céleste, type construction)
+construire route de l'espace(corps céleste origine, corps céleste destination)
+tirer missile pulsar(corps céleste, répartition bonus puissance)
+modifier commmande carbone(corps céleste origine, corps céleste destination, montant)
+déplacer flotte(aller/attaquer, retard/synchro, étapes)
+lancer sonde(zone destination)
+chasser flottes ennemis(corps céleste)
+
+[constructions des bâtiments]
+[attaques à l'initiative des planètes]
+[déplacement des unités (déploiement des sondes)]
+[attaques à l'initiative des unités]
+[explosion des missiles pulsars]
+[phénomènes astraux]
+
+=====
+
+Interface : zones à afficher
+
+Sélection corps céleste: Zone Détails corps céleste sélectionné
+	Action construire : Zone Choix construction
+	Sélection module d'extraction : Zone détails production du corps céleste (nb de module d'extraction, bonus courant, prix de l'upgrade, bonus suivant)
+	Sélection usine vaisseaux : Zone Détails usine de vaisseaux (types et nombres de vaisseaux disponibles, boutons construire, flottes consitués, bouton assigner vaisseaux à flotte)			
+	Sélection module de défense : Zone détails défense du corps céleste (nb de module de défense, bonus courant, prix de l'upgrade, bonus suivant)
+	Sélection module gouvernemental : Zone détails joueur (nom, couleur, portrait, symbole, raccourci Menu diplomatique, raccourci construire vaisseau gouvernemental)
+	Sélection plateforme lancement pulsar : Zone détails plateforme lancement pulsar (nb de slots alloués, bonus courant, prix de l'upgrade, bonus suivant)
+		Action tirer : Zone détails tir pulsar (slider d'allocation du bonus de puisance, choix cible, prévisualisation dans le moteur de rendu)
+	Sélection comptoir de l'espace : Zone détails comptoir (route de l'espace: boutons construire/détruire,
+		Action construire route de l'espace : Zone détails construction route de l'espace (choix destination, affichage du coût)
+		Action modifier commande commerce : Zone détails commande
+
+Selection flotte : Zone Détails flotte sélectionnée
+	Action déplacer : Zone Détails mouvement flotte (aller/attaquer, retard/synchro, choix étape, liste étapes)
+
+Sélection sonde : Zone Détails sonde
+	Action lancer : Zone saisie/sélection coordonnées destination
+
+Menu liste flottes : Liste des flottes sélectionnables
+Menu liste corps célestes : Liste des corps célestes sélectionnables
+Menu diplomatie : Zone détails politiques diplomatiques (intérrieure et étrangère)
+
+Menu chat : Zone chat + choix canal (tous/alliés/ennemis/private) + checkbox filtres (cf. Dofus), verticalFlowLayout + WrapLabel
+
+Barre de raccourcis (corps célestes, flottes)

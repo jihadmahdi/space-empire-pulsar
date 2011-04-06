@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="ASCII"?>
+<sni:SNI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:sni="http://sni" UID="0348EE64-7DD4-0896-A931-45076ACCC4BF" name="Planche" date="25/02/2008 21:30:40" titre="D&#xe9;tails Flotte">
+  <lstObjets xsi:type="sni:Commentaire" UID="59FE3332-5051-58BA-534F-15175B730C64" name="Ref" date="25/02/2008 22:15:32" X="5.0" Y="25.0" width="163.0" height="53.0" comment="R&#xe9;f&#xe9;rences :&#xA;  AffichagePrincipal"/>
+  <lstObjets xsi:type="sni:Debut" UID="7A194EFB-7566-9BD0-A043-D067A1B98C09" name="Debut-2" date="25/02/2008 21:31:06" X="386.0" Y="45.0" width="186.0" height="30.0" label="DetailsFlotte">
+    <outputPorts name="out1" X="0.5" Y="0.96666664" linkPort="//@lstObjets.3/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:UDC" UID="EC7818DE-4986-51E7-9782-E0D164603D55" name="Groupe-3" date="25/02/2008 21:31:15" X="262.0" Y="73.0" width="435.0" height="206.0" backColor="0" groupBox="D&#xe9;tails Flotte">
+    <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.3/@outputPorts.0"/>
+    <outputPorts name="out1" X="0.5" Y="0.9951456" linkPort="//@lstObjets.5/@inputPorts.0"/>
+    <lstNodes xsi:type="sni:AffObjet" UID="B1989E2E-C48A-E1E7-55AC-54B69251017D" name="Groupe-3.Aff-1" date="25/02/2008 21:31:32" X="13.0" Y="52.0" width="195.0" height="68.0" dispObjet="Flotte">
+      <inputPorts name="in1" X="0.5" conditions="[EstAlliee OU PresenceFlotteAllie]"/>
+      <outputPorts name="out1" X="0.5" Y="0.9852941"/>
+    </lstNodes>
+    <lstNodes xsi:type="sni:AffListe" UID="017B56E7-5A25-296C-F963-432CC6C39770" name="Groupe-3.Coll-2" date="25/02/2008 21:33:01" X="228.0" Y="54.0" width="186.0" height="116.0" dispListe="Vaisseaux" dispAttrib="(type, quantite)">
+      <inputPorts name="in1" X="0.5" conditions="[EstAlliee OU PresenceFlotteAllie]"/>
+      <outputPorts name="out1" X="0.5" Y="0.9913793"/>
+    </lstNodes>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Lien" UID="1BF6823D-ECBE-B242-9FD0-52056A8CFEE8" name="Lien-4" date="25/02/2008 21:31:19">
+    <inputPorts name="source" linkPort="//@lstObjets.1/@outputPorts.0"/>
+    <outputPorts name="target" linkPort="//@lstObjets.2/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Menu" UID="B72FDC83-CEF3-AD82-5F26-DA30687CF847" name="Menu-5" date="25/02/2008 21:38:40" X="164.0" Y="277.0" width="630.0" height="30.0">
+    <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.5/@outputPorts.0"/>
+    <outputPorts X="0.123809524" Y="2.8666666" conditions="[EstAuJoueur&#xA;ET !EnDeplacement]" linkPort="//@lstObjets.7/@inputPorts.0"/>
+    <outputPorts X="0.37301588" Y="2.8666666" conditions="[EstAuJoueur&#xA;ET !EnDeplacement]"/>
+    <outputPorts X="0.62222224" Y="2.8666666" conditions="[EstAuJoueur&#xA;ET !EnDeplacement]"/>
+    <outputPorts X="0.87142855" Y="2.8666666" conditions="[EstAuJoueur&#xA;ET !EnDeplacement]"/>
+    <lstGroupes>
+      <lstOptions name="Synchroniser"/>
+      <lstOptions name="Aller &#xe0;"/>
+      <lstOptions name="Attaquer"/>
+      <lstOptions name="Changer comportement"/>
+    </lstGroupes>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Lien" UID="465310FC-AEA9-B7E4-075E-9051219ABCD1" name="Lien-6" date="25/02/2008 21:38:42">
+    <inputPorts name="source" linkPort="//@lstObjets.2/@outputPorts.0"/>
+    <outputPorts name="target" linkPort="//@lstObjets.4/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:AffMessage" UID="DED80E1B-2D68-5F6E-671A-2C57DC7D82BA" name="Mess-7" date="25/02/2008 21:39:20" X="197.0" Y="362.0" width="90.0" height="40.0">
+    <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.7/@outputPorts.0"/>
+    <outputPorts name="out1" X="0.5" Y="0.975"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Lien" UID="691D1E5C-4E4E-E112-D024-90A61A818861" name="Lien-7" date="25/02/2008 21:39:21">
+    <inputPorts name="source" linkPort="//@lstObjets.4/@outputPorts.0"/>
+    <outputPorts name="target" linkPort="//@lstObjets.6/@inputPorts.0"/>
+  </lstObjets>
+</sni:SNI>

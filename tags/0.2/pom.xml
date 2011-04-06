@@ -1,0 +1,1039 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/maven-v4_0_0.xsd">
+	<!--
+		//TODO: Externaliser toutes les valeurs dans <properties/>, y compris
+		les variables "à ne pas toucher" qui seront classées.
+	-->
+	<modelVersion>4.0.0</modelVersion>
+
+	<!-- The Basics -->
+	<groupId>epsofts</groupId>
+	<artifactId>${projectArtifactId}</artifactId>
+	<!--
+		Utiliser une property pour la version risque de poser problème ?
+	-->
+	<version>${projectVersion}</version>
+	<packaging>jar</packaging>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.axan.eplib</groupId>
+			<artifactId>game-server</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.axan.eplib</groupId>
+			<artifactId>utils</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.jgoodies</groupId>
+			<artifactId>forms</artifactId>
+			<!-- <version>1.0.7</version> -->
+			<version>1.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.4</version>
+			<type>jar</type>
+			<scope>test</scope>
+			<optional>true</optional>
+		</dependency>
+		
+		<!-- SQLite4Java -->
+		<dependency>
+			<groupId>com.almworks.sqlite4java</groupId>
+			<artifactId>sqlite4java</artifactId>
+			<type>jar</type>
+			<version>${sqlite4java.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.almworks.sqlite4java</groupId>
+			<artifactId>libsqlite4java-linux-amd64</artifactId>
+			<version>${sqlite4java.version}</version>
+			<type>so</type>
+		</dependency>
+		<dependency>
+			<groupId>com.almworks.sqlite4java</groupId>
+			<artifactId>libsqlite4java-linux-i386</artifactId>
+			<version>${sqlite4java.version}</version>
+			<type>so</type>
+		</dependency>
+		<dependency>
+			<groupId>com.almworks.sqlite4java</groupId>
+			<artifactId>libsqlite4java-osx</artifactId>
+			<version>${sqlite4java.version}</version>
+			<type>jnilib</type>
+		</dependency>
+		<dependency>
+			<groupId>com.almworks.sqlite4java</groupId>
+			<artifactId>libsqlite4java-osx-10.4</artifactId>
+			<version>${sqlite4java.version}</version>
+			<type>jnilib</type>
+		</dependency>
+		<dependency>
+			<groupId>com.almworks.sqlite4java</groupId>
+			<artifactId>libsqlite4java-osx-ppc</artifactId>
+			<version>${sqlite4java.version}</version>
+			<type>jnilib</type>
+		</dependency>
+		<dependency>
+			<groupId>com.almworks.sqlite4java</groupId>
+			<artifactId>sqlite4java-win32-x64</artifactId>
+			<version>${sqlite4java.version}</version>
+			<type>dll</type>
+		</dependency>
+		<dependency>
+			<groupId>com.almworks.sqlite4java</groupId>
+			<artifactId>sqlite4java-win32-x86</artifactId>
+			<version>${sqlite4java.version}</version>
+			<type>dll</type>
+		</dependency>
+		
+		<!-- BerkeleyDB
+		<dependency>
+      		<groupId>com.sleepycat</groupId>
+      		<artifactId>je</artifactId>
+      		<version>3.3.87</version>
+    	</dependency>
+    	-->	
+	</dependencies>
+	<!-- <parent></parent> -->
+	<!-- <dependencyManagement></dependencyManagement> -->
+	<!-- <modules></modules> -->
+	<properties>
+		<!-- project specific -->
+		<projectArtifactId>space-empire-pulsar</projectArtifactId>
+		<!--
+			Utiliser une property pour la version risque de poser problème ?
+		-->
+		<projectVersionBase>0.2</projectVersionBase>
+		<projectVersionSnapshot>-SNAPSHOT</projectVersionSnapshot>
+		<projectVersion>${projectVersionBase}r${buildNumber}${projectVersionSnapshot}</projectVersion>
+		<mainClass>org.axan.sep.client.gui.SpaceEmpirePulsarGUI</mainClass>
+
+		<projectName>Space-Empire-Pulsar</projectName>
+		<description>
+			Space Empire Pulsar est un jeu de stratégie tour par tour, multijoueur, inspiré de Konquest avec de nouvelles règles et une vue en 3D.
+		</description>
+
+		<jvmArgs>-Xmx256M -Djava.util.logging.config.file=logging.properties</jvmArgs>
+
+		<releaseResourcesBaseDirectory>${basedir}/src</releaseResourcesBaseDirectory>
+		<resourcesBaseDirectory>${basedir}/src/main</resourcesBaseDirectory>
+
+		<releaseResourcesSubDirectory>release</releaseResourcesSubDirectory>
+		<filteredReleaseResourcesSubDirectory>filtered-release</filteredReleaseResourcesSubDirectory>
+
+		<resourcesSubDirectory>resources</resourcesSubDirectory>
+		<!--<resourcesSubDirectory>java</resourcesSubDirectory>-->
+		<!--<filteredResourcesSubDirectory>filtered-resources</filteredResourcesSubDirectory>-->
+		<filteredResourcesSubDirectory>java</filteredResourcesSubDirectory>
+
+		<releaseResourcesDirectory>${releaseResourcesBaseDirectory}/${releaseResourcesSubDirectory}</releaseResourcesDirectory>
+		<filteredReleaseResourcesDirectory>${releaseResourcesBaseDirectory}/${filteredReleaseResourcesSubDirectory}</filteredReleaseResourcesDirectory>
+
+		<resourcesDirectory>${resourcesBaseDirectory}/${resourcesSubDirectory}</resourcesDirectory>
+		<filteredResourcesDirectory>${resourcesBaseDirectory}/${filteredResourcesSubDirectory}</filteredResourcesDirectory>
+
+		<processedFilesBaseDirectory>${project.build.directory}/classes</processedFilesBaseDirectory>
+		<processedReleaseResourcesDirectory>${processedFilesBaseDirectory}/${releaseResourcesSubDirectory}</processedReleaseResourcesDirectory>
+		<processedFilteredReleaseResourcesDirectory>${processedFilesBaseDirectory}/${filteredReleaseResourcesSubDirectory}</processedFilteredReleaseResourcesDirectory>
+		<processedFilteredResourcesDirectory>${processedFilesBaseDirectory}/${filteredResourcesSubDirectory}</processedFilteredResourcesDirectory>
+
+		<packagingDirectory>${project.build.directory}/izpack</packagingDirectory>
+		<libSubDirectory>lib</libSubDirectory>
+		<installersDirectory>${project.build.directory}/distribs</installersDirectory>
+		<siteDirectory>${basedir}/src/site</siteDirectory>
+		<!-- <downloadUrl>${url}/releases</downloadUrl> -->
+		<downloadUrl>/releases</downloadUrl>
+		<hostDomain>axan.org</hostDomain>
+
+		<!-- Auteur -->
+		<authorName>Auriol Arnaud, Bezille Yoann, Cabanes Romain, Pierre Escallier</authorName>
+		<authorMail>p.escallier@laposte.net</authorMail>
+
+		<!-- External tools -->
+		<izpack2exeDirectory>${basedir}/izpack/izpack2exe</izpack2exeDirectory>
+		<izpack2appDirectory>${basedir}/izpack/izpack2app</izpack2appDirectory>
+
+		<!-- Dependencies properties -->
+		<sqlite4java.version>0.213</sqlite4java.version>
+
+		<!-- Env -->
+		<tmp>/tmp</tmp>
+
+		<!-- computed -->
+		<url>http://${projectArtifactId}.${hostDomain}</url>		
+		<finalReleaseResourcesDirectory>${packagingDirectory}</finalReleaseResourcesDirectory>
+		<packagingLibDirectory>${packagingDirectory}/${libSubDirectory}</packagingLibDirectory>
+	</properties>
+
+	<!-- Build Settings -->
+	<build>
+		<resources>
+			<resource>
+				<filtering>false</filtering>
+				<directory>${releaseResourcesBaseDirectory}</directory>
+				<includes>
+					<include>${releaseResourcesSubDirectory}/**</include>
+				</includes>
+				<excludes>
+					<exclude>**/CVS</exclude>
+					<exclude>**/SVN</exclude>
+				</excludes>
+			</resource>
+			<resource>
+				<filtering>true</filtering>
+				<directory>${releaseResourcesBaseDirectory}</directory>
+				<includes>
+					<include>${filteredReleaseResourcesSubDirectory}/**</include>
+				</includes>
+				<excludes>
+					<exclude>**/CVS</exclude>
+					<exclude>**/SVN</exclude>
+				</excludes>
+			</resource>
+			<resource>
+				<filtering>true</filtering>
+				<directory>${filteredResourcesDirectory}</directory>
+				<includes>
+					<include>**/*.properties</include>
+				</includes>
+				<excludes>
+					<exclude>**/*.java</exclude>
+					<exclude>**/CVS</exclude>
+					<exclude>**/SVN</exclude>
+				</excludes>
+			</resource>
+			<resource>
+				<filtering>false</filtering>
+				<directory>${resourcesBaseDirectory}</directory>
+				<includes>
+					<include>${resourcesSubDirectory}/**</include>
+				</includes>
+				<excludes>
+					<exclude>**/CVS</exclude>
+					<exclude>**/SVN</exclude>
+				</excludes>
+			</resource>
+		</resources>
+		<extensions>
+			<extension>
+				<groupId>org.jvnet.wagon-svn</groupId>
+				<artifactId>wagon-svn</artifactId>
+				<version>1.9</version>
+			</extension>
+			<extension>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-ssh-external</artifactId>
+				<version>1.0-alpha-5</version>
+			</extension>
+		</extensions>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>buildnumber-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+						<goals>
+							<goal>create</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<format>{0,date,yyMMdd}.{1,number}</format>
+					<items>
+						<item>timestamp</item>
+						<item>buildNumber1</item>
+					</items>
+					<doCheck>false</doCheck>
+					<doUpdate>false</doUpdate>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<encoding>UTF-8</encoding>
+					<source>1.6</source>
+					<target>1.6</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>cobertura-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>clean</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<!-- Ne semble pas nécéssaire
+					<execution>
+			            <id>copy</id>
+			            <phase>compile</phase>
+			            <goals>
+			              <goal>copy</goal>
+			            </goals>
+			            <configuration>
+			              <artifactItems>
+			                <artifactItem>
+			                  <groupId>com.almworks.sqlite4java</groupId>
+			                  <artifactId>libsqlite4java-linux-i386</artifactId>
+			                  <version>${sqlite4java.version}</version>
+			                  <type>so</type>
+			                  <overWrite>true</overWrite>
+			                  <outputDirectory>${project.build.directory}/lib</outputDirectory>
+			                </artifactItem>
+			              </artifactItems>
+			            </configuration>
+			        </execution>
+			        -->
+								
+					<execution>
+						<id>copy-dependencies</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${packagingLibDirectory}</outputDirectory>
+							<overWriteReleases>false</overWriteReleases>
+							<overWriteSnapshots>false</overWriteSnapshots>
+							<overWriteIfNewer>true</overWriteIfNewer>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<finalName>${projectArtifactId}</finalName>
+					<outputDirectory>${packagingDirectory}</outputDirectory>
+					<!--
+					<includes>
+						<include>**/*.properties</include>
+					</includes>
+					-->
+					<archive>
+						<index>false</index>
+						<!--
+							packaging bug if both "index" and "addClasspath" are true
+						-->
+						<manifest>
+							<addClasspath>true</addClasspath>
+							<addDefaultSpecificationEntries>false</addDefaultSpecificationEntries>
+							<addDefaultImplementationEntries>false</addDefaultImplementationEntries>
+							<mainClass>${mainClass}</mainClass>
+							<classpathPrefix>${libSubDirectory}</classpathPrefix>
+						</manifest>
+						<manifestEntries></manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>clean_trace</id>
+						<phase>clean</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>###CLEAN###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>compile_trace</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>###COMPILE###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>deploy_trace</id>
+						<phase>deploy</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####DEPLOY###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>generate-resources_trace</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####GENERATE_RESOURCES###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>generate-sources_trace</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####GENERATE-SOURCES###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>install_trace</id>
+						<phase>install</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####INSTALL###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>integration-test_trace</id>
+						<phase>integration-test</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####INTEGRATION-TEST###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>package_trace</id>
+						<phase>package</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####PACKAGE###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>post-clean_trace</id>
+						<phase>post-clean</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####POST-CLEAN###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>post-integration-test_trace</id>
+						<phase>post-integration-test</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####POST-INTEGRATION-TEST###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>post-site_trace</id>
+						<phase>post-site</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####POST-SITE###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>pre-clean_trace</id>
+						<phase>pre-clean</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####PRE-CLEAN###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>pre-integration-test_trace</id>
+						<phase>pre-integration-test</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####PRE-INTEGRATION-TEST###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>pre-site_trace</id>
+						<phase>pre-site</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####PRE-SITE###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>prepare-package_trace</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####PREPARE-PACKAGE###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>process-classes_trace</id>
+						<phase>process-classes</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####PROCESS-CLASSES###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>process-resources_trace</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####PROCESS-RESOURCES###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>process-sources_trace</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####PROCESS-SOURCES###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>site_trace</id>
+						<phase>site</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####SITE###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>site-deploy_trace</id>
+						<phase>site-deploy</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####SITE-DEPLOY###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>validate_trace</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####VALIDATE###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>verify_trace</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>####VERIFY###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					
+					<execution>
+						<id>movefiles</id>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<phase>process-resources</phase>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<!-- On s'assure que les répertoires existent -->
+								<mkdir dir="${processedReleaseResourcesDirectory}" />
+								<mkdir dir="${processedFilteredReleaseResourcesDirectory}" />
+								<mkdir dir="${processedFilteredResourcesDirectory}" />
+
+								<echo>Deplacement des resources release ${processedReleaseResourcesDirectory} vers le répertoire ${finalReleaseResourcesDirectory}</echo>
+								<move todir="${finalReleaseResourcesDirectory}">
+									<fileset dir="${processedReleaseResourcesDirectory}">
+										<exclude name="**/CVS" />
+										<exclude name="**/SVN" />
+									</fileset>
+								</move>
+
+								<echo>Deplacement des resources release ${processedFilteredReleaseResourcesDirectory} vers le répertoire ${finalReleaseResourcesDirectory}</echo>
+								<move todir="${finalReleaseResourcesDirectory}">
+									<fileset dir="${processedFilteredReleaseResourcesDirectory}">
+										<exclude name="**/CVS" />
+										<exclude name="**/SVN" />
+									</fileset>
+								</move>
+
+								<echo>Deplacement des resources ${processedFilteredResourcesDirectory} vers ${processedFilesBaseDirectory}</echo>
+								<move todir="${processedFilesBaseDirectory}">
+									<fileset dir="${processedFilteredResourcesDirectory}">
+										<exclude name="**/CVS" />
+										<exclude name="**/SVN" />
+									</fileset>
+								</move>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>izpack</id>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<phase>package</phase>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<!-- On génère l'installeur JAR-->
+								<property name="filenameBase" value="${projectName}-${projectVersion}" />
+								<property name="izpackInput" value="${packagingDirectory}/install.xml" />
+								<property name="izpackOutput" value="${installersDirectory}/${filenameBase}-installer.jar" />
+
+								<echo>Creation du dossier ${installersDirectory}</echo>
+								<mkdir dir="${installersDirectory}" />
+
+								<echo>Execution de izpack: ${izpackInput} =>
+									${izpackOutput}</echo>
+								<taskdef name="izpack" classname="com.izforge.izpack.ant.IzPackTask" />
+								<izpack input="${izpackInput}" output="${izpackOutput}" basedir="${packagingDirectory}" />
+								
+								<!-- On génère l'installeur EXE -->
+								<property name="izpack2exeInput" value="${installersDirectory}/${filenameBase}-installer.jar" />
+								<property name="izpack2appInput" value="${izpack2exeInput}" />
+								<property name="izpack2exeOutput" value="${installersDirectory}/${filenameBase}-installer.exe" />
+								<property name="izpack2appOutput" value="${installersDirectory}/${filenameBase}-installer.app" />
+
+								<echo>Execution de izpack2exe : ${izpack2exeInput} =>
+									${izpack2exeOutput}</echo>
+
+								<exec executable="python" dir="${izpack2exeDirectory}" output="${tmp}/izpack2exe.std" error="${tmp}/izpack2exe.err">
+									<arg value="${izpack2exeDirectory}/izpack2exe.py" />
+									<arg value="--file" />
+									<arg value="${izpack2exeInput}" />
+									<arg value="--output" />
+									<arg value="${izpack2exeOutput}" />
+									<arg value="--no-upx" />
+									<arg value="--with-7z" />
+									<arg value="7z" />
+								</exec>
+
+								<echo>Execution de izpack2app : ${izpack2appInput} => ${izpack2appOutput}</echo>
+								<exec executable="python" dir="${izpack2appDirectory}" output="${tmp}/izpack2app.std" error="${tmp}/izpack2app.err">
+									<arg value="${izpack2appDirectory}/izpack2app.py" />
+									<arg value="${izpack2appInput}" />
+									<arg value="${izpack2appOutput}" />
+								</exec>
+
+								<echo>Save buildNumber ${buildNumber}</echo>
+								<echo file="${project.build.directory}/buildNumber">${buildNumber}</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<!--
+						<execution> <id>googlecodeUpdate</id> <goals> <goal>run</goal> </goals> <phase>verify</phase> <inherited>false</inherited> <configuration> <tasks>
+					-->
+					<!--
+						Ne fonctionne pas, le password n'est pas passable en paramètre, et antrun ne donne pas la saisie clavier. Runs the fullrelease task and uploads the
+						nightly release on google code. <exec executable="python" dir="${project.build.directory}"> <arg value="/media/data/Download/Code/googlecode_upload.py"/>
+						<arg value='
+					-->
+					<!--
+						config-dir=none' /> <arg value='-p jneutron' /> <arg value='-s Uploaded from Maven Ant Task Runner.' /> <arg value='-u p.escallier@laposte.net' /> <arg
+						value='-l Test,Type-Archive,OpSys-All' /> <arg value='${project.build.directory}/test.txt' /> </exec>
+					-->
+					<!--
+						Ne fonctionne pas, erreur de lib non fournies.. <taskdef classpath="${env.HOME}/.m2/repository/google/ant-googlecode/0.0.1/ant-googlecode-0.0.1.jar"
+						classname="net.bluecow.googlecode.ant.GoogleCodeUploadTask" name="gcupload" /> <gcupload username="googleuser" password="secretpassword"
+						projectname="myproject" filename="${project.build.directory}/test.txt" targetfilename="test.txt" summary="upload test" labels="test, upload, ant,
+						googlecode" />
+					-->
+					<!--
+						</tasks> </configuration> </execution>
+					-->
+					<execution>
+						<id>protectsite</id>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<phase>pre-site</phase>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<property name="htaccessmodel" value="${siteDirectory}/model.htaccess" />
+								<!--
+									Copie du fichier modèle .htaccess dans tous les dossiers à
+									protéger
+								-->
+								<echo>Protection des zones privés du site</echo>
+								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/apidocs/.htaccess" />
+								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/cobertura/.htaccess" />
+								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/testapidocs/.htaccess" />
+								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/usage/.htaccess" />
+								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/xref/.htaccess" />
+								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/xref-test/.htaccess" />
+
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>sed_site</id>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<phase>site</phase>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<!-- TODO : Buggé, le numéro de build est en retard par rapport au réel car build est à nouveau lancé lorsqu'on fait un site:deploy -->
+								<!-- find . -name '*.html' | xargs sed -i s/\$\{buildNumber\}/`cat ${project.build.directory}/buildNumber`/ -->
+								<echo>find . -name '*.html' | xargs sed -i s/\$\{buildNumber\}/`cat ${project.build.directory}/buildNumber`/</echo>
+								<exec executable="sh" dir="${project.build.directory}/site">
+									<arg value="-c" />
+									<!-- <arg line="'find . -name *.html | xargs sed -i s/\$\{buildNumber\}/`cat ${project.build.directory}/buildNumber`/'" /> -->
+									<arg line="&quot;find . -name '*.html' | xargs sed -i s/\$\{buildNumber\}/`cat ${project.build.directory}/buildNumber`/&quot;" />
+								</exec>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>site-site</id>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<phase>verify</phase>
+						<inherited>false</inherited>
+						<configuration>
+							<tasks>
+								<echo>On lance mvn site:deploy</echo>
+								<exec executable="mvn" dir="${basedir}">
+									<arg value="site:deploy" />
+								</exec>
+								<echo>On chmod u=rwX,go=rX le répertoire</echo>
+								<exec executable="ssh" dir="${basedir}">
+									<arg value="wwwaxan@axan.org" />
+									<arg value="chmod" />
+									<arg value="-R" />
+									<arg value="u=rwX,go=rX" />
+									<arg value="/home/wwwaxan/www/${projectArtifactId}" />
+								</exec>
+							</tasks>
+						</configuration>
+					</execution>
+				</executions>
+				<dependencies>
+					<dependency>
+						<groupId>org.codehaus.izpack</groupId>
+						<artifactId>izpack-standalone-compiler
+						</artifactId>
+						<version>4.0.1</version>
+					</dependency>
+					<!--
+						<dependency> <groupId>ant</groupId>
+						<artifactId>ant-utils</artifactId> </dependency>
+					-->
+					<!--
+						<dependency> <groupId>google</groupId>
+						<artifactId>ant-googlecode</artifactId> <version>0.0.1</version>
+
+						</dependency>
+					-->
+				</dependencies>
+			</plugin>
+			<!--
+				<plugin> <groupId>org.codehaus.izpack</groupId> <artifactId>izpack-maven-plugin</artifactId> <configuration> <izpackBasedir>${finalReleaseDirectory}
+				</izpackBasedir> </configuration> <executions> <execution> <id>standard-installer</id> <phase>package</phase> <goals> <goal>izpack</goal> </goals>
+				</execution> </executions> </plugin>
+			-->
+		</plugins>
+	</build>
+	<reporting>
+		<excludeDefaults>false</excludeDefaults>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>
+					maven-project-info-reports-plugin
+				</artifactId>
+				<version>2.1.2</version>
+				<configuration>
+					<locales>fr</locales>
+					<inputEncoding>UTF-8</inputEncoding>
+					<outputEncoding>UTF-8</outputEncoding>
+				</configuration>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>project-team</report>
+							<report>license</report>
+							<report>issue-tracking</report>
+							<report>scm</report>
+							<!--
+								<report>summary</report>
+								<report>index</report>
+								<report>cim</report>
+								<report>dependencies</report>
+								<report>dependency-convergence</report>
+								<report>issue-tracking</report>
+								<report>mailing-list</report> 
+								<report>scm</report>
+							-->
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-site-plugin</artifactId>
+				<version>2.0-beta-7</version>
+				<configuration>
+					<locales>fr</locales>
+					<inputEncoding>UTF-8</inputEncoding>
+					<outputEncoding>UTF-8</outputEncoding>
+					<templateFile>${siteDirectory}/site.vm</templateFile>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<configuration>
+					<encoding>UTF-8</encoding>
+					<charset>UTF-8</charset>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>cobertura-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<artifactId>maven-clover-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>jxr-maven-plugin</artifactId>
+				<configuration>
+					<inputEncoding>UTF-8</inputEncoding>
+					<outputEncoding>UTF-8</outputEncoding>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<systemProperties>
+            			<property>
+              				<name>sqlite4java.library.path</name>
+              				<value>${packagingLibDirectory}</value>
+            			</property>
+          			</systemProperties>					
+				</configuration>
+			</plugin>
+		</plugins>
+		<!--
+			Usefull mais pas séparés <plugin>
+			<groupId>org.codehaus.mojo</groupId>
+			<artifactId>jdepend-maven-plugin</artifactId> </plugin> +/- Useless &
+			pas séparés <plugin> <groupId>org.codehaus.mojo</groupId>
+			<artifactId>surefire-report-maven-plugin</artifactId> </plugin>
+			<plugin> <groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-pmd-plugin</artifactId> <configuration>
+			<format>xml</format> <linkXref>true</linkXref>
+			<sourceEncoding>utf-8</sourceEncoding>
+			<minimumTokens>100</minimumTokens> <targetJdk>1.5</targetJdk>
+			<rulesets> <ruleset>/rulesets/basic.xml</ruleset>
+			<ruleset>/rulesets/controversial.xml</ruleset> </rulesets>
+			</configuration> </plugin> Useless & pas dans un répertoire séparé
+			<plugin> <groupId>org.codehaus.mojo</groupId>
+			<artifactId>taglist-maven-plugin</artifactId> </plugin> <plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-checkstyle-plugin</artifactId> </plugin>
+		-->
+	</reporting>
+	<!-- More Project Information -->
+	<name>${projectName}</name>
+	<description>${description}</description>
+	<url>${url}</url>
+	<!-- <inceptionYear></inceptionYear> -->
+	<!-- <licenses></licenses> -->
+	<!-- <organization></organization> -->
+	<developers>
+		<developer>
+			<name>Auriol Arnaud</name>
+			<email>aaa-auriol@club-internet.fr</email>
+		</developer>
+		<developer>
+			<name>Bezille Yoann</name>
+			<email>yohann.bezille@club-internet.fr</email>
+		</developer>
+		<developer>
+			<name>Cabanes Romain</name>
+			<email>romain.cabanes@laposte.net</email>
+		</developer>
+		<developer>
+			<id>axan</id>
+			<name>Escallier Pierre</name>
+			<email>p.escallier@laposte.net</email>
+			<url>http://www.axan.org</url>
+			<organization></organization>
+			<organizationUrl></organizationUrl>
+			<roles>
+				<role>developer</role>
+			</roles>
+			<timezone>+2</timezone>
+			<properties>
+				<picUrl>http://cv.axan.org/id.jpg</picUrl>
+			</properties>
+		</developer>		
+	</developers>
+	<!-- <contributors></contributors> -->
+
+	<!-- Environment Settings -->
+	<issueManagement>
+		<system>GoogleCode</system>
+		<url>http://code.google.com/p/${projectArtifactId}/issues/list</url>
+	</issueManagement>
+	<!-- <ciManagement></ciManagement> -->
+	<!-- <mailingLists></mailingLists> -->
+	<scm>
+		<connection>scm:svn:http://${projectArtifactId}.googlecode.com/svn/trunk</connection>
+		<developerConnection>scm:svn:https://${projectArtifactId}.googlecode.com/svn/trunk</developerConnection>
+		<url>http://code.google.com/p/${projectArtifactId}/source/browse</url>
+	</scm>
+	<!-- <prerequisites></prerequisites> -->
+	<repositories>
+		<!-- For BerkeleyDB
+		<repository>
+      		<id>oracleReleases</id>
+      		<name>Oracle Released Java Packages</name>
+      		<url>http://download.oracle.com/maven</url>
+      		<layout>default</layout>
+    	</repository>
+    	-->
+		<repository>
+			<id>codehaus-repository</id>
+			<name>Codehaus Repository</name>
+			<url>http://repository.codehaus.org</url>
+		</repository>
+		<repository>
+			<id>codehaus-snapshots-repository</id>
+			<name>Codehaus Snapshots Repository</name>
+			<url>http://snapshots.repository.codehaus.org</url>
+		</repository>
+		<repository>
+			<id>java.net</id>
+			<url>http://download.java.net/maven/2</url>
+		</repository>
+		<repository>
+			<id>sep-svn-repo</id>
+			<url>http://space-empire-pulsar.googlecode.com/svn/m2_repo</url>
+		</repository>
+	</repositories>
+	<!-- <pluginRepositories></pluginRepositories> -->
+
+	<distributionManagement>
+		<downloadUrl>${downloadUrl}</downloadUrl>
+		<site>
+			<id>axan.org</id>			
+			<name>${projectName} Maven Site</name>
+			<url>scpexe://wwwaxan@axan.org:/home/wwwaxan/public_html/${projectArtifactId}</url>
+		</site>
+	</distributionManagement>
+	<!-- <profiles></profiles> -->
+
+</project>
