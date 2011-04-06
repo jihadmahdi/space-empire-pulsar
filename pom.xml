@@ -110,7 +110,7 @@
 		<!--
 			Utiliser une property pour la version risque de poser problème ?
 		-->
-		<projectVersionBase>0.1</projectVersionBase>
+		<projectVersionBase>0.2</projectVersionBase>
 		<projectVersionSnapshot>-SNAPSHOT</projectVersionSnapshot>
 		<projectVersion>${projectVersionBase}r${buildNumber}${projectVersionSnapshot}</projectVersion>
 		<mainClass>org.axan.sep.client.gui.SpaceEmpirePulsarGUI</mainClass>
