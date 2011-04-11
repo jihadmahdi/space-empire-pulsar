@@ -19,7 +19,7 @@ class AsteroidField extends ProductiveCelestialBody implements Serializable
 {	
 	private static final long	serialVersionUID	= 1L;
 
-	public AsteroidField(DataBase db, String name, Location location, GameConfig gameConfig)
+	public AsteroidField(ISEPServerDataBase db, String name, Location location, GameConfig gameConfig)
 	{
 		super(db, name, location, gameConfig, org.axan.sep.common.AsteroidField.class);
 	}
@@ -27,7 +27,7 @@ class AsteroidField extends ProductiveCelestialBody implements Serializable
 	/**
 	 * Full constructor.
 	 */
-	public AsteroidField(DataBase db, String name, Location location, int carbonStock, int slots, String ownerName)
+	public AsteroidField(ISEPServerDataBase db, String name, Location location, int carbonStock, int slots, String ownerName)
 	{
 		super(db, name, location, carbonStock, slots, ownerName);
 	}

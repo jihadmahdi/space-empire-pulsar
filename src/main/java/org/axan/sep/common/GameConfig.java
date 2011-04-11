@@ -9,6 +9,7 @@ import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.Map;
 
+import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.SEPUtils.RealLocation;
 
 
@@ -17,7 +18,7 @@ import org.axan.sep.common.SEPUtils.RealLocation;
 /**
  * Represent a game creation configuration.
  */
-public class GameConfig implements Serializable
+public class GameConfig implements IGameConfig, Serializable
 {
 	private static final long								serialVersionUID						= 1L;
 
@@ -68,7 +69,7 @@ public class GameConfig implements Serializable
 	 * for a neutral celestial body to be one of the different celestial body
 	 * type.
 	 */
-	private Map<Class<? extends ICelestialBody>, Float>		neutralCelestialBodiesGenerationTable	= new Hashtable<Class<? extends ICelestialBody>, Float>();
+	private Map<eCelestialBodyType, Float>		neutralCelestialBodiesGenerationTable	= new Hashtable<eCelestialBodyType, Float>();
 
 	public static final boolean								ALLIANCE_VICTORY						= false;
 	/**
@@ -166,9 +167,9 @@ public class GameConfig implements Serializable
 		setCelestialBodiesSlotsAmount(AsteroidField.class, AsteroidField.SLOTS_MIN, AsteroidField.SLOTS_MAX);
 		setCelestialBodiesSlotsAmount(Nebula.class, Nebula.SLOTS_MIN, Nebula.SLOTS_MAX);
 
-		setNeutralCelestialBodiesGenerationTable(Planet.class, Planet.GENERATION_RATE);
-		setNeutralCelestialBodiesGenerationTable(AsteroidField.class, AsteroidField.GENERATION_RATE);
-		setNeutralCelestialBodiesGenerationTable(Nebula.class, Nebula.GENERATION_RATE);
+		setNeutralCelestialBodiesGenerationTable(eCelestialBodyType.Planet, Planet.GENERATION_RATE);
+		setNeutralCelestialBodiesGenerationTable(eCelestialBodyType.AsteroidField, AsteroidField.GENERATION_RATE);
+		setNeutralCelestialBodiesGenerationTable(eCelestialBodyType.Nebula, Nebula.GENERATION_RATE);
 
 		setPlayersPlanetsStartingPopulation(Planet.PLAYERS_STARTING_POPULATION);
 		setPlayersPlanetsStartingCarbonResources(Planet.PLAYERS_STARTING_CARBON);
@@ -184,7 +185,7 @@ public class GameConfig implements Serializable
 		setSunRadius(SUN_RADIUS);
 	}
 
-	public GameConfig(int dimX, int dimY, int dimZ, int neutralCelesialBodiesCount, int populationPerTurnMin, int populationPerTurnMax, int populationLimitMin, int populationLimitMax, Map<Class<? extends ICelestialBody>, Integer[]> celestialBodiesStartingCarbonAmount, Map<Class<? extends ICelestialBody>, Integer[]> celestialBodiesSlotsAmount, Map<Class<? extends ICelestialBody>, Float> neutralCelestialBodiesGenerationTable, boolean allianceVictory, boolean regimicide, boolean assimilateNeutralisedPeoples, boolean totalConquest, int economicVictoryCarbon, int economicVictoryPopulation, int timeLimitVictory, int probeScope, int sunRadius, int playersPlanetsStartingCarbonResources, int playersPlanetsStartingPopulation)
+	public GameConfig(int dimX, int dimY, int dimZ, int neutralCelesialBodiesCount, int populationPerTurnMin, int populationPerTurnMax, int populationLimitMin, int populationLimitMax, Map<Class<? extends ICelestialBody>, Integer[]> celestialBodiesStartingCarbonAmount, Map<Class<? extends ICelestialBody>, Integer[]> celestialBodiesSlotsAmount, Map<eCelestialBodyType, Float> neutralCelestialBodiesGenerationTable, boolean allianceVictory, boolean regimicide, boolean assimilateNeutralisedPeoples, boolean totalConquest, int economicVictoryCarbon, int economicVictoryPopulation, int timeLimitVictory, int probeScope, int sunRadius, int playersPlanetsStartingCarbonResources, int playersPlanetsStartingPopulation)
 	{
 		// TODO: call with right parameters
 
@@ -220,7 +221,7 @@ public class GameConfig implements Serializable
 		}
 
 		if (neutralCelestialBodiesGenerationTable != null)
-			for(Map.Entry<Class<? extends ICelestialBody>, Float> e : neutralCelestialBodiesGenerationTable.entrySet())
+			for(Map.Entry<eCelestialBodyType, Float> e : neutralCelestialBodiesGenerationTable.entrySet())
 			{
 				if (e.getValue() == null) continue;
 
@@ -469,7 +470,7 @@ public class GameConfig implements Serializable
 	/**
 	 * @return the neutralCelestialBodiesGenerationTable
 	 */
-	public Map<Class<? extends ICelestialBody>, Float> getNeutralCelestialBodiesGenerationTable()
+	public Map<eCelestialBodyType, Float> getNeutralCelestialBodiesGenerationTable()
 	{
 		return neutralCelestialBodiesGenerationTable;
 	}
@@ -481,7 +482,7 @@ public class GameConfig implements Serializable
 	 *            percentage to be generated (not a true percentage but a
 	 *            weight).
 	 */
-	public void setNeutralCelestialBodiesGenerationTable(Class<? extends ICelestialBody> celestialBodyType, float rate)
+	public void setNeutralCelestialBodiesGenerationTable(eCelestialBodyType celestialBodyType, float rate)
 	{
 		if (rate < 0) throw new IllegalArgumentException("rate cannot be negative.");
 		this.neutralCelestialBodiesGenerationTable.put(celestialBodyType, rate);

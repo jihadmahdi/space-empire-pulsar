@@ -17,7 +17,7 @@ class SpaceRoadDeliverer extends Unit implements Serializable
 	private final String sourceName;
 	private final String destinationName;
 
-	public SpaceRoadDeliverer(DataBase db, String name, String ownerName, RealLocation sourceLocation, String sourceName, String destinationName, Set<ALogEntry> travellingLogs)
+	public SpaceRoadDeliverer(ISEPServerDataBase db, String name, String ownerName, RealLocation sourceLocation, String sourceName, String destinationName, Set<ALogEntry> travellingLogs)
 	{
 		super(db, name, ownerName, sourceLocation, travellingLogs);
 		this.sourceName = sourceName;

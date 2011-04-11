@@ -16,7 +16,7 @@ import org.axan.sep.server.SEPServer;
 public class Diplomacy implements Serializable
 {
 	// DB Context
-	private final DataBase db;
+	private final ISEPServerDataBase db;
 	
 	// Constants
 	private final String ownerName;
@@ -33,7 +33,7 @@ public class Diplomacy implements Serializable
 	 * @param owner
 	 * @param players
 	 */
-	public Diplomacy(DataBase db, String ownerName)
+	public Diplomacy(ISEPServerDataBase db, String ownerName)
 	{
 		this.db = db;
 		this.ownerName = ownerName;

@@ -18,7 +18,7 @@ class Nebula extends ProductiveCelestialBody implements Serializable
 {	
 	private static final long	serialVersionUID	= 1L;
 
-	public Nebula(DataBase db, String name, Location location, GameConfig gameConfig)
+	public Nebula(ISEPServerDataBase db, String name, Location location, GameConfig gameConfig)
 	{
 		super(db, name, location, gameConfig, org.axan.sep.common.Nebula.class);
 	}
@@ -26,7 +26,7 @@ class Nebula extends ProductiveCelestialBody implements Serializable
 	/**
 	 * Full constructor.
 	 */
-	public Nebula(DataBase db, String name, Location location, int carbonStock, int slots, String ownerName)
+	public Nebula(ISEPServerDataBase db, String name, Location location, int carbonStock, int slots, String ownerName)
 	{
 		super(db, name, location, carbonStock, slots, ownerName);
 	}

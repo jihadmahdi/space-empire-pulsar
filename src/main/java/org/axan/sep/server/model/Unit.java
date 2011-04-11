@@ -67,7 +67,7 @@ abstract class Unit implements Serializable
 	}
 	
 	// DB context
-	protected final DataBase db;
+	protected final ISEPServerDataBase db;
 	
 	// Constants
 	private final Key key;
@@ -86,7 +86,7 @@ abstract class Unit implements Serializable
 	private final PlayerDatedView<RealLocation> playersCurrentLocationView = new PlayerDatedView<RealLocation>();
 	private final PlayerDatedView<Double> playersSpeedView = new PlayerDatedView<Double>();
 
-	public Unit(DataBase db, Key key, RealLocation sourceLocation, Set<ALogEntry> travellingLogs)
+	public Unit(ISEPServerDataBase db, Key key, RealLocation sourceLocation, Set<ALogEntry> travellingLogs)
 	{
 		this.db = db;
 		this.key = key;
@@ -97,7 +97,7 @@ abstract class Unit implements Serializable
 	/**
 	 * Full constructor.
 	 */
-	public Unit(DataBase db, String name, String ownerName, RealLocation sourceLocation, Set<ALogEntry> travellingLogs)
+	public Unit(ISEPServerDataBase db, String name, String ownerName, RealLocation sourceLocation, Set<ALogEntry> travellingLogs)
 	{
 		this(db, new Key(name, ownerName), sourceLocation, travellingLogs);		
 	}

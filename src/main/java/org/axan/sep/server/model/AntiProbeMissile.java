@@ -24,7 +24,7 @@ public class AntiProbeMissile extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public AntiProbeMissile(DataBase db, String name, String ownerName, RealLocation sourceLocation, boolean fired, Set<ALogEntry> travellingLogs)
+	public AntiProbeMissile(ISEPServerDataBase db, String name, String ownerName, RealLocation sourceLocation, boolean fired, Set<ALogEntry> travellingLogs)
 	{
 		super(db, name, ownerName, sourceLocation, travellingLogs);
 		this.fired = fired;

@@ -41,7 +41,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 	 *            Game config.
 	 * @return Planet new starting planet.
 	 */
-	public static Planet newStartingPlanet(DataBase db, String name, Location location, String playerName, GameConfig gameConfig)
+	public static Planet newStartingPlanet(ISEPServerDataBase db, String name, Location location, String playerName, GameConfig gameConfig)
 	{
 		// Fix carbon amount to the mean value.
 		Integer[] carbonAmount = gameConfig.getCelestialBodiesStartingCarbonAmount().get(org.axan.sep.common.Planet.class);
@@ -84,7 +84,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 	 * Neutral planet generation.
 	 * @param gameCfg
 	 */
-	public Planet(DataBase db, String name, Location location, GameConfig gameConfig)
+	public Planet(ISEPServerDataBase db, String name, Location location, GameConfig gameConfig)
 	{
 		super(db, name, location, gameConfig, org.axan.sep.common.Planet.class);
 		
@@ -103,7 +103,7 @@ class Planet extends ProductiveCelestialBody implements Serializable
 	 * @param populationPerTurn
 	 * @param maxPopulation
 	 */
-	private Planet(DataBase db, String name, Location location, int carbonStock, int slots, String ownerName, int populationPerTurn, int populationLimit)
+	private Planet(ISEPServerDataBase db, String name, Location location, int carbonStock, int slots, String ownerName, int populationPerTurn, int populationLimit)
 	{
 		super(db, name, location, carbonStock, slots, ownerName);
 		this.populationPerTurn = populationPerTurn;

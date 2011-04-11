@@ -33,7 +33,7 @@ class Area implements Serializable
 	}
 	
 	// DB context
-	private final DataBase db;
+	private final ISEPServerDataBase db;
 	
 	// Primary Key
 	private final org.axan.sep.common.SEPUtils.Location location;
@@ -48,7 +48,7 @@ class Area implements Serializable
 	private final PlayerDatedView<Integer> playersLastObservation = new PlayerDatedView<Integer>();
 	private final PlayerDatedView<HashSet<org.axan.sep.common.Unit>> playersUnitsView = new PlayerDatedView<HashSet<org.axan.sep.common.Unit>>();
 	
-	public Area(DataBase db, org.axan.sep.common.SEPUtils.Location location)
+	public Area(ISEPServerDataBase db, org.axan.sep.common.SEPUtils.Location location)
 	{
 		this.db = db;
 		this.location = location;

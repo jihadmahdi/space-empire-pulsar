@@ -28,7 +28,7 @@ public class Probe extends Unit implements Serializable
 	/**
 	 * Full constructor. 
 	 */
-	public Probe(DataBase db, String name, String ownerName, RealLocation sourceLocation, boolean deployed, Set<ALogEntry> travellingLogs)
+	public Probe(ISEPServerDataBase db, String name, String ownerName, RealLocation sourceLocation, boolean deployed, Set<ALogEntry> travellingLogs)
 	{
 		super(db, name, ownerName, sourceLocation, travellingLogs);
 		this.deployed = deployed;
