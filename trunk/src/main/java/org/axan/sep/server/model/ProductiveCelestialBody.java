@@ -34,7 +34,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	private final ICelestialBody.Key key;
 	
 	// DB context
-	protected final DataBase db;
+	protected final ISEPServerDataBase db;
 	
 	// Constants
 	private final int startingCarbonStock;
@@ -72,7 +72,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	/**
 	 * Full constructor.
 	 */
-	public ProductiveCelestialBody(DataBase db, String name, Location location, int startingCarbonStock, int slots, String ownerName)
+	public ProductiveCelestialBody(ISEPServerDataBase db, String name, Location location, int startingCarbonStock, int slots, String ownerName)
 	{
 		this.db = db;
 		this.key = new ICelestialBody.Key(name, location);
@@ -87,7 +87,7 @@ abstract class ProductiveCelestialBody implements ICelestialBody, Serializable
 	/**
 	 * @param gameConfig
 	 */
-	public ProductiveCelestialBody(DataBase db, String name, Location location, GameConfig gameConfig, Class<? extends org.axan.sep.common.ICelestialBody> celestialBodyType)
+	public ProductiveCelestialBody(ISEPServerDataBase db, String name, Location location, GameConfig gameConfig, Class<? extends org.axan.sep.common.ICelestialBody> celestialBodyType)
 	{
 		this.db = db;
 		this.key = new ICelestialBody.Key(name, location);

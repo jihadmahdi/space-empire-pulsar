@@ -16,10 +16,8 @@ import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.model.Area.AreaIllegalDefinitionException;
 import org.axan.sep.server.model.SpaceCounter.SpaceRoad;
 
-class DataBase implements Serializable
-{
-	//SUIS LA, recoder DataBase avec SQLite.
-	
+class DataBase implements Serializable, ISEPServerDataBase
+{	
 	public static class DataBaseError extends Error
 	{
 		private static final long	serialVersionUID	= 1L;

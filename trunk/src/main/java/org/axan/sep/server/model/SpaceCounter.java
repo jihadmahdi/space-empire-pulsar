@@ -309,7 +309,7 @@ class SpaceCounter extends ABuilding implements Serializable
 	 * @param db
 	 * @param source
 	 */
-	public void prepareCarbonDelivery(DataBase db, ProductiveCelestialBody source)
+	public void prepareCarbonDelivery(ISEPServerDataBase db, ProductiveCelestialBody source)
 	{			
 		//boolean allAutomated = false;
 		Stack<CarbonOrder> automatedOrders = new Stack<CarbonOrder>();

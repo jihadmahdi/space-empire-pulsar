@@ -50,12 +50,12 @@ class Fleet extends Unit implements Serializable
 	PlayerDatedView<HashMap<org.axan.sep.common.StarshipTemplate, Integer>>	playersStarshipsView	= new PlayerDatedView<HashMap<org.axan.sep.common.StarshipTemplate, Integer>>();
 	PlayerDatedView<HashSet<org.axan.sep.common.ISpecialUnit>> playersSpecialUnitsView = new PlayerDatedView<HashSet<org.axan.sep.common.ISpecialUnit>>();
 
-	public Fleet(DataBase db, String name, String ownerName, RealLocation sourceLocation, Map<org.axan.sep.common.StarshipTemplate, Integer> starships, Set<ISpecialUnit> specialUnits, boolean isUnassigned, Stack<Move> checkpoints, Set<ALogEntry> travellingLogs)
+	public Fleet(ISEPServerDataBase db, String name, String ownerName, RealLocation sourceLocation, Map<org.axan.sep.common.StarshipTemplate, Integer> starships, Set<ISpecialUnit> specialUnits, boolean isUnassigned, Stack<Move> checkpoints, Set<ALogEntry> travellingLogs)
 	{
 		this(db, new Key(name, ownerName), sourceLocation, starships, specialUnits, isUnassigned, checkpoints, travellingLogs);		
 	}
 	
-	public Fleet(DataBase db, Key key, RealLocation sourceLocation, Map<org.axan.sep.common.StarshipTemplate, Integer> starships, Set<ISpecialUnit> specialUnits, boolean isUnassigned, Stack<Move> checkpoints, Set<ALogEntry> travellingLogs)
+	public Fleet(ISEPServerDataBase db, Key key, RealLocation sourceLocation, Map<org.axan.sep.common.StarshipTemplate, Integer> starships, Set<ISpecialUnit> specialUnits, boolean isUnassigned, Stack<Move> checkpoints, Set<ALogEntry> travellingLogs)
 	{
 		super(db, key, sourceLocation, travellingLogs);		
 		merge(starships, specialUnits);

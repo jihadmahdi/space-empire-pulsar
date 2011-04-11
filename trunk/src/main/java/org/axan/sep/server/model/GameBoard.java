@@ -1,5 +1,6 @@
 package org.axan.sep.server.model;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
@@ -53,6 +54,8 @@ import org.axan.sep.server.model.Fleet.SpecializedEquivalentFleet;
 import org.axan.sep.server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 import org.axan.sep.server.model.SpaceCounter.SpaceRoad;
 
+import com.almworks.sqlite4java.SQLiteException;
+
 
 public class GameBoard implements Serializable
 {
@@ -60,12 +63,14 @@ public class GameBoard implements Serializable
 
 	private static final Random			rnd					= new Random();
 	
-	private final DataBase				db;
+	private final ISEPServerDataBase				db;
 
+	/*
 	private GameBoard(Hashtable<String, org.axan.sep.common.Player> players, org.axan.sep.common.GameConfig config, int date, Hashtable<Location, Area> areas, Hashtable<ICelestialBody.Key, ICelestialBody> celestialBodies, Hashtable<String, Hashtable<IMarker.Key, IMarker>> playersMarkers, RealLocation sunLocation, Hashtable<Unit.Key, Unit> units, Map<String, Diplomacy> playersPolicies, Map<String, SortedSet<ALogEntry>> playersLogs)
 	{
 		this.db = new DataBase(players, config, date, areas, celestialBodies, playersMarkers, sunLocation, units, playersPolicies, playersLogs);
 	}
+	*/
 
 	/**
 	 * Full new game constructor.
@@ -73,87 +78,21 @@ public class GameBoard implements Serializable
 	 * @param playerList
 	 * @param gameConfig
 	 */
-	public GameBoard(Set<org.axan.sep.common.Player> players, org.axan.sep.common.GameConfig config, int date)
+	//public GameBoard(Set<org.axan.sep.common.Player> players, org.axan.sep.common.GameConfig config, int date)
+	public GameBoard(Set<org.axan.sep.common.Player> players, org.axan.sep.common.GameConfig config)
 	{
-		this(new Hashtable<String, org.axan.sep.common.Player>(),  config, date, new Hashtable<Location, Area>(players.size()*2), new Hashtable<ICelestialBody.Key, ICelestialBody>(players.size()*2), new Hashtable<String, Hashtable<IMarker.Key, IMarker>>(players.size()*2), new RealLocation(Double.valueOf(config.getDimX()) / 2.0, Double.valueOf(config.getDimY()) / 2.0, Double.valueOf(config.getDimZ()) / 2.0), new Hashtable<Unit.Key, Unit>(), new Hashtable<String, Diplomacy>(), new Hashtable<String, SortedSet<ALogEntry>>());
-
-		// Make the sun
-		RealLocation sunLocation = db.getSunLocation();
-		
-		for(int x = -Math.min(config.getSunRadius(), config.getDimX() / 2); x <= Math.min(config.getSunRadius(), config.getDimX() / 2); ++x)
-			for(int y = -Math.min(config.getSunRadius(), config.getDimY() / 2); y <= Math.min(config.getSunRadius(), config.getDimY() / 2); ++y)
-				for(int z = -Math.min(config.getSunRadius(), config.getDimZ() / 2); z <= Math.min(config.getSunRadius(), config.getDimZ() / 2); ++z)
-				{
-					RealLocation parsedLoc = new RealLocation(sunLocation.x + x, sunLocation.y + y, sunLocation.z + z);
-					if (org.axan.sep.common.SEPUtils.getDistance(parsedLoc, sunLocation) <= config.getSunRadius())
-					{
-						db.getCreateArea(parsedLoc.asLocation()).setSunFlag(true);
-					}
-				}				
-		
-		// Add the players starting planets.
-		Set<Location> playersPlanetLocations = new HashSet<Location>();
-		
-		for(org.axan.sep.common.Player player : players)
+		//this(new Hashtable<String, org.axan.sep.common.Player>(),  config, date, new Hashtable<Location, Area>(players.size()*2), new Hashtable<ICelestialBody.Key, ICelestialBody>(players.size()*2), new Hashtable<String, Hashtable<IMarker.Key, IMarker>>(players.size()*2), new RealLocation(Double.valueOf(config.getDimX()) / 2.0, Double.valueOf(config.getDimY()) / 2.0, Double.valueOf(config.getDimZ()) / 2.0), new Hashtable<Unit.Key, Unit>(), new Hashtable<String, Diplomacy>(), new Hashtable<String, SortedSet<ALogEntry>>());
+		try
 		{
-			db.insertPlayer(player);								
-			
-			// Found a location to pop the planet.
-			Location planetLocation;
-			boolean locationOk;
-			do
-			{
-				locationOk = false;
-				planetLocation = new Location(rnd.nextInt(config.getDimX()), rnd.nextInt(config.getDimY()), rnd.nextInt(config.getDimZ()));
-
-				Area a = db.getArea(planetLocation);
-				if (a != null && !a.isEmpty()) continue;
-
-				locationOk = true;
-				for(Location l : playersPlanetLocations)
-				{
-					if (isTravellingTheSun(planetLocation.asRealLocation(), l.asRealLocation()))
-					{
-						locationOk = false;
-						break;
-					}										
-
-					if (!locationOk) break;
-				}
-			} while(!locationOk);
-
-			Planet planet = Planet.newStartingPlanet(db, generateCelestialBodyName(), planetLocation, player.getName(), config);
-			db.insertCelestialBody(planet);
-			playersPlanetLocations.add(planetLocation);									
+			this.db = new SEPSQLiteDB(players, config);
 		}
-
-		// Add neutral celestial bodies
-		for(int i = 0; i < config.getNeutralCelestialBodiesCount(); ++i)
+		catch(IOException e)
 		{
-			// Found a location to pop the celestial body
-			Location celestialBodyLocation;
-			Area a;
-			do
-			{
-				celestialBodyLocation = new Location(rnd.nextInt(config.getDimX()), rnd.nextInt(config.getDimY()), rnd.nextInt(config.getDimZ()));
-				a = db.getArea(celestialBodyLocation);
-			} while(a != null && !a.isEmpty());
-
-			Class<? extends org.axan.sep.common.ICelestialBody> celestialBodyType = Basic.getKeyFromRandomTable(config.getNeutralCelestialBodiesGenerationTable());
-
-			String nextName = generateCelestialBodyName();
-			Class<? extends ICelestialBody> serverCelestialBodyType = getServerCelestialBodyClass(celestialBodyType);			
-			try
-			{
-				Constructor<? extends ICelestialBody> ctor = serverCelestialBodyType.getConstructor(DataBase.class, String.class, Location.class, org.axan.sep.common.GameConfig.class);
-				ICelestialBody celestialBody = ctor.newInstance(db, nextName, celestialBodyLocation, config);
-				
-				db.insertCelestialBody(celestialBody);
-			}
-			catch(Exception e)
-			{
-				throw new Error("Cannot create celestial body type " + celestialBodyType.getSimpleName() + " (not implemented server side ?)", e);
-			}
+			throw new SEPImplementationException("SQLite DB IO Error", e);
+		}
+		catch(SQLiteException e)
+		{
+			throw new SEPImplementationException("SQLite DB Error", e);
 		}
 	}
 
@@ -273,22 +212,6 @@ public class GameBoard implements Serializable
 	/// UPDATE
 	
 	///
-
-	private String	nextCelestialBodyName	= "A";
-
-	private String generateCelestialBodyName()
-	{
-		String result = nextCelestialBodyName;
-		if (nextCelestialBodyName.toLowerCase().charAt(nextCelestialBodyName.length() - 1) == 'z')
-		{
-			nextCelestialBodyName += "a";
-		}
-		else
-		{
-			nextCelestialBodyName = nextCelestialBodyName.substring(0, nextCelestialBodyName.length() - 1) + (char) (nextCelestialBodyName.charAt(nextCelestialBodyName.length() - 1) + 1);
-		}
-		return result;
-	}
 
 	public void resolveCurrentTurn()
 	{
@@ -1387,17 +1310,6 @@ public class GameBoard implements Serializable
 			this.fleet = fleet;
 			this.locatedCheckpoints = locatedCheckpoints;
 		}
-	}
-
-	private boolean isTravellingTheSun(RealLocation a, RealLocation b)
-	{
-		for(RealLocation pathStep : SEPUtils.getAllPathLoc(a, b))
-		{
-			Area area = db.getArea(pathStep.asLocation());
-			if (area != null && area.isSun()) return true;
-		}
-		
-		return false;
 	}
 	
 	public MoveFleetCheckResult checkMoveFleet(String playerLogin, String fleetName, Stack<org.axan.sep.common.Fleet.Move> checkpoints) throws RunningGameCommandException

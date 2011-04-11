@@ -1,12 +1,21 @@
+
 package org.axan.sep.server;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNull;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.NotSerializableException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.URISyntaxException;
@@ -17,6 +26,8 @@ import java.util.Stack;
 
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.client.gui.SpaceEmpirePulsarGUI;
+import org.axan.sep.common.GameConfig;
+import org.axan.sep.server.model.SEPSQLiteDB;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -229,6 +240,8 @@ public class TestSQLite
 	{
 		System.out.println("SQLite Test:");
 		
+		SQLiteQueue q = null;
+		
 		try
 		{
 			System.out.println("LibraryPathProperty: "+SQLite.LIBRARY_PATH_PROPERTY);
@@ -248,7 +261,7 @@ public class TestSQLite
 			System.out.println("isThreadSafe: "+SQLite.isThreadSafe());
 			SQLite.main(new String[0]);
 			
-			SQLiteQueue q = new SQLiteQueue(new File("sqlite_test.db"));
+			q = new SQLiteQueue(new File("sqlite_test.db"));
 			q.start();
 			
 			SQLiteDebugQuery(q, "PRAGMA foreign_keys;");
@@ -390,5 +403,202 @@ public class TestSQLite
 			e.printStackTrace();
 			fail(e.getMessage());
 		}
+		finally
+		{
+			if (q != null)
+			{
+				q.stop(true);
+				try {
+					q.join();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	@Test
+	public void testMemoryDBSaveFail() throws FileNotFoundException, IOException, InterruptedException, ClassNotFoundException
+	{
+		SQLiteQueue q = new SQLiteQueue();
+		q.start();
+		
+		assertQueryResult(q, "SQLite error?", "PRAGMA foreign_keys=On;", "");
+		assertQueryResult(q, "Foreign keys error:", "PRAGMA foreign_keys;", "|foreign_keys|\n|------------|\n|1           |");
+		
+		assertTrue("DB is not in memory.", q.execute(new SQLiteJob<Boolean>() {
+			@Override
+			protected Boolean job(SQLiteConnection connection) throws Throwable {
+				return connection.isMemoryDatabase();
+			}
+		}).complete());
+		
+		assertQueryResult(q, "SQLite error?", "CREATE TABLE test ( nom TEXT NOT NULL, prenom TEXT NOT NULL, age INT NOT NULL, PRIMARY KEY (nom, prenom) );", "");
+		assertQueryResult(q, "SQLite error?", "SELECT * FROM test;", "");
+		assertQueryResult(q, "SQLite error?", "INSERT INTO test VALUES ('Escallier', 'Pierre', 26 );", "");
+		assertQueryResult(q, "SQLite error?", "SELECT * FROM test;","|nom      |prenom|age|\n|---------|------|---|\n|Escallier|Pierre|26 |");
+		
+		final File saveFile = File.createTempFile("SQLiteTest", ".bdb");
+		saveFile.deleteOnExit();
+		
+		if (q.execute(new SQLiteJob<Boolean>() {
+			@Override
+			protected Boolean job(SQLiteConnection connection) throws Throwable {
+				ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(saveFile));
+				
+				assertTrue("Unexpected result", connection.isMemoryDatabase());
+				assertNull("Unexpected result", connection.getDatabaseFile());
+				
+				boolean exceptionThrown = false;
+				
+				try
+				{
+					oos.writeObject(connection);
+				}
+				catch(NotSerializableException e)
+				{
+					exceptionThrown = true;
+				}
+				
+				assertTrue("Exception expected.", exceptionThrown);
+				
+				oos.close();
+				return exceptionThrown;
+			}
+		}).complete()) return;
+		
+		fail("Not serializable exception expected before this point.");
+		
+		q.stop(true);
+		q.join();
+	
+		ObjectInputStream ois = new ObjectInputStream(new FileInputStream(saveFile));
+		
+		Object o = ois.readObject();
+		
+		assertTrue(SQLiteConnection.class.isInstance(o));
+		SQLiteConnection connection = SQLiteConnection.class.cast(o);
+		
+		System.out.println(connection.debug("SELECT * FROM test;"));
+	}
+	
+	@Test
+	public void testSQliteSavePointsDoNotSurviveConnections() throws InterruptedException, IOException
+	{
+		File saveFile = File.createTempFile("SQLiteTestSavePoints", ".db");
+		saveFile.deleteOnExit();
+		
+		SQLiteQueue q = new SQLiteQueue(saveFile);
+		q.start();
+		
+		assertQueryResult(q, "SQLite error?", "PRAGMA foreign_keys=On;", "");
+		assertQueryResult(q, "Foreign keys error:", "PRAGMA foreign_keys;", "|foreign_keys|\n|------------|\n|1           |");
+		
+		assertQueryResult(q, "SQLite error?", "CREATE TABLE test ( nom TEXT NOT NULL, prenom TEXT NOT NULL, age INT NOT NULL, PRIMARY KEY (nom, prenom) );", "");
+		assertQueryResult(q, "SQLite error?", "SELECT * FROM test;", "");
+		assertQueryResult(q, "SQLite error?", "INSERT INTO test VALUES ('Escallier', 'Pierre', 25 );", "");
+		assertQueryResult(q, "SQLite error?", "SELECT * FROM test;","|nom      |prenom|age|\n|---------|------|---|\n|Escallier|Pierre|25 |");
+		
+		assertQueryResult(q, "SQLite error?", "SAVEPOINT save20091003;", "");
+		assertQueryResult(q, "SQLite error?", "UPDATE Test SET age=26 WHERE nom='Escallier' AND prenom='Pierre';", "");
+		assertQueryResult(q, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|26 |");
+		assertQueryResult(q, "SQLite error?", "SAVEPOINT save20101003;", "");
+		assertQueryResult(q, "SQLite error?", "UPDATE Test SET age=27 WHERE nom='Escallier' AND prenom='Pierre';", "");
+		assertQueryResult(q, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|27 |");
+		
+		q.stop(true);
+		q.join();
+		
+		q = new SQLiteQueue(saveFile);
+		q.start();
+		
+		assertQueryResult(q, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|25 |");
+		
+		/* If age is 27 then SQLite SAVEPOINT appear to survive connections.
+		assertQueryResult(q, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|27 |");
+		assertQueryResult(q, "SQLite error?", "ROLLBACK TO save20101003;", "");
+		assertQueryResult(q, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|26 |");
+		assertQueryResult(q, "SQLite error?", "ROLLBACK TO save20091003;", "");
+		assertQueryResult(q, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|25 |");
+		assertQueryResult(q, "SQLite error?", "ROLLBACK TO save20101003;", "TODO");
+		*/
+	}
+	
+	@Test
+	public void testSEPSQLiteDB()
+	{
+		GameConfig config = new GameConfig();
+		SEPSQLiteDB db;
+		
+		try
+		{
+			db = new SEPSQLiteDB(config);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			fail(e.getMessage());
+			return;
+		}
+		
+		try
+		{
+			db.test("PRAGMA foreign_keys;");
+		}
+		catch(SQLiteException e)
+		{
+			e.printStackTrace();
+			fail(e.getMessage());
+		}
+		
+		boolean exceptionThrown = false;
+		try
+		{
+			db.test("TOTO;");
+		}
+		catch(SQLiteException e)
+		{
+			exceptionThrown = true;
+		}
+		
+		assertTrue("Exception expected.", exceptionThrown);
+		
+		try
+		{
+			db.test(new SQLiteJob<Void>()
+			{
+				@Override
+				protected Void job(SQLiteConnection connection) throws Throwable
+				{
+					connection.exec("PRAGMA foreign_keys;");
+					return null;
+				}
+			});
+		}
+		catch(SQLiteException e)
+		{
+			e.printStackTrace();
+			fail(e.getMessage());
+		}
+		
+		exceptionThrown = false;
+		try
+		{
+			db.test(new SQLiteJob<String>()
+			{
+				@Override
+				protected String job(SQLiteConnection connection) throws Throwable
+				{
+					connection.exec("TOTO;");
+					return "Toto";
+				}
+			});
+		}
+		catch(SQLiteException e)
+		{
+			exceptionThrown = true;
+		}
+		
+		assertTrue("Exception expected.", exceptionThrown);
 	}
 }

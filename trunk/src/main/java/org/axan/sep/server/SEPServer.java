@@ -45,9 +45,6 @@ import org.axan.sep.server.model.GameBoard;
 import org.axan.sep.server.model.PlayerGameMove;
 import org.axan.sep.server.model.ServerGame;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
-
 /**
  * TODO
  */
@@ -279,7 +276,7 @@ public class SEPServer implements IServer
 		public CommandCheckResult canSendMessage(String msg) throws RpcException, StateMachineNotExpectedEventException
 		{
 			// TODO
-			throw new NotImplementedException();
+			throw new SEPImplementationException("Not Implemented");
 		}
 
 		/* (non-Javadoc)

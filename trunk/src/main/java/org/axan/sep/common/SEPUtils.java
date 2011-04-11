@@ -111,6 +111,11 @@ public abstract class SEPUtils
 		}
 	}		
 	
+	public static double getDistance(Location a, Location b)
+	{
+		return Math.sqrt(Math.pow(a.x-b.x, 2) + Math.pow(a.y-b.y, 2) + Math.pow(a.z-b.z, 2));
+	}
+	
 	public static double getDistance(RealLocation a, RealLocation b)
 	{
 		return Math.sqrt(Math.pow(a.x-b.x, 2) + Math.pow(a.y-b.y, 2) + Math.pow(a.z-b.z, 2));

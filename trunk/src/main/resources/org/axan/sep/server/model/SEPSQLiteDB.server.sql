@@ -38,9 +38,9 @@ CREATE TABLE Player (
 
 CREATE TABLE PlayerConfig (
      name TEXT NOT NULL,
+     symbol TEXT NOT NULL,
      color TEXT NOT NULL,
-     symbol BLOB NULL,  	-- TODO: Change to NOT NULL   
-     portrait BLOB NULL,	-- TODO: Change to NOT NULL
+     portrait TEXT NOT NULL,
      CONSTRAINT PKPlayerConfig PRIMARY KEY (name),
      CONSTRAINT FKPlayerConfigPlayer FOREIGN KEY (name) REFERENCES Player
 );
