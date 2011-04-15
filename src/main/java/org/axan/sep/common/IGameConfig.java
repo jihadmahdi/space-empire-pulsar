@@ -14,16 +14,19 @@ public interface IGameConfig
 	 * X dimension of the universe.
 	 */
 	public int getDimX();
+	public void setDimX(int dimX);
 	
 	/**
 	 * Y dimension of the universe.
 	 */
 	public int getDimY();
+	public void setDimY(int dimY);
 
 	/**
 	 * Z dimension of the universe.
 	 */
 	public int getDimZ();
+	public void setDimZ(int dimZ);
 
 	public static final int									NEUTRAL_CELESTIAL_BODIES				= 5;
 	
@@ -31,6 +34,7 @@ public interface IGameConfig
 	 * Number of neutral celestial bodies to create.
 	 */
 	public int getNeutralCelestialBodiesCount();
+	public void setNeutralCelestialBodiesCount(int neutralCelestialBodyCount);
 	
 	/**
 	 * Players starting planet carbon.
@@ -50,16 +54,29 @@ public interface IGameConfig
 	public int[] getCelestialBodiesStartingCarbonAmount(eCelestialBodyType celestialBodyType);
 
 	/**
+	 * @param celestialBodiesStartingCarbonAmount
+	 *            the celestialBodiesStartingCarbonAmount to set
+	 */
+	public void setCelestialBodiesStartingCarbonAmount(eCelestialBodyType celestialBodyType, int min, int max);
+
+	/**
 	 * Number of slots on celestial bodies.
 	 */
 	public int[] getCelestialBodiesSlotsAmount(eCelestialBodyType celestialBodyType);
 
 	/**
+	 * @param celestialBodiesSlotsAmount
+	 *            the qtSlotsCorpsCelestes to set
+	 */
+	public void setCelestialBodiesSlotsAmount(eCelestialBodyType celestialBodyType, int min, int max);
+	
+	/**
 	 * Neutral celestial bodies generation, type table. This define the chance
 	 * for a neutral celestial body to be one of the different celestial body
 	 * type.
 	 */
-	public float getNeutralCelestialBodiesGenerationRate(eCelestialBodyType celestialBodyType);
+	public Float getNeutralCelestialBodiesGenerationRate(eCelestialBodyType celestialBodyType);
+	public void setNeutralCelestialBodiesGenerationRate(eCelestialBodyType celestialBodyType, Float rate);
 
 	public static final boolean								ALLIANCE_VICTORY						= false;
 	
@@ -113,9 +130,23 @@ public interface IGameConfig
 	public int getTimeLimitVictory();
 
 	/**
+	 * @param timeLimitVictory
+	 *            the timeLimitVictory to set
+	 */
+	public void setTimeLimitVictory(int timeLimitVictory);
+	
+	/**
 	 * Population generated on a planet per turn. [0] min; [1] max.
 	 */
 	public int[] getPopulationPerTurn();
+	
+	/**
+	 * @param populationPerTurnMin
+	 *            Minimum value for population generation on a planet.
+	 * @param populationPerTurnMax
+	 *            Maximum value for population generation on a planet.
+	 */
+	public void setPopulationPerTurn(int populationPerTurnMin, int populationPerTurnMax);
 
 	/**
 	 * Population limit on a planet. [0] min; [1] max.
@@ -134,31 +165,35 @@ public interface IGameConfig
 	 */
 	public int getSunRadius();
 
-	public int getFreeAreaCount();
+	//public int getFreeAreaCount();
 
 	public int getNaturalCarbonPerTurn();
+	
+	public void setNaturalCarbonPerTurn(int naturalCarbonPerTurn);
+	
 
 	public int getMaxNaturalCarbon();
+	
+	public void setMaxNaturalCarbon(int maxNaturalCarbon);
 
 	public int getGovernmentStarshipCarbonPrice();
+	public void setGovernmentStarshipCarbonPrice(int governmentStarshipCarbonPrice);
 	
 	public int getGovernmentStarshipPopulationPrice();
+	public void setGovernmentStarshipPopulationPrice(int governmentStarshipPopulationPrice);
 
 	public double getSpaceRoadPricePerArea();
+	public void setSpaceRoadPricePerArea(double spaceRoadPricePerArea);
 
 	public int getSpaceRoadsSpeed();
+	public void setSpaceRoadsSpeed(int spaceRoadsSpeed);
 	
 	public int getCarbonMinimalFreight();
+	public void setCarbonMinimalFreight(int carbonMinimalFreight);
 	
 	///
 
-	/**
-	 * @param populationPerTurnMin
-	 *            Minimum value for population generation on a planet.
-	 * @param populationPerTurnMax
-	 *            Maximum value for population generation on a planet.
-	 */
-	public void setPopulationPerTurn(int populationPerTurnMin, int populationPerTurnMax);
+	
 
 	/**
 	 * @param populationLimitMin
@@ -167,18 +202,6 @@ public interface IGameConfig
 	 *            Maximum value for population limit on a planet.
 	 */
 	public void setPopulationLimit(int populationLimitMin, int populationLimitMax);
-
-	/**
-	 * @param celestialBodiesStartingCarbonAmount
-	 *            the celestialBodiesStartingCarbonAmount to set
-	 */
-	public void setCelestialBodiesStartingCarbonAmount(Class<? extends ICelestialBody> celestialBodyType, int min, int max);
-
-	/**
-	 * @param celestialBodiesSlotsAmount
-	 *            the qtSlotsCorpsCelestes to set
-	 */
-	public void setCelestialBodiesSlotsAmount(Class<? extends ICelestialBody> celestialBodyType, int min, int max);
 
 	/**
 	 * @param celestialBodyType
@@ -218,12 +241,6 @@ public interface IGameConfig
 	 *            the economicVictory to set
 	 */
 	public void setEconomicVictory(int populationGoal, int carbonResourceGoal);
-
-	/**
-	 * @param timeLimitVictory
-	 *            the timeLimitVictory to set
-	 */
-	public void setTimeLimitVictory(Integer timeLimitVictory);
 
 	public void setProbeScope(int probeScope);
 

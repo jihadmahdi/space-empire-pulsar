@@ -21,12 +21,18 @@ import java.io.PipedOutputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.Stack;
 
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.client.gui.SpaceEmpirePulsarGUI;
 import org.axan.sep.common.GameConfig;
+import org.axan.sep.common.IGameConfig;
+import org.axan.sep.common.Player;
+import org.axan.sep.common.PlayerConfig;
 import org.axan.sep.server.model.SEPSQLiteDB;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -237,7 +243,7 @@ public class TestSQLite
 	 */
 	@Test
 	public void testSQLite()
-	{
+	{		
 		System.out.println("SQLite Test:");
 		
 		SQLiteQueue q = null;
@@ -289,6 +295,8 @@ public class TestSQLite
 			assertQueryResult(q, "SQLite error?", "INSERT INTO people VALUES ( 'D', 'd', 61) ;", "");
 			assertQueryResult(q, "SQLite error?", "INSERT INTO parents VALUES ( 'B', 'b', 'A', 'a') ;", "");			
 			assertQueryResult(q, "SQLite error?", "INSERT INTO parents VALUES ( 'B', 'b', 'C', 'c') ;", "");
+			
+			assertQueryResult(q, "SQLite error?", "SELECT EXISTS (SELECT * FROM parents WHERE people_name GLOB 'B') AS NotEmpty;", "|NotEmpty|\n|--------|\n|1       |");
 			
 			// Cannot insert with non-existing foreign key value.
 			assertQueryResult(q, "SQLite error expected", "INSERT INTO parents VALUES ( 'C', 'c', 'Z', 'z' ) ;", "[constraint failed]");
@@ -529,10 +537,15 @@ public class TestSQLite
 	{
 		GameConfig config = new GameConfig();
 		SEPSQLiteDB db;
+		Set<Player> players = new HashSet<Player>();
+		
+		players.add(new Player("p1", new PlayerConfig()));
+		players.add(new Player("p2", new PlayerConfig()));
+		players.add(new Player("p3", new PlayerConfig()));
 		
 		try
 		{
-			db = new SEPSQLiteDB(config);
+			db = new SEPSQLiteDB(players, config);
 		}
 		catch(Exception e)
 		{
@@ -540,65 +553,8 @@ public class TestSQLite
 			fail(e.getMessage());
 			return;
 		}
-		
-		try
-		{
-			db.test("PRAGMA foreign_keys;");
-		}
-		catch(SQLiteException e)
-		{
-			e.printStackTrace();
-			fail(e.getMessage());
-		}
-		
+			
 		boolean exceptionThrown = false;
-		try
-		{
-			db.test("TOTO;");
-		}
-		catch(SQLiteException e)
-		{
-			exceptionThrown = true;
-		}
 		
-		assertTrue("Exception expected.", exceptionThrown);
-		
-		try
-		{
-			db.test(new SQLiteJob<Void>()
-			{
-				@Override
-				protected Void job(SQLiteConnection connection) throws Throwable
-				{
-					connection.exec("PRAGMA foreign_keys;");
-					return null;
-				}
-			});
-		}
-		catch(SQLiteException e)
-		{
-			e.printStackTrace();
-			fail(e.getMessage());
-		}
-		
-		exceptionThrown = false;
-		try
-		{
-			db.test(new SQLiteJob<String>()
-			{
-				@Override
-				protected String job(SQLiteConnection connection) throws Throwable
-				{
-					connection.exec("TOTO;");
-					return "Toto";
-				}
-			});
-		}
-		catch(SQLiteException e)
-		{
-			exceptionThrown = true;
-		}
-		
-		assertTrue("Exception expected.", exceptionThrown);
 	}
 }

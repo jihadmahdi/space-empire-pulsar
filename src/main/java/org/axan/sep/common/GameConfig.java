@@ -57,12 +57,12 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * Starting carbon resource amount on players planets.
 	 */
-	private Map<Class<? extends ICelestialBody>, Integer[]>	celestialBodiesStartingCarbonAmount		= new Hashtable<Class<? extends ICelestialBody>, Integer[]>();
+	private Map<eCelestialBodyType, int[]>	celestialBodiesStartingCarbonAmount		= new Hashtable<eCelestialBodyType, int[]>();
 
 	/**
 	 * Number of slots on celestial bodies.
 	 */
-	private Map<Class<? extends ICelestialBody>, Integer[]>	celestialBodiesSlotsAmount				= new Hashtable<Class<? extends ICelestialBody>, Integer[]>();
+	private Map<eCelestialBodyType, int[]>	celestialBodiesSlotsAmount				= new Hashtable<eCelestialBodyType, int[]>();
 
 	/**
 	 * Neutral celestial bodies generation, type table. This define the chance
@@ -159,17 +159,17 @@ public class GameConfig implements IGameConfig, Serializable
 		setPopulationPerTurn(Planet.POPULATION_PER_TURN_MIN, Planet.POPULATION_PER_TURN_MAX);
 		setPopulationLimit(Planet.POPULATION_LIMIT_MIN, Planet.POPULATION_LIMIT_MAX);
 
-		setCelestialBodiesStartingCarbonAmount(Planet.class, Planet.CARBON_MIN, Planet.CARBON_MAX);
-		setCelestialBodiesStartingCarbonAmount(AsteroidField.class, AsteroidField.CARBON_MIN, AsteroidField.CARBON_MAX);
-		setCelestialBodiesStartingCarbonAmount(Nebula.class, Nebula.CARBON_MIN, Nebula.CARBON_MAX);
+		setCelestialBodiesStartingCarbonAmount(eCelestialBodyType.Planet, Planet.CARBON_MIN, Planet.CARBON_MAX);
+		setCelestialBodiesStartingCarbonAmount(eCelestialBodyType.AsteroidField, AsteroidField.CARBON_MIN, AsteroidField.CARBON_MAX);
+		setCelestialBodiesStartingCarbonAmount(eCelestialBodyType.Nebula, Nebula.CARBON_MIN, Nebula.CARBON_MAX);
 
-		setCelestialBodiesSlotsAmount(Planet.class, Planet.SLOTS_MIN, Planet.SLOTS_MAX);
-		setCelestialBodiesSlotsAmount(AsteroidField.class, AsteroidField.SLOTS_MIN, AsteroidField.SLOTS_MAX);
-		setCelestialBodiesSlotsAmount(Nebula.class, Nebula.SLOTS_MIN, Nebula.SLOTS_MAX);
+		setCelestialBodiesSlotsAmount(eCelestialBodyType.Planet, Planet.SLOTS_MIN, Planet.SLOTS_MAX);
+		setCelestialBodiesSlotsAmount(eCelestialBodyType.AsteroidField, AsteroidField.SLOTS_MIN, AsteroidField.SLOTS_MAX);
+		setCelestialBodiesSlotsAmount(eCelestialBodyType.Nebula, Nebula.SLOTS_MIN, Nebula.SLOTS_MAX);
 
-		setNeutralCelestialBodiesGenerationTable(eCelestialBodyType.Planet, Planet.GENERATION_RATE);
-		setNeutralCelestialBodiesGenerationTable(eCelestialBodyType.AsteroidField, AsteroidField.GENERATION_RATE);
-		setNeutralCelestialBodiesGenerationTable(eCelestialBodyType.Nebula, Nebula.GENERATION_RATE);
+		setNeutralCelestialBodiesGenerationRate(eCelestialBodyType.Planet, Planet.GENERATION_RATE);
+		setNeutralCelestialBodiesGenerationRate(eCelestialBodyType.AsteroidField, AsteroidField.GENERATION_RATE);
+		setNeutralCelestialBodiesGenerationRate(eCelestialBodyType.Nebula, Nebula.GENERATION_RATE);
 
 		setPlayersPlanetsStartingPopulation(Planet.PLAYERS_STARTING_POPULATION);
 		setPlayersPlanetsStartingCarbonResources(Planet.PLAYERS_STARTING_CARBON);
@@ -185,7 +185,7 @@ public class GameConfig implements IGameConfig, Serializable
 		setSunRadius(SUN_RADIUS);
 	}
 
-	public GameConfig(int dimX, int dimY, int dimZ, int neutralCelesialBodiesCount, int populationPerTurnMin, int populationPerTurnMax, int populationLimitMin, int populationLimitMax, Map<Class<? extends ICelestialBody>, Integer[]> celestialBodiesStartingCarbonAmount, Map<Class<? extends ICelestialBody>, Integer[]> celestialBodiesSlotsAmount, Map<eCelestialBodyType, Float> neutralCelestialBodiesGenerationTable, boolean allianceVictory, boolean regimicide, boolean assimilateNeutralisedPeoples, boolean totalConquest, int economicVictoryCarbon, int economicVictoryPopulation, int timeLimitVictory, int probeScope, int sunRadius, int playersPlanetsStartingCarbonResources, int playersPlanetsStartingPopulation)
+	public GameConfig(int dimX, int dimY, int dimZ, int neutralCelesialBodiesCount, int populationPerTurnMin, int populationPerTurnMax, int populationLimitMin, int populationLimitMax, Map<eCelestialBodyType, Integer[]> celestialBodiesStartingCarbonAmount, Map<eCelestialBodyType, Integer[]> celestialBodiesSlotsAmount, Map<eCelestialBodyType, Float> neutralCelestialBodiesGenerationTable, boolean allianceVictory, boolean regimicide, boolean assimilateNeutralisedPeoples, boolean totalConquest, int economicVictoryCarbon, int economicVictoryPopulation, int timeLimitVictory, int probeScope, int sunRadius, int playersPlanetsStartingCarbonResources, int playersPlanetsStartingPopulation)
 	{
 		// TODO: call with right parameters
 
@@ -199,7 +199,7 @@ public class GameConfig implements IGameConfig, Serializable
 		setPopulationLimit(populationLimitMin, populationLimitMax);
 
 		if (celestialBodiesStartingCarbonAmount != null)
-			for(Map.Entry<Class<? extends ICelestialBody>, Integer[]> e : celestialBodiesStartingCarbonAmount.entrySet())
+			for(Map.Entry<eCelestialBodyType, Integer[]> e : celestialBodiesStartingCarbonAmount.entrySet())
 			{
 				if (e.getValue() == null) continue;
 				if (e.getValue().length < 2) continue;
@@ -211,7 +211,7 @@ public class GameConfig implements IGameConfig, Serializable
 		setPlayersPlanetsStartingCarbonResources(playersPlanetsStartingCarbonResources);
 		setPlayersPlanetsStartingPopulation(playersPlanetsStartingPopulation);
 		
-		if (celestialBodiesSlotsAmount != null) for(Map.Entry<Class<? extends ICelestialBody>, Integer[]> e : celestialBodiesSlotsAmount.entrySet())
+		if (celestialBodiesSlotsAmount != null) for(Map.Entry<eCelestialBodyType, Integer[]> e : celestialBodiesSlotsAmount.entrySet())
 		{
 			if (e.getValue() == null) continue;
 			if (e.getValue().length < 2) continue;
@@ -225,7 +225,7 @@ public class GameConfig implements IGameConfig, Serializable
 			{
 				if (e.getValue() == null) continue;
 
-				setNeutralCelestialBodiesGenerationTable(e.getKey(), e.getValue());
+				setNeutralCelestialBodiesGenerationRate(e.getKey(), e.getValue());
 			}
 
 		setAllianceVictory(allianceVictory);
@@ -360,7 +360,7 @@ public class GameConfig implements IGameConfig, Serializable
 	public void setPlayersPlanetsStartingCarbonResources(int playersPlanetsStartingCarbonResources)
 	{
 		if (playersPlanetsStartingCarbonResources < 0) throw new IllegalArgumentException("Players starting carbon amount cannot be negative.");
-		if (playersPlanetsStartingCarbonResources > celestialBodiesStartingCarbonAmount.get(Planet.class)[0])
+		if (playersPlanetsStartingCarbonResources > celestialBodiesStartingCarbonAmount.get(eCelestialBodyType.Planet)[0])
 			throw new IllegalArgumentException("Players starting carbon amount must be lesser than planets minimum starting carbon value.");
 		this.playersPlanetsStartingCarbonResources = playersPlanetsStartingCarbonResources;
 	}
@@ -426,53 +426,62 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * @return the celestialBodiesStartingCarbonAmount
 	 */
-	public Map<Class<? extends ICelestialBody>, Integer[]> getCelestialBodiesStartingCarbonAmount()
+	@Override
+	public int[] getCelestialBodiesStartingCarbonAmount(eCelestialBodyType celestialBodyType)
 	{
-		return celestialBodiesStartingCarbonAmount;
+		return celestialBodiesStartingCarbonAmount.get(celestialBodyType);
+	}
+	
+	
+	/**
+	 * @return the celestialBodiesSlotsAmount
+	 */
+	@Override
+	public int[] getCelestialBodiesSlotsAmount(eCelestialBodyType celestialBodyType)
+	{
+		return celestialBodiesSlotsAmount.get(celestialBodyType);
 	}
 
 	/**
 	 * @param celestialBodiesStartingCarbonAmount
 	 *            the celestialBodiesStartingCarbonAmount to set
 	 */
-	public void setCelestialBodiesStartingCarbonAmount(Class<? extends ICelestialBody> celestialBodyType, int min, int max)
+	public void setCelestialBodiesStartingCarbonAmount(eCelestialBodyType celestialBodyType, int min, int max)
 	{
 		if (min <= 0) throw new IllegalArgumentException("minimum carbon amount must be positive or null.");
 		if (max <= 0) throw new IllegalArgumentException("minimum carbon amount must be positive or null.");
 		if (max < min) throw new IllegalArgumentException("minimum carbon amount must be lesser than maximum.");
 
-		if (Planet.class.equals(celestialBodyType) && min < playersPlanetsStartingCarbonResources)
+		if (celestialBodyType == eCelestialBodyType.Planet && min < playersPlanetsStartingCarbonResources)
 			throw new IllegalArgumentException("Planets minimum carbon amount must be greater or equal to players starting carbon amount.");
 
-		this.celestialBodiesStartingCarbonAmount.put(celestialBodyType, new Integer[] { min, max });
-	}
-
-	/**
-	 * @return the celestialBodiesSlotsAmount
-	 */
-	public Map<Class<? extends ICelestialBody>, Integer[]> getCelestialBodiesSlotsAmount()
-	{
-		return celestialBodiesSlotsAmount;
+		this.celestialBodiesStartingCarbonAmount.put(celestialBodyType, new int[] { min, max });
 	}
 
 	/**
 	 * @param celestialBodiesSlotsAmount
 	 *            the qtSlotsCorpsCelestes to set
 	 */
-	public void setCelestialBodiesSlotsAmount(Class<? extends ICelestialBody> celestialBodyType, int min, int max)
+	public void setCelestialBodiesSlotsAmount(eCelestialBodyType celestialBodyType, int min, int max)
 	{
 		if (min <= 0) throw new IllegalArgumentException("minimum slots amount must be positive or null.");
 		if (max <= 0) throw new IllegalArgumentException("minimum slots amount must be positive or null.");
 		if (max < min) throw new IllegalArgumentException("minimum slots amount must be lesser than maximum.");
-		this.celestialBodiesSlotsAmount.put(celestialBodyType, new Integer[] { min, max });
+		this.celestialBodiesSlotsAmount.put(celestialBodyType, new int[] { min, max });
 	}
 
-	/**
-	 * @return the neutralCelestialBodiesGenerationTable
-	 */
 	public Map<eCelestialBodyType, Float> getNeutralCelestialBodiesGenerationTable()
 	{
 		return neutralCelestialBodiesGenerationTable;
+	}
+	
+	/**
+	 * @return the neutralCelestialBodiesGenerationTable
+	 */
+	@Override
+	public Float getNeutralCelestialBodiesGenerationRate(eCelestialBodyType celestialBodyType)
+	{
+		return neutralCelestialBodiesGenerationTable.get(celestialBodyType);
 	}
 
 	/**
@@ -482,8 +491,10 @@ public class GameConfig implements IGameConfig, Serializable
 	 *            percentage to be generated (not a true percentage but a
 	 *            weight).
 	 */
-	public void setNeutralCelestialBodiesGenerationTable(eCelestialBodyType celestialBodyType, float rate)
+	@Override
+	public void setNeutralCelestialBodiesGenerationRate(eCelestialBodyType celestialBodyType, Float rate)
 	{
+		// TODO Auto-generated method stub
 		if (rate < 0) throw new IllegalArgumentException("rate cannot be negative.");
 		this.neutralCelestialBodiesGenerationTable.put(celestialBodyType, rate);
 	}
@@ -578,7 +589,7 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * @return the timeLimitVictory
 	 */
-	public Integer getTimeLimitVictory()
+	public int getTimeLimitVictory()
 	{
 		return timeLimitVictory;
 	}
@@ -587,7 +598,7 @@ public class GameConfig implements IGameConfig, Serializable
 	 * @param timeLimitVictory
 	 *            the timeLimitVictory to set
 	 */
-	public void setTimeLimitVictory(Integer timeLimitVictory)
+	public void setTimeLimitVictory(int timeLimitVictory)
 	{
 		if (timeLimitVictory < 0) throw new IllegalArgumentException("timeLimitVictory　must be positive or null.");
 		this.timeLimitVictory = timeLimitVictory;
@@ -646,45 +657,95 @@ public class GameConfig implements IGameConfig, Serializable
 		return sb.toString();
 	}
 
+	int naturalCarbonPerTurn = ProductiveCelestialBody.NATURAL_CARBON_PER_TURN;
+	
 	public int getNaturalCarbonPerTurn()
 	{
 		// TODO : Add to CTOR
-		return ProductiveCelestialBody.NATURAL_CARBON_PER_TURN;
+		return naturalCarbonPerTurn;
 	}
-
+	
+	@Override
+	public void setNaturalCarbonPerTurn(int naturalCarbonPerTurn)
+	{
+		this.naturalCarbonPerTurn = naturalCarbonPerTurn;
+	}
+	
+	private int maxNaturalCarbon = ProductiveCelestialBody.MAX_NATURAL_CARBON;
+	
 	public int getMaxNaturalCarbon()
 	{
 		// TODO : Add to CTOR
-		return ProductiveCelestialBody.MAX_NATURAL_CARBON;
+		return maxNaturalCarbon;
+	}
+	
+	@Override
+	public void setMaxNaturalCarbon(int maxNaturalCarbon)
+	{
+		this.maxNaturalCarbon = maxNaturalCarbon;
 	}
 
+	private int governmentStarshipCarbonPrice = GovernmentStarship.CARBON_PRICE;
 	public int getGovernmentStarshipCarbonPrice()
 	{
 		// TODO : Add to CTOR
-		return GovernmentStarship.CARBON_PRICE;
+		return governmentStarshipCarbonPrice;
 	}
 	
+	@Override
+	public void setGovernmentStarshipCarbonPrice(int governmentStarshipCarbonPrice)
+	{
+		this.governmentStarshipCarbonPrice = governmentStarshipCarbonPrice;
+	}
+	
+	private int governmentStarshipPopulationPrice = GovernmentStarship.POPULATION_PRICE;
 	public int getGovernmentStarshipPopulationPrice()
 	{
 		// TODO : Add to CTOR
-		return GovernmentStarship.POPULATION_PRICE;
+		return governmentStarshipPopulationPrice;
+	}
+	@Override
+	public void setGovernmentStarshipPopulationPrice(int governmentStarshipPopulationPrice)
+	{
+		this.governmentStarshipPopulationPrice = governmentStarshipPopulationPrice;
 	}
 
+	private double spaceRoadPricePerArea = 200;
 	public double getSpaceRoadPricePerArea()
 	{
 		// TODO : Add to CTOR
-		return 200;
+		return spaceRoadPricePerArea;
+	}
+	
+	@Override
+	public void setSpaceRoadPricePerArea(double spaceRoadPricePerArea)
+	{
+		this.spaceRoadPricePerArea = spaceRoadPricePerArea;
 	}
 
+	private int spaceRoadsSpeed = 5;
 	public int getSpaceRoadsSpeed()
 	{
 		// TODO : Add to CTOR
-		return 5;
+		return spaceRoadsSpeed;
 	}
 	
+	@Override
+	public void setSpaceRoadsSpeed(int spaceRoadsSpeed)
+	{
+		this.spaceRoadsSpeed = spaceRoadsSpeed;
+	}
+	
+	private int carbonMinimalFreight = 1000;
 	public int getCarbonMinimalFreight()
 	{
 		// TODO : Add to CTOR
-		return 1000;
+		return carbonMinimalFreight;
+	}
+	
+	@Override
+	public void setCarbonMinimalFreight(int carbonMinimalFreight)
+	{
+		this.carbonMinimalFreight = carbonMinimalFreight;
 	}
 }
