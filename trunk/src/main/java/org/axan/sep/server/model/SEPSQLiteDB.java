@@ -1,11 +1,11 @@
 package org.axan.sep.server.model;
 
-import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.NotSerializableException;
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -18,8 +18,10 @@ import java.util.Stack;
 
 import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.GameConfig;
+import org.axan.sep.common.GameConfigCopier;
 import org.axan.sep.common.IGameConfig;
 import org.axan.sep.common.SEPUtils;
+import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.SEPUtils.Location;
@@ -50,7 +52,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 		}
 		
 		@Override
-		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
+		public Object invoke(Object proxy, final Method method, Object[] args) throws Throwable
 		{
 			if (method.getDeclaringClass().equals(Object.class))
 			{
@@ -65,7 +67,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 				/*
 				 * Setters must start with "set", have arguments and return void.
 				 */
-				if (method.getName().startsWith("set") && method.getReturnType().equals(Void.class) && args != null && args.length > 0)
+				if (method.getName().startsWith("set") && method.getReturnType().equals(void.class) && args != null && args.length > 0)
 				{
 					// TODO: To test
 					
@@ -85,7 +87,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 						}
 					}
 					
-					if (i+2 == args.length)
+					if (i+1 == args.length)
 					{
 						db.exec("INSERT OR REPLACE INTO GameConfig (key, value) VALUES ('%s', '%s');", key, args[0].toString());
 					}
@@ -102,7 +104,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 				/*
 				 * Getters must do not return void and have only Enum<?> arguments.
 				 */
-				else if (!Void.class.equals(method.getReturnType()))
+				else if (!void.class.equals(method.getReturnType()))
 				{
 					// Getter
 					String key = method.getName();
@@ -115,7 +117,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 						key = method.getName().substring(2);
 					}
 					
-					for(int i=0; i<args.length; ++i)
+					if (args != null) for(int i=0; i<args.length; ++i)
 					{
 						if (!Enum.class.isInstance(args[i]))
 						{
@@ -125,7 +127,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 						key += '-'+args[i].toString();
 					}
 					
-					return db.prepare("SELECT value FROM GameConfig WHERE key GLOB '%s*' ORDER BY key;", new SQLiteStatementJob<Object>()
+					Object result = db.prepare("SELECT value FROM GameConfig WHERE key GLOB '%s*' ORDER BY key;", new SQLiteStatementJob<Object>()
 					{
 						public Object job(SQLiteStatement stmnt) throws SQLiteException
 						{
@@ -136,10 +138,29 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 							}
 							
 							if (results.size() == 0) return null;
-							else if (results.size() == 1) return results.firstElement();
-							else return results.toArray();
+							
+							if (!method.getReturnType().isArray())
+							{
+								if (results.size() > 1) throw new RuntimeException("Return type is not an array, but several results found in DB ("+method.toGenericString()+").");
+								return valueOf(Class.class.cast(method.getReturnType()), results.firstElement().toString());
+							}
+							else
+							{
+								// TODO: Support multi-dimenstional array (get/set).
+								// int nrDims = 1 + method.getReturnType().getName().lastIndexOf('[');
+								Object arr = Array.newInstance(method.getReturnType().getComponentType(), results.size());
+								for(int i=0; i<results.size(); ++i)
+								{
+									Array.set(arr, i, valueOf(Class.class.cast(method.getReturnType().getComponentType()), results.get(i).toString()));
+								}
+								return arr;
+							}
 						};
 					}, key);
+					
+					
+					return result;
+					//return method.getReturnType().cast(result);
 				}
 				else
 				{
@@ -147,6 +168,44 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 				}
 			}
 		}
+	}
+	
+	private static Class<?> getWrapper(Class<?> primitive)
+	{
+		if (!primitive.isPrimitive()) return primitive;
+		
+		if (primitive == byte.class) return Byte.class;
+		if (primitive == short.class) return Short.class;
+		if (primitive == int.class) return Integer.class;
+		if (primitive == long.class) return Long.class;
+		if (primitive == float.class) return Float.class;
+		if (primitive == double.class) return Double.class;
+		if (primitive == boolean.class) return Boolean.class;
+		if (primitive == char.class) return Character.class;
+		
+		return primitive;
+	}
+	
+	private static Object valueOf(Class clazz, String s)
+	{
+		try
+		{
+			Class<?> obClazz = clazz;
+			if (clazz.isPrimitive())
+			{
+				obClazz = getWrapper(clazz);
+			}
+			
+			Method valueOf = obClazz.getMethod("valueOf", String.class);
+			
+			return obClazz.cast(valueOf.invoke(null, s));
+		}
+		catch(Throwable t)
+		{
+			// 
+		}
+		
+		return clazz.cast(s);
 	}
 	
 	private static final Random rnd = new Random();
@@ -174,11 +233,8 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 	
 	// Game DataBase
 	
-	public SEPSQLiteDB(Set<org.axan.sep.common.Player> players, org.axan.sep.common.GameConfig config) throws IOException, SQLiteException
-	{
-		this.config = (IGameConfig) Proxy.newProxyInstance(IGameConfig.class.getClassLoader(), new Class<?>[] {IGameConfig.class}, new SQLiteDBGameConfigInvocationHandler(this));
-		// TODO: Write default config to DB
-		
+	public SEPSQLiteDB(Set<org.axan.sep.common.Player> players, org.axan.sep.common.GameConfig config) throws IOException, SQLiteException, GameConfigCopierException
+	{	
 		//dbFile = File.createTempFile("SEP-", ".sep");
 		dbFile = new File("/tmp/SEP-test.sep");
 		if (dbFile.exists())
@@ -198,10 +254,9 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 		importResourceFile("SEPSQLiteDB.server.sql");
 
 		// Write GameConfig
-		/*
-		 * TODO: Write config into DB. Reflect getters names ? ex:
-		 * exec("INSERT INTO GameConfig VALUES ('carbonMinimalFreight','"+config.getCarbonMinimalFreight()+"');");
-		 */
+		this.config = (IGameConfig) Proxy.newProxyInstance(IGameConfig.class.getClassLoader(), new Class<?>[] {IGameConfig.class}, new SQLiteDBGameConfigInvocationHandler(this));
+		
+		GameConfigCopier.copy(IGameConfig.class, config, this.config);
 
 		// Make the sun
 		Location sunLocation = new Location(config.getDimX() / 2, config.getDimY() / 2, config.getDimZ() / 2);
@@ -247,6 +302,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 				}
 			} while(!locationOk);
 
+			insertArea(planetLocation, false);
 			insertStartingPlanet(generateCelestialBodyName(), planetLocation, player.getName());
 			playersPlanetLocations.add(planetLocation);									
 		}
@@ -265,6 +321,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 
 			String nextName = generateCelestialBodyName();
 			
+			if (!areaExists(celestialBodyLocation)) insertArea(celestialBodyLocation, false);
 			insertCelestialBody(celestialBodyType, nextName, celestialBodyLocation);
 		}
 	}
@@ -272,7 +329,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 	private void insertCelestialBody(eCelestialBodyType celestialBodyType, String name, Location location) throws SQLiteException
 	{
 		boolean productiveCelestialBody = (celestialBodyType != eCelestialBodyType.Vortex);
-		exec("INSERT INTO CelestialBody (name, location_x, location_y, location_z, Vortex, ProductiveCelestialBody) VALUES (%s, %d, %d, %d, %d, %d);", name, location.x, location.y, location.z, (celestialBodyType == eCelestialBodyType.Vortex)?1:0, (productiveCelestialBody)?1:0);
+		exec("INSERT INTO CelestialBody (name, location_x, location_y, location_z, Vortex, ProductiveCelestialBody) VALUES ('%s', %d, %d, %d, %d, %d);", name, location.x, location.y, location.z, (celestialBodyType == eCelestialBodyType.Vortex)?1:0, (productiveCelestialBody)?1:0);
 		
 		if (productiveCelestialBody)
 		{
@@ -285,7 +342,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 			int maxSlots = rnd.nextInt(slotsAmount[1] - slotsAmount[0]) + slotsAmount[0];
 			if (maxSlots <= 0) maxSlots = 1;			
 			
-			exec("INSERT INTO ProductiveCelestialBody (name, initialCarbon, maxSlots, %s) VALUES (%s, %d, %d, %d, %d, %d)", celestialBodyType, name, initialCarbon, maxSlots, 1);
+			exec("INSERT INTO ProductiveCelestialBody (name, initialCarbonStock, maxSlots, '%s') VALUES ('%s', %d, %d, %d)", celestialBodyType, name, initialCarbon, maxSlots, 1);
 		}
 		
 		switch(celestialBodyType)
@@ -298,7 +355,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 			case AsteroidField:
 			case Nebula:
 			{
-				exec("INSERT INTO %s (name) VALUES (%s);", celestialBodyType, name);
+				exec("INSERT INTO %s (name) VALUES ('%s');", celestialBodyType, name);
 				break;
 			}
 			
@@ -310,7 +367,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 				int[] populationLimitRange = config.getPopulationLimit();
 				int maxPopulation = rnd.nextInt(populationLimitRange[1] - populationLimitRange[0]) + populationLimitRange[0];
 				
-				exec("INSERT INTO Planet (name, populationPerTurn, maxPopulation) VALUES (%s, %d, %d);", name, populationPerTurn, maxPopulation);
+				exec("INSERT INTO Planet (name, populationPerTurn, maxPopulation) VALUES ('%s', %d, %d);", name, populationPerTurn, maxPopulation);
 				break;
 			}
 			
@@ -323,8 +380,8 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 
 	private void insertPlayer(org.axan.sep.common.Player player) throws SQLiteException
 	{
-		exec("INSERT INTO Player (name) VALUES (%s);", player.getName());
-		exec("INSERT INTO PlayerConfig (name, color, symbol, portrait) VALUES (%s, %s, NULL, NULL);", player.getName(), player.getConfig().getColor().getRGB());		
+		exec("INSERT INTO Player (name) VALUES ('%s');", player.getName());
+		exec("INSERT INTO PlayerConfig (name, color, symbol, portrait) VALUES ('%s', '%s', NULL, NULL);", player.getName(), player.getConfig().getColor().getRGB());		
 	}
 	
 	private void insertArea(Location location, boolean isSun) throws SQLiteException
@@ -332,18 +389,25 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 		exec("INSERT INTO Area (location_x, location_y, location_z, isSun) VALUES (%d, %d, %d, %d);", location.x, location.y, location.z, isSun ? 1 : 0);
 	}
 
-	private boolean areaExists(final Location location) throws SQLiteException
+	private boolean areaExists(Location location) throws SQLiteException
 	{
-		return exec(new SQLiteJob<Boolean>()
+		return prepare("SELECT EXISTS ( SELECT location_x FROM Area WHERE location_x = %d AND location_y = %d AND location_z = %d );", new SQLiteStatementJob<Boolean>()
 		{
 			@Override
-			protected Boolean job(SQLiteConnection connection) throws Throwable
+			public Boolean job(SQLiteStatement stmnt) throws SQLiteException
 			{
-				SQLiteStatement stmnt = connection.prepare(String.format("EXISTS ( SELECT location_x FROM Area WHERE location_x = %d AND location_y = %d AND location_z = %d );", location.x, location.y, location.z));
-				stmnt.step();
-				return stmnt.columnInt(0) == 1;
+				try
+				{
+					stmnt.step();
+					return (stmnt.columnInt(0) != 0);
+				}
+				catch(SQLiteException e)
+				{
+					e.printStackTrace();
+					throw e;
+				}
 			}
-		});
+		}, location.x, location.y, location.z, location.x, location.y, location.z);
 	}
 	
 	private boolean areaHasCelestialBody(Location location) throws SQLiteException
@@ -353,7 +417,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 			@Override
 			public Boolean job(SQLiteStatement stmnt) throws SQLiteException
 			{
-				return stmnt.columnInt(0) != 0;
+				return (stmnt.columnInt(0) != 0);
 			}			
 		},location.x, location.y, location.z,location.x, location.y, location.z);
 	}
@@ -365,6 +429,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 			@Override
 			public Boolean job(SQLiteStatement stmnt) throws SQLiteException
 			{
+				stmnt.step();
 				return (stmnt.columnInt(0) != 0);
 			}
 		}, location.x, location.y, location.z, location.x, location.y, location.z);
@@ -398,19 +463,19 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 		int[] populationLimitRange = config.getPopulationLimit();
 		int populationLimit = (populationLimitRange[1] - populationLimitRange[0])/2 + populationLimitRange[0];
 
-		exec("INSERT INTO CelestialBody (name, location_x, location_y, location_z, Vortex, ProductiveCelestialBody) VALUES (%s, %d, %d, %d, %d, %d);", planetName, planetLocation.x, planetLocation.y, planetLocation.z, 0, 1);
-	    exec("INSERT INTO ProductiveCelestialBody (name, initialCarbonStock, maxSlots, Planet, AsteroidField, Nebula) VALUES (%s, %d, %d, %d, %d, %d);", planetName, carbonStock, slots, 1, 0, 0);
-	    exec("INSERT INTO Planet (name, populationPerTurn, maxPopulation) VALUES (%s, %d, %d);", planetName, populationPerTurn, populationLimit);
-	    exec("INSERT INTO VersionedProductiveCelestialBody (name, turn, carbonStock, currentCarbon, owner, VersionedPlanet, VersionedAsteroidField, VersionedNebula) VALUES (%s, %d, %d, %d, %s, %d, %d, %d);", planetName, 0, carbonStock, config.getPlayersPlanetsStartingCarbonResources(), ownerName, 1, 0, 0);
-	    exec("INSERT INTO VersionedPlanet (name, turn, currentPopulation) VALUES (%s, %d, %d);", planetName, 0, config.getPlayersPlanetsStartingPopulation());
+		exec("INSERT INTO CelestialBody (name, location_x, location_y, location_z, Vortex, ProductiveCelestialBody) VALUES ('%s', %d, %d, %d, %d, %d);", planetName, planetLocation.x, planetLocation.y, planetLocation.z, 0, 1);
+	    exec("INSERT INTO ProductiveCelestialBody (name, initialCarbonStock, maxSlots, Planet, AsteroidField, Nebula) VALUES ('%s', %d, %d, %d, %d, %d);", planetName, carbonStock, slots, 1, 0, 0);
+	    exec("INSERT INTO Planet (name, populationPerTurn, maxPopulation) VALUES ('%s', %d, %d);", planetName, populationPerTurn, populationLimit);
+	    exec("INSERT INTO VersionedProductiveCelestialBody (name, turn, carbonStock, currentCarbon, owner, VersionedPlanet, VersionedAsteroidField, VersionedNebula) VALUES ('%s', %d, %d, %d, '%s', %d, %d, %d);", planetName, 0, carbonStock, config.getPlayersPlanetsStartingCarbonResources(), ownerName, 1, 0, 0);
+	    exec("INSERT INTO VersionedPlanet (name, turn, currentPopulation) VALUES ('%s', %d, %d);", planetName, 0, config.getPlayersPlanetsStartingPopulation());
 		
 		// If victory rule "Regimicide" is on, starting planet has a pre-built government module.	    
 	    if (config.isRegimicide())
 		{
 	    	// Buildin, GovernmentModule, Government
-	    	exec("INSERT INTO Building (type, nbSlots, celestialBodyName, turn) VALUES (%s, %d, %s, %d);", eBuildingType.GovernmentModule, 1, planetName, 0);
-	    	exec("INSERT INTO GovernmentModule (type, celestialBodyName, turn) VALUES (%s, %s, %d);", eBuildingType.GovernmentModule, planetName, 0);
-	    	exec("INSERT INTO Government (owner, turn, planetName, planetTurn) VALUES (%s, %d, %s, %d);", ownerName, 0, planetName, 0);
+	    	exec("INSERT INTO Building (type, nbSlots, celestialBodyName, turn) VALUES ('%s', %d, '%s', %d);", eBuildingType.GovernmentModule, 1, planetName, 0);
+	    	exec("INSERT INTO GovernmentModule (type, celestialBodyName, turn) VALUES ('%s', '%s', %d);", eBuildingType.GovernmentModule, planetName, 0);
+	    	exec("INSERT INTO Government (owner, turn, planetName, planetTurn) VALUES ('%s', %d, '%s', %d);", ownerName, 0, planetName, 0);
 		}
 	}
 	
