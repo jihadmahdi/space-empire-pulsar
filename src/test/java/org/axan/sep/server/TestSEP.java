@@ -52,6 +52,7 @@ import org.axan.sep.common.IGame.MoveFleet;
 import org.axan.sep.common.IGameCommand.GameCommandException;
 import org.axan.sep.common.Protocol.ServerGameCreation;
 import org.axan.sep.common.Protocol.ServerRunningGame;
+import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.server.ai.ClientAI;
 import org.axan.sep.server.ai.UncheckedLocalGame;
 import org.axan.sep.server.model.GameBoard;
@@ -468,7 +469,7 @@ public class TestSEP
 			while(client1GameCreation.getGameConfig().getDimZ() != gameCfg.getDimZ() || client2GameCreation.getGameConfig().getDimZ() != gameCfg.getDimZ()) Thread.sleep(1000);
 			
 			gameCfg.setDimZ(1);
-			gameCfg.setPlayersPlanetsStartingCarbonResources(gameCfg.getCelestialBodiesStartingCarbonAmount().get(Planet.class)[0]-1);
+			gameCfg.setPlayersPlanetsStartingCarbonResources(gameCfg.getCelestialBodiesStartingCarbonAmount(eCelestialBodyType.Planet)[0]-1);
 			client1GameCreation.updateGameConfig(gameCfg);
 			
 			while(client1GameCreation.getGameConfig().getDimZ() != gameCfg.getDimZ() || client2GameCreation.getGameConfig().getDimZ() != gameCfg.getDimZ()) Thread.sleep(1000);

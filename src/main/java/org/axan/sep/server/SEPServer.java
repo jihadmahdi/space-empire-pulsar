@@ -46,7 +46,7 @@ import org.axan.sep.server.model.PlayerGameMove;
 import org.axan.sep.server.model.ServerGame;
 
 /**
- * TODO
+ * SEPServer
  */
 public class SEPServer implements IServer
 {
@@ -724,7 +724,6 @@ public class SEPServer implements IServer
 			}
 		}
 
-		// TODO : Resolve turn;
 		log.log(Level.INFO, "Resolving new turn");
 		getCurrentGame().resolveCurrentTurn();
 
@@ -951,7 +950,6 @@ public class SEPServer implements IServer
 		@Override
 		public void loadGame(ObjectInputStream ois) throws Throwable
 		{
-			// TODO Auto-generated method stub
 			synchronized(server)
 			{
 				server.game = ServerGame.load(ois);
