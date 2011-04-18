@@ -1,5 +1,5 @@
 
-package org.axan.sep.server;
+package org.axan.sep.server.model;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -22,10 +22,15 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.Stack;
+import java.util.Vector;
 
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.client.gui.SpaceEmpirePulsarGUI;
@@ -33,6 +38,9 @@ import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.IGameConfig;
 import org.axan.sep.common.Player;
 import org.axan.sep.common.PlayerConfig;
+import org.axan.sep.common.Protocol.eCelestialBodyType;
+import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.server.model.GameBoard;
 import org.axan.sep.server.model.SEPSQLiteDB;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -45,9 +53,14 @@ import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteJob;
 import com.almworks.sqlite4java.SQLiteQueue;
+import com.almworks.sqlite4java.SQLiteStatement;
+
+import org.axan.sep.server.model.SEPSQLiteDB.SQLiteStatementJob;
 
 public class TestSQLite
 {
+	
+	private static Random rnd = new Random();
 	
 	/**
 	 * @throws java.lang.Exception
@@ -102,7 +115,11 @@ public class TestSQLite
 		String result = SQLiteDebug(q, query);
 		
 		if (expectedResultEnd.isEmpty())
-		{		
+		{
+			if (!result.isEmpty())
+			{
+				System.err.println(result);
+			}
 			assertTrue(message+"\n"+result, result.isEmpty());
 		}
 		else
@@ -284,9 +301,10 @@ public class TestSQLite
 			SQLiteDebugQuery(q, "PRAGMA quick_check;");
 			
 			assertQueryResult(q, "SQLite error?", "DROP TABLE IF EXISTS parents ;", "");
+			assertQueryResult(q, "SQLite error?", "DROP TABLE IF EXISTS real_people ;", "");
 			assertQueryResult(q, "SQLite error?", "DROP TABLE IF EXISTS people ;", "");			
 			
-			assertQueryResult(q, "SQLite error?", "CREATE TABLE people ( name TEXT, surname TEXT, age INTEGER, PRIMARY KEY(name, surname) );", "");
+			assertQueryResult(q, "SQLite error?", "CREATE TABLE people ( name TEXT, surname TEXT, age INTEGER, PRIMARY KEY(name, surname), UNIQUE (name, surname, age) );", "");
 			assertQueryResult(q, "SQLite error?", "CREATE TABLE parents ( people_name TEXT, people_surname TEXT, parent_name TEXT, parent_surname TEXT, FOREIGN KEY(people_name, people_surname) REFERENCES people(name, surname), FOREIGN KEY(parent_name, parent_surname) REFERENCES people(name, surname) );", "");
 			
 			assertQueryResult(q, "SQLite error?", "INSERT INTO people VALUES ( 'A', 'a', 30) ;", "");			
@@ -307,6 +325,16 @@ public class TestSQLite
 			
 			assertQueryResult(q, "SQLite error?", "INSERT INTO parents VALUES ( 'C', 'c', 'A', 'a' ) ;", "");
 			assertQueryResult(q, "SQLite error?", "INSERT INTO parents VALUES ( 'C', 'c', 'D', 'd' ) ;", "");
+			
+			// Not primary key fields used in foreign keys test			
+			assertQueryResult(q, "SQLite error?", "CREATE TABLE real_people ( name TEXT, surname TEXT, age INTEGER, sex TEXT NOT NULL, CHECK(sex IN ('m', 'f')), PRIMARY KEY(name, surname), FOREIGN KEY (name, surname, age) REFERENCES people (name, surname, age) );", "");
+						
+			assertQueryResult(q, "SQLite error?", "SELECT * FROM people WHERE name = 'A' AND surname = 'a' AND age = 30;", "|name|surname|age|\n|----|-------|---|\n|A   |a      |30 |");
+			assertQueryResult(q, "SQLite error?", "INSERT INTO real_people VALUES ( 'A', 'a', 30, 'm') ;", "");
+			assertQueryResult(q, "SQLite error?", "INSERT INTO real_people VALUES ( 'A', 'a', 30, 'f') ;", "[constraint failed]");
+			assertQueryResult(q, "SQLite error?", "INSERT INTO real_people VALUES ( 'B', 'b', 10, 'f') ;", "[constraint failed]");
+			assertQueryResult(q, "SQLite error?", "INSERT INTO real_people VALUES ( 'B', 'b', 12, 'f') ;", "");
+			
 			
 			// Heritance relations tests
 			assertFileResult(q, "TestSQLite.creation.sql", "TestSQLite.creation.sql error", "");
@@ -376,9 +404,9 @@ public class TestSQLite
 			q.start();
 			
 			SQLiteDebugQuery(q, "PRAGMA foreign_keys=1;");			
-			assertQueryResult(q, "Foreign keys error:", "PRAGMA foreign_keys;", "|foreign_keys|\n|------------|\n|1           |");
+			assertQueryResult(q, "Foreign keys error:", "PRAGMA foreign_keys;", "|foreign_keys|\n|------------|\n|1           |");						
 			
-			String designSQL = "Space-Empire-Pulsar-0.2.sqlite";
+			String designSQL = "SEPSQLiteDB.server.sql";
 			System.out.println();
 			System.out.println(designSQL+" IMPORT...");
 			assertFileResult(q, designSQL, "SQLite error?", "");					
@@ -389,22 +417,21 @@ public class TestSQLite
 			
 			// INSERT Player
 			assertQueryResult(q, "SQLite error?", "INSERT INTO Player VALUES('player1');", "");
-			assertQueryResult(q, "SQLite error expected", "INSERT INTO Unit VALUES('player1', 'unit', 0, 0, 0, 0, 0, 0);", "[constraint failed]");
-			assertQueryResult(q, "SQLite error expected", "INSERT INTO Unit VALUES('player1', 'unit', 0, 1, 0, 0, 1, 0);", "[constraint failed]");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO Unit VALUES('player1', 'unit', 0, 0, 0, 0, 1, 0);", "");
-			
+			assertQueryResult(q, "SQLite error expected", "INSERT INTO Unit (owner, name, type) VALUES('player1', 'unit', NULL);", "[constraint failed]");
+			assertQueryResult(q, "SQLite error expected", "INSERT INTO Unit VALUES('player1', 'unit', 'Error');", "[constraint failed]");
+			assertQueryResult(q, "SQLite error?", "INSERT INTO Unit VALUES('player1', 'unit', 'Fleet');", "");
+
 			// INSERT CelestialBody, ProductiveCelestialBody 
-			assertQueryResult(q, "SQLite error?", "INSERT INTO CelestialBody VALUES('planeteA', 0, 0, 0, 0, 1);", "");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO ProductiveCelestialBody VALUES('planeteA', 10000, 4, 1, 0, 0);", "");
+			assertQueryResult(q, "SQLite error?", "INSERT INTO CelestialBody (name, type, location_x, location_y, location_z) VALUES('planeteA', '"+eCelestialBodyType.Planet+"', 0, 0, 0);", "");
+			assertQueryResult(q, "SQLite error?", "INSERT INTO ProductiveCelestialBody (name, initialCarbonStock, maxSlots, type) VALUES('planeteA', 10000, 4, '"+eCelestialBodyType.Planet+"');", "");
 
 			// INSERT VersionedProductiveCelestialBody
-			assertQueryResult(q, "SQLite error?", "INSERT INTO VersionedProductiveCelestialBody VALUES('planeteA', 0, 10000, 1000, 'player1', 1, 0, 0);", "");
+			assertQueryResult(q, "SQLite error?", "INSERT INTO VersionedProductiveCelestialBody (name, turn, carbonStock, currentCarbon, owner, type) VALUES('planeteA', 0, 10000, 1000, 'player1', '"+eCelestialBodyType.Planet+"');", "");
 
 			// INSERT Building
 			assertQueryResult(q, "SQLite error?", "INSERT INTO Building VALUES('error', 1, 'planeteA', 0);", "[constraint failed]");
 			assertQueryResult(q, "SQLite error?", "INSERT INTO Building VALUES('StarshipPlant', 1, 'planeteA', 0);", "");
-			
-			
+
 		}
 		catch(SQLiteException e)
 		{
@@ -532,12 +559,14 @@ public class TestSQLite
 		*/
 	}
 	
+	private long unitIds = 1;
+	
 	@Test
 	public void testSEPSQLiteDB()
-	{
+	{		
 		GameConfig config = new GameConfig();
 		SEPSQLiteDB db;
-		Set<Player> players = new HashSet<Player>();
+		Vector<Player> players = new Vector<Player>();
 		
 		players.add(new Player("p1", new PlayerConfig()));
 		players.add(new Player("p2", new PlayerConfig()));
@@ -545,7 +574,117 @@ public class TestSQLite
 		
 		try
 		{
-			db = new SEPSQLiteDB(players, config);
+			db = new SEPSQLiteDB(new HashSet<Player>(players), config);
+		
+			Vector<Location> celestialBodiesLocation = db.prepare("SELECT location_x, location_y, location_z FROM CelestialBody;", new SQLiteStatementJob<Vector<Location>>()
+			{
+				@Override
+				public Vector<Location> job(SQLiteStatement stmnt) throws SQLiteException
+				{
+					Vector<Location> result = new Vector<Location>();
+					
+					while(stmnt.step())
+					{
+						result.add(new Location(stmnt.columnInt(0), stmnt.columnInt(1), stmnt.columnInt(2)));
+					}
+					
+					return result;
+				}
+			});
+			
+			boolean exceptionThrown = false;
+			
+			Vector<String[]> probes = new Vector<String[]>();
+			
+			for(int i=0; i<rnd.nextInt(5)+1; ++i)
+			{
+				Location l = celestialBodiesLocation.get(rnd.nextInt(celestialBodiesLocation.size()));
+				Player owner = players.get(rnd.nextInt(players.size()));
+				
+				String unitName = String.format("U%d", ++unitIds);
+				float progress = rnd.nextBoolean() ? rnd.nextFloat() : 0;
+				
+				Location d = (progress == 0) ? null : celestialBodiesLocation.get(rnd.nextInt(celestialBodiesLocation.size()));				
+				
+				db.exec("INSERT INTO Unit (owner, name, type) VALUES ('%s', '%s', 'Probe');", owner.getName(), unitName);
+				db.exec("INSERT INTO Probe (owner, name, type) VALUES ('%s', '%s', 'Probe');", owner.getName(), unitName);
+				
+				if (i == 0)
+				{
+					do
+					{
+						d = new Location(rnd.nextInt(20), rnd.nextInt(20), rnd.nextInt(20));
+					}while(db.areaExists(d));
+							
+					exceptionThrown = false;
+					
+					try
+					{
+						db.exec("INSERT INTO VersionedUnit (turn, owner, name, type, departure_x, departure_y, departure_z, progress, destination_x, destination_y, destination_z) VALUES (%d, '%s', '%s', 'Probe', %d, %d, %d, '%f', %s, %s, %s);", 1, owner.getName(), unitName, l.x, l.y, l.z, progress, d.x, d.y, d.z);
+					}
+					catch(SQLiteException e)
+					{
+						exceptionThrown = true;
+						assertTrue("Unexpected reason.", e.getMessage().endsWith("onstraint failed"));
+					}
+					assertTrue("Exception expected.", exceptionThrown);
+					
+					d = null;
+				}
+				
+				db.exec("INSERT INTO VersionedUnit (turn, owner, name, type, departure_x, departure_y, departure_z, progress, destination_x, destination_y, destination_z) VALUES (%d, '%s', '%s', 'Probe', %d, %d, %d, '%f', %s, %s, %s);", 1, owner.getName(), unitName, l.x, l.y, l.z, progress, d==null?"NULL":d.x, d==null?"NULL":d.y, d==null?"NULL":d.z);				
+				db.exec("INSERT INTO VersionedProbe (turn, owner, name, type, destination_x, destination_y, destination_z) VALUES ('%d', '%s', '%s', 'Probe', %s, %s, %s);", 1, owner.getName(), unitName, d==null?"NULL":d.x, d==null?"NULL":d.y, d==null?"NULL":d.z);
+				
+				probes.add(new String[]{unitName, owner.getName()});
+			}
+			
+			for(int i=0; i<10; ++i)
+			{
+				Location l = celestialBodiesLocation.get(rnd.nextInt(celestialBodiesLocation.size()));
+				Player owner = players.get(rnd.nextInt(players.size()));
+				
+				String unitName = String.format("U%d", ++unitIds);
+				float progress = rnd.nextBoolean() ? rnd.nextFloat() : 0;
+				
+				Location d = (progress == 0) ? null : celestialBodiesLocation.get(rnd.nextInt(celestialBodiesLocation.size()));				
+				
+				String[] target = probes.get(rnd.nextInt(probes.size()));
+				
+				db.exec("INSERT INTO Unit (owner, name, type) VALUES ('%s', '%s', 'AntiProbeMissile');", owner.getName(), unitName);
+				db.exec("INSERT INTO AntiProbeMissile (owner, name, type) VALUES ('%s', '%s', 'AntiProbeMissile');", owner.getName(), unitName);				
+				db.exec("INSERT INTO VersionedUnit (turn, owner, name, type, departure_x, departure_y, departure_z, progress, destination_x, destination_y, destination_z) VALUES (%d, '%s', '%s', 'AntiProbeMissile', %d, %d, %d, '%f', %s, %s, %s);", 1, owner.getName(), unitName, l.x, l.y, l.z, progress, d==null?"NULL":d.x, d==null?"NULL":d.y, d==null?"NULL":d.z);				
+				db.exec("INSERT INTO VersionedAntiProbeMissile (turn, owner, name, type, targetTurn, targetOwner, targetName) VALUES ('%d', '%s', '%s', 'AntiProbeMissile', %d, '%s', '%s');", 1, owner.getName(), unitName, 1, target[1], target[0]);
+			}
+			
+			Set<Map<String, String>> dbProbes = db.prepare("SELECT * FROM Unit U JOIN	Probe P	ON U.name = P.name AND U.owner = P.owner JOIN	VersionedUnit VU ON VU.name = U.name AND VU.owner = U.owner AND VU.turn = %d JOIN	VersionedProbe VP ON VP.name = U.name AND VP.owner = U.owner AND VP.turn = VU.turn ;", new SQLiteStatementJob<Set<Map<String, String>>>()
+			{
+				@Override
+				public Set<Map<String, String>> job(SQLiteStatement stmnt) throws SQLiteException
+				{
+					Set<Map<String, String>> results = new HashSet<Map<String, String>>();					 
+					while(stmnt.step())
+					{
+						Map<String, String> row = new HashMap<String, String>(stmnt.columnCount());
+						for(int i=0; i<stmnt.columnCount(); ++i)
+						{
+							String col = stmnt.getColumnName(i);
+							if (row.containsKey(col) && ( (stmnt.columnString(i) == null && row.get(col) != null) || ((stmnt.columnString(i) != null && row.get(col) == null)) || (stmnt.columnString(i) != null && row.get(col) != null && stmnt.columnString(i).compareTo(row.get(col)) != 0)))
+							{
+								throw new SQLiteException(-1, "Different values for the same column '"+col+"'");
+							}
+							row.put(stmnt.getColumnName(i), stmnt.columnString(i));
+						}
+						
+						results.add(row);
+					}
+					
+					return results;
+				}
+			}, 1, 1);
+			
+			System.out.println(dbProbes.toString());
+			
+			db.exportDBFile(new File("/tmp/sep_export.db"));
 		}
 		catch(Exception e)
 		{
@@ -553,8 +692,5 @@ public class TestSQLite
 			fail(e.getMessage());
 			return;
 		}
-			
-		boolean exceptionThrown = false;
-		
 	}
 }

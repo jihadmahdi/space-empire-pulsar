@@ -42,6 +42,7 @@ import org.axan.sep.server.model.ProductiveCelestialBody.CelestialBodyBuildExcep
  */
 public class PlayerGameMove
 {
+	/*
 	public static class BuildCommand extends GameMoveCommand<BuildParams>
 	{
 		public BuildCommand(String playerLogin, BuildParams params)
@@ -59,7 +60,6 @@ public class PlayerGameMove
 			}
 			catch(CelestialBodyBuildException e)
 			{
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 				return originalGameBoard;
 			}
@@ -85,7 +85,6 @@ public class PlayerGameMove
 			}
 			catch(RunningGameCommandException e)
 			{
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 				return originalGameBoard;
 			}
@@ -457,6 +456,7 @@ public class PlayerGameMove
 			return newGameBoard;
 		}
 	}
+	*/
 	
 	//////////////////
 	

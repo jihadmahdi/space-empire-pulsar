@@ -19,6 +19,7 @@ import java.util.logging.Logger;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.Player;
 import org.axan.sep.server.SEPServer;
+import org.axan.sep.server.model.ISEPServerDataBase.SEPServerDataBaseException;
 
 /**
  * Represent a running game at a specific turn. It also provide previous turns
@@ -37,7 +38,7 @@ public class ServerGame implements Serializable
 
 	public ServerGame(Set<Player> playerList, GameConfig gameConfig)
 	{
-		GameBoard initialGameBoard = new GameBoard(playerList, gameConfig, 0);
+		GameBoard initialGameBoard = new GameBoard(playerList, gameConfig);
 		gameBoards.push(initialGameBoard);
 		for(Player p : playerList)
 		{
@@ -55,7 +56,7 @@ public class ServerGame implements Serializable
 		return playersCurrentMove.get(playerLogin);
 	}
 
-	public void resolveCurrentTurn()
+	public void resolveCurrentTurn() throws SEPServerDataBaseException
 	{		
 		GameBoard currentGameBoard = gameBoards.peek();
 
