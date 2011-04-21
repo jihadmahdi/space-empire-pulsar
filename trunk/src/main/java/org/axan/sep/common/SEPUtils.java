@@ -125,11 +125,11 @@ public abstract class SEPUtils
 	{
 		return getMobileLocation(a, b, progress, stopOnB);
 	}
-	public static RealLocation getMobileLocation(RealLocation a, RealLocation b, double progress, boolean stopOnB)
+	public static RealLocation getMobileLocation(RealLocation departure, RealLocation destination, double progress, boolean stopOnB)
 	{
-		double x = a.x + (b.x - a.x)*progress;
-		double y = a.y + (b.y - a.y)*progress;
-		double z = a.z + (b.z - a.z)*progress;
+		double x = departure.x + (destination.x - departure.x)*progress;
+		double y = departure.y + (destination.y - departure.y)*progress;
+		double z = departure.z + (destination.z - departure.z)*progress;
 		
 		if (!stopOnB)
 		{
@@ -137,7 +137,7 @@ public abstract class SEPUtils
 		}
 		else
 		{
-			return new RealLocation((a.x<b.x?Math.min(x, b.x):Math.max(x, b.x)), (a.y<b.y?Math.min(y, b.y):Math.max(y, b.y)), (a.z<b.z?Math.min(z, b.z):Math.max(z, b.z)));
+			return new RealLocation((departure.x<destination.x?Math.min(x, destination.x):Math.max(x, destination.x)), (departure.y<destination.y?Math.min(y, destination.y):Math.max(y, destination.y)), (departure.z<destination.z?Math.min(z, destination.z):Math.max(z, destination.z)));
 		}
 	}
 	

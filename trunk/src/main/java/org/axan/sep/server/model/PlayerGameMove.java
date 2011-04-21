@@ -32,7 +32,6 @@ import org.axan.sep.common.IGame.MoveFleetParams;
 import org.axan.sep.common.IGame.SettleGovernmentParams;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.server.SEPServer.SEPImplementationException;
-import org.axan.sep.server.model.ProductiveCelestialBody.CelestialBodyBuildException;
 
 
 

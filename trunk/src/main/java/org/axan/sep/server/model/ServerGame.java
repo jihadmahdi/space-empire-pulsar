@@ -56,7 +56,7 @@ public class ServerGame implements Serializable
 		return playersCurrentMove.get(playerLogin);
 	}
 
-	public void resolveCurrentTurn() throws SEPServerDataBaseException
+	public void resolveCurrentTurn()
 	{		
 		GameBoard currentGameBoard = gameBoards.peek();
 
