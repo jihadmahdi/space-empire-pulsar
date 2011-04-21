@@ -1,47 +1,39 @@
 
 package org.axan.sep.server.model;
 
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNull;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.NotSerializableException;
-import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
-import java.util.ResourceBundle;
 import java.util.Set;
-import java.util.Stack;
 import java.util.Vector;
 
-import org.axan.sep.client.SEPClient;
-import org.axan.sep.client.gui.SpaceEmpirePulsarGUI;
+import org.axan.eplib.orm.sqlite.SQLiteDB;
+import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
+import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
+import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteStatementJob;
+import org.axan.eplib.utils.Reflect;
 import org.axan.sep.common.GameConfig;
-import org.axan.sep.common.IGameConfig;
 import org.axan.sep.common.Player;
 import org.axan.sep.common.PlayerConfig;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.SEPUtils.Location;
-import org.axan.sep.server.model.GameBoard;
-import org.axan.sep.server.model.SEPSQLiteDB;
+import org.axan.sep.server.model.orm.IVersionedUnit;
+import org.axan.sep.server.model.orm.VersionedAntiProbeMissile;
+import org.axan.sep.server.model.orm.VersionedUnit;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -52,10 +44,7 @@ import com.almworks.sqlite4java.SQLite;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteJob;
-import com.almworks.sqlite4java.SQLiteQueue;
 import com.almworks.sqlite4java.SQLiteStatement;
-
-import org.axan.sep.server.model.SEPSQLiteDB.SQLiteStatementJob;
 
 public class TestSQLite
 {
@@ -95,9 +84,22 @@ public class TestSQLite
 	{
 	}
 	
-	private static void assertFileResult(SQLiteQueue q, String sqlResourceFile, String message, String expectedResultEnd)
+	private static void assertFileResult(SQLiteDB db, String sqlResourceFile, String message, String expectedResultEnd)
 	{
-		String result = SQLiteDebugFile(q, sqlResourceFile);
+		URL sqlURL = Reflect.getResource(TestSQLite.class.getPackage().getName(), sqlResourceFile);
+		assertTrue(sqlURL != null);
+		
+		String result;
+		try
+		{
+			result = db.debugSQLFile(new File(sqlURL.getFile()));
+		}
+		catch(SQLiteDBException e)
+		{
+			e.printStackTrace();
+			fail(e.getMessage());
+			return;
+		}
 		
 		if (expectedResultEnd.isEmpty())
 		{
@@ -110,9 +112,19 @@ public class TestSQLite
 		}
 	}
 	
-	private static void assertQueryResult(SQLiteQueue q, String message, String query, String expectedResultEnd)
+	private static void assertQueryResult(SQLiteDB db, String message, String query, String expectedResultEnd)
 	{
-		String result = SQLiteDebug(q, query);
+		String result;
+		try
+		{
+			result = db.debug(query);
+		}
+		catch(SQLiteDBException e)
+		{
+			e.printStackTrace();
+			fail(e.getMessage());
+			return;
+		}
 		
 		if (expectedResultEnd.isEmpty())
 		{
@@ -132,127 +144,10 @@ public class TestSQLite
 		}
 	}
 	
-	private static void SQLiteDebugQuery(SQLiteQueue q, String query)
+	private static void SQLiteDebugQuery(SQLiteDB db, String query) throws SQLiteDBException
 	{
 		System.out.println(query);
-		System.out.println(SQLiteDebug(q, query));
-	}
-	
-	private static String SQLiteDebug(SQLiteQueue q, final String query)
-	{
-		return q.execute(new SQLiteJob<String>() {
-			@Override
-			protected String job(SQLiteConnection conn) throws Throwable {
-				return conn.debug(query);
-			}
-		}).complete();
-	}
-	
-	private static String SQLiteDebugFile(SQLiteQueue q, String sqlResourceFile)
-	{
-		String resourcesBasePath = TestSQLite.class.getPackage().getName().replace('.', File.separatorChar) + File.separatorChar;
-		final URL sqlURL = ClassLoader.getSystemResource(resourcesBasePath + sqlResourceFile);
-		assertTrue(sqlURL != null);
-		
-		return q.execute(new SQLiteJob<String>() {
-			
-			private StringBuffer result = new StringBuffer();
-			public URL url = sqlURL;
-			
-			@Override
-			protected void jobError(Throwable error) throws Throwable {
-				result.append("Exception: "+error.getMessage());				
-				super.jobError(error);
-				cancel();
-			}
-			
-			@Override
-			protected String job(SQLiteConnection conn) throws Throwable {
-								
-				conn.exec("BEGIN TRANSACTION;");				
-				boolean cancelled = false;
-				
-				try
-				{
-					String source = url.getFile();
-					InputStreamReader isr = new InputStreamReader(url.openStream());					
-					StringBuffer sb = new StringBuffer("");
-					char lastChar = '\0';
-					StringBuffer lastWord = new StringBuffer(10);
-					int inBegin = 0; boolean inComment = false; boolean isBlank = true;
-					
-					while(isr.ready())
-					{
-						lastChar = (char) isr.read();
-						
-						sb.append(lastChar);
-						lastWord.append(lastChar);
-						
-						if (lastWord.toString().endsWith("--"))
-						{
-							inComment = true;
-						}
-						
-						if (inComment)
-						{
-							if (lastChar == '\n')
-							{
-								inComment = false;
-								isBlank = true;
-							}
-							
-							continue;
-						}
-						
-						if (isBlank && !Character.isWhitespace(lastChar))
-						{
-							isBlank = false;
-						}
-						
-						if (lastWord.toString().endsWith("BEGIN"))
-						{
-							++inBegin;
-							lastWord.setLength(0);
-						}
-						
-						if (lastWord.toString().endsWith("END"))
-						{
-							--inBegin;
-							lastWord.setLength(0);
-						}
-						
-						if (inBegin <= 0 && lastChar == ';')
-						{
-							String res = conn.debug(sb.toString());
-							
-							if (!res.isEmpty())
-							{
-								result.append(res);
-								result.append('\n');
-							}
-							
-							sb.setLength(0);
-							lastWord.setLength(0);
-							isBlank = true;
-						}
-					}
-					
-					assertTrue("Remaining not executed lines in file '"+url+"'", isBlank || inComment || sb.length() == 0);
-				}
-				catch(Throwable t)
-				{
-					conn.exec("ROLLBACK;");
-					cancelled = true;
-				}
-				
-				if (!cancelled)
-				{
-					conn.exec("COMMIT;");
-				}
-				
-				return result.toString();
-			}
-		}).complete();
+		System.out.println(db.debug(query));
 	}
 	
 	/**
@@ -263,7 +158,7 @@ public class TestSQLite
 	{		
 		System.out.println("SQLite Test:");
 		
-		SQLiteQueue q = null;
+		SQLiteDB db = null;
 		
 		try
 		{
@@ -284,91 +179,90 @@ public class TestSQLite
 			System.out.println("isThreadSafe: "+SQLite.isThreadSafe());
 			SQLite.main(new String[0]);
 			
-			q = new SQLiteQueue(new File("sqlite_test.db"));
-			q.start();
+			db = new SQLiteDB(new File("sqlite_test.db"));
 			
-			SQLiteDebugQuery(q, "PRAGMA foreign_keys;");
-			SQLiteDebugQuery(q, "PRAGMA foreign_keys=On;");
+			SQLiteDebugQuery(db, "PRAGMA foreign_keys;");
+			SQLiteDebugQuery(db, "PRAGMA foreign_keys=On;");
 			
-			assertQueryResult(q, "Foreign keys error:", "PRAGMA foreign_keys;", "|foreign_keys|\n|------------|\n|1           |");
+			assertQueryResult(db, "Foreign keys error:", "PRAGMA foreign_keys;", "|foreign_keys|\n|------------|\n|1           |");
 			
-			SQLiteDebugQuery(q, "PRAGMA user_version;");
-			SQLiteDebugQuery(q, "PRAGMA user_version=1;");
-			SQLiteDebugQuery(q, "PRAGMA user_version;");
+			SQLiteDebugQuery(db, "PRAGMA user_version;");
+			SQLiteDebugQuery(db, "PRAGMA user_version=1;");
+			SQLiteDebugQuery(db, "PRAGMA user_version;");
 			
-			SQLiteDebugQuery(q, "PRAGMA encoding;");
-			SQLiteDebugQuery(q, "PRAGMA integrity_check;");
-			SQLiteDebugQuery(q, "PRAGMA quick_check;");
+			SQLiteDebugQuery(db, "PRAGMA encoding;");
+			SQLiteDebugQuery(db, "PRAGMA integrity_check;");
+			SQLiteDebugQuery(db, "PRAGMA quick_check;");
 			
-			assertQueryResult(q, "SQLite error?", "DROP TABLE IF EXISTS parents ;", "");
-			assertQueryResult(q, "SQLite error?", "DROP TABLE IF EXISTS real_people ;", "");
-			assertQueryResult(q, "SQLite error?", "DROP TABLE IF EXISTS people ;", "");			
+			assertQueryResult(db, "SQLite error?", "DROP TABLE IF EXISTS parents ;", "");
+			assertQueryResult(db, "SQLite error?", "DROP TABLE IF EXISTS real_people ;", "");
+			assertQueryResult(db, "SQLite error?", "DROP TABLE IF EXISTS people ;", "");			
 			
-			assertQueryResult(q, "SQLite error?", "CREATE TABLE people ( name TEXT, surname TEXT, age INTEGER, PRIMARY KEY(name, surname), UNIQUE (name, surname, age) );", "");
-			assertQueryResult(q, "SQLite error?", "CREATE TABLE parents ( people_name TEXT, people_surname TEXT, parent_name TEXT, parent_surname TEXT, FOREIGN KEY(people_name, people_surname) REFERENCES people(name, surname), FOREIGN KEY(parent_name, parent_surname) REFERENCES people(name, surname) );", "");
+			assertQueryResult(db, "SQLite error?", "CREATE TABLE people ( name TEXT, surname TEXT, age INTEGER, PRIMARY KEY(name, surname), UNIQUE (name, surname, age) );", "");
+			assertQueryResult(db, "SQLite error?", "CREATE TABLE parents ( people_name TEXT, people_surname TEXT, parent_name TEXT, parent_surname TEXT, FOREIGN KEY(people_name, people_surname) REFERENCES people(name, surname), FOREIGN KEY(parent_name, parent_surname) REFERENCES people(name, surname) );", "");
 			
-			assertQueryResult(q, "SQLite error?", "INSERT INTO people VALUES ( 'A', 'a', 30) ;", "");			
-			assertQueryResult(q, "SQLite error?", "INSERT INTO people VALUES ( 'B', 'b', 12) ;", "");			
-			assertQueryResult(q, "SQLite error?", "INSERT INTO people VALUES ( 'C', 'c', 32) ;", "");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO people VALUES ( 'D', 'd', 61) ;", "");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO parents VALUES ( 'B', 'b', 'A', 'a') ;", "");			
-			assertQueryResult(q, "SQLite error?", "INSERT INTO parents VALUES ( 'B', 'b', 'C', 'c') ;", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO people VALUES ( 'A', 'a', 30) ;", "");			
+			assertQueryResult(db, "SQLite error?", "INSERT INTO people VALUES ( 'B', 'b', 12) ;", "");			
+			assertQueryResult(db, "SQLite error?", "INSERT INTO people VALUES ( 'C', 'c', 32) ;", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO people VALUES ( 'D', 'd', 61) ;", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO parents VALUES ( 'B', 'b', 'A', 'a') ;", "");			
+			assertQueryResult(db, "SQLite error?", "INSERT INTO parents VALUES ( 'B', 'b', 'C', 'c') ;", "");
 			
-			assertQueryResult(q, "SQLite error?", "SELECT EXISTS (SELECT * FROM parents WHERE people_name GLOB 'B') AS NotEmpty;", "|NotEmpty|\n|--------|\n|1       |");
+			assertQueryResult(db, "SQLite error?", "SELECT EXISTS (SELECT * FROM parents WHERE people_name GLOB 'B') AS NotEmpty;", "|NotEmpty|\n|--------|\n|1       |");
 			
 			// Cannot insert with non-existing foreign key value.
-			assertQueryResult(q, "SQLite error expected", "INSERT INTO parents VALUES ( 'C', 'c', 'Z', 'z' ) ;", "[constraint failed]");
+			assertQueryResult(db, "SQLite error expected", "INSERT INTO parents VALUES ( 'C', 'c', 'Z', 'z' ) ;", "[constraint failed]");
 			
 			// Test that (parent_name, parent_surname) is checked to be the same person. 
-			assertQueryResult(q, "SQLite error expected", "INSERT INTO parents VALUES ( 'C', 'c', 'A', 'b' ) ;", "[constraint failed]");
-			assertQueryResult(q, "SQLite error expected", "INSERT INTO parents VALUES ( 'C', 'a', 'A', 'c' ) ;", "[constraint failed]");
+			assertQueryResult(db, "SQLite error expected", "INSERT INTO parents VALUES ( 'C', 'c', 'A', 'b' ) ;", "[constraint failed]");
+			assertQueryResult(db, "SQLite error expected", "INSERT INTO parents VALUES ( 'C', 'a', 'A', 'c' ) ;", "[constraint failed]");
 			
-			assertQueryResult(q, "SQLite error?", "INSERT INTO parents VALUES ( 'C', 'c', 'A', 'a' ) ;", "");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO parents VALUES ( 'C', 'c', 'D', 'd' ) ;", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO parents VALUES ( 'C', 'c', 'A', 'a' ) ;", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO parents VALUES ( 'C', 'c', 'D', 'd' ) ;", "");
 			
 			// Not primary key fields used in foreign keys test			
-			assertQueryResult(q, "SQLite error?", "CREATE TABLE real_people ( name TEXT, surname TEXT, age INTEGER, sex TEXT NOT NULL, CHECK(sex IN ('m', 'f')), PRIMARY KEY(name, surname), FOREIGN KEY (name, surname, age) REFERENCES people (name, surname, age) );", "");
+			assertQueryResult(db, "SQLite error?", "CREATE TABLE real_people ( name TEXT, surname TEXT, age INTEGER, sex TEXT NOT NULL, CHECK(sex IN ('m', 'f')), PRIMARY KEY(name, surname), FOREIGN KEY (name, surname, age) REFERENCES people (name, surname, age) );", "");
 						
-			assertQueryResult(q, "SQLite error?", "SELECT * FROM people WHERE name = 'A' AND surname = 'a' AND age = 30;", "|name|surname|age|\n|----|-------|---|\n|A   |a      |30 |");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO real_people VALUES ( 'A', 'a', 30, 'm') ;", "");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO real_people VALUES ( 'A', 'a', 30, 'f') ;", "[constraint failed]");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO real_people VALUES ( 'B', 'b', 10, 'f') ;", "[constraint failed]");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO real_people VALUES ( 'B', 'b', 12, 'f') ;", "");
+			assertQueryResult(db, "SQLite error?", "SELECT * FROM people WHERE name = 'A' AND surname = 'a' AND age = 30;", "|name|surname|age|\n|----|-------|---|\n|A   |a      |30 |");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO real_people VALUES ( 'A', 'a', 30, 'm') ;", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO real_people VALUES ( 'A', 'a', 30, 'f') ;", "[constraint failed]");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO real_people VALUES ( 'B', 'b', 10, 'f') ;", "[constraint failed]");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO real_people VALUES ( 'B', 'b', 12, 'f') ;", "");
 			
 			
 			// Heritance relations tests
-			assertFileResult(q, "TestSQLite.creation.sql", "TestSQLite.creation.sql error", "");
+			assertFileResult(db, "TestSQLite.creation.sql", "TestSQLite.creation.sql error", "");
 			
 			// New fleet creation on turn 1
-			assertQueryResult(q, "SQLite error?", "INSERT INTO Entity VALUES(1, 1);", "");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO Fleet VALUES(1, 'pl', 'fl', 1);", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO Entity VALUES(1, 1);", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO Fleet VALUES(1, 'pl', 'fl', 1);", "");
 			// No GovSt expected
-			assertFileResult(q, "TestSQLite.GovSt.sql", "SQLite error?", "|isGovSt|\n|-------|\n|0      |\n");
+			assertFileResult(db, "TestSQLite.GovSt.sql", "SQLite error?", "|isGovSt|\n|-------|\n|0      |\n");
 			
 			// GovernmentStarship join on turn 2
-			assertQueryResult(q, "SQLite error?", "INSERT INTO Entity VALUES(2, 2);", "");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO GovSt VALUES(2, 'pl', 'fl', 2);", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO Entity VALUES(2, 2);", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO GovSt VALUES(2, 'pl', 'fl', 2);", "");
 			
 			// GovSt expected
-			assertFileResult(q, "TestSQLite.GovSt.sql", "SQLite error?", "|isGovSt|\n|-------|\n|1      |\n");
+			assertFileResult(db, "TestSQLite.GovSt.sql", "SQLite error?", "|isGovSt|\n|-------|\n|1      |\n");
 			
 			// Fleet moves on turn 3
-			assertQueryResult(q, "SQLite error?", "INSERT INTO Entity VALUES(3, 3);", "");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO Fleet VALUES(3, 'pl', 'fl', 3);", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO Entity VALUES(3, 3);", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO Fleet VALUES(3, 'pl', 'fl', 3);", "");
 			// GovSt expected
-			assertFileResult(q, "TestSQLite.GovSt.sql", "SQLite error?", "|isGovSt|\n|-------|\n|1      |\n");
+			assertFileResult(db, "TestSQLite.GovSt.sql", "SQLite error?", "|isGovSt|\n|-------|\n|1      |\n");
 			
 			// Government starship split
-			assertQueryResult(q, "SQLite error?", "INSERT INTO Entity VALUES(4, 4);", "");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO GovSt VALUES(4, 'pl', NULL, 4);", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO Entity VALUES(4, 4);", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO GovSt VALUES(4, 'pl', NULL, 4);", "");
 			// No GovSt expected
-			assertFileResult(q, "TestSQLite.GovSt.sql", "SQLite error?", "|isGovSt|\n|-------|\n|0      |\n");
+			assertFileResult(db, "TestSQLite.GovSt.sql", "SQLite error?", "|isGovSt|\n|-------|\n|0      |\n");
 			
 			// Invalid INSERT query test, trigger must throw exception.
-			assertQueryResult(q, "SQLite error?", "INSERT INTO Entity VALUES(5,5);","");
-			assertQueryResult(q, "SQLite error expected.", "INSERT INTO GovSt VALUES(5,'pl','flou',5);","[constraint failed]");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO Entity VALUES(5,5);","");
+			assertQueryResult(db, "SQLite error expected.", "INSERT INTO GovSt VALUES(5,'pl','flou',5);","[constraint failed]");
 			
-			q.execute(new SQLiteJob<Void>() {
+			db.exec(new SQLiteJob<Void>() {
 				@Override
 				protected Void job(SQLiteConnection connection)	throws Throwable 
 				{
@@ -386,51 +280,50 @@ public class TestSQLite
 					
 					return Void.class.cast(null);
 				}
-			}).complete();
+			});
 
 			/*
 			 * Game Server DB Design tests
 			 */
 			
 			// Start from new DB.
-			q.stop(true);
+			db.stop();
 			try {
-				q.join();
+				db.join();
 			} catch (InterruptedException e) {
 				fail(e.getMessage());
 			}
-
-			q = new SQLiteQueue(/*new File("DBDesign")*/);
-			q.start();
 			
-			SQLiteDebugQuery(q, "PRAGMA foreign_keys=1;");			
-			assertQueryResult(q, "Foreign keys error:", "PRAGMA foreign_keys;", "|foreign_keys|\n|------------|\n|1           |");						
+			db = new SQLiteDB();
+			
+			SQLiteDebugQuery(db, "PRAGMA foreign_keys=1;");			
+			assertQueryResult(db, "Foreign keys error:", "PRAGMA foreign_keys;", "|foreign_keys|\n|------------|\n|1           |");						
 			
 			String designSQL = "SEPSQLiteDB.server.sql";
 			System.out.println();
 			System.out.println(designSQL+" IMPORT...");
-			assertFileResult(q, designSQL, "SQLite error?", "");					
+			assertFileResult(db, designSQL, "SQLite error?", "");					
 			
 			// INSERT Area
-			assertQueryResult(q, "Error expected", "INSERT INTO Area VALUES(0, 0, 0, -1);", "[constraint failed]");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO Area VALUES(0, 0, 0, 0);", "");
+			assertQueryResult(db, "Error expected", "INSERT INTO Area VALUES(0, 0, 0, -1);", "[constraint failed]");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO Area VALUES(0, 0, 0, 0);", "");
 			
 			// INSERT Player
-			assertQueryResult(q, "SQLite error?", "INSERT INTO Player VALUES('player1');", "");
-			assertQueryResult(q, "SQLite error expected", "INSERT INTO Unit (owner, name, type) VALUES('player1', 'unit', NULL);", "[constraint failed]");
-			assertQueryResult(q, "SQLite error expected", "INSERT INTO Unit VALUES('player1', 'unit', 'Error');", "[constraint failed]");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO Unit VALUES('player1', 'unit', 'Fleet');", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO Player VALUES('player1');", "");
+			assertQueryResult(db, "SQLite error expected", "INSERT INTO Unit (owner, name, type) VALUES('player1', 'unit', NULL);", "[constraint failed]");
+			assertQueryResult(db, "SQLite error expected", "INSERT INTO Unit VALUES('player1', 'unit', 'Error');", "[constraint failed]");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO Unit VALUES('player1', 'unit', 'Fleet');", "");
 
 			// INSERT CelestialBody, ProductiveCelestialBody 
-			assertQueryResult(q, "SQLite error?", "INSERT INTO CelestialBody (name, type, location_x, location_y, location_z) VALUES('planeteA', '"+eCelestialBodyType.Planet+"', 0, 0, 0);", "");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO ProductiveCelestialBody (name, initialCarbonStock, maxSlots, type) VALUES('planeteA', 10000, 4, '"+eCelestialBodyType.Planet+"');", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO CelestialBody (name, type, location_x, location_y, location_z) VALUES('planeteA', '"+eCelestialBodyType.Planet+"', 0, 0, 0);", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO ProductiveCelestialBody (name, initialCarbonStock, maxSlots, type) VALUES('planeteA', 10000, 4, '"+eCelestialBodyType.Planet+"');", "");
 
 			// INSERT VersionedProductiveCelestialBody
-			assertQueryResult(q, "SQLite error?", "INSERT INTO VersionedProductiveCelestialBody (name, turn, carbonStock, currentCarbon, owner, type) VALUES('planeteA', 0, 10000, 1000, 'player1', '"+eCelestialBodyType.Planet+"');", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO VersionedProductiveCelestialBody (name, turn, carbonStock, currentCarbon, owner, type) VALUES('planeteA', 0, 10000, 1000, 'player1', '"+eCelestialBodyType.Planet+"');", "");
 
 			// INSERT Building
-			assertQueryResult(q, "SQLite error?", "INSERT INTO Building VALUES('error', 1, 'planeteA', 0);", "[constraint failed]");
-			assertQueryResult(q, "SQLite error?", "INSERT INTO Building VALUES('StarshipPlant', 1, 'planeteA', 0);", "");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO Building VALUES('error', 1, 'planeteA', 0);", "[constraint failed]");
+			assertQueryResult(db, "SQLite error?", "INSERT INTO Building VALUES('StarshipPlant', 1, 'planeteA', 0);", "");
 
 		}
 		catch(SQLiteException e)
@@ -440,11 +333,11 @@ public class TestSQLite
 		}
 		finally
 		{
-			if (q != null)
+			if (db != null)
 			{
-				q.stop(true);
+				db.stop();
 				try {
-					q.join();
+					db.join();
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -453,30 +346,24 @@ public class TestSQLite
 	}
 	
 	@Test
-	public void testMemoryDBSaveFail() throws FileNotFoundException, IOException, InterruptedException, ClassNotFoundException
+	public void testMemoryDBSaveFail() throws FileNotFoundException, IOException, InterruptedException, ClassNotFoundException, SQLiteDBException
 	{
-		SQLiteQueue q = new SQLiteQueue();
-		q.start();
+		SQLiteDB db = new SQLiteDB();
 		
-		assertQueryResult(q, "SQLite error?", "PRAGMA foreign_keys=On;", "");
-		assertQueryResult(q, "Foreign keys error:", "PRAGMA foreign_keys;", "|foreign_keys|\n|------------|\n|1           |");
+		assertQueryResult(db, "SQLite error?", "PRAGMA foreign_keys=On;", "");
+		assertQueryResult(db, "Foreign keys error:", "PRAGMA foreign_keys;", "|foreign_keys|\n|------------|\n|1           |");
 		
-		assertTrue("DB is not in memory.", q.execute(new SQLiteJob<Boolean>() {
-			@Override
-			protected Boolean job(SQLiteConnection connection) throws Throwable {
-				return connection.isMemoryDatabase();
-			}
-		}).complete());
+		assertTrue("DB is not in memory.", db.isMemoryDatabase());
 		
-		assertQueryResult(q, "SQLite error?", "CREATE TABLE test ( nom TEXT NOT NULL, prenom TEXT NOT NULL, age INT NOT NULL, PRIMARY KEY (nom, prenom) );", "");
-		assertQueryResult(q, "SQLite error?", "SELECT * FROM test;", "");
-		assertQueryResult(q, "SQLite error?", "INSERT INTO test VALUES ('Escallier', 'Pierre', 26 );", "");
-		assertQueryResult(q, "SQLite error?", "SELECT * FROM test;","|nom      |prenom|age|\n|---------|------|---|\n|Escallier|Pierre|26 |");
+		assertQueryResult(db, "SQLite error?", "CREATE TABLE test ( nom TEXT NOT NULL, prenom TEXT NOT NULL, age INT NOT NULL, PRIMARY KEY (nom, prenom) );", "");
+		assertQueryResult(db, "SQLite error?", "SELECT * FROM test;", "");
+		assertQueryResult(db, "SQLite error?", "INSERT INTO test VALUES ('Escallier', 'Pierre', 26 );", "");
+		assertQueryResult(db, "SQLite error?", "SELECT * FROM test;","|nom      |prenom|age|\n|---------|------|---|\n|Escallier|Pierre|26 |");
 		
 		final File saveFile = File.createTempFile("SQLiteTest", ".bdb");
 		saveFile.deleteOnExit();
 		
-		if (q.execute(new SQLiteJob<Boolean>() {
+		if (db.exec(new SQLiteJob<Boolean>() {
 			@Override
 			protected Boolean job(SQLiteConnection connection) throws Throwable {
 				ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(saveFile));
@@ -500,12 +387,12 @@ public class TestSQLite
 				oos.close();
 				return exceptionThrown;
 			}
-		}).complete()) return;
+		})) return;
 		
 		fail("Not serializable exception expected before this point.");
 		
-		q.stop(true);
-		q.join();
+		db.stop();
+		db.join();
 	
 		ObjectInputStream ois = new ObjectInputStream(new FileInputStream(saveFile));
 		
@@ -518,44 +405,42 @@ public class TestSQLite
 	}
 	
 	@Test
-	public void testSQliteSavePointsDoNotSurviveConnections() throws InterruptedException, IOException
+	public void testSQliteSavePointsDoNotSurviveConnections() throws InterruptedException, IOException, SQLiteDBException
 	{
 		File saveFile = File.createTempFile("SQLiteTestSavePoints", ".db");
 		saveFile.deleteOnExit();
 		
-		SQLiteQueue q = new SQLiteQueue(saveFile);
-		q.start();
+		SQLiteDB db = new SQLiteDB(saveFile);
 		
-		assertQueryResult(q, "SQLite error?", "PRAGMA foreign_keys=On;", "");
-		assertQueryResult(q, "Foreign keys error:", "PRAGMA foreign_keys;", "|foreign_keys|\n|------------|\n|1           |");
+		assertQueryResult(db, "SQLite error?", "PRAGMA foreign_keys=On;", "");
+		assertQueryResult(db, "Foreign keys error:", "PRAGMA foreign_keys;", "|foreign_keys|\n|------------|\n|1           |");
 		
-		assertQueryResult(q, "SQLite error?", "CREATE TABLE test ( nom TEXT NOT NULL, prenom TEXT NOT NULL, age INT NOT NULL, PRIMARY KEY (nom, prenom) );", "");
-		assertQueryResult(q, "SQLite error?", "SELECT * FROM test;", "");
-		assertQueryResult(q, "SQLite error?", "INSERT INTO test VALUES ('Escallier', 'Pierre', 25 );", "");
-		assertQueryResult(q, "SQLite error?", "SELECT * FROM test;","|nom      |prenom|age|\n|---------|------|---|\n|Escallier|Pierre|25 |");
+		assertQueryResult(db, "SQLite error?", "CREATE TABLE test ( nom TEXT NOT NULL, prenom TEXT NOT NULL, age INT NOT NULL, PRIMARY KEY (nom, prenom) );", "");
+		assertQueryResult(db, "SQLite error?", "SELECT * FROM test;", "");
+		assertQueryResult(db, "SQLite error?", "INSERT INTO test VALUES ('Escallier', 'Pierre', 25 );", "");
+		assertQueryResult(db, "SQLite error?", "SELECT * FROM test;","|nom      |prenom|age|\n|---------|------|---|\n|Escallier|Pierre|25 |");
 		
-		assertQueryResult(q, "SQLite error?", "SAVEPOINT save20091003;", "");
-		assertQueryResult(q, "SQLite error?", "UPDATE Test SET age=26 WHERE nom='Escallier' AND prenom='Pierre';", "");
-		assertQueryResult(q, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|26 |");
-		assertQueryResult(q, "SQLite error?", "SAVEPOINT save20101003;", "");
-		assertQueryResult(q, "SQLite error?", "UPDATE Test SET age=27 WHERE nom='Escallier' AND prenom='Pierre';", "");
-		assertQueryResult(q, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|27 |");
+		assertQueryResult(db, "SQLite error?", "SAVEPOINT save20091003;", "");
+		assertQueryResult(db, "SQLite error?", "UPDATE Test SET age=26 WHERE nom='Escallier' AND prenom='Pierre';", "");
+		assertQueryResult(db, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|26 |");
+		assertQueryResult(db, "SQLite error?", "SAVEPOINT save20101003;", "");
+		assertQueryResult(db, "SQLite error?", "UPDATE Test SET age=27 WHERE nom='Escallier' AND prenom='Pierre';", "");
+		assertQueryResult(db, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|27 |");
 		
-		q.stop(true);
-		q.join();
+		db.stop();
+		db.join();
 		
-		q = new SQLiteQueue(saveFile);
-		q.start();
+		db = new SQLiteDB(saveFile);
 		
-		assertQueryResult(q, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|25 |");
+		assertQueryResult(db, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|25 |");
 		
 		/* If age is 27 then SQLite SAVEPOINT appear to survive connections.
-		assertQueryResult(q, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|27 |");
-		assertQueryResult(q, "SQLite error?", "ROLLBACK TO save20101003;", "");
-		assertQueryResult(q, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|26 |");
-		assertQueryResult(q, "SQLite error?", "ROLLBACK TO save20091003;", "");
-		assertQueryResult(q, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|25 |");
-		assertQueryResult(q, "SQLite error?", "ROLLBACK TO save20101003;", "TODO");
+		assertQueryResult(db, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|27 |");
+		assertQueryResult(db, "SQLite error?", "ROLLBACK TO save20101003;", "");
+		assertQueryResult(db, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|26 |");
+		assertQueryResult(db, "SQLite error?", "ROLLBACK TO save20091003;", "");
+		assertQueryResult(db, "SQLite error?", "SELECT age FROM Test;", "|age|\n|---|\n|25 |");
+		assertQueryResult(db, "SQLite error?", "ROLLBACK TO save20101003;", "TODO");
 		*/
 	}
 	
@@ -565,7 +450,8 @@ public class TestSQLite
 	public void testSEPSQLiteDB()
 	{		
 		GameConfig config = new GameConfig();
-		SEPSQLiteDB db;
+		SEPSQLiteDB sepDB;
+		SQLiteDB db;
 		Vector<Player> players = new Vector<Player>();
 		
 		players.add(new Player("p1", new PlayerConfig()));
@@ -574,7 +460,8 @@ public class TestSQLite
 		
 		try
 		{
-			db = new SEPSQLiteDB(new HashSet<Player>(players), config);
+			sepDB = new SEPSQLiteDB(new HashSet<Player>(players), config);
+			db = sepDB.getDB();
 		
 			Vector<Location> celestialBodiesLocation = db.prepare("SELECT location_x, location_y, location_z FROM CelestialBody;", new SQLiteStatementJob<Vector<Location>>()
 			{
@@ -614,7 +501,7 @@ public class TestSQLite
 					do
 					{
 						d = new Location(rnd.nextInt(20), rnd.nextInt(20), rnd.nextInt(20));
-					}while(db.areaExists(d));
+					}while(sepDB.areaExists(d));
 							
 					exceptionThrown = false;
 					
@@ -656,14 +543,29 @@ public class TestSQLite
 				db.exec("INSERT INTO VersionedAntiProbeMissile (turn, owner, name, type, targetTurn, targetOwner, targetName) VALUES ('%d', '%s', '%s', 'AntiProbeMissile', %d, '%s', '%s');", 1, owner.getName(), unitName, 1, target[1], target[0]);
 			}
 			
-			Set<Map<String, String>> dbProbes = db.prepare("SELECT * FROM Unit U JOIN	Probe P	ON U.name = P.name AND U.owner = P.owner JOIN	VersionedUnit VU ON VU.name = U.name AND VU.owner = U.owner AND VU.turn = %d JOIN	VersionedProbe VP ON VP.name = U.name AND VP.owner = U.owner AND VP.turn = VU.turn ;", new SQLiteStatementJob<Set<Map<String, String>>>()
+			long t1 = System.currentTimeMillis();
+			Set<IVersionedUnit> units = db.prepare("SELECT U.type, * FROM Unit U LEFT JOIN	VersionedUnit VU USING (name, owner, type) LEFT JOIN	PulsarMissile PM USING (name, owner, type) LEFT JOIN	Probe P USING (name, owner, type) LEFT JOIN	AntiProbeMissile APM USING (name, owner, type) LEFT JOIN	CarbonCarrier CC USING (name, owner, type) LEFT JOIN	SpaceRoadDeliverer SRD USING (name, owner, type) LEFT JOIN	Fleet F USING (name, owner, type) LEFT JOIN	VersionedPulsarMissile VPM USING (name, owner, turn) LEFT JOIN	VersionedProbe VP USING (name, owner, turn) LEFT JOIN	VersionedAntiProbeMissile VAPM USING (name, owner, turn) LEFT JOIN	VersionedCarbonCarrier VCC USING (name, owner, turn) LEFT JOIN	VersionedFleet VF USING (name, owner, turn) WHERE VU.turn = %d;", new SQLiteStatementJob<Set<IVersionedUnit>>()
 			{
 				@Override
-				public Set<Map<String, String>> job(SQLiteStatement stmnt) throws SQLiteException
-				{
-					Set<Map<String, String>> results = new HashSet<Map<String, String>>();					 
+				public Set<IVersionedUnit> job(SQLiteStatement stmnt) throws SQLiteException
+				{					
+					Set<Map<String, String>> results = new HashSet<Map<String, String>>();
+					Set<IVersionedUnit> units = new HashSet<IVersionedUnit>();
+					
 					while(stmnt.step())
 					{
+						try
+						{
+							Class<? extends IVersionedUnit> vuClazz = SEPSQLiteDB.getVersionedUnitClass(stmnt.columnString(0));
+							IVersionedUnit vu = SQLiteORMGenerator.mapTo(vuClazz, stmnt);
+							units.add(vu);
+						}
+						catch(Exception e)
+						{
+							throw new SQLiteDBException(e);
+						}
+						
+						/*
 						Map<String, String> row = new HashMap<String, String>(stmnt.columnCount());
 						for(int i=0; i<stmnt.columnCount(); ++i)
 						{
@@ -672,17 +574,26 @@ public class TestSQLite
 							{
 								throw new SQLiteException(-1, "Different values for the same column '"+col+"'");
 							}
+							System.out.format("%s type: %s", col, stmnt.columnType(i));
+							
 							row.put(stmnt.getColumnName(i), stmnt.columnString(i));
 						}
 						
 						results.add(row);
+						*/
 					}
 					
-					return results;
+					return units;
 				}
-			}, 1, 1);
+			}, 1);
+			Thread.sleep(1000);
+			long t2 = System.currentTimeMillis();
 			
-			System.out.println(dbProbes.toString());
+			for(IVersionedUnit vu : units)
+			{
+				System.out.println(vu.toString());
+			}
+			System.out.println("in "+(t2-t1)+"ms");
 			
 			db.exportDBFile(new File("/tmp/sep_export.db"));
 		}

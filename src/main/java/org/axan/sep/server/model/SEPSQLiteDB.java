@@ -1,55 +1,44 @@
 package org.axan.sep.server.model;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.NotSerializableException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
-import java.nio.channels.FileChannel;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.Stack;
 import java.util.TreeSet;
-import java.util.logging.Level;
+import java.util.Vector;
 import java.util.logging.Logger;
 
-import javax.management.RuntimeErrorException;
-
+import org.axan.eplib.orm.sqlite.SQLiteDB;
+import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
+import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteStatementJob;
 import org.axan.eplib.utils.Basic;
-import org.axan.sep.common.GameConfig;
+import org.axan.eplib.utils.Reflect;
+import org.axan.sep.common.Protocol.eBuildingType;
+import org.axan.sep.common.Protocol.eCelestialBodyType;
+import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.GameConfigCopier;
 import org.axan.sep.common.IGameConfig;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
-import org.axan.sep.common.Protocol.eBuildingType;
-import org.axan.sep.common.Protocol.eCelestialBodyType;
-import org.axan.sep.common.SEPUtils.Location;
-import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.SEPServer;
 import org.axan.sep.server.model.GameBoard.ATurnResolvingEvent;
-import org.axan.sep.server.model.ProductiveCelestialBody.CelestialBodyBuildException;
+import org.axan.sep.server.model.ISEPServerDataBase;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteJob;
-import com.almworks.sqlite4java.SQLiteQueue;
 import com.almworks.sqlite4java.SQLiteStatement;
 
 public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
@@ -62,11 +51,13 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 	
 	private static class SQLiteDBGameConfigInvocationHandler implements InvocationHandler
 	{
-		private final SEPSQLiteDB db;
+		private final SEPSQLiteDB sepDB;
+		private final SQLiteDB db;
 		
-		public SQLiteDBGameConfigInvocationHandler(SEPSQLiteDB db)
+		public SQLiteDBGameConfigInvocationHandler(SEPSQLiteDB sepDB)
 		{
-			this.db = db;
+			this.sepDB = sepDB;
+			this.db = sepDB.getDB();
 		}
 		
 		@Override
@@ -104,7 +95,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 					}
 					
 					if (i+1 == args.length)
-					{
+					{						
 						db.exec("INSERT OR REPLACE INTO GameConfig (key, value) VALUES ('%s', '%s');", key, args[0].toString());
 					}
 					else
@@ -226,8 +217,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 	
 	private static final Random rnd = new Random();
 
-	private File dbFile;
-	private transient SQLiteQueue sqliteQueue;
+	private SQLiteDB db;
 	private transient IGameConfig config;
 
 	// Game
@@ -251,25 +241,31 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 	
 	public SEPSQLiteDB(Set<org.axan.sep.common.Player> players, org.axan.sep.common.GameConfig config) throws IOException, SEPServerDataBaseException, GameConfigCopierException
 	{	
-		//dbFile = File.createTempFile("SEP-", ".sep");
-		dbFile = new File("/tmp/SEP-test.sep");
+		//dbFile = File.createTempFile("SEP-", ".sep");		
+		File dbFile = new File("/tmp/SEP-test.sep");
 		if (dbFile.exists())
 			dbFile.delete();
-
-		sqliteQueue = new SQLiteQueue(dbFile);
-
-		sqliteQueue.start();
-
+		
 		try
-		{
-			exec("PRAGMA foreign_keys=1;");
-			if (debug("PRAGMA foreign_keys;").compareToIgnoreCase("|foreign_keys|\n|------------|\n|1           |") != 0)
-			{
-				throw new SEPServerDataBaseException("Foreign keys setting error");
-			}
-	
+		{	
+			this.db = new SQLiteDB(dbFile);
+			
 			// Create Tables
-			importResourceFile("SEPSQLiteDB.server.sql");
+			/*
+			String resourcesBasePath = "resources/" + SEPSQLiteDB.class.getPackage().getName().replace('.', File.separatorChar) + File.separatorChar;
+			final URL sqlURL = ClassLoader.getSystemResource(resourcesBasePath + sqlResourceFile);
+			if (sqlURL == null)
+			{
+				throw new SQLiteDBException("Import resource '" + sqlResourceFile + "' not found");
+			}
+			*/
+			URL sqlURL = Reflect.getResource(SEPSQLiteDB.class.getPackage().getName(), "SEPSQLiteDB.server.sql");
+			if (sqlURL == null)
+			{
+				throw new SEPServerDataBaseException("Import resource '" + sqlURL + "' not found");
+			}
+			
+			db.importSQLFile(new File(sqlURL.getFile()));
 	
 			// Write GameConfig
 			this.config = (IGameConfig) Proxy.newProxyInstance(IGameConfig.class.getClassLoader(), new Class<?>[] {IGameConfig.class}, new SQLiteDBGameConfigInvocationHandler(this));
@@ -457,7 +453,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 				resolvingEvents.add(new ATurnResolvingEvent(0, "OnTimeTick")
 				{					
 					@Override
-					public void run(SortedSet<ATurnResolvingEvent> eventsQueue, ISEPServerDataBase db) throws SEPServerDataBaseException
+					public void run(SortedSet<ATurnResolvingEvent> eventsQueue, ISEPServerDataBase sepDB) throws SEPServerDataBaseException
 					{
 						/* TODO:
 						OnTimeTick			Le temps s'écoule.
@@ -465,33 +461,101 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 						*/
 						try
 						{
-							exec(new SQLiteJob<Void>()
+							SQLiteDB db = ((SEPSQLiteDB) sepDB).getDB();							
+							
+							db.exec(new SQLiteJob<Void>()
 							{
 								@Override
-								protected Void job(SQLiteConnection connection) throws Throwable
+								protected Void job(SQLiteConnection conn) throws Throwable
 								{
+									SQLiteStatement stmnt = conn.prepare(String.format("SELECT U.type, * FROM Unit U LEFT JOIN	VersionedUnit VU USING (name, owner, type) LEFT JOIN	PulsarMissile PM USING (name, owner, type) LEFT JOIN	Probe P USING (name, owner, type) LEFT JOIN	AntiProbeMissile APM USING (name, owner, type) LEFT JOIN	CarbonCarrier CC USING (name, owner, type) LEFT JOIN	SpaceRoadDeliverer SRD USING (name, owner, type) LEFT JOIN	Fleet F USING (name, owner, type) LEFT JOIN	VersionedPulsarMissile VPM USING (name, owner, turn) LEFT JOIN	VersionedProbe VP USING (name, owner, turn) LEFT JOIN	VersionedAntiProbeMissile VAPM USING (name, owner, turn) LEFT JOIN	VersionedCarbonCarrier VCC USING (name, owner, turn) LEFT JOIN	VersionedFleet VF USING (name, owner, turn) WHERE VU.turn = %d AND VU.destination_x IS NOT NULL;", getConfig().getTurn()));
+									Vector<VersionedUnit> movingUnits = new Vector<VersionedUnit>();
+									while(stmnt.step())
+									{
+										Class<? extends org.axan.sep.server.model.orm.IVersionedUnit> vuClazz = SEPSQLiteDB.getVersionedUnitClass(stmnt.columnString(0));
+										movingUnits.add(new VersionedUnit(SQLiteORMGenerator.mapTo(vuClazz, stmnt), getConfig()));
+									}
 									// SUIS LA
+									double step = 0;
+									VersionedUnit fasterUnit = null;
+									double minDistance = Double.POSITIVE_INFINITY;
+									VersionedUnit u, v;
+									while(step < 1)
+									{
+										for(int i=0; i < movingUnits.size(); ++i)
+										{
+											u = movingUnits.elementAt(i);
+											if (fasterUnit == null || u.getSpeed() > fasterUnit.getSpeed())
+											{
+												fasterUnit = u;
+											}
+											
+											double uStep = u.getProgress() + u.getSpeed()*step;
+											RealLocation uLocation = SEPUtils.getMobileLocation(u.getDeparture(), u.getDestination(), uStep, true);
+											
+											for(int j=i+1; j < movingUnits.size(); ++j)
+											{
+												v = movingUnits.elementAt(j);
+												
+												double vStep = v.getProgress() + v.getSpeed()*step;
+												RealLocation vLocation = SEPUtils.getMobileLocation(v.getDeparture(), v.getDestination(), vStep, true);
+												
+												double distanceUV = SEPUtils.getDistance(uLocation, vLocation);
+												boolean spotted = false;
+												
+												if (u.getSight() >= distanceUV)
+												{
+													// TODO: u.loggerRencontre(v, step);
+													spotted = true;
+												}
+												if (v.getSight() >= distanceUV)
+												{
+													// TODO: v.loggerRencontre(u, step);
+													spotted = true;
+												}
+												
+												if (!spotted && minDistance < distanceUV) minDistance = distanceUV;
+											}
+										}
+										
+										step += minDistance / fasterUnit.getSpeed();
+									}							
 									/*
-									CREATE TABLE VersionedUnit (
-								     turn INTEGER NOT NULL,
-								     owner TEXT NOT NULL,
-								     name TEXT NOT NULL,
-								     PulsarMissile BOOL,
-								     Probe BOOL,
-								     AntiProbeMissile BOOL,
-								     Fleet BOOL,
-								     CarbonCarrier BOOL,
-								     SpaceRoadDeliverer BOOL,
-								     departure_x INTEGER NOT NULL,
-								     departure_y INTEGER NOT NULL,
-								     departure_z INTEGER NOT NULL,
-								     progress FLOAT NOT NULL DEFAULT 0.0,
-								     -- destination_xyz are redundant with unit-specific move (probe destination, fleet move plan, carbon carrier order) so they must be maintained consistent.
-								     -- unit-specific move representation should be maintained to enforce types relationship (ie: fleet cannot move to an empty area).
-								     destination_x INTEGER NULL,
-								     destination_y INTEGER NULL,
-								     destination_z INTEGER NULL,
-									 */
+									distance = f(unit1, unit2, t) // avec t écoulement du temps pour 1 tour.
+									
+									
+									Déplacer les unités mobiles
+									Ecrire leur journal de bord (rencontres, vortex, ...)
+									
+									---
+									
+									movingUnits <- getMovingUnits(turn);									
+									step <- 0
+									TANTQUE(step < 1)		
+										// A chaque step garder trace de la collision survenant le plus tôt, et faire le step suivant directement à cette date (si elle survient dans le tour courant)
+										fasterUnit <- null
+										minDistance <- INFINI
+										
+										POUR CHAQUE movingUnits u FAIRE
+											SI u.speed > fasterUnit.speed ALORS fasterUnit <- u;
+											POUR CHAQUE movingUnits v FAIRE
+												SI u = v ALORS continue;
+												d <- Distance(u, v, step);
+												
+												SI u.sight >= d ALORS u.loggerRencontre(v, step);
+												SI v.sight >= d ALORS v.loggerRencontre(u, step);
+												
+												SI (d > u.sight OU d > v.sight) ALORS minDistance <- Min(minDistance, d);												
+											FPOUR
+										FPOUR
+										
+										// Le plus petit incrément susceptible d'etre utile (mais peut etre pas vu que minDistance et fasterUnit ne sont pas vraiment liés).
+										step += minDistance / fasterUnit.speed;
+										 
+									FPOUR
+									
+									
+									*/
 									return null;
 								}
 							});
@@ -531,7 +595,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 	void insertCelestialBody(eCelestialBodyType celestialBodyType, String name, Location location) throws SQLiteException
 	{
 		boolean productiveCelestialBody = (celestialBodyType != eCelestialBodyType.Vortex);
-		exec("INSERT INTO CelestialBody (name, location_x, location_y, location_z, type) VALUES ('%s', %d, %d, %d, '%s');", name, location.x, location.y, location.z, celestialBodyType);
+		db.exec("INSERT INTO CelestialBody (name, location_x, location_y, location_z, type) VALUES ('%s', %d, %d, %d, '%s');", name, location.x, location.y, location.z, celestialBodyType);
 		
 		if (productiveCelestialBody)
 		{
@@ -544,7 +608,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 			int maxSlots = rnd.nextInt(slotsAmount[1] - slotsAmount[0]) + slotsAmount[0];
 			if (maxSlots <= 0) maxSlots = 1;			
 			
-			exec("INSERT INTO ProductiveCelestialBody (name, initialCarbonStock, maxSlots, type) VALUES ('%s', %d, %d, '%s')", name, initialCarbon, maxSlots, celestialBodyType);
+			db.exec("INSERT INTO ProductiveCelestialBody (name, initialCarbonStock, maxSlots, type) VALUES ('%s', %d, %d, '%s')", name, initialCarbon, maxSlots, celestialBodyType);
 		}
 		
 		switch(celestialBodyType)
@@ -557,7 +621,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 			case AsteroidField:
 			case Nebula:
 			{
-				exec("INSERT INTO %s (name, type) VALUES ('%s', '%s');", celestialBodyType, name, celestialBodyType);
+				db.exec("INSERT INTO %s (name, type) VALUES ('%s', '%s');", celestialBodyType, name, celestialBodyType);
 				break;
 			}
 			
@@ -569,7 +633,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 				int[] populationLimitRange = config.getPopulationLimit();
 				int maxPopulation = rnd.nextInt(populationLimitRange[1] - populationLimitRange[0]) + populationLimitRange[0];
 				
-				exec("INSERT INTO Planet (name, populationPerTurn, maxPopulation, type) VALUES ('%s', %d, %d, '%s');", name, populationPerTurn, maxPopulation, celestialBodyType);
+				db.exec("INSERT INTO Planet (name, populationPerTurn, maxPopulation, type) VALUES ('%s', %d, %d, '%s');", name, populationPerTurn, maxPopulation, celestialBodyType);
 				break;
 			}
 			
@@ -582,18 +646,18 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 
 	void insertPlayer(org.axan.sep.common.Player player) throws SQLiteException
 	{
-		exec("INSERT INTO Player (name) VALUES ('%s');", player.getName());
-		exec("INSERT INTO PlayerConfig (name, color, symbol, portrait) VALUES ('%s', '%s', NULL, NULL);", player.getName(), player.getConfig().getColor().getRGB());		
+		db.exec("INSERT INTO Player (name) VALUES ('%s');", player.getName());
+		db.exec("INSERT INTO PlayerConfig (name, color, symbol, portrait) VALUES ('%s', '%s', NULL, NULL);", player.getName(), player.getConfig().getColor().getRGB());		
 	}
 	
 	void insertArea(Location location, boolean isSun) throws SQLiteException
 	{
-		exec("INSERT INTO Area (location_x, location_y, location_z, isSun) VALUES (%d, %d, %d, %d);", location.x, location.y, location.z, isSun ? 1 : 0);
+		db.exec("INSERT INTO Area (location_x, location_y, location_z, isSun) VALUES (%d, %d, %d, %d);", location.x, location.y, location.z, isSun ? 1 : 0);
 	}
 
 	boolean areaExists(Location location) throws SQLiteException
 	{
-		return prepare("SELECT EXISTS ( SELECT location_x FROM Area WHERE location_x = %d AND location_y = %d AND location_z = %d );", new SQLiteStatementJob<Boolean>()
+		return db.prepare("SELECT EXISTS ( SELECT location_x FROM Area WHERE location_x = %d AND location_y = %d AND location_z = %d );", new SQLiteStatementJob<Boolean>()
 		{
 			@Override
 			public Boolean job(SQLiteStatement stmnt) throws SQLiteException
@@ -614,7 +678,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 	
 	boolean areaHasCelestialBody(Location location) throws SQLiteException
 	{
-		return prepare("EXISTS ( SELECT name FROM CelestialBody WHERE location_x = %d AND location_y = %d AND location_z = %d", new SQLiteStatementJob<Boolean>()
+		return db.prepare("EXISTS ( SELECT name FROM CelestialBody WHERE location_x = %d AND location_y = %d AND location_z = %d", new SQLiteStatementJob<Boolean>()
 		{
 			@Override
 			public Boolean job(SQLiteStatement stmnt) throws SQLiteException
@@ -626,7 +690,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 	
 	boolean areaIsSun(Location location) throws SQLiteException
 	{
-		return prepare("SELECT isSun FROM Area WHERE location_x = %d AND location_y = %d AND location_z = %d;", new SQLiteStatementJob<Boolean>()
+		return db.prepare("SELECT isSun FROM Area WHERE location_x = %d AND location_y = %d AND location_z = %d;", new SQLiteStatementJob<Boolean>()
 		{
 			@Override
 			public Boolean job(SQLiteStatement stmnt) throws SQLiteException
@@ -665,320 +729,45 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 		int[] populationLimitRange = config.getPopulationLimit();
 		int populationLimit = (populationLimitRange[1] - populationLimitRange[0])/2 + populationLimitRange[0];
 
-		exec("INSERT INTO CelestialBody (name, location_x, location_y, location_z, type) VALUES ('%s', %d, %d, %d, '%s');", planetName, planetLocation.x, planetLocation.y, planetLocation.z, eCelestialBodyType.Planet);
-	    exec("INSERT INTO ProductiveCelestialBody (name, initialCarbonStock, maxSlots, type) VALUES ('%s', %d, %d, '%s');", planetName, carbonStock, slots, eCelestialBodyType.Planet);
-	    exec("INSERT INTO Planet (name, populationPerTurn, maxPopulation, type) VALUES ('%s', %d, %d, '%s');", planetName, populationPerTurn, populationLimit, eCelestialBodyType.Planet);
-	    exec("INSERT INTO VersionedProductiveCelestialBody (name, turn, carbonStock, currentCarbon, owner, type) VALUES ('%s', %d, %d, %d, '%s', '%s');", planetName, 0, carbonStock, config.getPlayersPlanetsStartingCarbonResources(), ownerName, eCelestialBodyType.Planet);
-	    exec("INSERT INTO VersionedPlanet (name, turn, currentPopulation, type) VALUES ('%s', %d, %d, '%s');", planetName, 0, config.getPlayersPlanetsStartingPopulation(), eCelestialBodyType.Planet);
+		db.exec("INSERT INTO CelestialBody (name, location_x, location_y, location_z, type) VALUES ('%s', %d, %d, %d, '%s');", planetName, planetLocation.x, planetLocation.y, planetLocation.z, eCelestialBodyType.Planet);
+		db.exec("INSERT INTO ProductiveCelestialBody (name, initialCarbonStock, maxSlots, type) VALUES ('%s', %d, %d, '%s');", planetName, carbonStock, slots, eCelestialBodyType.Planet);
+		db.exec("INSERT INTO Planet (name, populationPerTurn, maxPopulation, type) VALUES ('%s', %d, %d, '%s');", planetName, populationPerTurn, populationLimit, eCelestialBodyType.Planet);
+		db.exec("INSERT INTO VersionedProductiveCelestialBody (name, turn, carbonStock, currentCarbon, owner, type) VALUES ('%s', %d, %d, %d, '%s', '%s');", planetName, 0, carbonStock, config.getPlayersPlanetsStartingCarbonResources(), ownerName, eCelestialBodyType.Planet);
+		db.exec("INSERT INTO VersionedPlanet (name, turn, currentPopulation, type) VALUES ('%s', %d, %d, '%s');", planetName, 0, config.getPlayersPlanetsStartingPopulation(), eCelestialBodyType.Planet);
 		
 		// If victory rule "Regimicide" is on, starting planet has a pre-built government module.	    
 	    if (config.isRegimicide())
 		{
 	    	// Buildin, GovernmentModule, Government
-	    	exec("INSERT INTO Building (type, nbSlots, celestialBodyName, turn) VALUES ('%s', %d, '%s', %d);", eBuildingType.GovernmentModule, 1, planetName, 0);
-	    	exec("INSERT INTO GovernmentModule (type, celestialBodyName, turn) VALUES ('%s', '%s', %d);", eBuildingType.GovernmentModule, planetName, 0);
-	    	exec("INSERT INTO Government (owner, turn, planetName, planetTurn) VALUES ('%s', %d, '%s', %d);", ownerName, 0, planetName, 0);
+	    	db.exec("INSERT INTO Building (type, nbSlots, celestialBodyName, turn) VALUES ('%s', %d, '%s', %d);", eBuildingType.GovernmentModule, 1, planetName, 0);
+	    	db.exec("INSERT INTO GovernmentModule (type, celestialBodyName, turn) VALUES ('%s', '%s', %d);", eBuildingType.GovernmentModule, planetName, 0);
+	    	db.exec("INSERT INTO Government (owner, turn, planetName, planetTurn) VALUES ('%s', %d, '%s', %d);", ownerName, 0, planetName, 0);
 		}
 	}
 	
-	////////// DB primitives
-	
-	void importResourceFile(String sqlResourceFile) throws SQLiteException
+	static <T extends org.axan.sep.server.model.orm.VersionedUnit> Class<T> getVersionedUnitClass(String type) throws ClassNotFoundException
 	{
-		String resourcesBasePath = "resources/" + SEPSQLiteDB.class.getPackage().getName().replace('.', File.separatorChar) + File.separatorChar;
-		final URL sqlURL = ClassLoader.getSystemResource(resourcesBasePath + sqlResourceFile);
-		if (sqlURL == null)
-			throw new SQLiteException(-1, "Import resource '" + sqlResourceFile + "' not found");
-
-		SQLiteJob<Void> job = new SQLiteJob<Void>()
-		{
-
-			public URL url = sqlURL;
-
-			@Override
-			protected Void job(SQLiteConnection conn) throws Throwable
-			{
-				boolean cancelled = false;
-				try
-				{
-					conn.exec("BEGIN TRANSACTION;");
-
-					InputStreamReader isr = new InputStreamReader(url.openStream());
-					StringBuffer sb = new StringBuffer("");
-					char lastChar = '\0';
-					StringBuffer lastWord = new StringBuffer(10);
-					int inBegin = 0;
-					boolean inComment = false;
-					boolean isBlank = true;
-
-					while (isr.ready())
-					{
-						lastChar = (char) isr.read();
-
-						sb.append(lastChar);
-						lastWord.append(lastChar);
-
-						if (lastWord.toString().endsWith("--"))
-						{
-							inComment = true;
-						}
-
-						if (inComment)
-						{
-							if (lastChar == '\n')
-							{
-								inComment = false;
-								isBlank = true;
-							}
-
-							continue;
-						}
-
-						if (isBlank && !Character.isWhitespace(lastChar))
-						{
-							isBlank = false;
-						}
-
-						if (lastWord.toString().endsWith("BEGIN"))
-						{
-							++inBegin;
-							lastWord.setLength(0);
-						}
-
-						if (lastWord.toString().endsWith("END"))
-						{
-							--inBegin;
-							lastWord.setLength(0);
-						}
-
-						if (inBegin <= 0 && lastChar == ';')
-						{
-							conn.exec(sb.toString());
-
-							sb.setLength(0);
-							lastWord.setLength(0);
-							isBlank = true;
-						}
-					}
-
-					if (!isBlank && !inComment && sb.length() != 0)
-						throw new SQLiteException(-1, "Remaining not executed lines in file '" + url + "'");
-				}
-				catch(Throwable t)
-				{
-					conn.exec("ROLLBACK;");
-					throw t;
-				}
-
-				conn.exec("COMMIT;");				
-
-				return null;
-			}
-		};
-		
-		exec(job);
-	}
-
-	String debug(final String sql) throws SQLiteException
-	{
-		SQLiteJob<String> j;
-		String result = sqliteQueue.execute(j = new SQLiteJob<String>()
-		{
-			@Override
-			protected String job(SQLiteConnection connection) throws Throwable
-			{
-				return connection.debug(sql);
-			}
-		}).complete();
-
-		Throwable t = j.getError();
-		if (t != null)
-		{
-			if (SQLiteException.class.isInstance(t))
-			{
-				throw SQLiteException.class.cast(t);
-			}
-			else
-			{
-				throw new SQLiteException(-1, "SQLiteJob error", t);
-			}
-		}
-
-		return result;
+		if (type.startsWith("Versioned")) return (Class<T>) Class.forName(VersionedUnit.class.getPackage().getName()+"."+type);
+		else return (Class<T>) Class.forName(VersionedUnit.class.getPackage().getName()+".Versioned"+type);
 	}
 	
-	static interface SQLiteStatementJob<T>
+	/// Tests
+	
+	SQLiteDB getDB()
 	{
-		<T> T job(SQLiteStatement stmnt) throws SQLiteException;
+		return db;
 	}
 	
-	<T> T prepare(final String sql, final SQLiteStatementJob<T> job, final Object ... params) throws SQLiteException
-	{
-		return exec(new SQLiteJob<T>()
-		{
-			@Override
-			protected T job(SQLiteConnection connection) throws Throwable
-			{
-				String prep = String.format(Locale.UK, sql, params);
-				try
-				{
-					SQLiteStatement stmnt = connection.prepare(prep);
-					return job.job(stmnt);
-				}
-				catch(Throwable t)
-				{
-					log.log(Level.SEVERE, "SQL error:\n"+prep, t);
-					throw t;
-				}
-			}
-		});
-	}
-	
-	void exec(String sql, Object ... params) throws SQLiteException
-	{
-		exec(String.format(Locale.UK, sql, params));
-	}
-	
-	void exec(final String sql) throws SQLiteException
-	{
-		exec(new SQLiteJob<Void>()
-		{
-			@Override
-			protected Void job(SQLiteConnection connection) throws SQLiteException
-			{
-				try
-				{
-					connection.exec(sql);
-					return null;
-				}
-				catch(SQLiteException e)
-				{
-					log.log(Level.SEVERE, "SQL error:\n"+sql, e);
-					throw e;
-				}				
-			}
-		});
-	}
-
-	<T> T exec(SQLiteJob<T> job) throws SQLiteException
-	{
-		T result = sqliteQueue.execute(job).complete();
-
-		Throwable t = job.getError();
-		if (t != null)
-		{
-			if (SQLiteException.class.isInstance(t))
-			{
-				throw SQLiteException.class.cast(t);
-			}
-			else
-			{
-				throw new SQLiteException(-1, "SQLiteJob error");
-			}
-		}
-
-		return result;
-	}
-	
-	/// Other primitives
-	
-	void exportDBFile(File destination) throws IOException
-	{
-		FileChannel fci = new FileInputStream(dbFile).getChannel();
-		FileChannel fco = new FileOutputStream(destination).getChannel();
-		
-		fci.transferTo(0, fci.size(), fco);
-		
-		fci.close();
-		fco.close();
-	}
+	/// Serialization
 	
 	private void writeObject(final java.io.ObjectOutputStream out) throws IOException
 	{
 		out.defaultWriteObject();
-		
-		try
-		{
-			exec(new SQLiteJob<Void>()
-			{
-				@Override
-				protected Void job(SQLiteConnection connection) throws Throwable
-				{
-					FileInputStream fis = new FileInputStream(connection.getDatabaseFile());
-					
-					// Write number of bytes to be read next.
-					int totalLength = fis.available();
-					out.writeInt(totalLength);
-					
-					byte[] buffer = new byte[1024];
-					int red = -1;
-					
-					while(fis.available() > 0)
-					{
-						red = fis.read(buffer);
-						out.write(buffer, 0, red);
-						totalLength -= red;
-					}
-					
-					fis.close();
-					
-					if (totalLength != 0) throw new RuntimeException("FileInputStream.available() method is not reliable.");
-					
-					return null;
-				}
-			});
-		}
-		catch(SQLiteException e)
-		{
-			throw new IOException(e);
-		}
 	}
 
 	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
-		
-		dbFile = new File("/tmp/SEP-test.sep");
-		if (dbFile.exists())
-		{
-			dbFile.delete();
-		}
-
-		int totalLength = in.readInt();
-		
-		FileOutputStream fos = new FileOutputStream(dbFile, false);
-		byte[] buffer = new byte[1024];
-		int red = -1, toRead = -1;
-		
-		while(totalLength > 0)
-		{
-			toRead = Math.min(1024, totalLength);
-			red = in.read(buffer, 0, toRead);
-			fos.write(buffer, 0, red);
-			totalLength -= red;
-		}
-		
-		if (totalLength != 0) throw new RuntimeException("FileInputStream.available() method is not reliable.");
-		
-		fos.close();
-		
-		sqliteQueue = new SQLiteQueue(dbFile);
-
-		sqliteQueue.start();
-
-		try
-		{
-			exec("PRAGMA foreign_keys=1;");
-			if (debug("PRAGMA foreign_keys;").compareToIgnoreCase("|foreign_keys|\n|------------|\n|1           |") != 0)
-			{
-				throw new SEPServerDataBaseException("Foreign keys setting error");
-			}
-		}
-		catch(Exception e)
-		{
-			throw new IOException(e);
-		}
-		
 		this.config = (IGameConfig) Proxy.newProxyInstance(IGameConfig.class.getClassLoader(), new Class<?>[] {IGameConfig.class}, new SQLiteDBGameConfigInvocationHandler(this));
 	}
 	

@@ -1,6 +1,7 @@
 package org.axan.sep.common;
 
 import org.axan.sep.common.Protocol.eCelestialBodyType;
+import org.axan.sep.common.Protocol.eUnitType;
 
 /**
  * Represent a game creation configuration.
@@ -245,5 +246,20 @@ public interface IGameConfig
 	public void setProbeScope(int probeScope);
 
 	public void setSunRadius(int sunRadius);
+	
+	public int getTurn();
+	public int setTurn(int turn);
+	
+	/**
+	 * Unit base speed (per turn).
+	 */
+	public Float getUnitTypeSpeed(eUnitType unitType);
+	public void setUnitTypeSpeed(eUnitType unitType, Float speed);
+	
+	/**
+	 * Unit base sight.
+	 */
+	public Float getUnitTypeSight(eUnitType unitType);
+	public void setUnitTypeSight(eUnitType unitType, Float sight);
 }
 

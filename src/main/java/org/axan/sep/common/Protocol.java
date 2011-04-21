@@ -22,12 +22,20 @@ import org.axan.sep.server.SEPServer.SEPImplementationException;
 public interface Protocol
 {
 	// ProductiveCelestialBody == !Vortex
+	/**
+	 * Celestial body types.
+	 */
 	public static enum eCelestialBodyType {Vortex, Planet, AsteroidField, Nebula};
 	
 	/**
 	 * Building types.
 	 */
 	public static enum eBuildingType {PulsarLaunchingPad, SpaceCounter, GovernmentModule, DefenseModule, StarshipPlant, ExtractionModule};
+	
+	/**
+	 * Unit types.
+	 */
+	public static enum eUnitType {PulsarMissile, Probe, AntiProbeMissile, Fleet, CarbonCarrier, SpaceRoadDeliverer};
 	
 	/**
 	 * Methods that can be called by the client at any game stage.

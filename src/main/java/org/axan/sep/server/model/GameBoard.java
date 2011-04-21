@@ -119,7 +119,7 @@ public class GameBoard implements Serializable
 		public abstract void run(SortedSet<ATurnResolvingEvent> eventsQueue, ISEPServerDataBase db) throws SEPServerDataBaseException;
 	}
 
-	public void resolveCurrentTurn() throws SEPServerDataBaseException
+	public void resolveCurrentTurn()
 	{
 		SortedSet<ATurnResolvingEvent> resolvingEvents = db.getResolvingEvents();
 
