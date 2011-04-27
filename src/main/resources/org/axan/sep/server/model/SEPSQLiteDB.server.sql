@@ -31,7 +31,7 @@ CREATE TABLE PlayerConfig (
      symbol BLOB NULL,  	-- TODO: Change to NOT NULL   
      portrait BLOB NULL,	-- TODO: Change to NOT NULL
      CONSTRAINT PKPlayerConfig PRIMARY KEY (name),
-     CONSTRAINT FKPlayerConfigPlayer FOREIGN KEY (name) REFERENCES Player
+     CONSTRAINT FKPlayerConfig FOREIGN KEY (name) REFERENCES Player
 );
 
 CREATE TABLE Unit (
@@ -41,7 +41,7 @@ CREATE TABLE Unit (
      CHECK(type IN ('PulsarMissile', 'Probe', 'AntiProbeMissile', 'Fleet', 'CarbonCarrier', 'SpaceRoadDeliverer')),
      CONSTRAINT PKUnit PRIMARY KEY (owner, name),
      UNIQUE (owner, name, type),     
-     CONSTRAINT FKUnitPlayer FOREIGN KEY (owner) REFERENCES Player
+     CONSTRAINT FKUnitOwner FOREIGN KEY (owner) REFERENCES Player
 );
 
 CREATE TABLE CelestialBody (
@@ -54,7 +54,7 @@ CREATE TABLE CelestialBody (
      CONSTRAINT PKCelestialBody PRIMARY KEY (name),
      UNIQUE (name, type),
      CONSTRAINT UCelestialBodyArea UNIQUE (location_x, location_y, location_z),     
-     CONSTRAINT FKCelestialBodyArea FOREIGN KEY (location_x, location_y, location_z) REFERENCES Area
+     CONSTRAINT FKCelestialBodyLocation FOREIGN KEY (location_x, location_y, location_z) REFERENCES Area
 );
 --comment on table CelestialBody is 'A celestial body occupy one area in the universe. There are several celestial body types.';
 
@@ -66,7 +66,7 @@ CREATE TABLE ProductiveCelestialBody (
      CHECK(type IN ('Nebula', 'AsteroidField', 'Planet')),
      CONSTRAINT PKProductiveCelestialBody PRIMARY KEY (name),
      UNIQUE (name, type),
-     CONSTRAINT FKProductiveCelestialBodyCelestialBody FOREIGN KEY (name, type) REFERENCES CelestialBody (name, type)
+     CONSTRAINT FKProductiveCelestialBodyISACelestialBody FOREIGN KEY (name, type) REFERENCES CelestialBody (name, type)
 );
 
 CREATE TABLE Nebula (
@@ -75,7 +75,7 @@ CREATE TABLE Nebula (
      CHECK(type = 'Nebula'),
      CONSTRAINT PKNebula PRIMARY KEY (name),
      UNIQUE (name, type),
-     CONSTRAINT FKNebulaProductiveCelestialBody FOREIGN KEY (name, type) REFERENCES ProductiveCelestialBody (name, type)
+     CONSTRAINT FKNebulaISAProductiveCelestialBody FOREIGN KEY (name, type) REFERENCES ProductiveCelestialBody (name, type)
 );
 
 CREATE TABLE AsteroidField (
@@ -84,7 +84,7 @@ CREATE TABLE AsteroidField (
      CHECK(type = 'AsteroidField'),
      CONSTRAINT PKAsteroidField PRIMARY KEY (name),
      UNIQUE (name, type),
-     CONSTRAINT FKAsteroidFieldProductiveCelestialBody FOREIGN KEY (name, type) REFERENCES ProductiveCelestialBody (name, type)
+     CONSTRAINT FKAsteroidFieldISAProductiveCelestialBody FOREIGN KEY (name, type) REFERENCES ProductiveCelestialBody (name, type)
 );
 
 CREATE TABLE Planet (
@@ -95,7 +95,7 @@ CREATE TABLE Planet (
      CHECK(type = 'Planet'),
      CONSTRAINT PKPlanet PRIMARY KEY (name),
      UNIQUE (name, type),
-     CONSTRAINT FKPlanetProductiveCelestialBody FOREIGN KEY (name, type) REFERENCES ProductiveCelestialBody (name, type)
+     CONSTRAINT FKPlanetISAProductiveCelestialBody FOREIGN KEY (name, type) REFERENCES ProductiveCelestialBody (name, type)
 );
 
 CREATE TABLE VersionedProductiveCelestialBody (
@@ -108,8 +108,8 @@ CREATE TABLE VersionedProductiveCelestialBody (
      CHECK(turn >= 0),
      CONSTRAINT PKVersionedProductiveCelestialBody PRIMARY KEY (name, turn),
      UNIQUE (name, turn, type),
-     CONSTRAINT FKVersionedProductiveCelestialBodyProductiveCelestialBody FOREIGN KEY (name, type) REFERENCES ProductiveCelestialBody (name, type),   
-     CONSTRAINT FKVersionedProductiveCelestialBodyPlayer FOREIGN KEY (owner) REFERENCES Player
+     CONSTRAINT FKVersionedProductiveCelestialBodyISAProductiveCelestialBody FOREIGN KEY (name, type) REFERENCES ProductiveCelestialBody (name, type),   
+     CONSTRAINT FKVersionedProductiveCelestialBodyOwner FOREIGN KEY (owner) REFERENCES Player
 );
      
 CREATE TABLE Building (
@@ -119,7 +119,7 @@ CREATE TABLE Building (
      turn INTEGER NOT NULL,
      CHECK(type IN ('PulsarLaunchingPad', 'SpaceCounter', 'GovernmentModule', 'DefenseModule', 'StarshipPlant', 'ExtractionModule')),
      CONSTRAINT PKBuilding PRIMARY KEY (type, celestialBodyName, turn),
-     CONSTRAINT FKBuildingVersionedProductiveCelestialBody FOREIGN KEY (celestialBodyName, turn) REFERENCES VersionedProductiveCelestialBody     
+     CONSTRAINT FKBuildingLocation FOREIGN KEY (celestialBodyName, turn) REFERENCES VersionedProductiveCelestialBody     
 );
 --comment on table Building is 'A building occupy a building slot on a productive celestial body. There are several building types.';
 
@@ -129,7 +129,7 @@ CREATE TABLE SpaceCounter (
      turn INTEGER NOT NULL,
      CHECK(type = 'SpaceCounter'),
      CONSTRAINT PKSpaceCounter PRIMARY KEY (type, celestialBodyName, turn),
-     CONSTRAINT FKSpaceCounterBuilding FOREIGN KEY (type, celestialBodyName, turn) REFERENCES Building
+     CONSTRAINT FKSpaceCounterISABuilding FOREIGN KEY (type, celestialBodyName, turn) REFERENCES Building
 );
 
 CREATE TABLE CarbonCarrier (
@@ -143,8 +143,8 @@ CREATE TABLE CarbonCarrier (
      CHECK(sourceType='SpaceCounter'),
      CONSTRAINT PKCarbonCarrier PRIMARY KEY (owner, name),
      UNIQUE (owner, name, type),
-     CONSTRAINT FKCarbonCarrierUnit FOREIGN KEY (owner, name, type) REFERENCES Unit (owner, name, type),
-     CONSTRAINT FKCarbonCarrierSpaceCounter FOREIGN KEY (sourceType, sourceCelestialBodyName, sourceTurn) REFERENCES SpaceCounter
+     CONSTRAINT FKCarbonCarrierISAUnit FOREIGN KEY (owner, name, type) REFERENCES Unit (owner, name, type),
+     CONSTRAINT FKCarbonCarrierSource FOREIGN KEY (sourceType, sourceCelestialBodyName, sourceTurn) REFERENCES SpaceCounter
 );
 
 CREATE TABLE CarbonOrder (
@@ -155,9 +155,9 @@ CREATE TABLE CarbonOrder (
      destination TEXT NOT NULL,
      CHECK(source != destination AND amount > 0 AND priority >= 0),
      CONSTRAINT PKCarbonOrder PRIMARY KEY (owner, source, priority),
-     CONSTRAINT FKCarbonOrderPlayer FOREIGN KEY (owner) REFERENCES Player,
-     CONSTRAINT FKCarbonOrderProductiveCelestialBodySource FOREIGN KEY (source) REFERENCES ProductiveCelestialBody,
-     CONSTRAINT FKCarbonOrderProductiveCelestialBodyDestination FOREIGN KEY (destination) REFERENCES ProductiveCelestialBody
+     CONSTRAINT FKCarbonOrderOwner FOREIGN KEY (owner) REFERENCES Player,
+     CONSTRAINT FKCarbonOrderSource FOREIGN KEY (source) REFERENCES ProductiveCelestialBody,
+     CONSTRAINT FKCarbonOrderDestination FOREIGN KEY (destination) REFERENCES ProductiveCelestialBody
 );
 
 CREATE TABLE DefenseModule (
@@ -166,7 +166,7 @@ CREATE TABLE DefenseModule (
      turn INTEGER NOT NULL,
      CHECK(type = 'DefenseModule'),
      CONSTRAINT PKDefenseModule PRIMARY KEY (type, celestialBodyName, turn),
-     CONSTRAINT FKDefenseModuleBuilding FOREIGN KEY (type, celestialBodyName, turn) REFERENCES Building
+     CONSTRAINT FKDefenseModuleISABuilding FOREIGN KEY (type, celestialBodyName, turn) REFERENCES Building
 );
 
 CREATE TABLE Fleet (
@@ -176,7 +176,7 @@ CREATE TABLE Fleet (
      CHECK(type = 'Fleet'),
      CONSTRAINT PKFleet PRIMARY KEY (owner, name),
      UNIQUE (owner, name, type),
-     CONSTRAINT FKFleetUnit FOREIGN KEY (owner, name, type) REFERENCES Unit (owner, name, type)
+     CONSTRAINT FKFleetISAUnit FOREIGN KEY (owner, name, type) REFERENCES Unit (owner, name, type)
 );
 
 CREATE TABLE SpecialUnit (
@@ -186,7 +186,7 @@ CREATE TABLE SpecialUnit (
      CHECK(type IN ('Hero')), -- Waiting for other child tables.
      CONSTRAINT PKSpecialUnit PRIMARY KEY (owner, name),
      UNIQUE (owner, name, type),
-     CONSTRAINT FKSpecialUnitPlayer FOREIGN KEY (owner) REFERENCES Player
+     CONSTRAINT FKSpecialUnitOwner FOREIGN KEY (owner) REFERENCES Player
 );
 
 CREATE TABLE VersionedUnit (
@@ -209,9 +209,9 @@ CREATE TABLE VersionedUnit (
 	 CHECK(progress >= 0 AND progress < 100),
      CONSTRAINT PKVersionedUnit PRIMARY KEY (owner, name, turn),
      UNIQUE (owner, name, turn, type),
-     CONSTRAINT FKVersionedUnitUnit FOREIGN KEY (owner, name, type) REFERENCES Unit (owner, name, type),
-     CONSTRAINT FKVersionedUnitArea FOREIGN KEY (departure_x, departure_y, departure_z) REFERENCES Area,
-     CONSTRAINT FKVersionedUnitArea2 FOREIGN KEY (destination_x, destination_y, destination_z) REFERENCES Area
+     CONSTRAINT FKVersionedUnitISAUnit FOREIGN KEY (owner, name, type) REFERENCES Unit (owner, name, type),
+     CONSTRAINT FKVersionedUnitDeparture FOREIGN KEY (departure_x, departure_y, departure_z) REFERENCES Area,
+     CONSTRAINT FKVersionedUnitDestination FOREIGN KEY (destination_x, destination_y, destination_z) REFERENCES Area
 );
      
 CREATE TABLE VersionedFleet (
@@ -223,8 +223,8 @@ CREATE TABLE VersionedFleet (
      UNIQUE (owner, name, turn, type),
 --     CHECK(EXISTS(SELECT * FROM FleetComposition
 --                  WHERE FleetComposition.fleetOwner = owner AND FleetComposition.fleetName = name AND FleetComposition.fleetTurn = turn)),
-     CONSTRAINT FKVersionedFleetVersionedUnit FOREIGN KEY (owner, name, turn, type) REFERENCES VersionedUnit (owner, name, turn, type),
-     CONSTRAINT FKVersionedFleetFleet FOREIGN KEY (owner, name, type) REFERENCES Fleet (owner, name, type)
+     CONSTRAINT FKVersionedFleetISAVersionedUnit FOREIGN KEY (owner, name, turn, type) REFERENCES VersionedUnit (owner, name, turn, type),
+     CONSTRAINT FKVersionedFleetISAFleet FOREIGN KEY (owner, name, type) REFERENCES Fleet (owner, name, type)
 );
 
 CREATE TABLE VersionedSpecialUnit (
@@ -249,7 +249,7 @@ CREATE TABLE Probe (
 --     deployed BOOL NOT NULL,
      CONSTRAINT PKProbe PRIMARY KEY (owner, name),
      UNIQUE (owner, name, type),
-     CONSTRAINT FKProbeUnit FOREIGN KEY (owner, name, type) REFERENCES Unit (owner, name, type)
+     CONSTRAINT FKProbeISAUnit FOREIGN KEY (owner, name, type) REFERENCES Unit (owner, name, type)
 );
 
 CREATE TABLE PulsarLaunchingPad (
@@ -259,7 +259,7 @@ CREATE TABLE PulsarLaunchingPad (
      firedDate INTEGER NOT NULL,
      CHECK(type = 'PulsarLaunchingPad'),
      CONSTRAINT PKPulsarLaunchingPad PRIMARY KEY (type, celestialBodyName, turn),
-     CONSTRAINT FKPulsarLaunchingPadBuilding FOREIGN KEY (type, celestialBodyName, turn) REFERENCES Building
+     CONSTRAINT FKPulsarLaunchingPadISABuilding FOREIGN KEY (type, celestialBodyName, turn) REFERENCES Building
 );
 
 CREATE TABLE PulsarMissile (
@@ -271,7 +271,7 @@ CREATE TABLE PulsarMissile (
      CHECK(type = 'PulsarMissile'),
      CONSTRAINT PKPulsarMissile PRIMARY KEY (owner, name),
      UNIQUE (owner, name, type),
-     CONSTRAINT FKPulsarMissileUnit FOREIGN KEY (owner, name, type) REFERENCES Unit (owner, name, type)
+     CONSTRAINT FKPulsarMissileISAUnit FOREIGN KEY (owner, name, type) REFERENCES Unit (owner, name, type)
 );
 
 CREATE TABLE VersionedProbe (
@@ -286,9 +286,9 @@ CREATE TABLE VersionedProbe (
            OR (destination_x IS NULL AND destination_y IS NULL AND destination_z IS NULL)),
      CONSTRAINT PKVersionedProbe PRIMARY KEY (owner, name, turn),
      UNIQUE (owner, name, turn, type),
-     CONSTRAINT FKVersionedProbeVersionedUnit FOREIGN KEY (owner, name, turn, type) REFERENCES VersionedUnit (owner, name, turn, type),
-     CONSTRAINT FKVersionedProbeProbe FOREIGN KEY (owner, name, type) REFERENCES Probe (owner, name, type),
-     CONSTRAINT FKVersionedProbeArea FOREIGN KEY (destination_x, destination_y, destination_z) REFERENCES Area     
+     CONSTRAINT FKVersionedProbeISAVersionedUnit FOREIGN KEY (owner, name, turn, type) REFERENCES VersionedUnit (owner, name, turn, type),
+     CONSTRAINT FKVersionedProbeISAProbe FOREIGN KEY (owner, name, type) REFERENCES Probe (owner, name, type),
+     CONSTRAINT FKVersionedProbeDestination FOREIGN KEY (destination_x, destination_y, destination_z) REFERENCES Area     
 );
 
 CREATE TABLE ExtractionModule (
@@ -297,7 +297,7 @@ CREATE TABLE ExtractionModule (
      turn INTEGER NOT NULL,
      CHECK(type = 'ExtractionModule'),
      CONSTRAINT PKExtractionModule PRIMARY KEY (type, celestialBodyName, turn),
-     CONSTRAINT FKExtractionModuleBuilding FOREIGN KEY (type, celestialBodyName, turn) REFERENCES Building
+     CONSTRAINT FKExtractionModuleISABuilding FOREIGN KEY (type, celestialBodyName, turn) REFERENCES Building
 );
 
 CREATE TABLE GameConfig (
@@ -312,7 +312,7 @@ CREATE TABLE GovernmentModule (
      turn INTEGER NOT NULL,
      CHECK(type = 'GovernmentModule'),
      CONSTRAINT PKGovernmentModule PRIMARY KEY (type, celestialBodyName, turn),
-     CONSTRAINT FKGovernmentModuleBuilding FOREIGN KEY (type, celestialBodyName, turn) REFERENCES Building
+     CONSTRAINT FKGovernmentModuleISABuilding FOREIGN KEY (type, celestialBodyName, turn) REFERENCES Building
 );
 
 CREATE TABLE Hero (
@@ -324,7 +324,7 @@ CREATE TABLE Hero (
      CHECK(experience >= 0),
      CONSTRAINT PKHero PRIMARY KEY (owner, name),
      UNIQUE (owner, name, type),
-     CONSTRAINT FKHeroSpecialUnit FOREIGN KEY (owner, name, type) REFERENCES SpecialUnit (owner, name, type)
+     CONSTRAINT FKHeroISASpecialUnit FOREIGN KEY (owner, name, type) REFERENCES SpecialUnit (owner, name, type)
 );
 
 CREATE TABLE MovePlan (
@@ -351,8 +351,8 @@ CREATE TABLE VersionedCarbonCarrier (
      type TEXT NOT NULL,
      CONSTRAINT PKVersionedCarbonCarrier PRIMARY KEY (owner, name, turn),
      UNIQUE (owner, name, turn, type),
-     CONSTRAINT FKVersionedCarbonCarrierVersionedUnit FOREIGN KEY (owner, name, turn, type) REFERENCES VersionedUnit (owner, name, turn, type),
-     CONSTRAINT FKVersionedCarbonCarrierCarbonCarrier FOREIGN KEY (owner, name, type) REFERENCES CarbonCarrier (owner, name, type),
+     CONSTRAINT FKVersionedCarbonCarrierISAVersionedUnit FOREIGN KEY (owner, name, turn, type) REFERENCES VersionedUnit (owner, name, turn, type),
+     CONSTRAINT FKVersionedCarbonCarrierISACarbonCarrier FOREIGN KEY (owner, name, type) REFERENCES CarbonCarrier (owner, name, type),
      CONSTRAINT FKVersionedCarbonCarrierCarbonOrder FOREIGN KEY (orderOwner, orderSource, orderPriority) REFERENCES CarbonOrder
 );
 
@@ -362,8 +362,8 @@ CREATE TABLE VersionedNebula (
      type TEXT NOT NULL,
      CONSTRAINT PKVersionedNebula PRIMARY KEY (name, turn),
      UNIQUE (name, turn, type),
-     CONSTRAINT FKVersionedNebulaVersionedProductiveCelestialBody FOREIGN KEY (name, turn, type) REFERENCES VersionedProductiveCelestialBody (name, turn, type),
-     CONSTRAINT FKVersionedNebulaNebula FOREIGN KEY (name, type) REFERENCES Nebula (name, type)
+     CONSTRAINT FKVersionedNebulaISAVersionedProductiveCelestialBody FOREIGN KEY (name, turn, type) REFERENCES VersionedProductiveCelestialBody (name, turn, type),
+     CONSTRAINT FKVersionedNebulaISANebula FOREIGN KEY (name, type) REFERENCES Nebula (name, type)
 );
 
 CREATE TABLE VersionedAsteroidField (
@@ -372,8 +372,8 @@ CREATE TABLE VersionedAsteroidField (
      type TEXT NOT NULL,
      CONSTRAINT PKVersionedAsteroidField PRIMARY KEY (name, turn),
      UNIQUE (name, turn, type),
-     CONSTRAINT FKVersionedAsteroidFieldVersionedProductiveCelestialBody FOREIGN KEY (name, turn, type) REFERENCES VersionedProductiveCelestialBody (name, turn, type),
-     CONSTRAINT FKVersionedAsteroidFieldAsteroidField FOREIGN KEY (name, type) REFERENCES AsteroidField (name, type)
+     CONSTRAINT FKVersionedAsteroidFieldISAVersionedProductiveCelestialBody FOREIGN KEY (name, turn, type) REFERENCES VersionedProductiveCelestialBody (name, turn, type),
+     CONSTRAINT FKVersionedAsteroidFieldISAAsteroidField FOREIGN KEY (name, type) REFERENCES AsteroidField (name, type)
 );
 
 CREATE TABLE VersionedPlanet (
@@ -383,8 +383,8 @@ CREATE TABLE VersionedPlanet (
      type TEXT NOT NULL,
      PRIMARY KEY (name, turn),
      UNIQUE (name, turn, type),
-     FOREIGN KEY (name, turn, type) REFERENCES VersionedProductiveCelestialBody (name, turn, type),
-     FOREIGN KEY (name, type) REFERENCES Planet (name, type)
+     CONSTRAINT FKVersionedPlanetISAVersionedProductiveCelestialBody FOREIGN KEY (name, turn, type) REFERENCES VersionedProductiveCelestialBody (name, turn, type),
+     CONSTRAINT FKVersionedPlanetISAPlanet FOREIGN KEY (name, type) REFERENCES Planet (name, type)
 );
 
 CREATE TABLE SpaceRoad (
@@ -554,4 +554,32 @@ CREATE TABLE FleetComposition (
      PRIMARY KEY (fleetOwner, fleetName, fleetTurn, starshipTemplate),
      FOREIGN KEY (starshipTemplate) REFERENCES StarshipTemplate,
      FOREIGN KEY (fleetOwner, fleetName, fleetTurn) REFERENCES VersionedFleet
+);
+
+CREATE TABLE UnitEncounterLog (
+	unitOwner TEXT NOT NULL,
+	unitName TEXT NOT NULL,
+	unitTurn INTEGER NOT NULL,
+	unitType TEXT NOT NULL,
+	seenOwner TEXT NOT NULL,
+	seenName TEXT NOT NULL,
+	seenTurn INTEGER NOT NULL,
+	seenType TEXT NOT NULL,
+	instantTime INTEGER NOT NULL,
+	PRIMARY KEY (unitOwner, unitName, unitTurn, unitType, instantTime),
+	FOREIGN KEY (unitOwner, unitName, unitTurn, unitType) REFERENCES VersionedUnit(owner, name, turn, type),
+	FOREIGN KEY (seenOwner, seenName, seenTurn, seenType) REFERENCES VersionedUnit(owner, name, turn, type)
+);
+
+CREATE TABLE UnitArrivalLog (
+	unitOwner TEXT NOT NULL,
+	unitName TEXT NOT NULL,
+	unitTurn INTEGER NOT NULL,
+	unitType TEXT NOT NULL,
+	instantTime INTEGER NOT NULL,
+	destination TEXT NOT NULL,
+	vortex TEXT DEFAULT NULL,	
+	PRIMARY KEY (unitOwner, unitName, unitTurn, unitType, instantTime),
+	FOREIGN KEY (destination) REFERENCES ProductiveCelestialBody(name),
+	FOREIGN KEY (vortex) REFERENCES Vortex(name)
 );

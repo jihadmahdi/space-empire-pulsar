@@ -41,9 +41,11 @@ import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.Protocol.ServerGameCreation;
 import org.axan.sep.common.Protocol.ServerPausedGame;
 import org.axan.sep.common.Protocol.ServerRunningGame;
+import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.server.model.GameBoard;
 import org.axan.sep.server.model.PlayerGameMove;
 import org.axan.sep.server.model.ServerGame;
+import org.axan.sep.server.model.ISEPServerDataBase.SEPServerDataBaseException;
 
 /**
  * SEPServer
@@ -269,7 +271,16 @@ public class SEPServer implements IServer
 		@Override
 		public PlayerGameBoard getPlayerGameBoard() throws RpcException, StateMachineNotExpectedEventException
 		{
-			return getGameBoard().getPlayerGameBoard(user.getLogin());
+			try
+			{
+				return getGameBoard().getPlayerGameBoard(user.getLogin());
+			}
+			catch(SEPServerDataBaseException e)
+			{
+				log.log(Level.SEVERE, "Player game board transformation error.", e);
+				this.getServerPlayer().abort(e);
+				return null;
+			}
 		}
 
 		@Override
@@ -725,7 +736,16 @@ public class SEPServer implements IServer
 		}
 
 		log.log(Level.INFO, "Resolving new turn");
-		getCurrentGame().resolveCurrentTurn();
+		try
+		{
+			getCurrentGame().resolveCurrentTurn();
+		}
+		catch(RunningGameCommandException e)
+		{
+			log.log(Level.SEVERE, "Running game command error.", e);
+			terminate();
+			return;
+		}
 
 		refreshPlayerGameBoards();
 	}
@@ -743,6 +763,11 @@ public class SEPServer implements IServer
 				catch(RpcException e)
 				{
 					log.log(Level.WARNING, "RpcException(" + name + ") : " + e.getMessage());
+				}
+				catch(SEPServerDataBaseException e)
+				{
+					log.log(Level.SEVERE, "Player game board error.", e);
+					terminate();
 				}
 			}
 		}
@@ -770,8 +795,8 @@ public class SEPServer implements IServer
 
 		return result;
 	}
-
-	private ServerGame getCurrentGame()
+	
+	private void initCurrentGame() throws SEPServerDataBaseException
 	{
 		synchronized(this)
 		{
@@ -780,6 +805,10 @@ public class SEPServer implements IServer
 				game = new ServerGame(getPlayerList(), gameConfig);
 			}
 		}
+	}
+
+	private ServerGame getCurrentGame()
+	{
 		return game;
 	}
 
@@ -908,7 +937,15 @@ public class SEPServer implements IServer
 				@Override
 				public void run()
 				{
-					server.getCurrentGame();
+					try
+					{
+						server.initCurrentGame();
+					}
+					catch(SEPServerDataBaseException e)
+					{
+						log.log(Level.SEVERE, "GameBoard creation error.", e);
+						server.terminate();
+					}
 				}
 			});
 		}

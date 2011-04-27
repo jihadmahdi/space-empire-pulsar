@@ -30,6 +30,7 @@ import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.Player;
 import org.axan.sep.common.PlayerConfig;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
+import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.server.model.orm.IVersionedUnit;
 import org.axan.sep.server.model.orm.VersionedAntiProbeMissile;
@@ -162,22 +163,7 @@ public class TestSQLite
 		
 		try
 		{
-			System.out.println("LibraryPathProperty: "+SQLite.LIBRARY_PATH_PROPERTY);
-			System.out.println("Value: "+System.getProperty(SQLite.LIBRARY_PATH_PROPERTY));
-			String libPath = "target/izpack/lib/";
-			System.out.println("Setting to "+libPath);
-			SQLite.setLibraryPath(libPath);
-			System.out.println("Value: "+System.getProperty(SQLite.LIBRARY_PATH_PROPERTY));
-			
-			SQLite.loadLibrary();
-			
-			System.out.println("LibraryVersion: "+SQLite.getLibraryVersion());
-			System.out.println("CompileOptions: "+SQLite.getSQLiteCompileOptions());
-			System.out.println("SQLiteVersion: "+SQLite.getSQLiteVersion());
-			System.out.println("SQLiteVersionNumber: "+SQLite.getSQLiteVersionNumber());
-			System.out.println("isDebugBinaryPreferred: "+SQLite.isDebugBinaryPreferred());
-			System.out.println("isThreadSafe: "+SQLite.isThreadSafe());
-			SQLite.main(new String[0]);
+			SQLiteDB.checkSQLiteLib("target/izpack/lib/");
 			
 			db = new SQLiteDB(new File("sqlite_test.db"));
 			
@@ -450,7 +436,7 @@ public class TestSQLite
 	public void testSEPSQLiteDB()
 	{		
 		GameConfig config = new GameConfig();
-		SEPSQLiteDB sepDB;
+		final SEPSQLiteDB sepDB;
 		SQLiteDB db;
 		Vector<Player> players = new Vector<Player>();
 		
@@ -538,13 +524,19 @@ public class TestSQLite
 				String[] target = probes.get(rnd.nextInt(probes.size()));
 				
 				db.exec("INSERT INTO Unit (owner, name, type) VALUES ('%s', '%s', 'AntiProbeMissile');", owner.getName(), unitName);
-				db.exec("INSERT INTO AntiProbeMissile (owner, name, type) VALUES ('%s', '%s', 'AntiProbeMissile');", owner.getName(), unitName);				
-				db.exec("INSERT INTO VersionedUnit (turn, owner, name, type, departure_x, departure_y, departure_z, progress, destination_x, destination_y, destination_z) VALUES (%d, '%s', '%s', 'AntiProbeMissile', %d, %d, %d, '%f', %s, %s, %s);", 1, owner.getName(), unitName, l.x, l.y, l.z, progress, d==null?"NULL":d.x, d==null?"NULL":d.y, d==null?"NULL":d.z);				
-				db.exec("INSERT INTO VersionedAntiProbeMissile (turn, owner, name, type, targetTurn, targetOwner, targetName) VALUES ('%d', '%s', '%s', 'AntiProbeMissile', %d, '%s', '%s');", 1, owner.getName(), unitName, 1, target[1], target[0]);
+				db.exec("INSERT INTO AntiProbeMissile (owner, name, type) VALUES ('%s', '%s', 'AntiProbeMissile');", owner.getName(), unitName);
+
+				for(int turn=1; turn<6; ++turn)
+				{
+					db.exec("INSERT INTO VersionedUnit (turn, owner, name, type, departure_x, departure_y, departure_z, progress, destination_x, destination_y, destination_z) VALUES (%d, '%s', '%s', 'AntiProbeMissile', %d, %d, %d, '%f', %s, %s, %s);", turn, owner.getName(), unitName, l.x, l.y, l.z, turn * progress / 5, d==null?"NULL":d.x, d==null?"NULL":d.y, d==null?"NULL":d.z);				
+					db.exec("INSERT INTO VersionedAntiProbeMissile (turn, owner, name, type, targetTurn, targetOwner, targetName) VALUES ('%d', '%s', '%s', 'AntiProbeMissile', %d, '%s', '%s');", turn, owner.getName(), unitName, 1, target[1], target[0]);
+				}
 			}
 			
 			long t1 = System.currentTimeMillis();
-			Set<IVersionedUnit> units = db.prepare("SELECT U.type, * FROM Unit U LEFT JOIN	VersionedUnit VU USING (name, owner, type) LEFT JOIN	PulsarMissile PM USING (name, owner, type) LEFT JOIN	Probe P USING (name, owner, type) LEFT JOIN	AntiProbeMissile APM USING (name, owner, type) LEFT JOIN	CarbonCarrier CC USING (name, owner, type) LEFT JOIN	SpaceRoadDeliverer SRD USING (name, owner, type) LEFT JOIN	Fleet F USING (name, owner, type) LEFT JOIN	VersionedPulsarMissile VPM USING (name, owner, turn) LEFT JOIN	VersionedProbe VP USING (name, owner, turn) LEFT JOIN	VersionedAntiProbeMissile VAPM USING (name, owner, turn) LEFT JOIN	VersionedCarbonCarrier VCC USING (name, owner, turn) LEFT JOIN	VersionedFleet VF USING (name, owner, turn) WHERE VU.turn = %d;", new SQLiteStatementJob<Set<IVersionedUnit>>()
+			String q = "SELECT U.type, * FROM Unit U LEFT JOIN	VersionedUnit VU USING (name, owner, type) LEFT JOIN	PulsarMissile PM USING (name, owner, type) LEFT JOIN	Probe P USING (name, owner, type) LEFT JOIN	AntiProbeMissile APM USING (name, owner, type) LEFT JOIN	CarbonCarrier CC USING (name, owner, type) LEFT JOIN	SpaceRoadDeliverer SRD USING (name, owner, type) LEFT JOIN	Fleet F USING (name, owner, type) LEFT JOIN	VersionedPulsarMissile VPM USING (name, owner, turn) LEFT JOIN	VersionedProbe VP USING (name, owner, turn) LEFT JOIN	VersionedAntiProbeMissile VAPM USING (name, owner, turn) LEFT JOIN	VersionedCarbonCarrier VCC USING (name, owner, turn) LEFT JOIN	VersionedFleet VF USING (name, owner, turn) WHERE VU.turn = 1;";
+			q = "SELECT U.type, U.name, U.owner, VU.turn, VU.progress FROM Unit U LEFT JOIN	VersionedUnit VU USING (name, owner, type) LEFT JOIN	PulsarMissile PM USING (name, owner, type) LEFT JOIN	Probe P USING (name, owner, type) LEFT JOIN	AntiProbeMissile APM USING (name, owner, type) LEFT JOIN	CarbonCarrier CC USING (name, owner, type) LEFT JOIN	SpaceRoadDeliverer SRD USING (name, owner, type) LEFT JOIN	Fleet F USING (name, owner, type) LEFT JOIN	VersionedPulsarMissile VPM USING (name, owner, turn) LEFT JOIN	VersionedProbe VP USING (name, owner, turn) LEFT JOIN	VersionedAntiProbeMissile VAPM USING (name, owner, turn) LEFT JOIN	VersionedCarbonCarrier VCC USING (name, owner, turn) LEFT JOIN	VersionedFleet VF USING (name, owner, turn) WHERE VU.turn = ( SELECT MAX(VVUU.turn) FROM VersionedUnit VVUU WHERE VVUU.name = VU.name AND VVUU.owner = VU.owner );";
+			Set<IVersionedUnit> units = db.prepare(q, new SQLiteStatementJob<Set<IVersionedUnit>>()
 			{
 				@Override
 				public Set<IVersionedUnit> job(SQLiteStatement stmnt) throws SQLiteException
@@ -556,9 +548,8 @@ public class TestSQLite
 					{
 						try
 						{
-							Class<? extends IVersionedUnit> vuClazz = SEPSQLiteDB.getVersionedUnitClass(stmnt.columnString(0));
-							IVersionedUnit vu = SQLiteORMGenerator.mapTo(vuClazz, stmnt);
-							units.add(vu);
+							// DEAD LOCK, VersionedUnit constructor need GameConfig to make query while already in job, waiting for result produce dead lock.
+							units.add(VersionedUnit.create(eUnitType.valueOf(stmnt.columnString(0)), stmnt, sepDB.getConfig()));
 						}
 						catch(Exception e)
 						{
@@ -585,7 +576,7 @@ public class TestSQLite
 					
 					return units;
 				}
-			}, 1);
+			});
 			Thread.sleep(1000);
 			long t2 = System.currentTimeMillis();
 			

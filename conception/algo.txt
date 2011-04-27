@@ -1,0 +1,202 @@
+ALGORITHME ResoudreTour()
+DEBUT
+	DB db;
+	Vector<Resolver> resolvers = db.getResolvers();
+	TANTQUE (resolvers.nonVide()) FAIRE
+		resolvers.first().resoudre(db, resolvers);
+	FTANTQUE
+FIN
+
+FONCTION OnTimeTick.resoudre()
+DB db, Vector<Resolver> resolvers
+DEBUT
+	TANTQUE(Faire défiler 'step' le temps du tour courant) FAIRE	
+		SI une unité rencontre un vortex ALORS
+			unité.logArrival(step, vortex);			
+			resolvers.ajoute(this.priorité+1, OnPreArrival(unité, vortex.destination));
+		FSI
+		SI une unité rencontre une autre unité ALORS pour chaque unité
+			unité.logEncounter(autre_unité, step)
+		FSI
+		SI une unité arrive ALORS
+			unité.logArrival(step, unité.destination)
+			resolvers.ajoute(this.priorite+1, OnPreArrival(unité, unité.destination));
+		FSI
+	FTANTQUE
+	
+	SI (pour chaque) un corps céleste lance une attaque ALORS
+		resolvers.ajoute(this.priorité+1, OnConflict(celestialBody, initiators));
+	FSI
+FIN
+
+FONCTION OnPreArrival.resoudre(step, destination)
+DB db, Vector<Resolver> resolvers
+DEBUT
+	SWITCH(unité.type())
+		CASE Fleet:
+			SI unité.declareConflit() ALORS
+				resolvers.ajoute(this.priorité+1, OnConflict(destination, unité.owner));
+			FSI
+			resolvers.ajoute(après OnConflict, OnArrival(step, unité, destination));
+			BREAK;
+		CASE PulsarMissile:
+			// TODO
+		CASE AntiProbeMissile:
+			SI cible en vue au step donné ALORS
+				cible.owner.communiquer(destruction de la probe)
+				détruire cible
+			FSI
+			détruire apm
+			BREAK;
+		CASE Probe:
+			déployer probe
+			BREAK;
+		CASE SpaceRoadDeliverer:
+			déployer route
+			détruire spaceRoadDeliverer
+			BREAK;
+		CASE CarbonCarrier:
+			livrer carbone
+			resolvers.ajoute(après OnConflict, OnArrival(step, unité, destination));
+			BREAK;
+	FSWITCH
+FIN
+
+FONCTION OnConflict(celestialBody, newInitiator)
+DB db, Vector<Resolver> resolvers
+DEBUT
+	POUR CHAQUE conflit FAIRE
+		résoudre conflit
+		POUR CHAQUE unité restantes FAIRE
+			resolvers.ajoute(après OnConflict, OnArrival(unité, celestialBody))
+	FPOUR
+FIN
+ 
+ OnUnitArrival(PulsarMissile)
+ 	Traitements:
+ 		Les missiles pulsar engendrent un pulsar
+ 
+ OnUnitArrival(AntiProbeMissile)
+ 	Traitements:
+ 		les missiles anti-probes explosent en détruisant éventuellement une probe
+ 
+ OnUnitArrival(Probe)
+ 	Traitements:
+ 		les probes se déploient 
+ 
+ OnUnitArrival(Fleet)
+ 	Traitements:
+ 		les flottes déclenchent un conflit, se posent, repartent, et peuvent communiquer leur journal de bord.
+ 	Lance: OnConflict
+ 
+ OnUnitArrival(SpaceRoadDeliverer)
+ 	Traitements:
+ 		les spaceRoadDeliverer spawnent une spaceRoad, et peuvent communiquer leur journal de bord.
+ 
+ OnUnitArrival(CarbonCarrier)
+ 	Traitements:
+ 		les carbonCarrier spawn du carbone, éventuellement repartent, et peuvent communiquer leur journal de bord.
+	Lance: OnConflict
+ 
+ OnConflict			Un conflit est déclaré sur un cors céleste.
+ 	On résoud le conflit concerné, en mettant à jour les journals de bords des flottes concernées (+ log du corps céleste champs de bataille communiqué en direct au joueur).
+ 
+ OnTimeTickEnd		Le temps à fini de s'écouler.
+ 	On génère le carbone et la population pour le tour écoulé, on incrémente la date.
+
+=== Version fonction globale -> modulaire
+
+TODO 
+	 
+=== Version fonction globale
+
+// les flottes avec une feuille de route décollent
+flottes <- db.selectionner flottes immobiles avec feuille de route
+POUR CHAQUE flotte FAIRE
+	db.inserer nouvelle version flotte (destination, progress)
+FPOUR
+
+//les unités se déplacent
+unites_mobiles <- db.selectionner unités en déplacement (dernière version de chaque unité)
+TANTQUE le temps s'ecoule FAIRE
+	POUR CHAQUE unité FAIRE
+		
+		//les unités se rencontrent en mouvement
+		SI l'unité rencontre une autre unité ALORS
+			pour chaque unité: unité.loggerRencontre(step, autre unité)
+		FSI
+		
+		// les unités sont attirés par des vortex (elles arrivent à destination imprévue)
+		SI l'unité rencontre un vortex ALORS
+			unité.loggerArrival(step, vortex)
+			unité.changer position sur vortex.destination
+			unité.immobiliser
+		FSI
+		SI l'unité arrive à destination ALORS
+			SWITCH(unité.type)
+				CASE (apm):
+					// les apm détruisent les probes (qui communiquent leur destruction imminante)
+					SI apm.cible visible ALORS
+						cible.owner.communiquer destruction imminante
+						détruire cible
+						détruire apm
+					FSI
+					BREAK;
+				CASE (probe):
+					// les probes se déploient et communiquent aussitot leur log
+					déployer probe
+					unité.loggerArrival(step)
+					communiquer log
+					BREAK;
+				CASE (spaceRoadDeliverer):
+					// les spaceRoadDeliverer livre une space road
+					spaceRoadDeliverer.livre la space road
+					unité.loggerArrival(step)
+					BREAK;
+				CASE (carbonCarrier):
+					// les carbonCarrier livrent leur carbone
+					carbonCarrier.livre le carbone
+					unité.loggerArrival(step)
+					BREAK;
+				CASE (Fleet):
+					// les flottes déclenchent des conflits
+					SI (flotte.attaque) ALORS
+						flotte.déclarer conflit(corps céleste)
+					FSI
+					// les corps célestes peuvent engager un conflit quand une flotte indésirable arrive
+					corpsCelestes.reagirArriveFlotte(flotte)
+			FSWITCH
+		FSI
+		
+	FPOUR
+FTANTQUE
+
+POUR CHAQUE productiveCelestialBody FAIRE
+	SI un joueur à déclaré un conflit FAIRE
+		noter le conflit
+	FSI
+FPOUR
+
+POUR CHAQUE productiveCelestialBody FAIRE
+	SI celestialBody en conflit ALORS
+		// ResoudreConflit
+		resoudre attitudes diplomatiques
+		POUR CHAQUE round de combat FAIRE
+			jouer le round
+			mettre à jour le log du combat
+		FPOUR
+		mettre à jour l'état des flottes (endommagées, détruites)
+		mettre à jour les logs de combat des joueurs dont une unité au moins à survécue
+		// revérifier attitudes diplomatiques et relancer un conflit au besoin ?
+		publier les logs de combat
+	FSI
+FPOUR
+
+POUR CHAQUE unité immobile non posée
+	unité.poser
+	unité.publier log
+FPOUR
+
+? les unités immobiles loggent les départs/arrivées des autres unités
+génération du carbone et de la population sur les corps célestes
+incrémentation de la date

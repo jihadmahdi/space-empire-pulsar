@@ -9,7 +9,9 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
@@ -20,6 +22,7 @@ import java.util.logging.Logger;
 
 import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
+import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteStatementJob;
 import org.axan.eplib.utils.Basic;
 import org.axan.eplib.utils.Reflect;
@@ -30,10 +33,19 @@ import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.GameConfigCopier;
 import org.axan.sep.common.IGameConfig;
 import org.axan.sep.common.PlayerGameBoard;
+import org.axan.sep.common.Rules;
+import org.axan.sep.common.SEPCommonImplementationException;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
 import org.axan.sep.server.SEPServer;
 import org.axan.sep.server.model.GameBoard.ATurnResolvingEvent;
+import org.axan.sep.server.model.ISEPServerDataBase.SEPServerDataBaseException;
+import org.axan.sep.server.model.orm.Building;
+import org.axan.sep.server.model.orm.Planet;
+import org.axan.sep.server.model.orm.Probe;
+import org.axan.sep.server.model.orm.ProductiveCelestialBody;
+import org.axan.sep.server.model.orm.VersionedPlanet;
+import org.axan.sep.server.model.orm.VersionedProductiveCelestialBody;
 import org.axan.sep.server.model.ISEPServerDataBase;
 
 import com.almworks.sqlite4java.SQLiteConnection;
@@ -41,7 +53,7 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteJob;
 import com.almworks.sqlite4java.SQLiteStatement;
 
-public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
+public class SEPSQLiteDB extends GameBoard implements Serializable
 {
 
 	/** Serialization version */
@@ -96,13 +108,13 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 					
 					if (i+1 == args.length)
 					{						
-						db.exec("INSERT OR REPLACE INTO GameConfig (key, value) VALUES ('%s', '%s');", key, args[0].toString());
+						db.exec("INSERT OR REPLACE INTO GameConfig (key, value) VALUES ('%s', '%s');", key, args[i] == null ? "NULL" : args[i].toString());
 					}
 					else
 					{
 						for(int j=0; i+j < args.length; ++j)
 						{
-							db.exec("INSERT OR REPLACE INTO GameConfig (key, value) VALUES ('%s-%d', '%s');", key, j, args[i+j].toString());
+							db.exec("INSERT OR REPLACE INTO GameConfig (key, value) VALUES ('%s-%d', '%s');", key, j, args[i+j] == null ? "NULL" : args[i+j].toString());
 						}
 					}
 					
@@ -195,6 +207,8 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 	
 	private static Object valueOf(Class clazz, String s)
 	{
+		if (s == null || s.compareToIgnoreCase("NULL") == 0) return null;
+		
 		try
 		{
 			Class<?> obClazz = clazz;
@@ -351,10 +365,113 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 	}
 	
 	@Override
-	public PlayerGameBoard getPlayerGameBoard(String playerLogin)
+	public PlayerGameBoard getPlayerGameBoard(String playerLogin) throws SEPServerDataBaseException
 	{
 		// TODO: Create Client SQLiteDB for given player.
-		return null;
+		
+		try
+		{
+			return db.exec(new SQLiteJob<PlayerGameBoard>()
+			{
+				@Override
+				protected PlayerGameBoard job(SQLiteConnection conn) throws Throwable
+				{
+					org.axan.sep.common.Area[][][] playerUniverseView = new org.axan.sep.common.Area[getConfig().getDimX()][getConfig().getDimY()][getConfig().getDimZ()];
+					Set<Probe> playerProbes = new HashSet<Probe>();
+					
+					return null;
+					SUIS LA, cf SQLiteTest pour la requete dernière version.
+					//SQLiteStatement stmnt = conn.prepare("SELECT type, * FROM VersionedProbe LEFT JOIN VersionedUnit USING (owner, name, turn, type) LEFT JOIN Probe USING (owner, name, type) LEFT JOIN Unit USING (owner, name, type) WHERE VersionedProbe.turn = ())
+					
+					/*
+					Set<Probe> playerProbes = db.getUnits(Probe.class, playerLogin);
+
+					Map<String, org.axan.sep.common.Diplomacy> playersPoliciesView = new Hashtable<String, org.axan.sep.common.Diplomacy>();
+					
+					boolean isVisible = false;
+
+					for(int x = 0; x < config.getDimX(); ++x)
+						for(int y = 0; y < config.getDimY(); ++y)
+							for(int z = 0; z < config.getDimZ(); ++z)
+							{
+								Location location = new Location(x, y, z);
+								Area area = db.getArea(location);
+
+								// Check for Area visibility (default to false)
+								isVisible = false;
+
+								//NOTE: location -> productiveCelestialBody
+								
+								ICelestialBody celestialBody = (area != null ? area.getCelestialBody() : null);
+								ProductiveCelestialBody productiveCelestialBody = (celestialBody != null && ProductiveCelestialBody.class.isInstance(celestialBody) ? ProductiveCelestialBody.class.cast(celestialBody) : null);
+								String celestialBodyOwnerName = (celestialBody != null ? celestialBody.getOwnerName() : null);
+								Fleet unassignedFleet = (productiveCelestialBody != null ? productiveCelestialBody.getUnasignedFleet(playerLogin) : null);
+
+								// Visible if area celestial body is owned by the player.
+								if (!isVisible && playerLogin.equals(celestialBodyOwnerName))
+								{
+									isVisible = true;
+								}
+
+								// Visible if area contains a celestial body and player has a unit on it.
+								if (!isVisible && ((unassignedFleet != null && !unassignedFleet.hasNoMoreStarships()) || (productiveCelestialBody != null && !db.getUnits(location, playerLogin).isEmpty())))
+								{
+									isVisible = true;
+								}
+
+								// Area is under a player probe scope.
+								if (!isVisible) for(Probe p : playerProbes)
+								{
+									if (org.axan.sep.common.SEPUtils.getDistance(location.asRealLocation(), p.getRealLocation()) > config.getProbeScope()) continue;
+
+									if (p.isDeployed())
+									{
+										isVisible = true;
+										break;
+									}
+
+									if (isVisible) break;
+								}
+
+								if (isVisible || area != null)
+								{
+									// If celestial body is a planet with government settled.
+									Planet planet = (productiveCelestialBody == null ? null : Planet.class.isInstance(productiveCelestialBody) ? Planet.class.cast(productiveCelestialBody) : null);
+									if (planet != null && planet.isGovernmentSettled())
+									{
+										playersPoliciesView.put(planet.getOwnerName(), db.getPlayerPolicies(planet.getOwnerName()).getPlayerView(db.getDate(), playerLogin, isVisible));							
+									}
+									
+									// If governmental fleets are located in this area
+									for(Fleet fleet : db.getUnits(location, Fleet.class))
+									{
+										if (fleet.isGovernmentFleet())
+										{
+											playersPoliciesView.put(fleet.getOwnerName(), db.getPlayerPolicies(fleet.getOwnerName()).getPlayerView(db.getDate(), playerLogin, isVisible));
+										}
+									}												
+								}
+								
+								playerUniverseView[x][y][z] = db.getCreateArea(location).getPlayerView(db.getDate(), playerLogin, isVisible);
+							}
+					
+					for(String playerName : db.getPlayersKeySet())
+					{
+						if (playersPoliciesView.containsKey(playerName)) continue;
+						playersPoliciesView.put(playerName, db.getPlayerPolicies(playerName).getPlayerView(db.getDate(), playerLogin, false));
+					}
+					
+					return new org.axan.sep.common.PlayerGameBoard(config, playerLogin, playerUniverseView, db.getSunLocation(), db.getDate(), playersPoliciesView, db.getPlayerLogs(playerLogin));		
+					 */
+				}
+			});
+		}
+		catch (SQLiteDBException e)
+		{
+			throw new SEPServerDataBaseException(e);
+		}
+		
+		////
 		
 		/*
 		org.axan.sep.common.Area[][][] playerUniverseView = new org.axan.sep.common.Area[config.getDimX()][config.getDimY()][config.getDimZ()];
@@ -450,15 +567,146 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 			if (resolvingEvents.isEmpty())
 			{
 				// TODO: Implement resolving events.
+				// SUIS LA: Remettre le codage de resolveTurn à plus tard, implémenter les features dans l'ordre logique d'incrémentation (envoi gameboard vierge, création flotte, dépacement flotte, ...)
+				resolvingEvents.add(new ATurnResolvingEvent(0, "GlobalResolver")
+				{
+					
+					@Override
+					public void run(SortedSet<ATurnResolvingEvent> eventsQueue, GameBoard sepDB) throws SEPServerDataBaseException
+					{
+						try
+						{
+							SQLiteDB db = ((SEPSQLiteDB) sepDB).getDB();							
+							
+							db.exec(new SQLiteJob<Void>()
+							{
+								@Override
+								protected Void job(SQLiteConnection conn) throws Throwable
+								{
+									// les flottes avec une feuille de route décollent
+									SQLiteStatement stmnt = conn.prepare("SELECT * FROM VersionedFleet VF LEFT JOIN MovePlan MP USING (owner, name) GROUP BY (owner, name, MP.turn) ORDER BY priority DESC WHERE MP.turn >= VF.turn");									
+									while(stmnt.step())									
+									{
+										//conn.exec(Strng.format())
+										//INSERT INTO VersionedFleet 
+										/*
+										TABLE VersionedFleet (
+										     owner TEXT NOT NULL,
+										     name TEXT NOT NULL,
+										     turn INTEGER NOT NULL,
+										     type TEXT NOT NULL,
+										 */
+									}
+									
+									return null;
+									/*								 									 
+									
+									flottes <- db.selectionner flottes immobiles avec feuille de route
+									POUR CHAQUE flotte FAIRE
+										db.inserer nouvelle version flotte (destination, progress)
+									FPOUR
+									
+									//les unités se déplacent
+									unites_mobiles <- db.selectionner unités en déplacement (dernière version de chaque unité)
+									TANTQUE le temps s'ecoule FAIRE
+										POUR CHAQUE unité FAIRE
+											
+											//les unités se rencontrent en mouvement
+											SI l'unité rencontre une autre unité ALORS
+												pour chaque unité: unité.loggerRencontre(step, autre unité)
+											FSI
+											
+											// les unités sont attirés par des vortex (elles arrivent à destination imprévue)
+											SI l'unité rencontre un vortex ALORS
+												unité.loggerArrival(step, vortex)
+												unité.changer position sur vortex.destination
+												unité.immobiliser
+											FSI
+											SI l'unité arrive à destination ALORS
+												SWITCH(unité.type)
+													CASE (apm):
+														// les apm détruisent les probes (qui communiquent leur destruction imminante)
+														SI apm.cible visible ALORS
+															cible.owner.communiquer destruction imminante
+															détruire cible
+															détruire apm
+														FSI
+														BREAK;
+													CASE (probe):
+														// les probes se déploient et communiquent aussitot leur log
+														déployer probe
+														unité.loggerArrival(step)
+														communiquer log
+														BREAK;
+													CASE (spaceRoadDeliverer):
+														// les spaceRoadDeliverer livre une space road
+														spaceRoadDeliverer.livre la space road
+														unité.loggerArrival(step)
+														BREAK;
+													CASE (carbonCarrier):
+														// les carbonCarrier livrent leur carbone
+														carbonCarrier.livre le carbone
+														unité.loggerArrival(step)
+														BREAK;
+													CASE (Fleet):
+														// les flottes déclenchent des conflits
+														SI (flotte.attaque) ALORS
+															flotte.déclarer conflit(corps céleste)
+														FSI
+														// les corps célestes peuvent engager un conflit quand une flotte indésirable arrive
+														corpsCelestes.reagirArriveFlotte(flotte)
+												FSWITCH
+											FSI
+											
+										FPOUR
+									FTANTQUE
+									
+									POUR CHAQUE productiveCelestialBody FAIRE
+										SI un joueur à déclaré un conflit FAIRE
+											noter le conflit
+										FSI
+									FPOUR
+									
+									POUR CHAQUE productiveCelestialBody FAIRE
+										SI celestialBody en conflit ALORS
+											// ResoudreConflit
+											resoudre attitudes diplomatiques
+											POUR CHAQUE round de combat FAIRE
+												jouer le round
+												mettre à jour le log du combat
+											FPOUR
+											mettre à jour l'état des flottes (endommagées, détruites)
+											mettre à jour les logs de combat des joueurs dont une unité au moins à survécue
+											// revérifier attitudes diplomatiques et relancer un conflit au besoin ?
+											publier les logs de combat
+										FSI
+									FPOUR
+									
+									POUR CHAQUE unité immobile non posée
+										unité.poser
+										unité.publier log
+									FPOUR
+									
+									? les unités immobiles loggent les départs/arrivées des autres unités
+									génération du carbone et de la population sur les corps célestes
+									incrémentation de la date
+									 */
+								}
+							});
+						}
+						catch(SQLiteException e)
+						{
+							throw new SEPServerDataBaseException(e);
+						}
+					}
+				});
+				
+				/*
 				resolvingEvents.add(new ATurnResolvingEvent(0, "OnTimeTick")
 				{					
 					@Override
 					public void run(SortedSet<ATurnResolvingEvent> eventsQueue, ISEPServerDataBase sepDB) throws SEPServerDataBaseException
 					{
-						/* TODO:
-						OnTimeTick			Le temps s'écoule.
-							Déplacer les unités mobiles, écrire le journal de bord (rencontres, vortex, ...) (calculer à l'avance les rencontres avec une vrai distance au lieu de faire step/step et/ou zone/zone).
-						*/
 						try
 						{
 							SQLiteDB db = ((SEPSQLiteDB) sepDB).getDB();							
@@ -475,7 +723,17 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 										Class<? extends org.axan.sep.server.model.orm.IVersionedUnit> vuClazz = SEPSQLiteDB.getVersionedUnitClass(stmnt.columnString(0));
 										movingUnits.add(new VersionedUnit(SQLiteORMGenerator.mapTo(vuClazz, stmnt), getConfig()));
 									}
-									// SUIS LA
+																		
+									// Commencer par prédire la collision avec les vortex
+									stmnt = conn.prepare(String.format("SELECT type,* FROM Vortex WHERE onsetDate <= %d AND %d < endDate", getConfig().getTurn(), getConfig().getTurn()));
+									Vector<Vortex> vortex = new Vector<Vortex>();
+									while(stmnt.step())
+									{
+										vortex.add(new Vortex(SQLiteORMGenerator.mapTo(org.axan.sep.server.model.orm.Vortex.class, stmnt)));
+									}																		
+									
+									Map<VersionedUnit, Vortex> vortexEncounters = new HashMap<VersionedUnit, Vortex>();
+									
 									double step = 0;
 									VersionedUnit fasterUnit = null;
 									double minDistance = Double.POSITIVE_INFINITY;
@@ -485,17 +743,40 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 										for(int i=0; i < movingUnits.size(); ++i)
 										{
 											u = movingUnits.elementAt(i);
+											
+											if (vortexEncounters.containsKey(u)) continue;
+											
+											double uStep = u.getProgress() + u.getSpeed()*step;
+											RealLocation uLocation = SEPUtils.getMobileLocation(u.getDeparture(), u.getDestination(), uStep, true);
+											
+											double nearestVortexDistance = Double.POSITIVE_INFINITY;
+											
+											for(Vortex vor : vortex)
+											{
+												double distanceUvortex = SEPUtils.getDistance(uLocation, vor.getLocation().asRealLocation());												
+												
+												if (distanceUvortex <= getConfig().getVortexScope() && distanceUvortex < nearestVortexDistance)
+												{
+													nearestVortexDistance = distanceUvortex;
+													vortexEncounters.put(u, vor);
+												}
+											}
+											
+											if (vortexEncounters.containsKey(u))
+											{
+												// TODO: u.loggerRencontre(vor, step);
+											}
+											
 											if (fasterUnit == null || u.getSpeed() > fasterUnit.getSpeed())
 											{
 												fasterUnit = u;
 											}
 											
-											double uStep = u.getProgress() + u.getSpeed()*step;
-											RealLocation uLocation = SEPUtils.getMobileLocation(u.getDeparture(), u.getDestination(), uStep, true);
-											
 											for(int j=i+1; j < movingUnits.size(); ++j)
 											{
 												v = movingUnits.elementAt(j);
+												
+												if (vortexEncounters.containsKey(v)) continue;
 												
 												double vStep = v.getProgress() + v.getSpeed()*step;
 												RealLocation vLocation = SEPUtils.getMobileLocation(v.getDeparture(), v.getDestination(), vStep, true);
@@ -519,7 +800,8 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 										}
 										
 										step += minDistance / fasterUnit.getSpeed();
-									}							
+									}
+									
 									/*
 									distance = f(unit1, unit2, t) // avec t écoulement du temps pour 1 tour.
 									
@@ -555,7 +837,7 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 									FPOUR
 									
 									
-									*/
+									*//*
 									return null;
 								}
 							});
@@ -590,7 +872,129 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 		return resolvingEvents;
 	}
 	
+	// Game commands
+	
+	@Override
+	public void build(final String playerLogin, final String celestialBodyName, final eBuildingType buildingType) throws SEPServerDataBaseException
+	{
+		try
+		{
+			db.exec(new SQLiteJob<Void>()
+			{
+				@Override
+				protected Void job(SQLiteConnection conn) throws Throwable
+				{										
+					// Select productive celestial body by name, last version
+					SQLiteStatement stmnt = conn.prepare("SELECT type, * FROM CelestialBody CB LEFT JOIN ProductiveCelestialBody PCB USING (name, type) LEFT JOIN Vortex V USING (name, type) LEFT JOIN Nebula N USING (name, type) LEFT JOIN AsteroidField AF USING (name, type) LEFT JOIN Planet P USING (name, type) LEFT JOIN VersionedProductiveCelestialBody VPCB USING (name, type) LEFT JOIN VersionedNebula VN USING (name, turn, type) LEFT JOIN VersionedAsteroidField VAF USING (name, turn, type) LEFT JOIN VersionedPlanet VP USING (name, turn, type) TODO");
+					// celestialBodyName IS A ProductiveCelestialBody
+					if (!stmnt.step())
+					{
+						throw new SEPServerDataBaseException("Celestial body '" + celestialBodyName + "' does not exist, is not a productive one, or is not owned by '" + playerLogin + "'.");
+					}
+					VersionedProductiveCelestialBody pcb;
+					VersionedPlanet p;
+					try
+					{
+						p = new VersionedPlanet(stmnt, config);
+						pcb = p.getProductiveCelestialBody();
+					}
+					catch(Exception e)
+					{
+						p = null;
+						pcb = new VersionedProductiveCelestialBody(stmnt, getConfig());
+					}
+					
+					// Select last build date
+					stmnt = conn.prepare("TODO");
+					stmnt.step();
+					// celestialBody did not built anything else for the current game turn.
+					if (stmnt.columnInt(0) >= getConfig().getTurn())
+					{
+						throw new SEPServerDataBaseException("Celestial body '" + celestialBodyName + "' already in work for this turn.");
+					}
+					
+					// Select number of buildings
+					stmnt = conn.prepare("TODO");
+					stmnt.step();
+					// celestialBody has free slots
+					if (stmnt.columnInt(0) >= pcb.getMaxSlots())
+					{
+						throw new SEPServerDataBaseException("No more free slots on celestial body '" + celestialBodyName + "'");
+					}
+					
+					int carbonCost = 0, populationCost = 0, nbBuilt = 0;
+					
+					// Select current building for the given type
+					stmnt = conn.prepare("TODO");
+					Building b = null;
+					if (stmnt.step())
+					{
+						b = new Building(stmnt, getConfig());
+						
+						if (!Rules.getBuildingCanBeUpgraded(b.getType()))
+						{
+							throw new SEPServerDataBaseException(buildingType + " cannot be upgraded.");							
+						}										
+						
+						nbBuilt = b.getNbSlots();
+					}
+					else
+					{
+						nbBuilt = 0;												
+					}
+
+					carbonCost = Rules.getBuildingUpgradeCarbonCost(buildingType, nbBuilt+1); 
+					populationCost = Rules.getBuildingUpgradePopulationCost(buildingType, nbBuilt+1);
+					
+					// build/upgrade can be afforded
+					if (populationCost > 0 && p == null)
+					{
+						throw new SEPServerDataBaseException("Celestial body '" + celestialBodyName + "' is not a planet and '"+buildingType+"' cost population.");
+					}
+					
+					if (pcb.getCurrentCarbon() < carbonCost)
+					{
+						throw new SEPServerDataBaseException("Celestial body '" + celestialBodyName + "' is not a planet and '"+buildingType+"' cost population.");
+					}
+					
+					// update new building
+					conn.exec("TODO");
+					
+					// update carbon stock
+					// update population stock
+					conn.exec(insertUpdateProductiveCelestialBodyStocksSQL(celestialBodyName, carbonCost, populationCost));
+					conn.exec(insertUpdateBuildingSQL(buildingType, celestialBodyName, nbBuilt+1));
+					
+					return null;
+				}
+			});
+		}
+		catch(SQLiteDBException e)
+		{
+			throw new SEPServerDataBaseException(e);
+		}
+	}
+	
 	// Private
+	
+	/**
+	 * Return SQLite query to insert/update building for the current turn on the given celestial body.
+	 */
+	static String insertUpdateBuildingSQL(eBuildingType buildingType, String celestialBodyName, int nbBuild)
+	{
+		// TODO:
+		throw new SEPCommonImplementationException("Not implemented");
+	}
+	
+	/**
+	 * Return the SQLite query to insert (if does not exist) or update the current version of the given celestial body applying carbon and population payment.
+	 * Must check which type is the celestial body and ensure to insert/update all tables involved.
+	 */
+	static String insertUpdateProductiveCelestialBodyStocksSQL(String name, int carbonCost, int populationCost)
+	{
+		// TODO:
+		throw new SEPCommonImplementationException("Not implemented");
+	}
 	
 	void insertCelestialBody(eCelestialBodyType celestialBodyType, String name, Location location) throws SQLiteException
 	{
@@ -743,12 +1147,6 @@ public class SEPSQLiteDB implements ISEPServerDataBase, Serializable
 	    	db.exec("INSERT INTO GovernmentModule (type, celestialBodyName, turn) VALUES ('%s', '%s', %d);", eBuildingType.GovernmentModule, planetName, 0);
 	    	db.exec("INSERT INTO Government (owner, turn, planetName, planetTurn) VALUES ('%s', %d, '%s', %d);", ownerName, 0, planetName, 0);
 		}
-	}
-	
-	static <T extends org.axan.sep.server.model.orm.VersionedUnit> Class<T> getVersionedUnitClass(String type) throws ClassNotFoundException
-	{
-		if (type.startsWith("Versioned")) return (Class<T>) Class.forName(VersionedUnit.class.getPackage().getName()+"."+type);
-		else return (Class<T>) Class.forName(VersionedUnit.class.getPackage().getName()+".Versioned"+type);
 	}
 	
 	/// Tests

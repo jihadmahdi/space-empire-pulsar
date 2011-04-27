@@ -7,83 +7,26 @@ import java.util.HashMap;
 import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.logging.Level;
 
+import org.axan.sep.common.CommandCheckResult;
 import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
+import org.axan.sep.common.IGame.BuildParams;
+import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.server.SEPServer;
 import org.axan.sep.server.SEPServer.SEPImplementationException;
 import org.axan.sep.server.model.ISEPServerDataBase.SEPServerDataBaseException;
 
-public class GameBoard implements Serializable
+public abstract class GameBoard implements Serializable
 {
 	private static final long serialVersionUID = 1L;
 
-	private static final Random rnd = new Random();
-
-	private final ISEPServerDataBase db;
-
-	/*
-	private GameBoard(Hashtable<String, org.axan.sep.common.Player> players, org.axan.sep.common.GameConfig config, int date, Hashtable<Location, Area> areas, Hashtable<ICelestialBody.Key, ICelestialBody> celestialBodies, Hashtable<String, Hashtable<IMarker.Key, IMarker>> playersMarkers, RealLocation sunLocation, Hashtable<Unit.Key, Unit> units, Map<String, Diplomacy> playersPolicies, Map<String, SortedSet<ALogEntry>> playersLogs)
-	{
-		this.db = new DataBase(players, config, date, areas, celestialBodies, playersMarkers, sunLocation, units, playersPolicies, playersLogs);
-	}
-	*/
-
-	/**
-	 * Full new game constructor.
-	 * 
-	 * @param playerList
-	 * @param gameConfig
-	 */
-	//public GameBoard(Set<org.axan.sep.common.Player> players, org.axan.sep.common.GameConfig config, int date)
-	public GameBoard(Set<org.axan.sep.common.Player> players, org.axan.sep.common.GameConfig config)
-	{
-		//this(new Hashtable<String, org.axan.sep.common.Player>(),  config, date, new Hashtable<Location, Area>(players.size()*2), new Hashtable<ICelestialBody.Key, ICelestialBody>(players.size()*2), new Hashtable<String, Hashtable<IMarker.Key, IMarker>>(players.size()*2), new RealLocation(Double.valueOf(config.getDimX()) / 2.0, Double.valueOf(config.getDimY()) / 2.0, Double.valueOf(config.getDimZ()) / 2.0), new Hashtable<Unit.Key, Unit>(), new Hashtable<String, Diplomacy>(), new Hashtable<String, SortedSet<ALogEntry>>());
-		try
-		{
-			this.db = new SEPSQLiteDB(players, config);
-		}
-		catch(IOException e)
-		{
-			throw new SEPImplementationException("SQLite DB IO Error", e);
-		}
-		catch(SEPServerDataBaseException e)
-		{
-			throw new SEPImplementationException("SQLite DB Error", e);
-		}
-		catch(GameConfigCopierException e)
-		{
-			throw new SEPImplementationException("SQLite DB Error", e);
-		}
-	}
-
-	public static Class<? extends ICelestialBody> getServerCelestialBodyClass(Class<? extends org.axan.sep.common.ICelestialBody> clientCelestialBodyType) throws SEPImplementationException
-	{
-		Class<?> serverClass;
-		try
-		{
-			serverClass = Class.forName(ICelestialBody.class.getPackage().getName() + "." + clientCelestialBodyType.getSimpleName());
-		}
-		catch(ClassNotFoundException e)
-		{
-			throw new SEPServer.SEPImplementationException("Cannot find server celestial body type for '" + clientCelestialBodyType.getSimpleName() + "'", e);
-		}
-
-		if (!ICelestialBody.class.isAssignableFrom(serverClass))
-			throw new SEPServer.SEPImplementationException("Cannot find server celestial body type for '" + clientCelestialBodyType.getSimpleName() + "', '" + ICelestialBody.class.getName() + "' is not assignable from '" + serverClass.getName() + "'");
-		Class<? extends ICelestialBody> serverCelestialBodyType = serverClass.asSubclass(ICelestialBody.class);
-
-		return serverCelestialBodyType;
-	}
-
 	/**
 	 * @param playerLogin
+	 * @throws SEPServerDataBaseException 
 	 */
-	public org.axan.sep.common.PlayerGameBoard getPlayerGameBoard(String playerLogin)
-	{
-		SEPServer.log.log(Level.INFO, "getGameBoard(" + playerLogin + ")");
-		return db.getPlayerGameBoard(playerLogin);
-	}
+	public abstract org.axan.sep.common.PlayerGameBoard getPlayerGameBoard(String playerLogin) throws SEPServerDataBaseException;
 
 	/// UPDATE
 
@@ -116,18 +59,28 @@ public class GameBoard implements Serializable
 		 * @param db
 		 *            Current DB.
 		 */
-		public abstract void run(SortedSet<ATurnResolvingEvent> eventsQueue, ISEPServerDataBase db) throws SEPServerDataBaseException;
+		public abstract void run(SortedSet<ATurnResolvingEvent> eventsQueue, GameBoard sepDB) throws SEPServerDataBaseException;
 	}
-
+ 
+	public abstract SortedSet<ATurnResolvingEvent> getResolvingEvents();
+	
 	public void resolveCurrentTurn()
 	{
-		SortedSet<ATurnResolvingEvent> resolvingEvents = db.getResolvingEvents();
+		SortedSet<ATurnResolvingEvent> resolvingEvents = new TreeSet<ATurnResolvingEvent>(getResolvingEvents());
 
 		while (!resolvingEvents.isEmpty())
 		{
 			ATurnResolvingEvent event = resolvingEvents.first();
 			resolvingEvents.remove(event);
-			event.run(resolvingEvents, db);
+			try
+			{
+				event.run(resolvingEvents, this);
+			}
+			catch(SEPServerDataBaseException e)
+			{
+				e.printStackTrace();
+				throw new RuntimeException(e);
+			}
 		}
 
 		/*
@@ -1017,8 +970,9 @@ public class GameBoard implements Serializable
 		GovernmentModule governmentModule = new GovernmentModule(db.getDate());
 		return new SettleGovernmentCheckResult(planet, governmentalFleet, governmentModule);
 	}
-
-	public void build(String playerLogin, String celestialBodyName, Class<? extends org.axan.sep.common.ABuilding> buildingType) throws CelestialBodyBuildException
+*/
+	public abstract void build(String playerLogin, String celestialBodyName, eBuildingType buildingType) throws SEPServerDataBaseException;
+	/*
 	{
 		BuildCheckResult buildCheckResult = checkBuild(playerLogin, celestialBodyName, buildingType);
 		buildCheckResult.productiveCelestialBody.updateBuilding(buildCheckResult.newBuilding);
@@ -1063,8 +1017,17 @@ public class GameBoard implements Serializable
 		}
 	}
 
-	private BuildCheckResult checkBuild(String playerName, String celestialBodyName, Class<? extends org.axan.sep.common.ABuilding> buildingType) throws CelestialBodyBuildException
+	private BuildCheckResult checkBuild(String playerName, String celestialBodyName, eBuildingType buildingType)
 	{
+		db.
+		// celestialBodyName IS A ProductiveCelestialBody
+		// celestialBody did not built anything else for the current game turn.
+		// celestialBody has free slots
+		// IF buildingType already exists THEN
+		//	building can be upgraded
+		// ENDIF
+		// build/upgrade can be afforded
+		
 		ProductiveCelestialBody productiveCelestialBody = db.getCelestialBody(celestialBodyName, ProductiveCelestialBody.class, playerName);
 		if (productiveCelestialBody == null)
 			throw new CelestialBodyBuildException("Celestial body '" + celestialBodyName + "' does not exist, is not a productive one, or is not owned by '" + playerName + "'.");
@@ -1117,6 +1080,7 @@ public class GameBoard implements Serializable
 		return new BuildCheckResult(productiveCelestialBody, carbonCost, populationCost, newBuilding);
 	}
 
+/*
 	public CommandCheckResult canFireAntiProbeMissile(String playerLogin, FireAntiProbeMissileParams p)
 	{
 		try

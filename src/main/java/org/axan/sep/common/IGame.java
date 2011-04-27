@@ -13,6 +13,7 @@ import org.axan.sep.common.IGameCommand.GameCommandException;
 import org.axan.sep.common.PlayerGameBoard.PlayerGameBoardQueryException;
 import org.axan.sep.common.ProductiveCelestialBody.CelestialBodyBuildException;
 import org.axan.sep.common.SEPUtils.RealLocation;
+import org.axan.sep.common.Protocol.eBuildingType;
 
 public interface IGame
 {
@@ -155,9 +156,9 @@ public interface IGame
 	public static class BuildParams implements Serializable
 	{
 		public final String celestialBodyName;
-		public final Class<? extends ABuilding> buildingType;
+		public final eBuildingType buildingType;
 		
-		public BuildParams(String ceslestialBodyName, Class<? extends ABuilding> buildingType)
+		public BuildParams(String ceslestialBodyName, eBuildingType buildingType)
 		{
 			this.celestialBodyName = ceslestialBodyName;
 			this.buildingType = buildingType;
@@ -181,7 +182,7 @@ public interface IGame
 	public static class Build extends AbstractGameCommand<BuildParams, BuildCheck> implements Serializable
 	{
 
-		public Build(String ceslestialBodyName, Class<? extends ABuilding> buildingType)
+		public Build(String ceslestialBodyName, eBuildingType buildingType)
 		{
 			super(new BuildParams(ceslestialBodyName, buildingType));
 		}
@@ -270,8 +271,8 @@ public interface IGame
 			}
 			else
 			{
-				check.carbonCost = ABuilding.getFirstCarbonCost(params.buildingType);
-				check.populationCost = ABuilding.getFirstPopulationCost(params.buildingType);
+				check.carbonCost = Rules.getBuildingUpgradeCarbonCost(params.buildingType, 1); 
+				check.populationCost = Rules.getBuildingUpgradePopulationCost(params.buildingType, 1);
 				check.newBuilding = ABuilding.getFirstBuild(params.buildingType, gameBoard.getDate());
 			}
 			
