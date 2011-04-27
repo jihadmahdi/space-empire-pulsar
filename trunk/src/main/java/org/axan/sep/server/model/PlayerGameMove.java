@@ -32,6 +32,7 @@ import org.axan.sep.common.IGame.MoveFleetParams;
 import org.axan.sep.common.IGame.SettleGovernmentParams;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.server.SEPServer.SEPImplementationException;
+import org.axan.sep.server.model.ISEPServerDataBase.SEPServerDataBaseException;
 
 
 
@@ -41,7 +42,7 @@ import org.axan.sep.server.SEPServer.SEPImplementationException;
  */
 public class PlayerGameMove
 {
-	/*
+	
 	public static class BuildCommand extends GameMoveCommand<BuildParams>
 	{
 		public BuildCommand(String playerLogin, BuildParams params)
@@ -50,9 +51,18 @@ public class PlayerGameMove
 		}
 
 		@Override
-		protected GameBoard apply(GameBoard originalGameBoard)
+		protected GameBoard apply(GameBoard originalGameBoard) throws RunningGameCommandException
 		{
 			GameBoard newGameBoard = Basic.clone(originalGameBoard);
+			try
+			{
+				newGameBoard.build(playerLogin, params.celestialBodyName, params.buildingType);
+			}
+			catch(Exception e)
+			{
+				throw new RunningGameCommandException(e);
+			}
+			/*
 			try
 			{
 				newGameBoard.build(playerLogin, params.celestialBodyName, params.buildingType);
@@ -62,10 +72,13 @@ public class PlayerGameMove
 				e.printStackTrace();
 				return originalGameBoard;
 			}
+			*/
 			return newGameBoard;
 		}
 
 	}
+	
+	/*
 	
 	static class DemolishCommand extends GameMoveCommand<DemolishParams>
 	{		

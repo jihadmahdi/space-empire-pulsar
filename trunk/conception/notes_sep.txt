@@ -23,6 +23,7 @@ Dans le CdC (Constructions) il est écrit que seuls les corps célestes disposan
 Dans le CdC (Constructions) il est suggéré qu'il n'y a qu'un seul transporteur par comptoir. Hors dans le modèle actuellement implémenté le joueur est libre de faire plusieurs envois simultanés pour une montant de ressource fixée (en fonction du niveau d'upgrade du comptoir).
 <On valide ? 
 <Celà à t'il un sens d'envoyer simultanément 2 livraisons a des destinations différentes ? Oui, on peut être inquiet de ne plus controler la destination et donc préférer splitter. 
+<Le transporteur doit-il faire le chemin retour avant qu'on considère que l'on peut à nouveau allouer le volume qu'il a transporté ? Celà reviens à doubler l'importance de la distance de l'échange, autrement dit, soit à diviser par deux la vitesse du transporteur. On préfèrera jouer sur la vitesse des transporteurs et ne s'occupeur que de leur voyage allé. 
 
 01/04/11 [0]
 Concernant les pactes hard-ally, et les phases de jeu ou un vote ferait perdre 1 tour de jeu à l'ensemble.

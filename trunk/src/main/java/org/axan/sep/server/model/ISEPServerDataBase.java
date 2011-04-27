@@ -45,15 +45,36 @@ public interface ISEPServerDataBase
 	 * 	Effets
 	 * -----------------------------------------
 	 * OnTimeTick			Le temps s'écoule.
-	 * 	Déplacer les unités mobiles, écrire le journal de bord (rencontres, vortex, ...) (calculer à l'avance les rencontres avec une vrai distance au lieu de faire step/step et/ou zone/zone).
+	 *	Traitements: Déplacer les unités mobiles, journal(rencontres, vortex, départs, arrivés), déclenche les conflits (qui sont lancé par des unités non mobiles à ce tour).
+	 *	Lance: OnUnitArrival, OnConflict
 	 *
-	 * OnUnitArrival		Une unité spéciale arrive à destination.
-	 * 	Les missiles pulsar engendrent un pulsar,
-	 * 	les probes se déploient,
-	 * 	les missiles anti-probes explosent en détruisant éventuellement une probe,
-	 * 	les flottes déclenchent un conflit, se posent, repartent, et peuvent communiquer leur journal de bord.
-	 * 	les spaceRoadDeliverer spawnent une spaceRoad, et peuvent communiquer leur journal de bord.
-	 * 	les carbonCarrier spawn du carbone, éventuellement repartent, et peuvent communiquer leur journal de bord.
+	 * OnUnitArrival(unit)		Une unité spéciale arrive à destination.
+	 * 
+	 * OnUnitArrival(PulsarMissile)
+	 * 	Traitements:
+	 * 		Les missiles pulsar engendrent un pulsar
+	 * 
+	 * OnUnitArrival(AntiProbeMissile)
+	 * 	Traitements:
+	 * 		les missiles anti-probes explosent en détruisant éventuellement une probe
+	 * 
+	 * OnUnitArrival(Probe)
+	 * 	Traitements:
+	 * 		les probes se déploient 
+	 * 
+	 * OnUnitArrival(Fleet)
+	 * 	Traitements:
+	 * 		les flottes déclenchent un conflit, se posent, repartent, et peuvent communiquer leur journal de bord.
+	 * 	Lance: OnConflict
+	 * 
+	 * OnUnitArrival(SpaceRoadDeliverer)
+	 * 	Traitements:
+	 * 		les spaceRoadDeliverer spawnent une spaceRoad, et peuvent communiquer leur journal de bord.
+	 * 
+	 * OnUnitArrival(CarbonCarrier)
+	 * 	Traitements:
+	 * 		les carbonCarrier spawn du carbone, éventuellement repartent, et peuvent communiquer leur journal de bord.
+	 *	Lance: OnConflict
 	 * 
 	 * OnConflict			Un conflit est déclaré sur un cors céleste.
 	 * 	On résoud le conflit concerné, en mettant à jour les journals de bords des flottes concernées (+ log du corps céleste champs de bataille communiqué en direct au joueur).

@@ -6,10 +6,12 @@
 package org.axan.sep.common;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
 import org.axan.sep.common.Protocol.eCelestialBodyType;
+import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.RealLocation;
 
 
@@ -183,8 +185,15 @@ public class GameConfig implements IGameConfig, Serializable
 
 		setProbeScope(Probe.PROBE_SCORE);
 		setSunRadius(SUN_RADIUS);
+		
+		for(eUnitType u : eUnitType.values())
+		{
+			setUnitTypeSight(u, (float) 1);
+			setUnitTypeSpeed(u, (float) 1);
+		}
 	}
 
+	/*
 	public GameConfig(int dimX, int dimY, int dimZ, int neutralCelesialBodiesCount, int populationPerTurnMin, int populationPerTurnMax, int populationLimitMin, int populationLimitMax, Map<eCelestialBodyType, Integer[]> celestialBodiesStartingCarbonAmount, Map<eCelestialBodyType, Integer[]> celestialBodiesSlotsAmount, Map<eCelestialBodyType, Float> neutralCelestialBodiesGenerationTable, boolean allianceVictory, boolean regimicide, boolean assimilateNeutralisedPeoples, boolean totalConquest, int economicVictoryCarbon, int economicVictoryPopulation, int timeLimitVictory, int probeScope, int sunRadius, int playersPlanetsStartingCarbonResources, int playersPlanetsStartingPopulation)
 	{
 		// TODO: call with right parameters
@@ -238,6 +247,7 @@ public class GameConfig implements IGameConfig, Serializable
 		setProbeScope(probeScope);
 		setSunRadius(sunRadius);
 	}
+	*/
 
 	/**
 	 * @return the dimX
@@ -475,6 +485,12 @@ public class GameConfig implements IGameConfig, Serializable
 		return neutralCelestialBodiesGenerationTable;
 	}
 	
+	@Override
+	public void setNeutralCelestialBodiesGenerationTable(eCelestialBodyType celestialBodyType, float rate)
+	{
+		neutralCelestialBodiesGenerationTable.put(celestialBodyType, rate);
+	}
+	
 	/**
 	 * @return the neutralCelestialBodiesGenerationTable
 	 */
@@ -494,7 +510,6 @@ public class GameConfig implements IGameConfig, Serializable
 	@Override
 	public void setNeutralCelestialBodiesGenerationRate(eCelestialBodyType celestialBodyType, Float rate)
 	{
-		// TODO Auto-generated method stub
 		if (rate < 0) throw new IllegalArgumentException("rate cannot be negative.");
 		this.neutralCelestialBodiesGenerationTable.put(celestialBodyType, rate);
 	}
@@ -747,5 +762,57 @@ public class GameConfig implements IGameConfig, Serializable
 	public void setCarbonMinimalFreight(int carbonMinimalFreight)
 	{
 		this.carbonMinimalFreight = carbonMinimalFreight;
+	}
+
+	private int turn = 0;
+	@Override
+	public int getTurn()
+	{
+		return turn;
+	}
+	
+	@Override
+	public void setTurn(int turn)
+	{
+		this.turn = turn;
+	}
+
+	private Map<eUnitType, Float> unitsSight = new HashMap<eUnitType, Float>();
+	@Override
+	public Float getUnitTypeSight(eUnitType unitType)
+	{
+		return unitsSight.get(unitType);
+	}
+
+	@Override
+	public void setUnitTypeSight(eUnitType unitType, Float sight)
+	{
+		unitsSight.put(unitType, sight);
+	}
+	
+	private Map<eUnitType, Float> unitsSpeed = new HashMap<eUnitType, Float>();
+	@Override
+	public Float getUnitTypeSpeed(eUnitType unitType)
+	{
+		return unitsSpeed.get(unitType);
+	}
+	
+	@Override
+	public void setUnitTypeSpeed(eUnitType unitType, Float speed)
+	{
+		unitsSpeed.put(unitType, speed);
+	}
+
+	private float vortexScope = 1;
+	@Override
+	public float getVortexScope()
+	{
+		return vortexScope;
+	}
+	
+	@Override
+	public void setVortexScope(float scope)
+	{
+		vortexScope = scope;
 	}
 }

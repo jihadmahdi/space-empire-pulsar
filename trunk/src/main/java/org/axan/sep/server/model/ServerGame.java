@@ -14,10 +14,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.Player;
+import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
+import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.server.SEPServer;
 import org.axan.sep.server.model.ISEPServerDataBase.SEPServerDataBaseException;
 
@@ -36,9 +39,21 @@ public class ServerGame implements Serializable
 
 	private transient Map<String, PlayerGameMove>	playersCurrentMove	= new HashMap<String, PlayerGameMove>();
 
-	public ServerGame(Set<Player> playerList, GameConfig gameConfig)
+	public ServerGame(Set<Player> playerList, GameConfig gameConfig) throws SEPServerDataBaseException
 	{
-		GameBoard initialGameBoard = new GameBoard(playerList, gameConfig);
+		GameBoard initialGameBoard;
+		try
+		{
+			initialGameBoard = new SEPSQLiteDB(playerList, gameConfig);
+		}
+		catch(IOException e)
+		{
+			throw new SEPServerDataBaseException(e);
+		}
+		catch(GameConfigCopierException e)
+		{
+			throw new SEPServerDataBaseException(e);
+		}
 		gameBoards.push(initialGameBoard);
 		for(Player p : playerList)
 		{
@@ -56,7 +71,7 @@ public class ServerGame implements Serializable
 		return playersCurrentMove.get(playerLogin);
 	}
 
-	public void resolveCurrentTurn()
+	public void resolveCurrentTurn() throws RunningGameCommandException
 	{		
 		GameBoard currentGameBoard = gameBoards.peek();
 

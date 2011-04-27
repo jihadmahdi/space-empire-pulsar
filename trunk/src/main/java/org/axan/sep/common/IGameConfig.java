@@ -248,7 +248,7 @@ public interface IGameConfig
 	public void setSunRadius(int sunRadius);
 	
 	public int getTurn();
-	public int setTurn(int turn);
+	public void setTurn(int turn);
 	
 	/**
 	 * Unit base speed (per turn).
@@ -261,5 +261,11 @@ public interface IGameConfig
 	 */
 	public Float getUnitTypeSight(eUnitType unitType);
 	public void setUnitTypeSight(eUnitType unitType, Float sight);
+	
+	/**
+	 * Vortex scope
+	 */
+	public float getVortexScope();
+	public void setVortexScope(float scope);
 }
 
