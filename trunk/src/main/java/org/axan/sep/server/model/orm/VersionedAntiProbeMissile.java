@@ -1,12 +1,12 @@
 package org.axan.sep.server.model.orm;
 
-import org.axan.sep.common.IGameConfig;
-import org.axan.sep.common.Protocol.eUnitType;
-import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.model.orm.AntiProbeMissile;
 import org.axan.sep.server.model.orm.VersionedUnit;
-import com.almworks.sqlite4java.SQLiteStatement;
 import org.axan.sep.server.model.orm.base.BaseVersionedAntiProbeMissile;
+import org.axan.sep.common.IGameConfig;
+import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.Protocol.eUnitType;
+import com.almworks.sqlite4java.SQLiteStatement;
 
 public class VersionedAntiProbeMissile implements IVersionedAntiProbeMissile
 {
@@ -21,6 +21,12 @@ public class VersionedAntiProbeMissile implements IVersionedAntiProbeMissile
 		this.baseVersionedAntiProbeMissileProxy = new BaseVersionedAntiProbeMissile(stmnt);
 	}
 
+	@Override
+	public float getSight()
+	{
+		return versionedUnitProxy.getSight();
+	}
+	
 	public String getTargetName()
 	{
 		return baseVersionedAntiProbeMissileProxy.getTargetName();
@@ -50,40 +56,25 @@ public class VersionedAntiProbeMissile implements IVersionedAntiProbeMissile
 	{
 		return antiProbeMissileProxy.getName();
 	}
-	
-	@Override
-	public RealLocation getDeparture()
+
+	public Location getDeparture()
 	{
 		return versionedUnitProxy.getDeparture();
 	}
-	
-	@Override
-	public RealLocation getDestination()
-	{
-		return versionedUnitProxy.getDestination();
-	}
-	
-	@Override
+
 	public Double getProgress()
 	{
 		return versionedUnitProxy.getProgress();
 	}
 
+	public Location getDestination()
+	{
+		return versionedUnitProxy.getDestination();
+	}
+
 	public Integer getTurn()
 	{
 		return versionedUnitProxy.getTurn();
-	}
-
-	@Override
-	public float getSight()
-	{
-		return versionedUnitProxy.getSight();
-	}
-
-	@Override
-	public float getSpeed()
-	{
-		return versionedUnitProxy.getSpeed();
 	}
 
 }

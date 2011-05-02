@@ -1,12 +1,12 @@
 package org.axan.sep.server.model.orm;
 
-import org.axan.sep.common.IGameConfig;
-import org.axan.sep.common.Protocol.eUnitType;
-import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.model.orm.CarbonCarrier;
 import org.axan.sep.server.model.orm.VersionedUnit;
-import com.almworks.sqlite4java.SQLiteStatement;
 import org.axan.sep.server.model.orm.base.BaseVersionedCarbonCarrier;
+import org.axan.sep.common.IGameConfig;
+import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.Protocol.eUnitType;
+import com.almworks.sqlite4java.SQLiteStatement;
 
 public class VersionedCarbonCarrier implements IVersionedCarbonCarrier
 {
@@ -19,6 +19,12 @@ public class VersionedCarbonCarrier implements IVersionedCarbonCarrier
 		this.carbonCarrierProxy = new CarbonCarrier(stmnt, config);
 		this.versionedUnitProxy = new VersionedUnit(stmnt, config);
 		this.baseVersionedCarbonCarrierProxy = new BaseVersionedCarbonCarrier(stmnt);
+	}
+	
+	@Override
+	public float getSight()
+	{
+		return versionedUnitProxy.getSight();
 	}
 
 	public String getOrderOwner()
@@ -60,22 +66,15 @@ public class VersionedCarbonCarrier implements IVersionedCarbonCarrier
 	{
 		return carbonCarrierProxy.getType();
 	}
-	
-	@Override
-	public float getSight()
-	{
-		return versionedUnitProxy.getSight();
-	}
-
-	@Override
-	public float getSpeed()
-	{
-		return versionedUnitProxy.getSpeed();
-	}
 
 	public String getName()
 	{
 		return carbonCarrierProxy.getName();
+	}
+
+	public Location getDeparture()
+	{
+		return versionedUnitProxy.getDeparture();
 	}
 
 	public Double getProgress()
@@ -83,14 +82,7 @@ public class VersionedCarbonCarrier implements IVersionedCarbonCarrier
 		return versionedUnitProxy.getProgress();
 	}
 
-	@Override
-	public RealLocation getDeparture()
-	{
-		return versionedUnitProxy.getDeparture();
-	}
-	
-	@Override
-	public RealLocation getDestination()
+	public Location getDestination()
 	{
 		return versionedUnitProxy.getDestination();
 	}

@@ -38,6 +38,11 @@ public interface Protocol
 	public static enum eUnitType {PulsarMissile, Probe, AntiProbeMissile, Fleet, CarbonCarrier, SpaceRoadDeliverer};
 	
 	/**
+	 * Special unit types.
+	 */
+	public static enum eSpecialUnitType {Hero};
+	
+	/**
 	 * Methods that can be called by the client at any game stage.
 	 */
 	public static interface ServerCommon

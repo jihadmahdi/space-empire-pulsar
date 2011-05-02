@@ -1,9 +1,15 @@
 package org.axan.sep.server.model.orm;
 
-import com.almworks.sqlite4java.SQLiteStatement;
-
-import org.axan.sep.common.IGameConfig;
 import org.axan.sep.server.model.orm.base.BaseCelestialBody;
+import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
+import org.axan.sep.common.IGameConfig;
+import org.axan.sep.common.SEPUtils.Location;
+import java.util.Set;
+import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
+import java.util.HashSet;
+import org.axan.sep.common.Protocol.eCelestialBodyType;
+import com.almworks.sqlite4java.SQLiteStatement;
+import com.almworks.sqlite4java.SQLiteConnection;
 
 public class CelestialBody implements ICelestialBody
 {
@@ -14,19 +20,14 @@ public class CelestialBody implements ICelestialBody
 		this.baseCelestialBodyProxy = new BaseCelestialBody(stmnt);
 	}
 
-	public Integer getLocation_y()
+	public Location getLocation()
 	{
-		return baseCelestialBodyProxy.getLocation_y();
+		return (baseCelestialBodyProxy.getLocation_x() == null) ? null : new Location(baseCelestialBodyProxy.getLocation_x(), baseCelestialBodyProxy.getLocation_y(), baseCelestialBodyProxy.getLocation_z());
 	}
 
-	public Integer getLocation_x()
+	public eCelestialBodyType getType()
 	{
-		return baseCelestialBodyProxy.getLocation_x();
-	}
-
-	public String getType()
-	{
-		return baseCelestialBodyProxy.getType();
+		return eCelestialBodyType.valueOf(baseCelestialBodyProxy.getType());
 	}
 
 	public String getName()
@@ -34,9 +35,31 @@ public class CelestialBody implements ICelestialBody
 		return baseCelestialBodyProxy.getName();
 	}
 
-	public Integer getLocation_z()
+	public static <T extends ICelestialBody> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String where, Object ... params) throws SQLiteDBException
 	{
-		return baseCelestialBodyProxy.getLocation_z();
+		try
+		{
+			Set<T> results = new HashSet<T>();
+
+			if (where != null && params != null) where = String.format(where, params);
+			SQLiteStatement stmnt = conn.prepare(String.format("SELECT CelestialBody.type, VersionedCelestialBody.type, * FROM CelestialBody LEFT JOIN Vortex USING (type, name) LEFT JOIN ProductiveCelestialBody USING (type, name) LEFT JOIN VersionedProductiveCelestialBody USING (type, name) LEFT JOIN VersionedAsteroidField USING (turn, type, name) LEFT JOIN VersionedNebula USING (turn, type, name) LEFT JOIN VersionedPlanet USING (turn, type, name) LEFT JOIN AsteroidField USING (type, name) LEFT JOIN Nebula USING (type, name) LEFT JOIN Planet USING (type, name)%s ;", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
+			while(stmnt.step())
+			{
+				eCelestialBodyType type = eCelestialBodyType.valueOf(stmnt.columnString(0));
+				boolean isVersioned = (!stmnt.columnString(1).isEmpty());
+				Class<? extends ICelestialBody> clazz = (Class<? extends ICelestialBody>)  Class.forName(String.format("%s.%s%s", CelestialBody.class.getPackage().getName(), isVersioned ? "Versioned" : "", type.toString()));
+				ICelestialBody o = SQLiteORMGenerator.mapTo(clazz, stmnt, config);
+				if (expectedType.isInstance(o))
+				{
+					results.add(expectedType.cast(o));
+				}
+			}
+			return results;
+		}
+		catch(Exception e)
+		{
+			throw new SQLiteDBException(e);
+		}
 	}
 
 }

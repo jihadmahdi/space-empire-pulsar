@@ -1,10 +1,12 @@
 package org.axan.sep.server.model.orm;
 
-import org.axan.sep.common.IGameConfig;
 import org.axan.sep.server.model.orm.AsteroidField;
 import org.axan.sep.server.model.orm.VersionedProductiveCelestialBody;
-import com.almworks.sqlite4java.SQLiteStatement;
 import org.axan.sep.server.model.orm.base.BaseVersionedAsteroidField;
+import org.axan.sep.common.IGameConfig;
+import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.Protocol.eCelestialBodyType;
+import com.almworks.sqlite4java.SQLiteStatement;
 
 public class VersionedAsteroidField implements IVersionedAsteroidField
 {
@@ -29,17 +31,12 @@ public class VersionedAsteroidField implements IVersionedAsteroidField
 		return asteroidFieldProxy.getMaxSlots();
 	}
 
-	public Integer getLocation_y()
+	public Location getLocation()
 	{
-		return asteroidFieldProxy.getLocation_y();
+		return asteroidFieldProxy.getLocation();
 	}
 
-	public Integer getLocation_x()
-	{
-		return asteroidFieldProxy.getLocation_x();
-	}
-
-	public String getType()
+	public eCelestialBodyType getType()
 	{
 		return asteroidFieldProxy.getType();
 	}
@@ -47,11 +44,6 @@ public class VersionedAsteroidField implements IVersionedAsteroidField
 	public String getName()
 	{
 		return asteroidFieldProxy.getName();
-	}
-
-	public Integer getLocation_z()
-	{
-		return asteroidFieldProxy.getLocation_z();
 	}
 
 	public Integer getCurrentCarbon()

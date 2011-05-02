@@ -1,12 +1,12 @@
 package org.axan.sep.server.model.orm;
 
-import org.axan.sep.common.IGameConfig;
-import org.axan.sep.common.Protocol.eUnitType;
-import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.server.model.orm.Probe;
 import org.axan.sep.server.model.orm.VersionedUnit;
-import com.almworks.sqlite4java.SQLiteStatement;
 import org.axan.sep.server.model.orm.base.BaseVersionedProbe;
+import org.axan.sep.common.IGameConfig;
+import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.Protocol.eUnitType;
+import com.almworks.sqlite4java.SQLiteStatement;
 
 public class VersionedProbe implements IVersionedProbe
 {
@@ -21,6 +21,12 @@ public class VersionedProbe implements IVersionedProbe
 		this.baseVersionedProbeProxy = new BaseVersionedProbe(stmnt);
 	}
 
+	@Override
+	public float getSight()
+	{
+		return versionedUnitProxy.getSight();
+	}
+	
 	public String getOwner()
 	{
 		return probeProxy.getOwner();
@@ -30,22 +36,15 @@ public class VersionedProbe implements IVersionedProbe
 	{
 		return probeProxy.getType();
 	}
-	
-	@Override
-	public float getSight()
-	{
-		return versionedUnitProxy.getSight();
-	}
-
-	@Override
-	public float getSpeed()
-	{
-		return versionedUnitProxy.getSpeed();
-	}
 
 	public String getName()
 	{
 		return probeProxy.getName();
+	}
+
+	public Location getDeparture()
+	{
+		return versionedUnitProxy.getDeparture();
 	}
 
 	public Double getProgress()
@@ -53,14 +52,7 @@ public class VersionedProbe implements IVersionedProbe
 		return versionedUnitProxy.getProgress();
 	}
 
-	@Override
-	public RealLocation getDeparture()
-	{
-		return versionedUnitProxy.getDeparture();
-	}
-	
-	@Override
-	public RealLocation getDestination()
+	public Location getDestination()
 	{
 		return versionedUnitProxy.getDestination();
 	}
@@ -70,4 +62,9 @@ public class VersionedProbe implements IVersionedProbe
 		return versionedUnitProxy.getTurn();
 	}
 
+	@Override
+	public boolean isDeployed()
+	{
+		return getProgress() == 100.0;
+	}
 }

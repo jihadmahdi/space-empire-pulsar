@@ -1,10 +1,12 @@
 package org.axan.sep.server.model.orm;
 
-import org.axan.sep.common.IGameConfig;
 import org.axan.sep.server.model.orm.VersionedProductiveCelestialBody;
 import org.axan.sep.server.model.orm.Planet;
-import com.almworks.sqlite4java.SQLiteStatement;
 import org.axan.sep.server.model.orm.base.BaseVersionedPlanet;
+import org.axan.sep.common.IGameConfig;
+import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.Protocol.eCelestialBodyType;
+import com.almworks.sqlite4java.SQLiteStatement;
 
 public class VersionedPlanet implements IVersionedPlanet
 {
@@ -18,13 +20,6 @@ public class VersionedPlanet implements IVersionedPlanet
 		this.planetProxy = new Planet(stmnt, config);
 		this.baseVersionedPlanetProxy = new BaseVersionedPlanet(stmnt);
 	}
-	
-	public VersionedProductiveCelestialBody getProductiveCelestialBody()
-	{
-		return versionedProductiveCelestialBodyProxy;
-	}
-	
-	// Delegates
 
 	public Integer getCurrentPopulation()
 	{
@@ -61,17 +56,12 @@ public class VersionedPlanet implements IVersionedPlanet
 		return versionedProductiveCelestialBodyProxy.getMaxSlots();
 	}
 
-	public Integer getLocation_y()
+	public Location getLocation()
 	{
-		return versionedProductiveCelestialBodyProxy.getLocation_y();
+		return versionedProductiveCelestialBodyProxy.getLocation();
 	}
 
-	public Integer getLocation_x()
-	{
-		return versionedProductiveCelestialBodyProxy.getLocation_x();
-	}
-
-	public String getType()
+	public eCelestialBodyType getType()
 	{
 		return versionedProductiveCelestialBodyProxy.getType();
 	}
@@ -79,11 +69,6 @@ public class VersionedPlanet implements IVersionedPlanet
 	public String getName()
 	{
 		return versionedProductiveCelestialBodyProxy.getName();
-	}
-
-	public Integer getLocation_z()
-	{
-		return versionedProductiveCelestialBodyProxy.getLocation_z();
 	}
 
 	public Integer getMaxPopulation()
@@ -95,4 +80,5 @@ public class VersionedPlanet implements IVersionedPlanet
 	{
 		return planetProxy.getPopulationPerTurn();
 	}
+
 }
