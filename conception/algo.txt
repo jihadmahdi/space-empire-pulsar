@@ -1,3 +1,39 @@
+==DB Client / DB Serveur==
+Etat actuel (pas top, clonage incéssant de la DB..)
+Le serveur maintient:
+	Une DB pour chaque instance de plateau de jeu.
+	Une liste de plateau de jeu successif pour chaque nouveau tour (début de tour).
+	Une copie de chaque nouveau tour (début de tour) pour chaque joueur.
+	Une version "tour en cours" pour chaque joueur.
+	
+Problème: Une DB pour chaque plateau de jeu, cloné à chaque nouvelle commande : "GameBoard Command.apply(GameBoard)"
+
+==Voyage des unités==
+Une unité née ainsi:
+	Départ: corps céleste de création
+	Destination: null
+	Progress: 0.0
+
+Décollage:
+	Départ: corps céleste courant
+	Destination: corps céleste destination
+	Progress: 0.0
+	
+Voyage:
+	Progress: s'incrémente
+	
+Deploiement (unités ne voyageant qu'une fois, ex: Probe):
+	Départ: inchangé (corps céleste d'origine)
+	Destination: inchangé (corps céleste courant)
+	Progress: 100.0
+
+Aterrissage (unités pouvant redécoller, ex: Fleet):
+	Départ: corps céleste d'arrivé
+	Destination: null
+	Progress: 0.0
+	
+
+
 ALGORITHME ResoudreTour()
 DEBUT
 	DB db;

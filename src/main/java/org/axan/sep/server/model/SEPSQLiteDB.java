@@ -11,6 +11,7 @@ import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -28,6 +29,7 @@ import org.axan.eplib.utils.Basic;
 import org.axan.eplib.utils.Reflect;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
+import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.GameConfigCopier;
@@ -40,12 +42,21 @@ import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
 import org.axan.sep.server.SEPServer;
 import org.axan.sep.server.model.GameBoard.ATurnResolvingEvent;
 import org.axan.sep.server.model.ISEPServerDataBase.SEPServerDataBaseException;
+import org.axan.sep.server.model.orm.AssignedFleet;
 import org.axan.sep.server.model.orm.Building;
-import org.axan.sep.server.model.orm.Planet;
-import org.axan.sep.server.model.orm.Probe;
+import org.axan.sep.server.model.orm.CelestialBody;
+import org.axan.sep.server.model.orm.IBuilding;
+import org.axan.sep.server.model.orm.ICelestialBody;
+import org.axan.sep.server.model.orm.IProductiveCelestialBody;
+import org.axan.sep.server.model.orm.IVersionedFleet;
+import org.axan.sep.server.model.orm.IVersionedPlanet;
+import org.axan.sep.server.model.orm.IVersionedProbe;
+import org.axan.sep.server.model.orm.IVersionedProductiveCelestialBody;
+import org.axan.sep.server.model.orm.IVersionedUnit;
 import org.axan.sep.server.model.orm.ProductiveCelestialBody;
-import org.axan.sep.server.model.orm.VersionedPlanet;
+import org.axan.sep.server.model.orm.Unit;
 import org.axan.sep.server.model.orm.VersionedProductiveCelestialBody;
+import org.axan.sep.server.model.orm.VersionedUnit;
 import org.axan.sep.server.model.ISEPServerDataBase;
 
 import com.almworks.sqlite4java.SQLiteConnection;
@@ -365,7 +376,7 @@ public class SEPSQLiteDB extends GameBoard implements Serializable
 	}
 	
 	@Override
-	public PlayerGameBoard getPlayerGameBoard(String playerLogin) throws SEPServerDataBaseException
+	public PlayerGameBoard getPlayerGameBoard(final String playerLogin) throws SEPServerDataBaseException
 	{
 		// TODO: Create Client SQLiteDB for given player.
 		
@@ -377,62 +388,67 @@ public class SEPSQLiteDB extends GameBoard implements Serializable
 				protected PlayerGameBoard job(SQLiteConnection conn) throws Throwable
 				{
 					org.axan.sep.common.Area[][][] playerUniverseView = new org.axan.sep.common.Area[getConfig().getDimX()][getConfig().getDimY()][getConfig().getDimZ()];
-					Set<Probe> playerProbes = new HashSet<Probe>();
-					
-					return null;
-					SUIS LA, cf SQLiteTest pour la requete dernière version.
-					//SQLiteStatement stmnt = conn.prepare("SELECT type, * FROM VersionedProbe LEFT JOIN VersionedUnit USING (owner, name, turn, type) LEFT JOIN Probe USING (owner, name, type) LEFT JOIN Unit USING (owner, name, type) WHERE VersionedProbe.turn = ())
-					
-					/*
-					Set<Probe> playerProbes = db.getUnits(Probe.class, playerLogin);
-
 					Map<String, org.axan.sep.common.Diplomacy> playersPoliciesView = new Hashtable<String, org.axan.sep.common.Diplomacy>();
 					
+					// Select all probes (current turn) owned by the given player.
+					Set<IVersionedProbe> playerProbes = Unit.select(conn, getConfig(), IVersionedProbe.class, true, "owner = '%s' AND turn = %d", playerLogin, getConfig().getTurn());										
+					
 					boolean isVisible = false;
-
-					for(int x = 0; x < config.getDimX(); ++x)
-						for(int y = 0; y < config.getDimY(); ++y)
-							for(int z = 0; z < config.getDimZ(); ++z)
+					
+					for(int x = 0; x < getConfig().getDimX(); ++x)
+						for(int y = 0; y < getConfig().getDimY(); ++y)
+							for(int z = 0; z < getConfig().getDimZ(); ++z)
 							{
 								Location location = new Location(x, y, z);
-								Area area = db.getArea(location);
-
+								
+								// Select celestial body if exists in current Area.
+								Set<ICelestialBody> cbs = CelestialBody.select(conn, getConfig(), ICelestialBody.class, true, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
+								ICelestialBody celestialBody = (cbs == null || cbs.isEmpty()) ? null : cbs.iterator().next();
+								IVersionedProductiveCelestialBody productiveCelestialBody = (celestialBody == null || !IVersionedProductiveCelestialBody.class.isInstance(celestialBody)) ? null : IVersionedProductiveCelestialBody.class.cast(celestialBody);																								
+								String celestialBodyOwnerName = (productiveCelestialBody == null) ? null : productiveCelestialBody.getOwner();								
+								
+								// Select current player assigned fleet on the potential celestial body
+								/* Don't need to select assigned fleet in particular as they should match the general fleets select query (filtered on location)
+								Set<AssignedFleet> afs = (celestialBody == null ? null :AssignedFleet.select(conn, getConfig(), AssignedFleet.class, false, "celestialBody = '%s' AND owner = '%s'", celestialBody.getName(), playerLogin));
+								AssignedFleet assignedFleet = (afs == null || afs.isEmpty()) ? null : afs.iterator().next();
+								*/
+								
+								// Select other player fleets on the current area
+								Set<IVersionedFleet> fleets = Unit.select(conn, getConfig(), IVersionedFleet.class, true, "departure_x = %d AND departure_y = %d AND departure_z = %d AND progress = 100.0 AND owner = '%s' AND turn = %d", location.x, location.y, location.z, playerLogin, getConfig().getTurn());								
+								
 								// Check for Area visibility (default to false)
 								isVisible = false;
-
-								//NOTE: location -> productiveCelestialBody
 								
-								ICelestialBody celestialBody = (area != null ? area.getCelestialBody() : null);
-								ProductiveCelestialBody productiveCelestialBody = (celestialBody != null && ProductiveCelestialBody.class.isInstance(celestialBody) ? ProductiveCelestialBody.class.cast(celestialBody) : null);
-								String celestialBodyOwnerName = (celestialBody != null ? celestialBody.getOwnerName() : null);
-								Fleet unassignedFleet = (productiveCelestialBody != null ? productiveCelestialBody.getUnasignedFleet(playerLogin) : null);
-
 								// Visible if area celestial body is owned by the player.
-								if (!isVisible && playerLogin.equals(celestialBodyOwnerName))
+								if (!isVisible && celestialBodyOwnerName != null && playerLogin.matches(celestialBodyOwnerName))
 								{
 									isVisible = true;
 								}
-
+								
 								// Visible if area contains a celestial body and player has a unit on it.
-								if (!isVisible && ((unassignedFleet != null && !unassignedFleet.hasNoMoreStarships()) || (productiveCelestialBody != null && !db.getUnits(location, playerLogin).isEmpty())))
+								if (!isVisible && fleets != null && !fleets.isEmpty())
 								{
+									// Assume that fleets are never inserted/updated empty, so the filter on current turn is enough.
 									isVisible = true;
 								}
-
+								
 								// Area is under a player probe scope.
-								if (!isVisible) for(Probe p : playerProbes)
+								if (!isVisible) for(IVersionedProbe p : playerProbes)
 								{
-									if (org.axan.sep.common.SEPUtils.getDistance(location.asRealLocation(), p.getRealLocation()) > config.getProbeScope()) continue;
-
-									if (p.isDeployed())
-									{
-										isVisible = true;
-										break;
-									}
-
-									if (isVisible) break;
+									if (!p.isDeployed()) continue;
+									
+									if (SEPUtils.getDistance(p.getDestination(), location) > p.getSight()) continue;
+									
+									isVisible = true;
+									break;
 								}
-
+								
+								// TODO: Se pencher d'abord sur le côté client pour voir comment on représente la DB là-bas.
+							}
+					
+					return null;
+					/*
+							{								
 								if (isVisible || area != null)
 								{
 									// If celestial body is a planet with government settled.
@@ -885,27 +901,24 @@ public class SEPSQLiteDB extends GameBoard implements Serializable
 				protected Void job(SQLiteConnection conn) throws Throwable
 				{										
 					// Select productive celestial body by name, last version
-					SQLiteStatement stmnt = conn.prepare("SELECT type, * FROM CelestialBody CB LEFT JOIN ProductiveCelestialBody PCB USING (name, type) LEFT JOIN Vortex V USING (name, type) LEFT JOIN Nebula N USING (name, type) LEFT JOIN AsteroidField AF USING (name, type) LEFT JOIN Planet P USING (name, type) LEFT JOIN VersionedProductiveCelestialBody VPCB USING (name, type) LEFT JOIN VersionedNebula VN USING (name, turn, type) LEFT JOIN VersionedAsteroidField VAF USING (name, turn, type) LEFT JOIN VersionedPlanet VP USING (name, turn, type) TODO");
+					Set<IVersionedProductiveCelestialBody> pcbs = CelestialBody.select(conn, getConfig(), IVersionedProductiveCelestialBody.class, true, "name = '%s'", celestialBodyName);
+					
 					// celestialBodyName IS A ProductiveCelestialBody
-					if (!stmnt.step())
+					if (!pcbs.isEmpty())
 					{
 						throw new SEPServerDataBaseException("Celestial body '" + celestialBodyName + "' does not exist, is not a productive one, or is not owned by '" + playerLogin + "'.");
 					}
-					VersionedProductiveCelestialBody pcb;
-					VersionedPlanet p;
-					try
+					
+					IVersionedProductiveCelestialBody pcb = pcbs.iterator().next();
+					IVersionedPlanet p = null;
+					
+					if (IVersionedPlanet.class.isInstance(pcb))
 					{
-						p = new VersionedPlanet(stmnt, config);
-						pcb = p.getProductiveCelestialBody();
-					}
-					catch(Exception e)
-					{
-						p = null;
-						pcb = new VersionedProductiveCelestialBody(stmnt, getConfig());
+						p = IVersionedPlanet.class.cast(pcb);
 					}
 					
 					// Select last build date
-					stmnt = conn.prepare("TODO");
+					SQLiteStatement stmnt = conn.prepare("TODO");
 					stmnt.step();
 					// celestialBody did not built anything else for the current game turn.
 					if (stmnt.columnInt(0) >= getConfig().getTurn())
@@ -925,11 +938,12 @@ public class SEPSQLiteDB extends GameBoard implements Serializable
 					int carbonCost = 0, populationCost = 0, nbBuilt = 0;
 					
 					// Select current building for the given type
-					stmnt = conn.prepare("TODO");
-					Building b = null;
-					if (stmnt.step())
+					Set<IBuilding> bs = Building.select(conn, getConfig(), IBuilding.class, true, "TOTO");
+					
+					IBuilding b = null;
+					if (!bs.isEmpty())
 					{
-						b = new Building(stmnt, getConfig());
+						b = bs.iterator().next();
 						
 						if (!Rules.getBuildingCanBeUpgraded(b.getType()))
 						{

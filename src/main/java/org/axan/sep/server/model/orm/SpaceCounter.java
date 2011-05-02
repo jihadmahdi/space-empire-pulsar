@@ -1,9 +1,9 @@
 package org.axan.sep.server.model.orm;
 
-import org.axan.sep.common.IGameConfig;
 import org.axan.sep.server.model.orm.Building;
-import com.almworks.sqlite4java.SQLiteStatement;
 import org.axan.sep.server.model.orm.base.BaseSpaceCounter;
+import org.axan.sep.common.IGameConfig;
+import com.almworks.sqlite4java.SQLiteStatement;
 
 public class SpaceCounter extends Building implements ISpaceCounter
 {

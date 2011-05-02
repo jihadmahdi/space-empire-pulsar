@@ -1,10 +1,12 @@
 package org.axan.sep.server.model.orm;
 
-import org.axan.sep.common.IGameConfig;
 import org.axan.sep.server.model.orm.VersionedProductiveCelestialBody;
 import org.axan.sep.server.model.orm.Nebula;
-import com.almworks.sqlite4java.SQLiteStatement;
 import org.axan.sep.server.model.orm.base.BaseVersionedNebula;
+import org.axan.sep.common.IGameConfig;
+import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.Protocol.eCelestialBodyType;
+import com.almworks.sqlite4java.SQLiteStatement;
 
 public class VersionedNebula implements IVersionedNebula
 {
@@ -49,17 +51,12 @@ public class VersionedNebula implements IVersionedNebula
 		return versionedProductiveCelestialBodyProxy.getMaxSlots();
 	}
 
-	public Integer getLocation_y()
+	public Location getLocation()
 	{
-		return versionedProductiveCelestialBodyProxy.getLocation_y();
+		return versionedProductiveCelestialBodyProxy.getLocation();
 	}
 
-	public Integer getLocation_x()
-	{
-		return versionedProductiveCelestialBodyProxy.getLocation_x();
-	}
-
-	public String getType()
+	public eCelestialBodyType getType()
 	{
 		return versionedProductiveCelestialBodyProxy.getType();
 	}
@@ -67,11 +64,6 @@ public class VersionedNebula implements IVersionedNebula
 	public String getName()
 	{
 		return versionedProductiveCelestialBodyProxy.getName();
-	}
-
-	public Integer getLocation_z()
-	{
-		return versionedProductiveCelestialBodyProxy.getLocation_z();
 	}
 
 }

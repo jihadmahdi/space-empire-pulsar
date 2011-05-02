@@ -25,6 +25,7 @@ inheritances:
 # Special units
 
   Hero: [SpecialUnit]
+  VersionedSpecialUnit: [SpecialUnit]
 
 # Units
 
@@ -35,6 +36,7 @@ inheritances:
   AntiProbeMissile: [Unit]
   Fleet: [Unit]
   SpaceRoadDeliverer: [Unit]
+  VersionedSpaceRoadDeliverer: [SpaceRoadDeliverer, VersionedUnit]
   VersionedFleet: [Fleet, VersionedUnit]
   VersionedProbe: [Probe, VersionedUnit]
   VersionedCarbonCarrier: [CarbonCarrier, VersionedUnit]

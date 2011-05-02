@@ -278,17 +278,17 @@ CREATE TABLE VersionedProbe (
      owner TEXT NOT NULL,
      name TEXT NOT NULL,
      turn INTEGER NOT NULL,
-     destination_x INTEGER,
-     destination_y INTEGER,
-     destination_z INTEGER,
+     -- destination_x INTEGER,
+     -- destination_y INTEGER,
+     -- destination_z INTEGER,
      type TEXT NOT NULL,
-     CHECK((destination_x is NOT NULL AND destination_y is NOT NULL AND destination_z is NOT NULL)
-           OR (destination_x IS NULL AND destination_y IS NULL AND destination_z IS NULL)),
+     -- CHECK((destination_x is NOT NULL AND destination_y is NOT NULL AND destination_z is NOT NULL)
+     --       OR (destination_x IS NULL AND destination_y IS NULL AND destination_z IS NULL)),
      CONSTRAINT PKVersionedProbe PRIMARY KEY (owner, name, turn),
      UNIQUE (owner, name, turn, type),
      CONSTRAINT FKVersionedProbeISAVersionedUnit FOREIGN KEY (owner, name, turn, type) REFERENCES VersionedUnit (owner, name, turn, type),
-     CONSTRAINT FKVersionedProbeISAProbe FOREIGN KEY (owner, name, type) REFERENCES Probe (owner, name, type),
-     CONSTRAINT FKVersionedProbeDestination FOREIGN KEY (destination_x, destination_y, destination_z) REFERENCES Area     
+     CONSTRAINT FKVersionedProbeISAProbe FOREIGN KEY (owner, name, type) REFERENCES Probe (owner, name, type)
+     -- CONSTRAINT FKVersionedProbeDestination FOREIGN KEY (destination_x, destination_y, destination_z) REFERENCES Area     
 );
 
 CREATE TABLE ExtractionModule (

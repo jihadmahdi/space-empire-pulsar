@@ -29,10 +29,15 @@ import org.axan.eplib.utils.Reflect;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.Player;
 import org.axan.sep.common.PlayerConfig;
+import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.server.model.orm.Building;
+import org.axan.sep.server.model.orm.IBuilding;
+import org.axan.sep.server.model.orm.IUnit;
 import org.axan.sep.server.model.orm.IVersionedUnit;
+import org.axan.sep.server.model.orm.Unit;
 import org.axan.sep.server.model.orm.VersionedAntiProbeMissile;
 import org.axan.sep.server.model.orm.VersionedUnit;
 import org.junit.After;
@@ -549,7 +554,9 @@ public class TestSQLite
 						try
 						{
 							// DEAD LOCK, VersionedUnit constructor need GameConfig to make query while already in job, waiting for result produce dead lock.
-							units.add(VersionedUnit.create(eUnitType.valueOf(stmnt.columnString(0)), stmnt, sepDB.getConfig()));
+							eUnitType type = eUnitType.valueOf(stmnt.columnString(0));
+							Class<? extends IVersionedUnit> clazz = (Class<? extends IVersionedUnit>)  Class.forName(String.format("%s.Versioned%s", Unit.class.getPackage().getName(), type.toString()));
+							units.add(SQLiteORMGenerator.mapTo(clazz, stmnt, sepDB.getConfig()));
 						}
 						catch(Exception e)
 						{
@@ -577,14 +584,29 @@ public class TestSQLite
 					return units;
 				}
 			});
-			Thread.sleep(1000);
 			long t2 = System.currentTimeMillis();
+			
+			Set<? extends IVersionedUnit> units2 = db.exec(new SQLiteJob<Set<? extends IVersionedUnit>>()
+			{
+				@Override
+				protected Set<? extends IVersionedUnit> job(SQLiteConnection conn) throws Throwable
+				{
+					return Unit.select(conn, sepDB.getConfig(), IVersionedUnit.class, true, null);
+				}
+			});
+			long t3 = System.currentTimeMillis();
 			
 			for(IVersionedUnit vu : units)
 			{
-				System.out.println(vu.toString());
+				System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getTurn());
 			}
 			System.out.println("in "+(t2-t1)+"ms");
+			
+			for(IVersionedUnit vu : units2)
+			{
+				System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getTurn());
+			}
+			System.out.println("in "+(t3-t2)+"ms");
 			
 			db.exportDBFile(new File("/tmp/sep_export.db"));
 		}
