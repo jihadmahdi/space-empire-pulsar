@@ -167,20 +167,6 @@ public abstract class SEPUtils
 		return result;
 	}
 	
-	public static final Set<Class<? extends ABuilding>> buildingTypes;
-	
-	static
-	{
-		Set<Class<? extends ABuilding>> buildingsTypesSet = new HashSet<Class<? extends ABuilding>>();
-		buildingsTypesSet.add(DefenseModule.class);
-		buildingsTypesSet.add(ExtractionModule.class);
-		buildingsTypesSet.add(GovernmentModule.class);
-		buildingsTypesSet.add(PulsarLauchingPad.class);
-		buildingsTypesSet.add(SpaceCounter.class);
-		buildingsTypesSet.add(StarshipPlant.class);
-		buildingTypes = Collections.unmodifiableSet(buildingsTypesSet);
-	}
-	
 	public static final Set<StarshipTemplate> starshipSizeTemplates;
 	
 	static

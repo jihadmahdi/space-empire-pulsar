@@ -10,18 +10,25 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.axan.sep.common.CommandCheckResult;
 import org.axan.sep.common.GameConfig;
+import org.axan.sep.common.IGameCommand;
 import org.axan.sep.common.Player;
+import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.server.SEPServer;
+import org.axan.sep.server.SEPServer.SEPImplementationException;
 import org.axan.sep.server.model.ISEPServerDataBase.SEPServerDataBaseException;
 
 /**
@@ -35,16 +42,15 @@ public class ServerGame implements Serializable
 	private static final Logger							log					= SEPServer.log;
 
 	/** Resolved game turns. */
-	private final Stack<GameBoard>						gameBoards			= new Stack<GameBoard>();
+	private GameBoard						currentGameBoard			= null;
 
-	private transient Map<String, PlayerGameMove>	playersCurrentMove	= new HashMap<String, PlayerGameMove>();
+	private transient Map<String, List<IGameCommand>>	playersCurrentMove = new HashMap<String, List<IGameCommand>>();
 
 	public ServerGame(Set<Player> playerList, GameConfig gameConfig) throws SEPServerDataBaseException
 	{
-		GameBoard initialGameBoard;
 		try
 		{
-			initialGameBoard = new SEPSQLiteDB(playerList, gameConfig);
+			currentGameBoard = new SEPServerSQLiteDB(playerList, gameConfig);
 		}
 		catch(IOException e)
 		{
@@ -54,48 +60,112 @@ public class ServerGame implements Serializable
 		{
 			throw new SEPServerDataBaseException(e);
 		}
-		gameBoards.push(initialGameBoard);
+		
 		for(Player p : playerList)
 		{
-			playersCurrentMove.put(p.getName(), new PlayerGameMove(initialGameBoard, p.getName()));
+			playersCurrentMove.put(p.getName(), null);
 		}
 	}
-
-	public GameBoard getGameBoard(String playerLogin)
+	
+	public PlayerGameBoard getPlayerGameBoard(String playerLogin) throws SEPServerDataBaseException
 	{
-		return playersCurrentMove.get(playerLogin).getGameBoard();
+		return currentGameBoard.getPlayerGameBoard(playerLogin);
 	}
-
-	public PlayerGameMove getPlayerGameMove(String playerLogin)
+	
+	private void checkCommandResult(CommandCheckResult result) throws RunningGameCommandException
 	{
-		return playersCurrentMove.get(playerLogin);
+		if (!result.isPossible())
+		{
+			throw new RunningGameCommandException(result.getReason());
+		}
+	}
+	
+	private void executeCommand(GameMoveCommand command) throws RunningGameCommandException
+	{		
+		Method method;
+		CommandCheckResult result;
+		try
+		{
+			String methodName = "can"+command.getClass().getSimpleName();
+			if (methodName.endsWith("Command")) methodName = methodName.replaceAll("Command", "");
+			method = GameBoard.class.getMethod(methodName, String.class, command.getParams().getClass());			
+			result = (CommandCheckResult) method.invoke(currentGameBoard, command.playerLogin, command.getParams());
+		}
+		catch(Throwable t)
+		{
+			throw new RunningGameCommandException(t);
+		}
+		
+		checkCommandResult(result);
+		
+		command.apply(currentGameBoard);
+	}
+	
+	public void endTurn(String playerLogin, List<IGameCommand> commands) throws SEPImplementationException, RunningGameCommandException
+	{
+		for(IGameCommand command : commands)
+		{
+			if (command == null) continue;
+			
+			GameMoveCommand<?> gameMoveCommand;
+			
+			String serverClassName = GameMoveCommand.class.getCanonicalName()+"$"+command.getClass().getSimpleName()+"Command";
+			try
+			{
+				Class<? extends GameMoveCommand<?>> serverCommandClass = (Class<? extends GameMoveCommand<Object>>) Class.forName(serverClassName);
+				Constructor<? extends GameMoveCommand<?>> serverCommandClassConstructor;
+				serverCommandClassConstructor = serverCommandClass.getConstructor(String.class, command.getParams().getClass());
+				gameMoveCommand = serverCommandClassConstructor.newInstance(playerLogin, command.getParams());
+			}
+			catch(Throwable t)
+			{
+				throw new SEPImplementationException("Client command '"+command.getClass().getSimpleName()+"' cannot match server expected class '"+serverClassName+"'", t);
+			}
+			
+			try
+			{
+				executeCommand(gameMoveCommand);
+			}
+			catch(Throwable t)
+			{				
+				// TODO: Corrupted game, cannot recover from corrupted gameboard if crashed on Command.apply(GameBoard).
+				
+				if (RunningGameCommandException.class.isInstance(t))
+				{
+					throw RunningGameCommandException.class.cast(t);
+				}
+				else
+				{
+					throw new RunningGameCommandException(t);
+				}
+			}
+		}
+		
+		playersCurrentMove.put(playerLogin, commands);
+	}
+	
+	public boolean isTurnEnded(String playerLogin)
+	{
+		// TODO: Implement the case for which a player who already loss the game don't need to end turn (actually don't even play anymore).
+		// TODO: + any case for which the player just has to pass his turn (pulsar...).
+		return playersCurrentMove.get(playerLogin) != null;
 	}
 
 	public void resolveCurrentTurn() throws RunningGameCommandException
 	{		
-		GameBoard currentGameBoard = gameBoards.peek();
-
-		// Merge players instant actions gameboards.
+		// Check all players have ended turn.
 		for(String playerLogin : playersCurrentMove.keySet())
 		{
-			PlayerGameMove playerGameMove = playersCurrentMove.get(playerLogin);
-			Stack<GameMoveCommand> playerCommands = playerGameMove.getCommands();
-
-			for(GameMoveCommand cmd : playerCommands)
-			{
-				currentGameBoard = cmd.apply(currentGameBoard);
-			}
+			if (!isTurnEnded(playerLogin)) return;			
 		}
 
-		// Resolve the turn on the merged gameboard.
+		// Resolve the turn.
 		currentGameBoard.resolveCurrentTurn();
 
-		// Save new turn gameboard.
-		gameBoards.push(currentGameBoard);
-
+		// Empty current turn command lists.
 		for(String playerLogin : playersCurrentMove.keySet())
 		{
-			playersCurrentMove.put(playerLogin, new PlayerGameMove(currentGameBoard, playerLogin));
+			playersCurrentMove.put(playerLogin, null);
 		}
 	}
 
@@ -119,14 +189,14 @@ public class ServerGame implements Serializable
 	{
 		in.defaultReadObject();
 
-		if (playersCurrentMove == null) {playersCurrentMove = new HashMap<String, PlayerGameMove>();}
+		if (playersCurrentMove == null) {playersCurrentMove = new HashMap<String, List<IGameCommand>>();}
 		playersCurrentMove.clear();
 
 		int nbPlayers = in.readInt();
 		for(int i = 0; i < nbPlayers; ++i)
 		{
 			String playerName = String.class.cast(in.readObject());
-			playersCurrentMove.put(playerName, new PlayerGameMove(gameBoards.peek(), playerName));
+			playersCurrentMove.put(playerName, null);
 		}
 	}
 

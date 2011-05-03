@@ -441,7 +441,7 @@ public class TestSQLite
 	public void testSEPSQLiteDB()
 	{		
 		GameConfig config = new GameConfig();
-		final SEPSQLiteDB sepDB;
+		final SEPServerSQLiteDB sepDB;
 		SQLiteDB db;
 		Vector<Player> players = new Vector<Player>();
 		
@@ -451,7 +451,7 @@ public class TestSQLite
 		
 		try
 		{
-			sepDB = new SEPSQLiteDB(new HashSet<Player>(players), config);
+			sepDB = new SEPServerSQLiteDB(new HashSet<Player>(players), config);
 			db = sepDB.getDB();
 		
 			Vector<Location> celestialBodiesLocation = db.prepare("SELECT location_x, location_y, location_z FROM CelestialBody;", new SQLiteStatementJob<Vector<Location>>()

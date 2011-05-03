@@ -1,18 +1,9 @@
 package org.axan.sep.common;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
 
-import org.axan.sep.common.Diplomacy.PlayerPolicies;
 import org.axan.sep.common.IGameCommand.GameCommandException;
-import org.axan.sep.common.PlayerGameBoard.PlayerGameBoardQueryException;
-import org.axan.sep.common.ProductiveCelestialBody.CelestialBodyBuildException;
-import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.Protocol.eBuildingType;
 
 public interface IGame
@@ -65,7 +56,7 @@ public interface IGame
 	public abstract AbstractGameCommandCheck canEndTurn();
 
 ///////////////////// Commands
-	
+	/*
 	///// AttackEnemiesFleet
 	
 	public static class AttackEnemiesFleetParams implements Serializable
@@ -150,6 +141,7 @@ public interface IGame
 		}
 		
 	}
+*/
 	
 	///// Build
 	
@@ -164,6 +156,8 @@ public interface IGame
 			this.buildingType = buildingType;
 		}
 	}
+	
+/*
 	
 	public static class BuildCheck extends AbstractGameCommandCheck
 	{
@@ -1271,8 +1265,8 @@ public interface IGame
 				return check;
 			}
 			
-			check.newFleet = new Fleet(true, gameBoard.getDate(), params.fleetName, gameBoard.getPlayerName(), location, null, location, 0, /*TODO*/ 0, params.fleetToFormStarships, specialUnits, null, null, false);
-			
+			check.newFleet = new Fleet(true, gameBoard.getDate(), params.fleetName, gameBoard.getPlayerName(), location, null, location, 0, /*TODO*//* 0, params.fleetToFormStarships, specialUnits, null, null, false);
+/*			
 			return check;
 		}
 	}
@@ -1425,8 +1419,8 @@ public interface IGame
 			check.newProbes = new HashSet<Probe>();
 			for(int i=0; i<params.quantity; ++i)
 			{
-				check.newProbes.add(new Probe(true, gameBoard.getDate(), params.probeName + i, gameBoard.getPlayerName(), location, null, location, 0, /*TODO*/0, false));
-			}
+				check.newProbes.add(new Probe(true, gameBoard.getDate(), params.probeName + i, gameBoard.getPlayerName(), location, null, location, 0, /*TODO*//*0, false));
+/*			}
 			
 			return check;
 		}
@@ -1580,8 +1574,8 @@ public interface IGame
 			check.newAntiProbeMissiles = new HashSet<AntiProbeMissile>();
 			for(int i=0; i<params.quantity; ++i)
 			{
-				check.newAntiProbeMissiles.add(new AntiProbeMissile(true, gameBoard.getDate(), params.antiProbeMissileName + i, gameBoard.getPlayerName(), location, null, location, 0, /*TODO*/0, false));
-			}
+				check.newAntiProbeMissiles.add(new AntiProbeMissile(true, gameBoard.getDate(), params.antiProbeMissileName + i, gameBoard.getPlayerName(), location, null, location, 0, /*TODO*//*0, false));
+/*			}
 			
 			return check;
 		}
@@ -1846,8 +1840,8 @@ public interface IGame
 				return check;
 			}
 			
-			check.deliverer = new SpaceRoadDeliverer(true, gameBoard.getDate(), delivererId, gameBoard.getPlayerName(), sourceLocation, destinationLocation, sourceLocation, 0, /*TODO*/0);
-			check.destinationLocation = destinationLocation;
+			check.deliverer = new SpaceRoadDeliverer(true, gameBoard.getDate(), delivererId, gameBoard.getPlayerName(), sourceLocation, destinationLocation, sourceLocation, 0, /*TODO*//*0);
+/*			check.destinationLocation = destinationLocation;
 			
 			check.setPrice(check.price, 0);
 			
@@ -2059,7 +2053,7 @@ public interface IGame
 		public final String fleetName;
 		public final Stack<Fleet.Move> checkpoints = new Stack<Fleet.Move>();
 		
-		public MoveFleetParams(String fleetName, Stack<org.axan.sep.common.Fleet.Move> checkpoints)
+		public MoveFleetParams(String fleetName, Stack<org.axan.sep.common.db.sqlite.orm.Fleet.Move> checkpoints)
 		{
 			this.fleetName = fleetName;
 			if (checkpoints != null) this.checkpoints.addAll(checkpoints);
@@ -2079,7 +2073,7 @@ public interface IGame
 	
 	public static class MoveFleet extends AbstractGameCommand<MoveFleetParams, MoveFleetCheck> implements Serializable
 	{
-		public MoveFleet(String fleetName, Stack<org.axan.sep.common.Fleet.Move> checkpoints)
+		public MoveFleet(String fleetName, Stack<org.axan.sep.common.db.sqlite.orm.Fleet.Move> checkpoints)
 		{
 			super(new MoveFleetParams(fleetName, checkpoints));
 		}
@@ -2114,7 +2108,7 @@ public interface IGame
 			check.locatedCheckpoints = new Stack<Fleet.Move>();
 			
 			RealLocation currentStart = (check.fleet.isMoving() ? check.fleet.getDestinationLocation() : check.fleet.getCurrentLocation());
-			for(org.axan.sep.common.Fleet.Move move : params.checkpoints)
+			for(org.axan.sep.common.db.sqlite.orm.Fleet.Move move : params.checkpoints)
 			{
 				RealLocation destinationLocation;
 				try
@@ -2141,10 +2135,11 @@ public interface IGame
 
 				currentStart = destinationLocation;
 
-				check.locatedCheckpoints.add(new org.axan.sep.common.Fleet.Move(move, destinationLocation));
+				check.locatedCheckpoints.add(new org.axan.sep.common.db.sqlite.orm.Fleet.Move(move, destinationLocation));
 			}
 			
 			return check;
 		}				
 	}
+	*/
 }

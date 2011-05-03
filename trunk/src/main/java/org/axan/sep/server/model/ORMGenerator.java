@@ -30,6 +30,7 @@ import org.axan.sep.common.Protocol.eSpecialUnitType;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
+import org.axan.sep.common.db.sqlite.SEPCommonSQLiteDB;
 
 import com.almworks.sqlite4java.SQLite;
 import com.almworks.sqlite4java.SQLiteConnection;
@@ -49,10 +50,11 @@ public class ORMGenerator
 			File ormTemp = File.createTempFile("SEP_ORM", ".db");
 			ormTemp.deleteOnExit();
 			
-			final String packageName = ORMGenerator.class.getPackage().getName()+".orm";
-			File outputFile = new File("/media/data/code/Java_Workspace/Space-Empire-Pulsar/src/main/java/"+packageName.replace('.', '/'));
-			URL dbFileURL = Reflect.getResource(SEPSQLiteDB.class.getPackage().getName(), "SEPSQLiteDB.server.sql");
-			File configFile = new File(Reflect.getResource(SEPSQLiteDB.class.getPackage().getName(), "SEPSQLiteDB.server.ORM.yaml").getFile());
+			String sqlitePackageName = SEPCommonSQLiteDB.class.getPackage().getName();
+			final String ormPackageName = sqlitePackageName+".orm";
+			File outputFile = new File("/media/data/code/Java_Workspace/Space-Empire-Pulsar/src/main/java/"+ormPackageName.replace('.', '/'));
+			URL dbFileURL = Reflect.getResource(sqlitePackageName, "SEPSQLiteDB.sql");
+			File configFile = new File(Reflect.getResource(sqlitePackageName, "SEPSQLiteDB.ORM.yaml").getFile());
 			
 			YamlConfigFile cfg = YamlConfigFile.open(configFile);
 			
@@ -214,7 +216,7 @@ public class ORMGenerator
 				{
 					for(Map.Entry<String, java.lang.Class<? extends Enum>> e : getEnumTypes().entrySet())
 					{
-						if (c.isInstanceOf(packageName, e.getKey()))
+						if (c.isInstanceOf(ormPackageName, e.getKey()))
 						{
 							return e.getValue();
 						}												
@@ -297,7 +299,7 @@ public class ORMGenerator
 				{
 					for(String k : getEnumTypes().keySet())
 					{
-						if (c.isInstanceOf(packageName, k))
+						if (c.isInstanceOf(ormPackageName, k))
 						{
 							return !c.getUpperName().matches(k);
 						}												
@@ -433,7 +435,7 @@ public class ORMGenerator
 				}
 				
 				
-			}, packageName, Exception.class, inheritances);
+			}, ormPackageName, Exception.class, inheritances);
 			
 			// TODO: assurer l'import des types paramètres et retour.
 			// TODO: méthodes cast pour les membres nested (ex: récupérer l'interface VersionedProductiveCelestialBody d'une VersionedPlanet.
