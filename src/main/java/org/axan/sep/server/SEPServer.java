@@ -42,8 +42,6 @@ import org.axan.sep.common.Protocol.ServerGameCreation;
 import org.axan.sep.common.Protocol.ServerPausedGame;
 import org.axan.sep.common.Protocol.ServerRunningGame;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
-import org.axan.sep.server.model.GameBoard;
-import org.axan.sep.server.model.PlayerGameMove;
 import org.axan.sep.server.model.ServerGame;
 import org.axan.sep.server.model.ISEPServerDataBase.SEPServerDataBaseException;
 
@@ -253,16 +251,6 @@ public class SEPServer implements IServer
 			super(server, user);
 		}
 
-		private GameBoard getGameBoard()
-		{
-			return sepServer.getCurrentGame().getGameBoard(user.getLogin());
-		}
-
-		private PlayerGameMove getGameMove()
-		{
-			return sepServer.getCurrentGame().getPlayerGameMove(user.getLogin());
-		}
-
 		/*
 		 * (non-Javadoc)
 		 * 
@@ -273,7 +261,8 @@ public class SEPServer implements IServer
 		{
 			try
 			{
-				return getGameBoard().getPlayerGameBoard(user.getLogin());
+				// TODO: Be able to compute a full player game board (including previous turn) from the current server game board.
+				return sepServer.getCurrentGame().getPlayerGameBoard(user.getLogin());
 			}
 			catch(SEPServerDataBaseException e)
 			{
@@ -585,7 +574,7 @@ public class SEPServer implements IServer
 		@Override
 		public void endTurn(List<IGameCommand> commands) throws RpcException, StateMachineNotExpectedEventException, SEPImplementationException, RunningGameCommandException
 		{
-			getGameMove().endTurn(commands);
+			sepServer.getCurrentGame().endTurn(getLogin(), commands);
 			
 			sepServer.threadPool.execute(new Runnable()
 			{
@@ -731,7 +720,7 @@ public class SEPServer implements IServer
 		{
 			for(String name : players.keySet())
 			{
-				if (!getCurrentGame().getPlayerGameMove(name).isTurnEnded()) return;
+				if (!getCurrentGame().isTurnEnded(name)) return;
 			}
 		}
 
@@ -758,7 +747,7 @@ public class SEPServer implements IServer
 			{
 				try
 				{
-					players.get(name).getClientInterface().receiveNewTurnGameBoard(getCurrentGame().getGameBoard(name).getPlayerGameBoard(name));
+					players.get(name).getClientInterface().receiveNewTurnGameBoard(getCurrentGame().getPlayerGameBoard(name));
 				}
 				catch(RpcException e)
 				{

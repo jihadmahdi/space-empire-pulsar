@@ -49,12 +49,12 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * Players starting planet carbon.
 	 */
-	private int												playersPlanetsStartingCarbonResources	= Planet.PLAYERS_STARTING_CARBON;
+	private int												playersPlanetsStartingCarbonResources	= 2*1000;
 
 	/**
 	 * Players starting planet population.
 	 */
-	private int												playersPlanetsStartingPopulation		= Planet.PLAYERS_STARTING_POPULATION;
+	private int												playersPlanetsStartingPopulation		= 50*1000;
 
 	/**
 	 * Starting carbon resource amount on players planets.
@@ -126,19 +126,17 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * Population generated on a planet per turn. [0] min; [1] max.
 	 */
-	private int[]											populationPerTurn						= new int[] { org.axan.sep.common.Planet.POPULATION_PER_TURN_MIN,
-			org.axan.sep.common.Planet.POPULATION_PER_TURN_MAX													};
+	private int[]											populationPerTurn						= new int[] { 2500, 7500 };
 
 	/**
 	 * Population limit on a planet. [0] min; [1] max.
 	 */
-	private int[]											populationLimit							= new int[] { org.axan.sep.common.Planet.POPULATION_LIMIT_MIN,
-			org.axan.sep.common.Planet.POPULATION_LIMIT_MAX														};
+	private int[]											populationLimit							= new int[] { 50*1000, 150*1000	};
 
 	/**
 	 * Deployed probe detection scope.
 	 */
-	private int												probeScope								= org.axan.sep.common.Probe.PROBE_SCORE;
+	private int												probeScope								= 3;
 
 	public static final int									SUN_RADIUS								= 3;
 	/**
@@ -158,23 +156,23 @@ public class GameConfig implements IGameConfig, Serializable
 
 		setNeutralCelestialBodiesCount(NEUTRAL_CELESTIAL_BODIES);
 
-		setPopulationPerTurn(Planet.POPULATION_PER_TURN_MIN, Planet.POPULATION_PER_TURN_MAX);
-		setPopulationLimit(Planet.POPULATION_LIMIT_MIN, Planet.POPULATION_LIMIT_MAX);
+		setPopulationPerTurn(2000, 7500);
+		setPopulationLimit(50*1000, 150*1000);
 
-		setCelestialBodiesStartingCarbonAmount(eCelestialBodyType.Planet, Planet.CARBON_MIN, Planet.CARBON_MAX);
-		setCelestialBodiesStartingCarbonAmount(eCelestialBodyType.AsteroidField, AsteroidField.CARBON_MIN, AsteroidField.CARBON_MAX);
-		setCelestialBodiesStartingCarbonAmount(eCelestialBodyType.Nebula, Nebula.CARBON_MIN, Nebula.CARBON_MAX);
+		setCelestialBodiesStartingCarbonAmount(eCelestialBodyType.Planet, 50*1000, 100*1000);
+		setCelestialBodiesStartingCarbonAmount(eCelestialBodyType.AsteroidField, 60*1000, 300*1000);
+		setCelestialBodiesStartingCarbonAmount(eCelestialBodyType.Nebula, 100*1000, 500*1000);
 
-		setCelestialBodiesSlotsAmount(eCelestialBodyType.Planet, Planet.SLOTS_MIN, Planet.SLOTS_MAX);
-		setCelestialBodiesSlotsAmount(eCelestialBodyType.AsteroidField, AsteroidField.SLOTS_MIN, AsteroidField.SLOTS_MAX);
-		setCelestialBodiesSlotsAmount(eCelestialBodyType.Nebula, Nebula.SLOTS_MIN, Nebula.SLOTS_MAX);
+		setCelestialBodiesSlotsAmount(eCelestialBodyType.Planet, 4, 10);
+		setCelestialBodiesSlotsAmount(eCelestialBodyType.AsteroidField, 3, 6);
+		setCelestialBodiesSlotsAmount(eCelestialBodyType.Nebula, 2, 4);
 
-		setNeutralCelestialBodiesGenerationRate(eCelestialBodyType.Planet, Planet.GENERATION_RATE);
-		setNeutralCelestialBodiesGenerationRate(eCelestialBodyType.AsteroidField, AsteroidField.GENERATION_RATE);
-		setNeutralCelestialBodiesGenerationRate(eCelestialBodyType.Nebula, Nebula.GENERATION_RATE);
+		setNeutralCelestialBodiesGenerationRate(eCelestialBodyType.Planet, (float) 0.30);
+		setNeutralCelestialBodiesGenerationRate(eCelestialBodyType.AsteroidField, (float) 0.50);
+		setNeutralCelestialBodiesGenerationRate(eCelestialBodyType.Nebula, (float) 0.20);
 
-		setPlayersPlanetsStartingPopulation(Planet.PLAYERS_STARTING_POPULATION);
-		setPlayersPlanetsStartingCarbonResources(Planet.PLAYERS_STARTING_CARBON);
+		setPlayersPlanetsStartingPopulation(50*1000);
+		setPlayersPlanetsStartingCarbonResources(2*1000);
 
 		setAllianceVictory(ALLIANCE_VICTORY);
 		setRegimicide(REGIMICIDE);
@@ -183,7 +181,7 @@ public class GameConfig implements IGameConfig, Serializable
 		setEconomicVictory(ECONOMIC_VICTORY_POPULATION, ECONOMIC_VICTORY_CARBON);
 		setTimeLimitVictory(TIME_LIMIT_VICTORY);
 
-		setProbeScope(Probe.PROBE_SCORE);
+		setProbeScope(3);
 		setSunRadius(SUN_RADIUS);
 		
 		for(eUnitType u : eUnitType.values())
@@ -672,7 +670,7 @@ public class GameConfig implements IGameConfig, Serializable
 		return sb.toString();
 	}
 
-	int naturalCarbonPerTurn = ProductiveCelestialBody.NATURAL_CARBON_PER_TURN;
+	int naturalCarbonPerTurn = 2000;
 	
 	public int getNaturalCarbonPerTurn()
 	{
@@ -686,7 +684,7 @@ public class GameConfig implements IGameConfig, Serializable
 		this.naturalCarbonPerTurn = naturalCarbonPerTurn;
 	}
 	
-	private int maxNaturalCarbon = ProductiveCelestialBody.MAX_NATURAL_CARBON;
+	private int maxNaturalCarbon = 2000;
 	
 	public int getMaxNaturalCarbon()
 	{
@@ -700,7 +698,7 @@ public class GameConfig implements IGameConfig, Serializable
 		this.maxNaturalCarbon = maxNaturalCarbon;
 	}
 
-	private int governmentStarshipCarbonPrice = GovernmentStarship.CARBON_PRICE;
+	private int governmentStarshipCarbonPrice = 200;
 	public int getGovernmentStarshipCarbonPrice()
 	{
 		// TODO : Add to CTOR
@@ -713,7 +711,7 @@ public class GameConfig implements IGameConfig, Serializable
 		this.governmentStarshipCarbonPrice = governmentStarshipCarbonPrice;
 	}
 	
-	private int governmentStarshipPopulationPrice = GovernmentStarship.POPULATION_PRICE;
+	private int governmentStarshipPopulationPrice = 200;
 	public int getGovernmentStarshipPopulationPrice()
 	{
 		// TODO : Add to CTOR

@@ -23,6 +23,7 @@ public abstract class GameBoard implements Serializable
 	private static final long serialVersionUID = 1L;
 
 	/**
+	 * Must return a FULL (including previous turn) player game board. 
 	 * @param playerLogin
 	 * @throws SEPServerDataBaseException 
 	 */
