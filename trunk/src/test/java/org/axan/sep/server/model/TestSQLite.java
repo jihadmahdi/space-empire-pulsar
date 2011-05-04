@@ -14,7 +14,6 @@ import java.io.NotSerializableException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
@@ -29,24 +28,17 @@ import org.axan.eplib.utils.Reflect;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.Player;
 import org.axan.sep.common.PlayerConfig;
-import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
-import org.axan.sep.server.model.orm.Building;
-import org.axan.sep.server.model.orm.IBuilding;
-import org.axan.sep.server.model.orm.IUnit;
-import org.axan.sep.server.model.orm.IVersionedUnit;
-import org.axan.sep.server.model.orm.Unit;
-import org.axan.sep.server.model.orm.VersionedAntiProbeMissile;
-import org.axan.sep.server.model.orm.VersionedUnit;
+import org.axan.sep.common.db.sqlite.orm.IVersionedUnit;
+import org.axan.sep.common.db.sqlite.orm.Unit;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.almworks.sqlite4java.SQLite;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteJob;
@@ -219,6 +211,15 @@ public class TestSQLite
 			assertQueryResult(db, "SQLite error?", "INSERT INTO real_people VALUES ( 'A', 'a', 30, 'f') ;", "[constraint failed]");
 			assertQueryResult(db, "SQLite error?", "INSERT INTO real_people VALUES ( 'B', 'b', 10, 'f') ;", "[constraint failed]");
 			assertQueryResult(db, "SQLite error?", "INSERT INTO real_people VALUES ( 'B', 'b', 12, 'f') ;", "");
+			
+			/* Impossible because of the foreignn key constraint
+			assertQueryResult(db, "SQLite error?", "SELECT age FROM people WHERE name = 'B' AND surname = 'b';", "|age|\n|---|\n|12 |");
+			assertQueryResult(db, "SQLite error?", "INSERT OR REPLACE INTO people VALUES ( 'B', 'b', 14) ;", "");
+			assertQueryResult(db, "SQLite error?", "SELECT age FROM people WHERE name = 'B' AND surname = 'b';", "|age|\n|---|\n|14 |");
+			assertQueryResult(db, "SQLite error?", "SELECT age FROM people WHERE name = 'C' AND surname = 'c';", "");
+			assertQueryResult(db, "SQLite error?", "INSERT OR REPLACE INTO people VALUES ( 'C', 'c', 20) ;", "");
+			assertQueryResult(db, "SQLite error?", "SELECT age FROM people WHERE name = 'C' AND surname = 'c';", "|age|\n|---|\n|20 |");
+			*/
 			
 			
 			// Heritance relations tests
@@ -607,6 +608,17 @@ public class TestSQLite
 				System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getTurn());
 			}
 			System.out.println("in "+(t3-t2)+"ms");
+			
+			db.exec(new SQLiteJob<Void>()
+			{
+				@Override
+				protected Void job(SQLiteConnection conn) throws Throwable
+				{
+					Unit.insertOrUpdate(conn, unit)
+					SUIS LA, impossible de tester avec une unité déjà existante dans la DB..
+					TODO: générer un constructeur full paramètres
+				}
+			});
 			
 			db.exportDBFile(new File("/tmp/sep_export.db"));
 		}

@@ -3,7 +3,10 @@ package org.axan.sep.server.model;
 import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
@@ -25,6 +28,7 @@ import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.sqlite.SEPCommonSQLiteDB;
+import org.axan.sep.common.db.sqlite.orm.Area;
 import org.axan.sep.common.db.sqlite.orm.Building;
 import org.axan.sep.common.db.sqlite.orm.CelestialBody;
 import org.axan.sep.common.db.sqlite.orm.IBuilding;
@@ -161,6 +165,113 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 	public IGameConfig getConfig()
 	{
 		return commonDB.getConfig();
+	}
+	
+	private void compilePlayerView(String playerLogin, SEPCommonSQLiteDB currentView, int maxTurn) throws SQLiteDBException
+	{
+		Map<String, Boolean> tables = new HashMap<String, Boolean>();
+	
+		// GameConfig, already copied during DB creation TODO: Update turn.
+		Set<Area> areas = db.exec(new SQLiteJob<Set<Area>>()
+		{
+			@Override
+			protected Set<Area> job(SQLiteConnection conn) throws Throwable
+			{
+				return Area.select(conn, getConfig(), Area.class, true, null);
+			}
+		});
+		
+		currentView.getDB().exec(new SQLiteJob<Void>()
+		{
+			@Override
+			protected Void job(SQLiteConnection conn) throws Throwable
+			{
+				
+			}
+		});
+		
+		// ~ Copie simple
+		
+		tables.put("Hero", false); // ?
+		
+		tables.put("SpaceRoad", false);
+		
+		/*
+		 * Copie simple 
+		 */
+		tables.put("Area", false);
+		tables.put("Player", false); // PlayerConfig (on assume que la config joueur est une info publique).
+		
+		tables.put("SpecialUnit", false);
+		
+		tables.put("Unit", false);
+		tables.put("CarbonCarrier", false);
+		tables.put("Fleet", false);
+		tables.put("Probe", false);
+		tables.put("PulsarMissile", false);
+		tables.put("SpaceRoadDeliverer", false);
+		tables.put("AntiProbeMissile", false);
+		
+		tables.put("CelestialBody", false);
+		tables.put("ProductiveCelestialBody", false);
+		tables.put("Nebula", false);
+		tables.put("AsteroidField", false);
+		tables.put("Planet", false);
+		tables.put("Vortex", false);
+		
+		// ~ Versioné
+		
+		/*
+		 * Table en live, on créé et supprime. Donc copie simple.
+		 */
+		tables.put("CarbonOrder", true);
+		
+		tables.put("VersionedProductiveCelestialBody", true); // Building
+		tables.put("VersionedNebula", true);
+		tables.put("VersionedAsteroidField", true);
+		tables.put("VersionedPlanet", true);
+		
+		tables.put("SpaceCounter", true);
+		tables.put("DefenseModule", true);
+		tables.put("PulsarLaunchingPad", true);
+		tables.put("ExtractionModule", true);
+		tables.put("GovernmentModule", true);
+		tables.put("StarshipPlant", true);
+		
+		tables.put("VersionedSpecialUnit", true);
+		
+		tables.put("VersionedUnit", true);
+		tables.put("VersionedFleet", true); // MovePlan, FleetComposition
+		tables.put("VersionedProbe", true);
+		tables.put("VersionedCarbonCarrier", true);
+		tables.put("VersionedSpaceRoadDeliverer", true);
+		tables.put("VersionedAntiProbeMissile", true);
+		tables.put("VersionedPulsarMissile", true);
+		
+		////////////////
+		
+		tables.put("StarshipTemplate", false);
+		tables.put("Government", true);
+		
+		tables.put("VersionedDiplomacy", true);
+		tables.put("AssignedFleet", true);
+		
+		tables.put("UnitEncounterLog", true);
+		tables.put("UnitArrivalLog", true);		
+		
+		/*		
+		POUR CHAQUE Table de base t FAIRE // Pour les agrégations d'éléments versionné on ne garde que la table principale
+			SI t est versioné ALORS
+				Traiter au cas/cas les tables versionnés et les tables en relations.				
+			SINON
+				POUR CHAQUE element e de t FAIRE
+					SI e est visible au joueur ALORS
+						Copie Insert/Replace t
+					FSI
+				FSI
+			FSI
+		FPOUR
+		 */
 	}
 	
 	@Override

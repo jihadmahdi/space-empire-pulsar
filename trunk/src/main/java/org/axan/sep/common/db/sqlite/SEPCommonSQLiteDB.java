@@ -205,7 +205,7 @@ public class SEPCommonSQLiteDB implements Serializable
 	
 	public SEPCommonSQLiteDB(Set<Player> players, IGameConfig config) throws IOException, SQLiteDBException, GameConfigCopierException
 	{
-		File dbFile = File.createTempFile("/tmp/DSEP-commonDB", ".sep");
+		File dbFile = File.createTempFile("SEP-commonDB", ".sep");
 		this.db = new SQLiteDB(dbFile);
 		
 		// Create Tables

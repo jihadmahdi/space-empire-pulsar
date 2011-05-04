@@ -31,6 +31,8 @@ import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.sqlite.SEPCommonSQLiteDB;
+import org.axan.sep.common.db.sqlite.orm.IUnit;
+import org.axan.sep.common.db.sqlite.orm.IVersionedUnit;
 
 import com.almworks.sqlite4java.SQLite;
 import com.almworks.sqlite4java.SQLiteConnection;
@@ -120,14 +122,14 @@ public class ORMGenerator
 					Set<Field> fields;
 					if (c.getSupers().size() >= 2) // Nester
 					{
-						fields = c.getFields();
+						fields = c.getAllFields();
 					}
 					else
 					{
 						fields = c.getSpecificFields();
 						if (c.getSupers().size() == 1 && !skipStaticMethods(c))
 						{
-							fields.add(new Field(getEnumType(c), "type"));
+							fields.add(new Field(getEnumType(c), "type", true));
 						}
 					}
 					
@@ -155,6 +157,21 @@ public class ORMGenerator
 				}
 				
 				@Override
+				public String fieldsDeclarations(Class c)
+				{
+					for(Field f : c.getAllFields())
+					{
+						if (f.getLowerName().endsWith("_x"))
+						{
+							Field nf = getLocationRelationField(f);
+							return String.format("private %s %s;", nf.getType().getSimpleName(), nf.getLowerName());
+						}
+					}
+					
+					return "";
+				}
+				
+				@Override
 				public String constructorDeclaration(Class c)
 				{
 					return String.format("public %s(%s stmnt, %s config) throws %s", c.getUpperName(), SQLiteStatement.class.getSimpleName(), org.axan.sep.common.IGameConfig.class.getSimpleName(), Exception.class.getSimpleName());
@@ -177,11 +194,11 @@ public class ORMGenerator
 					String[] s = Basic.split(field.getLowerName(), "_");
 					if (field.getType().equals(int.class) || field.getType().equals(Integer.class))
 					{
-						return new Field(Location.class, s[0]);
+						return new Field(Location.class, s[0], field.isPrimaryKey());
 					}
 					else
 					{
-						return new Field(RealLocation.class, s[0]);
+						return new Field(RealLocation.class, s[0], field.isPrimaryKey());
 					}
 				}
 				
@@ -240,7 +257,7 @@ public class ORMGenerator
 					else if (field.getLowerName().matches("type"))
 					{
 						java.lang.Class<? extends Enum> enumType = getEnumType(c);
-						return super.getterDeclaration(c, new Field(enumType, field.getLowerName()));
+						return super.getterDeclaration(c, new Field(enumType, field.getLowerName(), field.isPrimaryKey()));
 					}
 					
 					return super.getterDeclaration(c, field);
@@ -267,8 +284,8 @@ public class ORMGenerator
 				{
 					if (field.getLowerName().endsWith("_x"))
 					{
-						Field nf = getLocationRelationField(field);						
-						return String.format("return (base%sProxy.get%s_x() == null) ? null : new %s(base%sProxy.get%s_x(), base%sProxy.get%s_y(), base%sProxy.get%s_z());", c.getUpperName(), nf.getUpperName(), nf.getType().getSimpleName(), c.getUpperName(), nf.getUpperName(), c.getUpperName(), nf.getUpperName(), c.getUpperName(), nf.getUpperName());
+						Field nf = getLocationRelationField(field);
+						return String.format("if (%s == null) {%s = (base%sProxy.get%s_x() == null) ? null : new %s(base%sProxy.get%s_x(), base%sProxy.get%s_y(), base%sProxy.get%s_z()); } return %s;", nf.getLowerName(), nf.getLowerName(), c.getUpperName(), nf.getUpperName(), nf.getType().getSimpleName(), c.getUpperName(), nf.getUpperName(), c.getUpperName(), nf.getUpperName(), c.getUpperName(), nf.getUpperName(), nf.getLowerName());
 					}
 					else if (field.getLowerName().endsWith("_y") || field.getLowerName().endsWith("_z"))
 					{
@@ -334,11 +351,13 @@ public class ORMGenerator
 						}
 					}
 					
+					java.lang.Class<? extends Enum> enumType = getEnumType(c);
+					
 					if (seen.isEmpty())
 					{
 						if (skipStaticMethods(c)) return;
 						
-						psuc.format("\tpublic static <T extends I%s> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+						psuc.format("\tpublic static <T extends I%s> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, %sString where, Object ... params) throws SQLiteDBException\n", c.getUpperName(), versionedClass.hasField("turn") ? "boolean lastVersion, " : "" );
 						psuc.println("\t{");
 						psuc.println("\t\ttry");
 						psuc.println("\t\t{");
@@ -398,8 +417,7 @@ public class ORMGenerator
 					}
 					
 					if (first)
-					{			
-						java.lang.Class<? extends Enum> enumType = getEnumType(c);
+					{
 						psuc.println("%s ;\", (where != null && !where.isEmpty()) ? \" WHERE \"+where : \"\"));");
 						psuc.println("\t\t\twhile(stmnt.step())");
 						psuc.println("\t\t\t{");
@@ -431,6 +449,231 @@ public class ORMGenerator
 						psuc.format("\t\t\tthrow new %s(e);\n", SQLiteDBException.class.getSimpleName());
 						psuc.println("\t\t}");
 						psuc.println("\t}\n");
+					}
+					
+					//// InsertOrUpdate
+					if (first)
+					{
+						psuc.println();
+						
+						psuc.format("\tpublic static <T extends I%s> void insertOrUpdate(SQLiteConnection conn, T %s) throws SQLiteDBException\n", c.getUpperName(), c.getLowerName());
+						psuc.println("\t{");
+						psuc.println("\t\ttry");
+						psuc.println("\t\t{");
+						psuc.format("\t\t\tI%s v%s = (I%s.class.isInstance(%s) ? I%s.class.cast(%s) : null);\n", versionedName, c.getLowerName(), versionedName, c.getLowerName(), versionedName, c.getLowerName()); 
+						psuc.format("\t\t\tSQLiteStatement stmnt = conn.prepare(String.format(\"SELECT EXISTS ( SELECT %s FROM %s WHERE", c.getAllFields().iterator().next().getLowerName(), c.getUpperName());
+
+						boolean comma = false;
+						StringBuffer values = new StringBuffer();
+						for(Field f : c.getFields())
+						{
+							if (!f.isPrimaryKey()) continue;
+							
+							if (comma)
+							{
+								psuc.print(" AND");
+								values.append(", ");
+							}
+							
+							psuc.print(getFieldQuery(f, " AND"));
+							values.append(getFieldValue(c.getLowerName(), f));
+							
+							comma = true;
+						}
+						psuc.format(") AS exist ;\", ");
+						psuc.format("%s));\n", values);
+						
+						values.setLength(0);
+						psuc.println("\t\t\tif (stmnt.columnInt(0) == 0)");
+						psuc.println("\t\t\t{");
+						
+						psuc.format("\t\t\t\tconn.exec(%s);\n", generateInsertQuery(c, c.getLowerName()));
+						values.append(String.format("\t\t\t\tconn.exec(%s);\n", generateUpdateQuery(c, c.getLowerName())));
+						if (versionedClass != c)
+						{
+							psuc.format("\t\t\t\tif (v%s != null)\n\t\t\t\t{\n\t\t\t\t\tconn.exec(%s);\n\t\t\t\t}\n", c.getLowerName(), generateInsertQuery(versionedClass, "v"+c.getLowerName()));
+							values.append(String.format("\t\t\t\tif (v%s != null)\n\t\t\t\t{\n\t\t\t\t\tconn.exec(%s);\n\t\t\t\t}\n", c.getLowerName(), generateUpdateQuery(versionedClass, "v"+c.getLowerName())));
+						}
+						
+						if (c.hasField("type"))
+						{
+							psuc.format("\t\t\t\tswitch(%s.getType())\n", c.getLowerName());
+							values.append(String.format("\t\t\t\tswitch(%s.getType())\n", c.getLowerName()));
+							psuc.println("\t\t\t\t{");
+							values.append("\t\t\t\t{\n");
+							
+							for(Enum<?> e : enumType.getEnumConstants())
+							{
+								psuc.format("\t\t\t\t\tcase %s:\n", e.name());
+								values.append(String.format("\t\t\t\t\tcase %s:\n", e.name()));
+								psuc.println("\t\t\t\t\t{");
+								values.append("\t\t\t\t\t{\n");
+								
+								for(Class sub : c.getSubers())
+								{
+									if (sub.getUpperName().matches(e.name()))
+									{
+										psuc.format("\t\t\t\t\t\tI%s %s = %s.class.cast(%s);\n", sub.getUpperName(), sub.getLowerName(), sub.getUpperName(), c.getLowerName());
+										values.append(String.format("\t\t\t\t\t\tI%s %s = %s.class.cast(%s);\n", sub.getUpperName(), sub.getLowerName(), sub.getUpperName(), c.getLowerName()));
+										psuc.format("\t\t\t\t\t\tconn.exec(%s);\n", generateInsertQuery(sub, sub.getLowerName()));
+										values.append(String.format("\t\t\t\t\t\tconn.exec(%s);\n", generateUpdateQuery(sub, sub.getLowerName())));
+										if (versionedClass != c)
+										{
+											for(Class vsub : sub.getSubers())
+											{
+												if (vsub.getUpperName().matches("Versioned"+sub.getUpperName()))
+												{
+													psuc.format("\t\t\t\t\t\tif (v%s != null)\n", c.getLowerName());
+													values.append(String.format("\t\t\t\t\t\tif (v%s != null)\n", c.getLowerName()));
+													psuc.println("\t\t\t\t\t\t{");
+													values.append("\t\t\t\t\t\t{\n");
+													psuc.format("\t\t\t\t\t\t\tI%s %s = %s.class.cast(%s);\n", vsub.getUpperName(), vsub.getLowerName(), vsub.getUpperName(), c.getLowerName());
+													values.append(String.format("\t\t\t\t\t\t\tI%s %s = %s.class.cast(%s);\n", vsub.getUpperName(), vsub.getLowerName(), vsub.getUpperName(), c.getLowerName()));
+													psuc.format("\t\t\t\t\t\t\tconn.exec(%s);\n", generateInsertQuery(vsub, vsub.getLowerName()));
+													values.append(String.format("\t\t\t\t\t\t\tconn.exec(%s);\n", generateUpdateQuery(vsub, vsub.getLowerName())));
+													psuc.println("\t\t\t\t\t\t}");
+													values.append("\t\t\t\t\t\t}\n");
+												}
+											}											
+										}
+									}
+								}
+								
+								psuc.println("\t\t\t\t\t\tbreak;");
+								values.append("\t\t\t\t\t\tbreak;\n");
+								psuc.println("\t\t\t\t\t}");
+								values.append("\t\t\t\t\t}\n");
+							}
+							psuc.println("\t\t\t\t}");
+							values.append("\t\t\t\t}\n");
+						}
+						
+						/*
+						 * switch (unit.getType())
+							{
+								case AntiProbeMissile:
+								{
+						 */
+						
+						psuc.println("\t\t\t}");
+						psuc.println("\t\t\telse");
+						psuc.println("\t\t\t{");
+						psuc.print(values);					
+						psuc.println("\t\t\t}");
+						psuc.println("\t\t}");
+						psuc.println("\t\tcatch(Exception e)");
+						psuc.println("\t\t{");
+						psuc.println("\t\t\tthrow new SQLiteDBException(e);");
+						psuc.println("\t\t}");
+						psuc.println("\t}");
+					}
+				}
+				
+				private String generateUpdateQuery(Class c, String var)
+				{
+					StringBuffer set = new StringBuffer();
+					StringBuffer where = new StringBuffer();
+					StringBuffer setValues = new StringBuffer();
+					StringBuffer whereValues = new StringBuffer();
+					
+					boolean pkComma = false;
+					boolean npkComma = false;
+					
+					for(Field f : c.getFields())
+					{
+						if (!f.isPrimaryKey())
+						{
+							if (npkComma)
+							{
+								set.append(", ");
+								setValues.append(", ");
+							}
+							
+							set.append(getFieldQuery(f, ","));
+							setValues.append(getFieldValue(var, f));
+							
+							npkComma = true;
+						}
+						else
+						{
+							if (pkComma)
+							{
+								where.append(" AND");
+								whereValues.append(", ");
+							}
+							
+							where.append(getFieldQuery(f, " AND"));
+							whereValues.append(getFieldValue(var, f));
+							
+							pkComma = true;
+						}						
+					}
+					
+					if (set.length() == 0) return "\";\"";
+					return String.format("String.format(\"UPDATE %s SET %s WHERE %s ;\", %s, %s)", c.getUpperName(), set, where, setValues, whereValues);
+				}
+				
+				private String generateInsertQuery(Class c, String var)
+				{
+					StringBuffer result = new StringBuffer();
+					StringBuffer flags = new StringBuffer();
+					StringBuffer values = new StringBuffer();
+					
+					result.append(String.format("String.format(\"INSERT INTO %s (", c.getUpperName()));
+					
+					boolean comma = false;
+					for(Field f : c.getFields())
+					{
+						if (comma)
+						{
+							result.append(", ");
+							flags.append(", ");
+							values.append(", ");
+						}
+						
+						result.append(f.getLowerName());
+						flags.append(String.format("%s", getFieldQueryFlag(f)));
+						values.append(getFieldValue(var, f));
+						
+						comma = true;
+					}
+					
+					result.append(String.format(") VALUES (%s);\", %s)", flags, values));
+					return result.toString();
+				}
+				
+				private String getFieldQueryFlag(Field f)
+				{
+					if (f.getType().equals(Location.class))
+					{
+						return "%d";
+					}
+					else if (f.getType().equals(RealLocation.class))
+					{
+						return "%f";
+					}
+					else
+					{
+						return "'%s'";
+					}
+				}
+				
+				private String getFieldQuery(Field f, String comma)
+				{
+					String flag = getFieldQueryFlag(f);					
+					return String.format(" %s = %s", f.getLowerName(), flag);
+				}
+				
+				private String getFieldValue(String var, Field f)
+				{
+					if (f.getLowerName().endsWith("_x") || f.getLowerName().endsWith("_y") || f.getLowerName().endsWith("_z"))
+					{
+						String[] ff = Basic.split(f.getUpperName(), "_");
+						return String.format("%s.get%s().%s", var, ff[0], ff[1]); 
+					}
+					else
+					{
+						return String.format("%s.get%s()", var, f.getUpperName());
 					}
 				}
 				
