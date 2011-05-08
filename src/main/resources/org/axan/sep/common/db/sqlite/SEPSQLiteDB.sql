@@ -6,10 +6,10 @@
 -- _____________ 
 
 CREATE TABLE Area (
-     isSun BOOL NOT NULL,
      location_x INTEGER NOT NULL,
      location_y INTEGER NOT NULL,
      location_z INTEGER NOT NULL,
+     isSun BOOL NOT NULL,
      CONSTRAINT PKArea PRIMARY KEY (location_x, location_y, location_z),
      CHECK(location_x >= 0 AND location_y >= 0 AND location_z >= 0)
 );
@@ -46,10 +46,10 @@ CREATE TABLE Unit (
 
 CREATE TABLE CelestialBody (
      name TEXT NOT NULL,
+     type TEXT NOT NULL,
      location_x INTEGER NOT NULL,
      location_y INTEGER NOT NULL,
      location_z INTEGER NOT NULL,
-     type TEXT NOT NULL,
      CHECK(type IN ('Vortex', 'Planet', 'AsteroidField', 'Nebula')),
      CONSTRAINT PKCelestialBody PRIMARY KEY (name),
      UNIQUE (name, type),
@@ -89,9 +89,9 @@ CREATE TABLE AsteroidField (
 
 CREATE TABLE Planet (
      name TEXT NOT NULL,
-     populationPerTurn INTEGER NOT NULL,
-     maxPopulation INTEGER NOT NULL,
      type TEXT NOT NULL,
+     populationPerTurn INTEGER NOT NULL,
+     maxPopulation INTEGER NOT NULL,     
      CHECK(type = 'Planet'),
      CONSTRAINT PKPlanet PRIMARY KEY (name),
      UNIQUE (name, type),
@@ -101,10 +101,10 @@ CREATE TABLE Planet (
 CREATE TABLE VersionedProductiveCelestialBody (
      name TEXT NOT NULL,
      turn INTEGER NOT NULL,
+     type TEXT NOT NULL, -- CHECK not mandatory as foreign key is already checked in foreign table.       
+     owner TEXT,
      carbonStock INTEGER NOT NULL,
      currentCarbon INTEGER NOT NULL,
-     owner TEXT,
-     type TEXT NOT NULL, -- CHECK not mandatory as foreign key is already checked in foreign table.
      CHECK(turn >= 0),
      CONSTRAINT PKVersionedProductiveCelestialBody PRIMARY KEY (name, turn),
      UNIQUE (name, turn, type),
@@ -114,9 +114,9 @@ CREATE TABLE VersionedProductiveCelestialBody (
      
 CREATE TABLE Building (
      type TEXT NOT NULL,
-     nbSlots INTEGER NOT NULL,
      celestialBodyName TEXT NOT NULL,
      turn INTEGER NOT NULL,
+     nbSlots INTEGER NOT NULL,
      CHECK(type IN ('PulsarLaunchingPad', 'SpaceCounter', 'GovernmentModule', 'DefenseModule', 'StarshipPlant', 'ExtractionModule')),
      CONSTRAINT PKBuilding PRIMARY KEY (type, celestialBodyName, turn),
      CONSTRAINT FKBuildingLocation FOREIGN KEY (celestialBodyName, turn) REFERENCES VersionedProductiveCelestialBody     
@@ -135,10 +135,10 @@ CREATE TABLE SpaceCounter (
 CREATE TABLE CarbonCarrier (
      owner TEXT NOT NULL,
      name TEXT NOT NULL,
+     type TEXT NOT NULL,
      sourceType TEXT NOT NULL,
      sourceCelestialBodyName TEXT NOT NULL,
      sourceTurn INTEGER NOT NULL,
-     type TEXT NOT NULL,
      CHECK(type = 'CarbonCarrier'),
      CHECK(sourceType='SpaceCounter'),
      CONSTRAINT PKCarbonCarrier PRIMARY KEY (owner, name),
@@ -148,8 +148,8 @@ CREATE TABLE CarbonCarrier (
 );
 
 CREATE TABLE CarbonOrder (
-     source TEXT NOT NULL,
      owner TEXT NOT NULL,
+     source TEXT NOT NULL,
      priority INTEGER NOT NULL,
      amount INTEGER NOT NULL,
      destination TEXT NOT NULL,
@@ -190,9 +190,9 @@ CREATE TABLE SpecialUnit (
 );
 
 CREATE TABLE VersionedUnit (
-     turn INTEGER NOT NULL,
      owner TEXT NOT NULL,
      name TEXT NOT NULL,
+     turn INTEGER NOT NULL,
      type TEXT NOT NULL,
      departure_x INTEGER NOT NULL,
      departure_y INTEGER NOT NULL,
@@ -206,7 +206,7 @@ CREATE TABLE VersionedUnit (
 	 CHECK(turn >= 0),
 	 CHECK((destination_x is NOT NULL AND destination_y is NOT NULL AND destination_z is NOT NULL)
            OR (destination_x IS NULL AND destination_y IS NULL AND destination_z IS NULL)),
-	 CHECK(progress >= 0 AND progress < 100),
+	 CHECK(progress >= 0 AND progress <= 100),
      CONSTRAINT PKVersionedUnit PRIMARY KEY (owner, name, turn),
      UNIQUE (owner, name, turn, type),
      CONSTRAINT FKVersionedUnitISAUnit FOREIGN KEY (owner, name, type) REFERENCES Unit (owner, name, type),
@@ -231,10 +231,10 @@ CREATE TABLE VersionedSpecialUnit (
      owner TEXT NOT NULL,
      name TEXT NOT NULL,
      turn INTEGER NOT NULL,
+     type TEXT NOT NULL,
      fleetOwner TEXT NOT NULL,
      fleetName TEXT NOT NULL,
      fleetTurn INTEGER NOT NULL,
-     type TEXT NOT NULL,
      CONSTRAINT PKVersionedSpecialUnit PRIMARY KEY (owner, name, turn),
      UNIQUE (owner, name, turn, type),
      CONSTRAINT FKVersionedSpecialUnitVersionedUnit FOREIGN KEY (owner, name, type) REFERENCES SpecialUnit (owner, name, type),
@@ -265,9 +265,9 @@ CREATE TABLE PulsarLaunchingPad (
 CREATE TABLE PulsarMissile (
      owner TEXT NOT NULL,
      name TEXT NOT NULL,
+     type TEXT NOT NULL,
      time INTEGER NOT NULL,
      volume INTEGER NOT NULL,
-     type TEXT NOT NULL,
      CHECK(type = 'PulsarMissile'),
      CONSTRAINT PKPulsarMissile PRIMARY KEY (owner, name),
      UNIQUE (owner, name, type),
@@ -318,8 +318,8 @@ CREATE TABLE GovernmentModule (
 CREATE TABLE Hero (
      owner TEXT NOT NULL,
      name TEXT NOT NULL,
-     experience INTEGER NOT NULL,
      type TEXT NOT NULL,
+     experience INTEGER NOT NULL,
      CHECK(type = 'Hero'),
      CHECK(experience >= 0),
      CONSTRAINT PKHero PRIMARY KEY (owner, name),
@@ -345,10 +345,10 @@ CREATE TABLE VersionedCarbonCarrier (
      owner TEXT NOT NULL,
      name TEXT NOT NULL,
      turn INTEGER NOT NULL,
+     type TEXT NOT NULL,
      orderOwner TEXT NOT NULL,
      orderSource TEXT NOT NULL,
      orderPriority INTEGER NOT NULL,
-     type TEXT NOT NULL,
      CONSTRAINT PKVersionedCarbonCarrier PRIMARY KEY (owner, name, turn),
      UNIQUE (owner, name, turn, type),
      CONSTRAINT FKVersionedCarbonCarrierISAVersionedUnit FOREIGN KEY (owner, name, turn, type) REFERENCES VersionedUnit (owner, name, turn, type),
@@ -379,8 +379,8 @@ CREATE TABLE VersionedAsteroidField (
 CREATE TABLE VersionedPlanet (
      name TEXT NOT NULL,
      turn INTEGER NOT NULL,
-     currentPopulation INTEGER NOT NULL,
      type TEXT NOT NULL,
+     currentPopulation INTEGER NOT NULL,
      PRIMARY KEY (name, turn),
      UNIQUE (name, turn, type),
      CONSTRAINT FKVersionedPlanetISAVersionedProductiveCelestialBody FOREIGN KEY (name, turn, type) REFERENCES VersionedProductiveCelestialBody (name, turn, type),
@@ -388,6 +388,8 @@ CREATE TABLE VersionedPlanet (
 );
 
 CREATE TABLE SpaceRoad (
+     name TEXT NOT NULL,
+     builder TEXT NOT NULL,
      spaceCounterAType TEXT NOT NULL,
      spaceCounterACelestialBodyName TEXT NOT NULL,
      spaceCounterATurn INTEGER NOT NULL,
@@ -396,6 +398,8 @@ CREATE TABLE SpaceRoad (
      spaceCounterBTurn INTEGER NOT NULL,
      CHECK(spaceCounterAType = 'SpaceCounter' AND spaceCounterBType = 'SpaceCounter'),
      CHECK(spaceCounterACelestialBodyName != spaceCounterBCelestialBodyName),
+     PRIMARY KEY (name, builder),
+     FOREIGN KEY (builder) REFERENCES Player,
      FOREIGN KEY (spaceCounterAType, spaceCounterACelestialBodyName, spaceCounterATurn) REFERENCES SpaceCounter,
      FOREIGN KEY (spaceCounterBType, spaceCounterBCelestialBodyName, spaceCounterBTurn) REFERENCES SpaceCounter
 );
@@ -403,13 +407,13 @@ CREATE TABLE SpaceRoad (
 CREATE TABLE SpaceRoadDeliverer (
      owner TEXT NOT NULL,
      name TEXT NOT NULL,
+     type TEXT NOT NULL,
      sourceType TEXT NOT NULL,
      sourceCelestialBodyName TEXT NOT NULL,
      sourceTurn INTEGER NOT NULL,
      destinationType TEXT NOT NULL,
      destinationCelestialBodyName TEXT NOT NULL,
      destinationTurn INTEGER NOT NULL,
-     type TEXT NOT NULL,
      CHECK(type = 'SpaceRoadDeliverer'),
      CHECK(sourceType='SpaceRoad' AND destinationType='SpaceRoad'),
      CHECK(sourceCelestialBodyName != destinationCelestialBodyName),
@@ -474,8 +478,8 @@ CREATE TABLE VersionedSpaceRoadDeliverer (
 );     
 
 CREATE TABLE VersionedDiplomacy (
-     cible TEXT NOT NULL,
      name TEXT NOT NULL,
+     cible TEXT NOT NULL,
      turn INTEGER NOT NULL,
      allowToLand BOOL NOT NULL,
      foreignPolicy TEXT NOT NULL,
@@ -488,10 +492,10 @@ CREATE TABLE VersionedDiplomacy (
 
 CREATE TABLE Vortex (
      name TEXT NOT NULL,
+     type TEXT NOT NULL,
      onsetDate INTEGER NOT NULL,
      endDate INTEGER NOT NULL,
      destination TEXT NOT NULL,
-     type TEXT NOT NULL,
      CHECK(type = 'Vortex'),
      CHECK(onsetDate >= 0 AND endDate > onsetDate),
      PRIMARY KEY (name),
@@ -504,10 +508,10 @@ CREATE TABLE VersionedAntiProbeMissile (
      owner TEXT NOT NULL,
      name TEXT NOT NULL,
      turn INTEGER NOT NULL,
+     type TEXT NOT NULL,
      targetOwner text,
      targetName text,
      targetTurn INTEGER,
-     type TEXT NOT NULL,
      CHECK((targetOwner IS NOT NULL AND targetName IS NOT NULL AND targetTurn IS NOT NULL)
            OR (targetOwner IS NULL AND targetName IS NULL AND targetTurn IS NULL)),
      PRIMARY KEY (owner, name, turn),
@@ -521,10 +525,10 @@ CREATE TABLE VersionedPulsarMissile (
      owner TEXT NOT NULL,
      name TEXT NOT NULL,
      turn INTEGER NOT NULL,
+     type TEXT NOT NULL,
      direction_x INTEGER,
      direction_y INTEGER,
      direction_z INTEGER,
-     type TEXT NOT NULL,
      CHECK((direction_x IS NOT NULL AND direction_y IS NOT NULL AND direction_z IS NOT NULL)
            OR (direction_x IS NULL AND direction_y IS NULL AND direction_z IS NULL)),
      PRIMARY KEY (owner, name, turn),
@@ -561,11 +565,11 @@ CREATE TABLE UnitEncounterLog (
 	unitName TEXT NOT NULL,
 	unitTurn INTEGER NOT NULL,
 	unitType TEXT NOT NULL,
+	instantTime INTEGER NOT NULL,
 	seenOwner TEXT NOT NULL,
 	seenName TEXT NOT NULL,
 	seenTurn INTEGER NOT NULL,
 	seenType TEXT NOT NULL,
-	instantTime INTEGER NOT NULL,
 	PRIMARY KEY (unitOwner, unitName, unitTurn, unitType, instantTime),
 	FOREIGN KEY (unitOwner, unitName, unitTurn, unitType) REFERENCES VersionedUnit(owner, name, turn, type),
 	FOREIGN KEY (seenOwner, seenName, seenTurn, seenType) REFERENCES VersionedUnit(owner, name, turn, type)

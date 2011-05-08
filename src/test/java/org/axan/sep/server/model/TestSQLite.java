@@ -31,8 +31,10 @@ import org.axan.sep.common.PlayerConfig;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.db.sqlite.orm.IVersionedFleet;
 import org.axan.sep.common.db.sqlite.orm.IVersionedUnit;
 import org.axan.sep.common.db.sqlite.orm.Unit;
+import org.axan.sep.common.db.sqlite.orm.VersionedFleet;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -274,49 +276,6 @@ public class TestSQLite
 				}
 			});
 
-			/*
-			 * Game Server DB Design tests
-			 */
-			
-			// Start from new DB.
-			db.stop();
-			try {
-				db.join();
-			} catch (InterruptedException e) {
-				fail(e.getMessage());
-			}
-			
-			db = new SQLiteDB();
-			
-			SQLiteDebugQuery(db, "PRAGMA foreign_keys=1;");			
-			assertQueryResult(db, "Foreign keys error:", "PRAGMA foreign_keys;", "|foreign_keys|\n|------------|\n|1           |");						
-			
-			String designSQL = "SEPSQLiteDB.server.sql";
-			System.out.println();
-			System.out.println(designSQL+" IMPORT...");
-			assertFileResult(db, designSQL, "SQLite error?", "");					
-			
-			// INSERT Area
-			assertQueryResult(db, "Error expected", "INSERT INTO Area VALUES(0, 0, 0, -1);", "[constraint failed]");
-			assertQueryResult(db, "SQLite error?", "INSERT INTO Area VALUES(0, 0, 0, 0);", "");
-			
-			// INSERT Player
-			assertQueryResult(db, "SQLite error?", "INSERT INTO Player VALUES('player1');", "");
-			assertQueryResult(db, "SQLite error expected", "INSERT INTO Unit (owner, name, type) VALUES('player1', 'unit', NULL);", "[constraint failed]");
-			assertQueryResult(db, "SQLite error expected", "INSERT INTO Unit VALUES('player1', 'unit', 'Error');", "[constraint failed]");
-			assertQueryResult(db, "SQLite error?", "INSERT INTO Unit VALUES('player1', 'unit', 'Fleet');", "");
-
-			// INSERT CelestialBody, ProductiveCelestialBody 
-			assertQueryResult(db, "SQLite error?", "INSERT INTO CelestialBody (name, type, location_x, location_y, location_z) VALUES('planeteA', '"+eCelestialBodyType.Planet+"', 0, 0, 0);", "");
-			assertQueryResult(db, "SQLite error?", "INSERT INTO ProductiveCelestialBody (name, initialCarbonStock, maxSlots, type) VALUES('planeteA', 10000, 4, '"+eCelestialBodyType.Planet+"');", "");
-
-			// INSERT VersionedProductiveCelestialBody
-			assertQueryResult(db, "SQLite error?", "INSERT INTO VersionedProductiveCelestialBody (name, turn, carbonStock, currentCarbon, owner, type) VALUES('planeteA', 0, 10000, 1000, 'player1', '"+eCelestialBodyType.Planet+"');", "");
-
-			// INSERT Building
-			assertQueryResult(db, "SQLite error?", "INSERT INTO Building VALUES('error', 1, 'planeteA', 0);", "[constraint failed]");
-			assertQueryResult(db, "SQLite error?", "INSERT INTO Building VALUES('StarshipPlant', 1, 'planeteA', 0);", "");
-
 		}
 		catch(SQLiteException e)
 		{
@@ -455,7 +414,7 @@ public class TestSQLite
 			sepDB = new SEPServerSQLiteDB(new HashSet<Player>(players), config);
 			db = sepDB.getDB();
 		
-			Vector<Location> celestialBodiesLocation = db.prepare("SELECT location_x, location_y, location_z FROM CelestialBody;", new SQLiteStatementJob<Vector<Location>>()
+			final Vector<Location> celestialBodiesLocation = db.prepare("SELECT location_x, location_y, location_z FROM CelestialBody;", new SQLiteStatementJob<Vector<Location>>()
 			{
 				@Override
 				public Vector<Location> job(SQLiteStatement stmnt) throws SQLiteException
@@ -512,7 +471,7 @@ public class TestSQLite
 				}
 				
 				db.exec("INSERT INTO VersionedUnit (turn, owner, name, type, departure_x, departure_y, departure_z, progress, destination_x, destination_y, destination_z) VALUES (%d, '%s', '%s', 'Probe', %d, %d, %d, '%f', %s, %s, %s);", 1, owner.getName(), unitName, l.x, l.y, l.z, progress, d==null?"NULL":d.x, d==null?"NULL":d.y, d==null?"NULL":d.z);				
-				db.exec("INSERT INTO VersionedProbe (turn, owner, name, type, destination_x, destination_y, destination_z) VALUES ('%d', '%s', '%s', 'Probe', %s, %s, %s);", 1, owner.getName(), unitName, d==null?"NULL":d.x, d==null?"NULL":d.y, d==null?"NULL":d.z);
+				db.exec("INSERT INTO VersionedProbe (turn, owner, name, type) VALUES ('%d', '%s', '%s', 'Probe');", 1, owner.getName(), unitName);
 				
 				probes.add(new String[]{unitName, owner.getName()});
 			}
@@ -606,19 +565,58 @@ public class TestSQLite
 			for(IVersionedUnit vu : units2)
 			{
 				System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getTurn());
+				if (vu.getOwner().matches("p2") && vu.getName().matches("F1"))
+				{
+					fail("Unexpected unit exist.");
+				}
 			}
 			System.out.println("in "+(t3-t2)+"ms");
 			
-			db.exec(new SQLiteJob<Void>()
+			Set<? extends IVersionedUnit> units3 = db.exec(new SQLiteJob<Set<? extends IVersionedUnit>>()
 			{
 				@Override
-				protected Void job(SQLiteConnection conn) throws Throwable
+				protected Set<? extends IVersionedUnit> job(SQLiteConnection conn) throws Throwable
 				{
-					Unit.insertOrUpdate(conn, unit)
-					SUIS LA, impossible de tester avec une unité déjà existante dans la DB..
-					TODO: générer un constructeur full paramètres
+					VersionedFleet vf = new VersionedFleet("p2", "F1", eUnitType.Fleet, sepDB.getConfig().getTurn(), celestialBodiesLocation.firstElement(), 0.0, null, sepDB.getConfig().getUnitTypeSight(eUnitType.Fleet));
+					Unit.insertOrUpdate(conn, vf);
+					return Unit.select(conn, sepDB.getConfig(), IVersionedUnit.class, true, "Unit.name = 'F1'");
 				}
 			});
+			long t4 = System.currentTimeMillis();
+			
+			for(IVersionedUnit vu : units3)
+			{
+				System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getTurn());
+			}
+			System.out.println("in "+(t4-t3)+"ms");
+			
+			assertTrue("Only one unit expected to match.", units3.size() == 1);
+			IVersionedUnit f = units3.iterator().next();
+			assertTrue("Unexpected unit", f.getOwner().matches("p2") && f.getName().matches("F1") && f.getType().equals(eUnitType.Fleet) && IVersionedFleet.class.isInstance(f));
+			assertTrue("Unexpected value", f.getProgress() == 0.0);
+			
+			Set<? extends IVersionedUnit> units4 = db.exec(new SQLiteJob<Set<? extends IVersionedUnit>>()
+			{
+				@Override
+				protected Set<? extends IVersionedUnit> job(SQLiteConnection conn) throws Throwable
+				{
+					VersionedFleet vf = new VersionedFleet("p2", "F1", eUnitType.Fleet, sepDB.getConfig().getTurn(), celestialBodiesLocation.firstElement(), 100.0, null, sepDB.getConfig().getUnitTypeSight(eUnitType.Fleet));
+					Unit.insertOrUpdate(conn, vf);
+					return Unit.select(conn, sepDB.getConfig(), IVersionedUnit.class, true, "Unit.name = 'F1'");
+				}
+			});
+			long t5 = System.currentTimeMillis();
+			
+			for(IVersionedUnit vu : units4)
+			{
+				System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getTurn());
+			}
+			System.out.println("in "+(t5-t4)+"ms");
+			
+			assertTrue("Only one unit expected to match.", units4.size() == 1);
+			f = units4.iterator().next();
+			assertTrue("Unexpected unit", f.getOwner().matches("p2") && f.getName().matches("F1") && f.getType().equals(eUnitType.Fleet) && IVersionedFleet.class.isInstance(f));
+			assertTrue("Unexpected value", f.getProgress() == 100.0);
 			
 			db.exportDBFile(new File("/tmp/sep_export.db"));
 		}
