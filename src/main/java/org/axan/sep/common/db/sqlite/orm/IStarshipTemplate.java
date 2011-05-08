@@ -1,16 +1,16 @@
 package org.axan.sep.common.db.sqlite.orm;
 
 import org.axan.sep.common.db.sqlite.orm.base.IBaseStarshipTemplate;
-import org.axan.sep.common.IGameConfig;
+import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
+import java.util.HashSet;
 import java.util.Set;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
-import com.almworks.sqlite4java.SQLiteConnection;
-import java.util.HashSet;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
+import org.axan.sep.common.IGameConfig;
 
 public interface IStarshipTemplate
 {
-	public String getSpecializedClass();
 	public String getName();
+	public String getSpecializedClass();
 }

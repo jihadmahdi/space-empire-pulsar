@@ -1,21 +1,31 @@
 package org.axan.sep.common.db.sqlite.orm;
 
 import org.axan.sep.common.db.sqlite.orm.base.BaseFleetComposition;
-import org.axan.sep.common.IGameConfig;
+import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
+import java.util.HashSet;
 import java.util.Set;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
-import com.almworks.sqlite4java.SQLiteConnection;
-import java.util.HashSet;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
+import org.axan.sep.common.IGameConfig;
 
 public class FleetComposition implements IFleetComposition
 {
 	private final BaseFleetComposition baseFleetCompositionProxy;
 
+	public FleetComposition(String fleetOwner, String fleetName, Integer fleetTurn, String starshipTemplate, Integer quantity)
+	{
+		baseFleetCompositionProxy = new BaseFleetComposition(fleetOwner, fleetName, fleetTurn, starshipTemplate, quantity);
+	}
+
 	public FleetComposition(SQLiteStatement stmnt, IGameConfig config) throws Exception
 	{
 		this.baseFleetCompositionProxy = new BaseFleetComposition(stmnt);
+	}
+
+	public String getFleetOwner()
+	{
+		return baseFleetCompositionProxy.getFleetOwner();
 	}
 
 	public String getFleetName()
@@ -28,9 +38,9 @@ public class FleetComposition implements IFleetComposition
 		return baseFleetCompositionProxy.getFleetTurn();
 	}
 
-	public String getFleetOwner()
+	public String getStarshipTemplate()
 	{
-		return baseFleetCompositionProxy.getFleetOwner();
+		return baseFleetCompositionProxy.getStarshipTemplate();
 	}
 
 	public Integer getQuantity()
@@ -38,12 +48,7 @@ public class FleetComposition implements IFleetComposition
 		return baseFleetCompositionProxy.getQuantity();
 	}
 
-	public String getStarshipTemplate()
-	{
-		return baseFleetCompositionProxy.getStarshipTemplate();
-	}
-
-	public static <T extends IFleetComposition> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String where, Object ... params) throws SQLiteDBException
+	public static <T extends IFleetComposition> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String where, Object ... params) throws SQLiteDBException
 	{
 		try
 		{
@@ -63,4 +68,25 @@ public class FleetComposition implements IFleetComposition
 		}
 	}
 
+
+	public static <T extends IFleetComposition> void insertOrUpdate(SQLiteConnection conn, T fleetComposition) throws SQLiteDBException
+	{
+		try
+		{
+			SQLiteStatement stmnt = conn.prepare(String.format("SELECT EXISTS ( SELECT fleetOwner FROM FleetComposition WHERE fleetOwner = %s AND fleetName = %s AND fleetTurn = %s AND starshipTemplate = %s) AS exist ;", "'"+fleetComposition.getFleetOwner()+"'", "'"+fleetComposition.getFleetName()+"'", "'"+fleetComposition.getFleetTurn()+"'", "'"+fleetComposition.getStarshipTemplate()+"'"));
+			stmnt.step();
+			if (stmnt.columnInt(0) == 0)
+			{
+				conn.exec(String.format("INSERT INTO FleetComposition (fleetOwner, fleetName, fleetTurn, starshipTemplate, quantity) VALUES (%s, %s, %s, %s, %s);", "'"+fleetComposition.getFleetOwner()+"'", "'"+fleetComposition.getFleetName()+"'", "'"+fleetComposition.getFleetTurn()+"'", "'"+fleetComposition.getStarshipTemplate()+"'", "'"+fleetComposition.getQuantity()+"'"));
+			}
+			else
+			{
+				conn.exec(String.format("UPDATE FleetComposition SET  quantity = %s WHERE  fleetOwner = %s AND fleetName = %s AND fleetTurn = %s AND starshipTemplate = %s ;", "'"+fleetComposition.getQuantity()+"'", "'"+fleetComposition.getFleetOwner()+"'", "'"+fleetComposition.getFleetName()+"'", "'"+fleetComposition.getFleetTurn()+"'", "'"+fleetComposition.getStarshipTemplate()+"'"));
+			}
+		}
+		catch(Exception e)
+		{
+			throw new SQLiteDBException(e);
+		}
+	}
 }

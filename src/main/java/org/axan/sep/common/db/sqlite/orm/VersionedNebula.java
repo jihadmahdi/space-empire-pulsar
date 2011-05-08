@@ -1,10 +1,10 @@
 package org.axan.sep.common.db.sqlite.orm;
 
-import org.axan.sep.common.db.sqlite.orm.Nebula;
 import org.axan.sep.common.db.sqlite.orm.VersionedProductiveCelestialBody;
+import org.axan.sep.common.db.sqlite.orm.Nebula;
 import org.axan.sep.common.db.sqlite.orm.base.BaseVersionedNebula;
-import org.axan.sep.common.IGameConfig;
 import com.almworks.sqlite4java.SQLiteStatement;
+import org.axan.sep.common.IGameConfig;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.SEPUtils.Location;
 
@@ -14,6 +14,13 @@ public class VersionedNebula implements IVersionedNebula
 	private final Nebula nebulaProxy;
 	private final BaseVersionedNebula baseVersionedNebulaProxy;
 
+	public VersionedNebula(String name, eCelestialBodyType type, Location location, Integer initialCarbonStock, Integer maxSlots, Integer turn, String owner, Integer carbonStock, Integer currentCarbon)
+	{
+		versionedProductiveCelestialBodyProxy = new VersionedProductiveCelestialBody(name, type, location, initialCarbonStock, maxSlots, turn, owner, carbonStock, currentCarbon);
+		nebulaProxy = new Nebula(name, type, location, initialCarbonStock, maxSlots);
+		baseVersionedNebulaProxy = new BaseVersionedNebula(name, type.toString(), location == null ? null : location.x, location == null ? null : location.y, location == null ? null : location.z, initialCarbonStock, maxSlots, turn, owner, carbonStock, currentCarbon);
+	}
+
 	public VersionedNebula(SQLiteStatement stmnt, IGameConfig config) throws Exception
 	{
 		this.versionedProductiveCelestialBodyProxy = new VersionedProductiveCelestialBody(stmnt, config);
@@ -21,9 +28,9 @@ public class VersionedNebula implements IVersionedNebula
 		this.baseVersionedNebulaProxy = new BaseVersionedNebula(stmnt);
 	}
 
-	public Integer getCurrentCarbon()
+	public Integer getTurn()
 	{
-		return versionedProductiveCelestialBodyProxy.getCurrentCarbon();
+		return versionedProductiveCelestialBodyProxy.getTurn();
 	}
 
 	public String getOwner()
@@ -36,9 +43,9 @@ public class VersionedNebula implements IVersionedNebula
 		return versionedProductiveCelestialBodyProxy.getCarbonStock();
 	}
 
-	public Integer getTurn()
+	public Integer getCurrentCarbon()
 	{
-		return versionedProductiveCelestialBodyProxy.getTurn();
+		return versionedProductiveCelestialBodyProxy.getCurrentCarbon();
 	}
 
 	public Integer getInitialCarbonStock()
@@ -51,9 +58,9 @@ public class VersionedNebula implements IVersionedNebula
 		return versionedProductiveCelestialBodyProxy.getMaxSlots();
 	}
 
-	public Location getLocation()
+	public String getName()
 	{
-		return versionedProductiveCelestialBodyProxy.getLocation();
+		return versionedProductiveCelestialBodyProxy.getName();
 	}
 
 	public eCelestialBodyType getType()
@@ -61,9 +68,9 @@ public class VersionedNebula implements IVersionedNebula
 		return versionedProductiveCelestialBodyProxy.getType();
 	}
 
-	public String getName()
+	public Location getLocation()
 	{
-		return versionedProductiveCelestialBodyProxy.getName();
+		return versionedProductiveCelestialBodyProxy.getLocation();
 	}
 
 }

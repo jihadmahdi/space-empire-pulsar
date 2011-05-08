@@ -1,21 +1,41 @@
 package org.axan.sep.common.db.sqlite.orm;
 
 import org.axan.sep.common.db.sqlite.orm.base.BaseMovePlan;
-import org.axan.sep.common.IGameConfig;
+import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
+import java.util.HashSet;
 import java.util.Set;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
-import com.almworks.sqlite4java.SQLiteConnection;
-import java.util.HashSet;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
+import org.axan.sep.common.IGameConfig;
 
 public class MovePlan implements IMovePlan
 {
 	private final BaseMovePlan baseMovePlanProxy;
 
+	public MovePlan(String owner, String name, Integer turn, Integer priority, Integer delay, Boolean attack, String destination)
+	{
+		baseMovePlanProxy = new BaseMovePlan(owner, name, turn, priority, delay, attack, destination);
+	}
+
 	public MovePlan(SQLiteStatement stmnt, IGameConfig config) throws Exception
 	{
 		this.baseMovePlanProxy = new BaseMovePlan(stmnt);
+	}
+
+	public String getOwner()
+	{
+		return baseMovePlanProxy.getOwner();
+	}
+
+	public String getName()
+	{
+		return baseMovePlanProxy.getName();
+	}
+
+	public Integer getTurn()
+	{
+		return baseMovePlanProxy.getTurn();
 	}
 
 	public Integer getPriority()
@@ -23,9 +43,9 @@ public class MovePlan implements IMovePlan
 		return baseMovePlanProxy.getPriority();
 	}
 
-	public String getOwner()
+	public Integer getDelay()
 	{
-		return baseMovePlanProxy.getOwner();
+		return baseMovePlanProxy.getDelay();
 	}
 
 	public Boolean getAttack()
@@ -38,32 +58,13 @@ public class MovePlan implements IMovePlan
 		return baseMovePlanProxy.getDestination();
 	}
 
-	public Integer getTurn()
-	{
-		return baseMovePlanProxy.getTurn();
-	}
-
-	public Integer getDelay()
-	{
-		return baseMovePlanProxy.getDelay();
-	}
-
-	public String getName()
-	{
-		return baseMovePlanProxy.getName();
-	}
-
-	public static <T extends IMovePlan> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String where, Object ... params) throws SQLiteDBException
+	public static <T extends IMovePlan> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String where, Object ... params) throws SQLiteDBException
 	{
 		try
 		{
 			Set<T> results = new HashSet<T>();
 
 			if (where != null && params != null) where = String.format(where, params);
-			if (lastVersion)
-			{
-				where = String.format("%s(VersionedMovePlan.turn = ( SELECT MAX(LVVersionedMovePlan.turn) FROM VersionedMovePlan LVVersionedMovePlan WHERE LVVersionedMovePlan.priority = MovePlan.priority AND LVVersionedMovePlan.owner = MovePlan.owner AND LVVersionedMovePlan.attack = MovePlan.attack AND LVVersionedMovePlan.destination = MovePlan.destination AND LVVersionedMovePlan.turn = MovePlan.turn AND LVVersionedMovePlan.delay = MovePlan.delay AND LVVersionedMovePlan.name = MovePlan.name ))", (where != null && !where.isEmpty()) ? "("+where+") AND " : "");
-			}
 			SQLiteStatement stmnt = conn.prepare(String.format("SELECT * FROM MovePlan%s ;", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{
@@ -77,4 +78,25 @@ public class MovePlan implements IMovePlan
 		}
 	}
 
+
+	public static <T extends IMovePlan> void insertOrUpdate(SQLiteConnection conn, T movePlan) throws SQLiteDBException
+	{
+		try
+		{
+			SQLiteStatement stmnt = conn.prepare(String.format("SELECT EXISTS ( SELECT owner FROM MovePlan WHERE owner = %s AND name = %s AND turn = %s AND priority = %s) AS exist ;", "'"+movePlan.getOwner()+"'", "'"+movePlan.getName()+"'", "'"+movePlan.getTurn()+"'", "'"+movePlan.getPriority()+"'"));
+			stmnt.step();
+			if (stmnt.columnInt(0) == 0)
+			{
+				conn.exec(String.format("INSERT INTO MovePlan (owner, name, turn, priority, delay, attack, destination) VALUES (%s, %s, %s, %s, %s, %s, %s);", "'"+movePlan.getOwner()+"'", "'"+movePlan.getName()+"'", "'"+movePlan.getTurn()+"'", "'"+movePlan.getPriority()+"'", "'"+movePlan.getDelay()+"'", "'"+movePlan.getAttack()+"'", "'"+movePlan.getDestination()+"'"));
+			}
+			else
+			{
+				conn.exec(String.format("UPDATE MovePlan SET  delay = %s,  attack = %s,  destination = %s WHERE  owner = %s AND name = %s AND turn = %s AND priority = %s ;", "'"+movePlan.getDelay()+"'", "'"+movePlan.getAttack()+"'", "'"+movePlan.getDestination()+"'", "'"+movePlan.getOwner()+"'", "'"+movePlan.getName()+"'", "'"+movePlan.getTurn()+"'", "'"+movePlan.getPriority()+"'"));
+			}
+		}
+		catch(Exception e)
+		{
+			throw new SQLiteDBException(e);
+		}
+	}
 }

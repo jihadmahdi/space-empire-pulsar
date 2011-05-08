@@ -1,18 +1,25 @@
 package org.axan.sep.common.db.sqlite.orm;
 
-import org.axan.sep.common.db.sqlite.orm.Planet;
 import org.axan.sep.common.db.sqlite.orm.VersionedProductiveCelestialBody;
+import org.axan.sep.common.db.sqlite.orm.Planet;
 import org.axan.sep.common.db.sqlite.orm.base.BaseVersionedPlanet;
-import org.axan.sep.common.IGameConfig;
 import com.almworks.sqlite4java.SQLiteStatement;
-import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.IGameConfig;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
+import org.axan.sep.common.SEPUtils.Location;
 
 public class VersionedPlanet implements IVersionedPlanet
 {
 	private final VersionedProductiveCelestialBody versionedProductiveCelestialBodyProxy;
 	private final Planet planetProxy;
 	private final BaseVersionedPlanet baseVersionedPlanetProxy;
+
+	public VersionedPlanet(String name, eCelestialBodyType type, Location location, Integer initialCarbonStock, Integer maxSlots, Integer turn, String owner, Integer carbonStock, Integer currentCarbon, Integer populationPerTurn, Integer maxPopulation, Integer currentPopulation)
+	{
+		versionedProductiveCelestialBodyProxy = new VersionedProductiveCelestialBody(name, type, location, initialCarbonStock, maxSlots, turn, owner, carbonStock, currentCarbon);
+		planetProxy = new Planet(name, type, location, initialCarbonStock, maxSlots, populationPerTurn, maxPopulation);
+		baseVersionedPlanetProxy = new BaseVersionedPlanet(name, type.toString(), location == null ? null : location.x, location == null ? null : location.y, location == null ? null : location.z, initialCarbonStock, maxSlots, turn, owner, carbonStock, currentCarbon, populationPerTurn, maxPopulation, currentPopulation);
+	}
 
 	public VersionedPlanet(SQLiteStatement stmnt, IGameConfig config) throws Exception
 	{
@@ -26,9 +33,9 @@ public class VersionedPlanet implements IVersionedPlanet
 		return baseVersionedPlanetProxy.getCurrentPopulation();
 	}
 
-	public Integer getCurrentCarbon()
+	public Integer getTurn()
 	{
-		return versionedProductiveCelestialBodyProxy.getCurrentCarbon();
+		return versionedProductiveCelestialBodyProxy.getTurn();
 	}
 
 	public String getOwner()
@@ -41,9 +48,9 @@ public class VersionedPlanet implements IVersionedPlanet
 		return versionedProductiveCelestialBodyProxy.getCarbonStock();
 	}
 
-	public Integer getTurn()
+	public Integer getCurrentCarbon()
 	{
-		return versionedProductiveCelestialBodyProxy.getTurn();
+		return versionedProductiveCelestialBodyProxy.getCurrentCarbon();
 	}
 
 	public Integer getInitialCarbonStock()
@@ -56,9 +63,9 @@ public class VersionedPlanet implements IVersionedPlanet
 		return versionedProductiveCelestialBodyProxy.getMaxSlots();
 	}
 
-	public Location getLocation()
+	public String getName()
 	{
-		return versionedProductiveCelestialBodyProxy.getLocation();
+		return versionedProductiveCelestialBodyProxy.getName();
 	}
 
 	public eCelestialBodyType getType()
@@ -66,19 +73,19 @@ public class VersionedPlanet implements IVersionedPlanet
 		return versionedProductiveCelestialBodyProxy.getType();
 	}
 
-	public String getName()
+	public Location getLocation()
 	{
-		return versionedProductiveCelestialBodyProxy.getName();
-	}
-
-	public Integer getMaxPopulation()
-	{
-		return planetProxy.getMaxPopulation();
+		return versionedProductiveCelestialBodyProxy.getLocation();
 	}
 
 	public Integer getPopulationPerTurn()
 	{
 		return planetProxy.getPopulationPerTurn();
+	}
+
+	public Integer getMaxPopulation()
+	{
+		return planetProxy.getMaxPopulation();
 	}
 
 }
