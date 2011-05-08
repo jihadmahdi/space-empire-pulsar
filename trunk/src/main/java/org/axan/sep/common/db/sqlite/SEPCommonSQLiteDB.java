@@ -32,13 +32,11 @@ public class SEPCommonSQLiteDB implements Serializable
 
 	private static class SQLiteDBGameConfigInvocationHandler implements InvocationHandler
 	{
-		private final SEPCommonSQLiteDB sepDB;
 		private final SQLiteDB db;
 		
 		public SQLiteDBGameConfigInvocationHandler(SEPCommonSQLiteDB sepDB)
 		{
-			this.sepDB = sepDB;
-			this.db = sepDB.db;
+			this.db = sepDB.getConfigDB();
 		}
 		
 		@Override
@@ -201,12 +199,14 @@ public class SEPCommonSQLiteDB implements Serializable
 	////////////////////////////////////////////////
 	
 	private SQLiteDB db;
+	private transient SQLiteDB configDB;
 	private transient IGameConfig config;
 	
 	public SEPCommonSQLiteDB(Set<Player> players, IGameConfig config) throws IOException, SQLiteDBException, GameConfigCopierException
 	{
 		File dbFile = File.createTempFile("SEP-commonDB", ".sep");
 		this.db = new SQLiteDB(dbFile);
+		this.configDB = new SQLiteDB(dbFile);
 		
 		// Create Tables
 		URL sqlURL = Reflect.getResource(SEPCommonSQLiteDB.class.getPackage().getName(), "SEPSQLiteDB.sql");
@@ -228,6 +228,11 @@ public class SEPCommonSQLiteDB implements Serializable
 		return this.config;
 	}
 	
+	public SQLiteDB getConfigDB()
+	{
+		return configDB;
+	}
+	
 	public SQLiteDB getDB()
 	{
 		return db;
@@ -243,6 +248,14 @@ public class SEPCommonSQLiteDB implements Serializable
 	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
+		try
+		{
+			this.configDB = new SQLiteDB(db.getDatabaseFile());
+		}
+		catch(SQLiteDBException e)
+		{
+			throw new IOException(e);
+		}
 		this.config = (IGameConfig) Proxy.newProxyInstance(IGameConfig.class.getClassLoader(), new Class<?>[] {IGameConfig.class}, new SQLiteDBGameConfigInvocationHandler(this));
 	}
 	

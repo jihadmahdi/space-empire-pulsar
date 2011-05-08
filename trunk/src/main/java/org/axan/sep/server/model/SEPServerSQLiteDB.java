@@ -177,10 +177,11 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 			@Override
 			protected Set<Area> job(SQLiteConnection conn) throws Throwable
 			{
-				return Area.select(conn, getConfig(), Area.class, true, null);
+				return Area.select(conn, getConfig(), Area.class, null);
 			}
 		});
 		
+		/* SUIS LA
 		currentView.getDB().exec(new SQLiteJob<Void>()
 		{
 			@Override
@@ -189,6 +190,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 				
 			}
 		});
+		*/
 		
 		// ~ Copie simple
 		
@@ -277,7 +279,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 	@Override
 	public PlayerGameBoard getPlayerGameBoard(final String playerLogin) throws SEPServerDataBaseException
 	{
-		SUIS LA
+		//SUIS LA
 		/*
 		 * PlayerGameBoard basé sur la même DB que le serveur.
 		 * Une méthode est capable d'insérer dans la DB toutes les entrées entre le tour précédent et le tour courrant visibles par le joueur.
@@ -309,7 +311,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 								Location location = new Location(x, y, z);
 								
 								// Select celestial body if exists in current Area.
-								Set<ICelestialBody> cbs = CelestialBody.select(conn, getConfig(), ICelestialBody.class, true, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
+								Set<ICelestialBody> cbs = CelestialBody.select(conn, getConfig(), ICelestialBody.class, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
 								ICelestialBody celestialBody = (cbs == null || cbs.isEmpty()) ? null : cbs.iterator().next();
 								IVersionedProductiveCelestialBody productiveCelestialBody = (celestialBody == null || !IVersionedProductiveCelestialBody.class.isInstance(celestialBody)) ? null : IVersionedProductiveCelestialBody.class.cast(celestialBody);																								
 								String celestialBodyOwnerName = (productiveCelestialBody == null) ? null : productiveCelestialBody.getOwner();								
@@ -808,7 +810,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 				protected Void job(SQLiteConnection conn) throws Throwable
 				{										
 					// Select productive celestial body by name, last version
-					Set<IVersionedProductiveCelestialBody> pcbs = CelestialBody.select(conn, getConfig(), IVersionedProductiveCelestialBody.class, true, "name = '%s'", celestialBodyName);
+					Set<IVersionedProductiveCelestialBody> pcbs = CelestialBody.select(conn, getConfig(), IVersionedProductiveCelestialBody.class, "name = '%s'", celestialBodyName);
 					
 					// celestialBodyName IS A ProductiveCelestialBody
 					if (!pcbs.isEmpty())

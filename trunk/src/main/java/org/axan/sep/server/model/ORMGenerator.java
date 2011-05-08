@@ -7,10 +7,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.Vector;
 
 import org.axan.eplib.orm.Class;
@@ -111,7 +114,14 @@ public class ORMGenerator
 				@Override
 				public void genImports(Class c, PrintStream psui, PrintStream psuc)
 				{
-					Set<java.lang.Class<?>> importedClass = new HashSet<java.lang.Class<?>>();					
+					Set<java.lang.Class<?>> importedClass = new TreeSet<java.lang.Class<?>>(new Comparator<java.lang.Class<?>>()
+					{
+						@Override
+						public int compare(java.lang.Class<?> o1, java.lang.Class<?> o2)
+						{
+							return o1.getCanonicalName().compareTo(o2.getCanonicalName());
+						}
+					});					
 					Collections.addAll(importedClass, SQLiteStatement.class, org.axan.sep.common.IGameConfig.class);
 					
 					if (!skipStaticMethods(c))
@@ -119,19 +129,7 @@ public class ORMGenerator
 						Collections.addAll(importedClass, Set.class, HashSet.class, SQLiteORMGenerator.class, SQLiteConnection.class, SQLiteDBException.class);
 					}
 					
-					Set<Field> fields;
-					if (c.getSupers().size() >= 2) // Nester
-					{
-						fields = c.getAllFields();
-					}
-					else
-					{
-						fields = c.getSpecificFields();
-						if (c.getSupers().size() == 1 && !skipStaticMethods(c))
-						{
-							fields.add(new Field(getEnumType(c), "type", true));
-						}
-					}
+					List<Field> fields = c.getAllFields();
 					
 					for(Field field : fields)
 					{
@@ -159,16 +157,88 @@ public class ORMGenerator
 				@Override
 				public String fieldsDeclarations(Class c)
 				{
-					for(Field f : c.getAllFields())
+					StringBuffer sb = new StringBuffer();
+					
+					for(Field f : c.getSpecificFields())
 					{
 						if (f.getLowerName().endsWith("_x"))
 						{
 							Field nf = getLocationRelationField(f);
-							return String.format("private %s %s;", nf.getType().getSimpleName(), nf.getLowerName());
+							sb.append(String.format("private %s %s;", nf.getType().getSimpleName(), nf.getLowerName()));
+						}
+						
+						if (f.getLowerName().matches("type"))
+						{
+							Field nf = wrapField(c, f);
+							sb.append(String.format("private %s %s;", nf.getType().getSimpleName(), nf.getLowerName()));
 						}
 					}
 					
-					return "";
+					return sb.toString();
+				}
+				
+				private Field wrapField(Class c, Field f)
+				{
+					if (f.getLowerName().endsWith("_x"))
+					{						
+						return getLocationRelationField(f);
+					}
+					else if (f.getLowerName().endsWith("_y") || f.getLowerName().endsWith("_z"))
+					{
+						// Ignore
+						return null;
+					}
+					else if (f.getLowerName().matches("type"))
+					{
+						java.lang.Class<? extends Enum> enumType = getEnumType(c);
+						return new Field(enumType, f.getLowerName(), f.isPrimaryKey());
+					}
+					
+					return f;
+				}
+				
+				@Override
+				public String fullConstructorParameter(Class c, Field f)
+				{
+					Field wf = wrapField(c, f);
+					if (wf == null) return "";
+					return super.fullConstructorParameter(c, wf);
+				}
+				
+				@Override
+				public String fullConstructorField(Class c, Field f)
+				{
+					Field wf = wrapField(c, f);
+					if (wf == null || f.equals(wf)) return "";
+					return String.format("this.%s = %s;", wf.getLowerName(), wf.getLowerName());
+				}
+				
+				@Override
+				public String fullConstructorProxyParameter(Class c, Field f)
+				{
+					Field wf = wrapField(c, f);
+					if (wf == null) return "";
+					
+					return super.fullConstructorProxyParameter(c, wf);
+				}
+				
+				@Override
+				public String fullConstructorBaseParameter(Class c, Field f)
+				{
+					Field wf = wrapField(c, f);
+					
+					if (wf == null) return "";
+					
+					if (Location.class.equals(wf.getType()) || RealLocation.class.equals(wf.getType()))
+					{
+						return String.format("%s == null ? null : %s.x, %s == null ? null : %s.y, %s == null ? null : %s.z", wf.getLowerName(), wf.getLowerName(), wf.getLowerName(), wf.getLowerName(), wf.getLowerName(), wf.getLowerName());
+					}
+					else if (wf.getLowerName().matches("type"))
+					{
+						return String.format("%s.toString()", wf.getLowerName());
+					}
+					
+					return super.fullConstructorBaseParameter(c, wf);
 				}
 				
 				@Override
@@ -187,6 +257,30 @@ public class ORMGenerator
 				public String constructorSuperCall(Class c)
 				{
 					return "super(stmnt, config);";
+				}
+				
+				@Override
+				public String constructorFields(Class c)
+				{
+					StringBuffer sb = new StringBuffer();
+					
+					for(Field f : c.getSpecificFields())
+					{
+						Field nf = wrapField(c, f);
+						if (nf == null) continue;
+						
+						if (f.getLowerName().endsWith("_x"))
+						{
+							sb.append(String.format("\t\tthis.%s = (base%sProxy.get%s_x() == null ? null : new %s(base%sProxy.get%s_x(), base%sProxy.get%s_y(), base%sProxy.get%s_z()));\n", nf.getLowerName(), c.getUpperName(), nf.getUpperName(), nf.getType().getSimpleName(), c.getUpperName(), nf.getUpperName(), c.getUpperName(), nf.getUpperName(), c.getUpperName(), nf.getUpperName()));
+						}
+						
+						if (f.getLowerName().matches("type"))
+						{
+							sb.append(String.format("\t\tthis.%s = %s.valueOf(base%sProxy.get%s());\n", nf.getLowerName(), nf.getType().getSimpleName(), c.getUpperName(), nf.getUpperName()));
+						}
+					}
+					
+					return sb.toString();
 				}
 				
 				private Field getLocationRelationField(Field field)
@@ -212,6 +306,24 @@ public class ORMGenerator
 					}
 					
 					return unprefixedVersionedTypes;
+				}
+				
+				private Class getVersionedClass(Class c)
+				{
+					// IF (isVersionedTypeUnprefixed(c)) return c
+					// IF (c.startsWith("Versioned")) return c
+					// IF (exist("Versioned"+c)) return "Versioned"+c
+					// return NULL
+					
+					if (c.getUpperName().startsWith("Versioned")) return c;
+					if (getUnprefixedVersionedTypes().get(c.getUpperName()) != null && getUnprefixedVersionedTypes().get(c.getUpperName())) return c;
+					// Versioned class must be a sub class.
+					for(Class sub: c.getSubers())
+					{
+						if (sub.getUpperName().matches("Versioned"+c.getUpperName())) return sub;
+					}
+					
+					return null;
 				}
 				
 				private Map<String, java.lang.Class<? extends Enum>> enumTypes = new HashMap<String, java.lang.Class<? extends Enum>>();
@@ -243,62 +355,34 @@ public class ORMGenerator
 				}
 				
 				@Override
-				public String getterDeclaration(Class c, Field field)
+				public String getterDeclaration(Class c, Field f)
 				{
-					if (field.getLowerName().endsWith("_x"))
-					{
-						return super.getterDeclaration(c, getLocationRelationField(field));
-					}
-					else if (field.getLowerName().endsWith("_y") || field.getLowerName().endsWith("_z"))
-					{
-						// Ignore
-						return "";
-					}
-					else if (field.getLowerName().matches("type"))
-					{
-						java.lang.Class<? extends Enum> enumType = getEnumType(c);
-						return super.getterDeclaration(c, new Field(enumType, field.getLowerName(), field.isPrimaryKey()));
-					}
-					
-					return super.getterDeclaration(c, field);
+					Field wf = wrapField(c, f);
+					if (wf == null) return "";
+					return super.getterDeclaration(c, wf);
 				}
 		
 				@Override
-				public String getterProxy(Class c, Field field, Class proxy)
+				public String getterProxy(Class c, Field f, Class proxy)
 				{
-					if (field.getLowerName().endsWith("_x"))
-					{
-						return super.getterProxy(c, getLocationRelationField(field), proxy);
-					}
-					else if (field.getLowerName().endsWith("_y") || field.getLowerName().endsWith("_z"))
-					{
-						// Ignore
-						return "";
-					}
-					
-					return super.getterProxy(c, field, proxy);
+					Field wf = wrapField(c, f);
+					if (wf == null) return "";
+					// Type ?
+					return super.getterProxy(c, wf, proxy);
 				}
 				
 				@Override
-				public String getter(Class c, Field field)
+				public String getter(Class c, Field f)
 				{
-					if (field.getLowerName().endsWith("_x"))
-					{
-						Field nf = getLocationRelationField(field);
-						return String.format("if (%s == null) {%s = (base%sProxy.get%s_x() == null) ? null : new %s(base%sProxy.get%s_x(), base%sProxy.get%s_y(), base%sProxy.get%s_z()); } return %s;", nf.getLowerName(), nf.getLowerName(), c.getUpperName(), nf.getUpperName(), nf.getType().getSimpleName(), c.getUpperName(), nf.getUpperName(), c.getUpperName(), nf.getUpperName(), c.getUpperName(), nf.getUpperName(), nf.getLowerName());
-					}
-					else if (field.getLowerName().endsWith("_y") || field.getLowerName().endsWith("_z"))
-					{
-						// Ignore
-						return "";
-					}
-					else if (field.getLowerName().matches("type"))
-					{
-						java.lang.Class<? extends Enum> enumType = getEnumType(c);
-						return String.format("return %s.valueOf(base%sProxy.get%s());", enumType.getSimpleName(), c.getUpperName(), field.getUpperName());
-					}
+					Field wf = wrapField(c, f);
+					if (wf == null) return "";
 					
-					return super.getter(c, field);
+					if (Location.class.equals(wf.getType()) || RealLocation.class.equals(wf.getType()) || wf.getLowerName().matches("type"))
+					{
+						return String.format("return %s;", wf.getLowerName());
+					}					
+					
+					return super.getter(c, wf);
 				}
 				
 				@Override
@@ -335,21 +419,7 @@ public class ORMGenerator
 				{
 					boolean first = false;
 					
-					String versionedName = c.getUpperName();
-					if (!versionedName.startsWith("Versioned") && !getUnprefixedVersionedTypes().containsKey(c.getUpperName()))
-					{
-						versionedName = "Versioned"+versionedName;
-					}
-					
-					Class versionedClass = c;
-					for(Class sub : c.getSubers())
-					{
-						if (sub.getUpperName().matches(versionedName))
-						{
-							versionedClass = sub;
-							break;
-						}
-					}
+					Class versionedClass = getVersionedClass(c);
 					
 					java.lang.Class<? extends Enum> enumType = getEnumType(c);
 					
@@ -357,23 +427,23 @@ public class ORMGenerator
 					{
 						if (skipStaticMethods(c)) return;
 						
-						psuc.format("\tpublic static <T extends I%s> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, %sString where, Object ... params) throws SQLiteDBException\n", c.getUpperName(), versionedClass.hasField("turn") ? "boolean lastVersion, " : "" );
+						psuc.format("\tpublic static <T extends I%s> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, %sString where, Object ... params) throws SQLiteDBException\n", c.getUpperName(), (versionedClass != null && versionedClass.hasField("turn")) ? "boolean lastVersion, " : "" );
 						psuc.println("\t{");
 						psuc.println("\t\ttry");
 						psuc.println("\t\t{");
 						psuc.println("\t\t\tSet<T> results = new HashSet<T>();\n");
 						psuc.println("\t\t\tif (where != null && params != null) where = String.format(where, params);");
-						if (versionedClass.hasField("turn"))
+						if (versionedClass != null && versionedClass.hasField("turn"))
 						{
 							psuc.println("\t\t\tif (lastVersion)");
 							psuc.println("\t\t\t{");
-							psuc.format("\t\t\t\twhere = String.format(\"%%s(%s.turn = ( SELECT MAX(LV%s.turn) FROM %s LV%s WHERE ", versionedName, versionedName, versionedName, versionedName);
+							psuc.format("\t\t\t\twhere = String.format(\"%%s(%s.turn = ( SELECT MAX(LV%s.turn) FROM %s LV%s WHERE ", versionedClass.getUpperName(), versionedClass.getUpperName(), versionedClass.getUpperName(), versionedClass.getUpperName());
 							
 							boolean comma = false;
 							for(Field f : c.getCommonFields(versionedClass))
 							{
 								if (comma) psuc.print(" AND ");
-								psuc.format("LV%s.%s = %s.%s", versionedName, f.getLowerName(), c.getUpperName(), f.getLowerName());
+								psuc.format("LV%s.%s = %s.%s", versionedClass.getUpperName(), f.getLowerName(), c.getUpperName(), f.getLowerName());
 								comma = true;
 							}
 							
@@ -382,9 +452,9 @@ public class ORMGenerator
 						}
 						psuc.print("\t\t\tSQLiteStatement stmnt = conn.prepare(String.format(\"");												
 						psuc.print("SELECT ");
-						if (versionedClass.hasField("type"))
+						if (versionedClass != null && versionedClass.hasField("type"))
 						{
-							psuc.format("%s.type, %s.type, ", c.getUpperName(), versionedName);
+							psuc.format("%s.type, %s.type, ", c.getUpperName(), versionedClass.getUpperName());
 						}
 						psuc.format("* FROM %s", c.getUpperName());			
 						first = true;
@@ -392,7 +462,7 @@ public class ORMGenerator
 					
 					Set<Class> subers = c.getSubers();
 					Vector<Class> jointures = new Vector<Class>(subers.size()+1);
-					if (c != versionedClass) jointures.add(versionedClass);
+					if (versionedClass != null && versionedClass != c) jointures.add(versionedClass);
 					jointures.addAll(subers);
 					
 					Class jointure = c;
@@ -421,10 +491,10 @@ public class ORMGenerator
 						psuc.println("%s ;\", (where != null && !where.isEmpty()) ? \" WHERE \"+where : \"\"));");
 						psuc.println("\t\t\twhile(stmnt.step())");
 						psuc.println("\t\t\t{");
-						if (versionedClass.hasField("type"))
+						if (versionedClass != null && versionedClass.hasField("type"))
 						{
 							psuc.format("\t\t\t\t%s type = %s.valueOf(stmnt.columnString(0));\n", enumType.getSimpleName(), enumType.getSimpleName());
-							if (!getUnprefixedVersionedTypes().containsKey(c.getUpperName()))
+							if (versionedClass != null)
 							{
 								psuc.println("\t\t\t\tboolean isVersioned = (!stmnt.columnString(1).isEmpty());");
 							}						
@@ -460,7 +530,10 @@ public class ORMGenerator
 						psuc.println("\t{");
 						psuc.println("\t\ttry");
 						psuc.println("\t\t{");
-						psuc.format("\t\t\tI%s v%s = (I%s.class.isInstance(%s) ? I%s.class.cast(%s) : null);\n", versionedName, c.getLowerName(), versionedName, c.getLowerName(), versionedName, c.getLowerName()); 
+						if (versionedClass != null)
+						{
+							psuc.format("\t\t\tI%s v%s = (I%s.class.isInstance(%s) ? I%s.class.cast(%s) : null);\n", versionedClass.getUpperName(), c.getLowerName(), versionedClass.getUpperName(), c.getLowerName(), versionedClass.getUpperName(), c.getLowerName());
+						}
 						psuc.format("\t\t\tSQLiteStatement stmnt = conn.prepare(String.format(\"SELECT EXISTS ( SELECT %s FROM %s WHERE", c.getAllFields().iterator().next().getLowerName(), c.getUpperName());
 
 						boolean comma = false;
@@ -484,12 +557,13 @@ public class ORMGenerator
 						psuc.format("%s));\n", values);
 						
 						values.setLength(0);
+						psuc.println("\t\t\tstmnt.step();");
 						psuc.println("\t\t\tif (stmnt.columnInt(0) == 0)");
 						psuc.println("\t\t\t{");
 						
 						psuc.format("\t\t\t\tconn.exec(%s);\n", generateInsertQuery(c, c.getLowerName()));
 						values.append(String.format("\t\t\t\tconn.exec(%s);\n", generateUpdateQuery(c, c.getLowerName())));
-						if (versionedClass != c)
+						if (versionedClass != null && versionedClass != c)
 						{
 							psuc.format("\t\t\t\tif (v%s != null)\n\t\t\t\t{\n\t\t\t\t\tconn.exec(%s);\n\t\t\t\t}\n", c.getLowerName(), generateInsertQuery(versionedClass, "v"+c.getLowerName()));
 							values.append(String.format("\t\t\t\tif (v%s != null)\n\t\t\t\t{\n\t\t\t\t\tconn.exec(%s);\n\t\t\t\t}\n", c.getLowerName(), generateUpdateQuery(versionedClass, "v"+c.getLowerName())));
@@ -513,28 +587,26 @@ public class ORMGenerator
 								{
 									if (sub.getUpperName().matches(e.name()))
 									{
-										psuc.format("\t\t\t\t\t\tI%s %s = %s.class.cast(%s);\n", sub.getUpperName(), sub.getLowerName(), sub.getUpperName(), c.getLowerName());
-										values.append(String.format("\t\t\t\t\t\tI%s %s = %s.class.cast(%s);\n", sub.getUpperName(), sub.getLowerName(), sub.getUpperName(), c.getLowerName()));
+										psuc.format("\t\t\t\t\t\tI%s %s = I%s.class.cast(%s);\n", sub.getUpperName(), sub.getLowerName(), sub.getUpperName(), c.getLowerName());
+										values.append(String.format("\t\t\t\t\t\tI%s %s = I%s.class.cast(%s);\n", sub.getUpperName(), sub.getLowerName(), sub.getUpperName(), c.getLowerName()));
 										psuc.format("\t\t\t\t\t\tconn.exec(%s);\n", generateInsertQuery(sub, sub.getLowerName()));
 										values.append(String.format("\t\t\t\t\t\tconn.exec(%s);\n", generateUpdateQuery(sub, sub.getLowerName())));
 										if (versionedClass != c)
 										{
-											for(Class vsub : sub.getSubers())
+											Class vsub = getVersionedClass(sub);
+											if (vsub != null && vsub != sub)
 											{
-												if (vsub.getUpperName().matches("Versioned"+sub.getUpperName()))
-												{
-													psuc.format("\t\t\t\t\t\tif (v%s != null)\n", c.getLowerName());
-													values.append(String.format("\t\t\t\t\t\tif (v%s != null)\n", c.getLowerName()));
-													psuc.println("\t\t\t\t\t\t{");
-													values.append("\t\t\t\t\t\t{\n");
-													psuc.format("\t\t\t\t\t\t\tI%s %s = %s.class.cast(%s);\n", vsub.getUpperName(), vsub.getLowerName(), vsub.getUpperName(), c.getLowerName());
-													values.append(String.format("\t\t\t\t\t\t\tI%s %s = %s.class.cast(%s);\n", vsub.getUpperName(), vsub.getLowerName(), vsub.getUpperName(), c.getLowerName()));
-													psuc.format("\t\t\t\t\t\t\tconn.exec(%s);\n", generateInsertQuery(vsub, vsub.getLowerName()));
-													values.append(String.format("\t\t\t\t\t\t\tconn.exec(%s);\n", generateUpdateQuery(vsub, vsub.getLowerName())));
-													psuc.println("\t\t\t\t\t\t}");
-													values.append("\t\t\t\t\t\t}\n");
-												}
-											}											
+												psuc.format("\t\t\t\t\t\tif (v%s != null)\n", c.getLowerName());
+												values.append(String.format("\t\t\t\t\t\tif (v%s != null)\n", c.getLowerName()));
+												psuc.println("\t\t\t\t\t\t{");
+												values.append("\t\t\t\t\t\t{\n");
+												psuc.format("\t\t\t\t\t\t\tI%s %s = I%s.class.cast(%s);\n", vsub.getUpperName(), vsub.getLowerName(), vsub.getUpperName(), c.getLowerName());
+												values.append(String.format("\t\t\t\t\t\t\tI%s %s = I%s.class.cast(%s);\n", vsub.getUpperName(), vsub.getLowerName(), vsub.getUpperName(), c.getLowerName()));
+												psuc.format("\t\t\t\t\t\t\tconn.exec(%s);\n", generateInsertQuery(vsub, vsub.getLowerName()));
+												values.append(String.format("\t\t\t\t\t\t\tconn.exec(%s);\n", generateUpdateQuery(vsub, vsub.getLowerName())));
+												psuc.println("\t\t\t\t\t\t}");
+												values.append("\t\t\t\t\t\t}\n");
+											}																					
 										}
 									}
 								}
@@ -654,7 +726,7 @@ public class ORMGenerator
 					}
 					else
 					{
-						return "'%s'";
+						return "%s";
 					}
 				}
 				
@@ -666,14 +738,16 @@ public class ORMGenerator
 				
 				private String getFieldValue(String var, Field f)
 				{
+					String flag = getFieldQueryFlag(f);
+					
 					if (f.getLowerName().endsWith("_x") || f.getLowerName().endsWith("_y") || f.getLowerName().endsWith("_z"))
 					{
 						String[] ff = Basic.split(f.getUpperName(), "_");
-						return String.format("%s.get%s().%s", var, ff[0], ff[1]); 
+						return String.format("%s.get%s() == null ? \"NULL\" : \"'\"+%s.get%s().%s+\"'\"", var, ff[0], var, ff[0], ff[1]);
 					}
 					else
 					{
-						return String.format("%s.get%s()", var, f.getUpperName());
+						return String.format("%s%s.get%s()%s", flag.matches("%s") ? "\"'\"+" : "", var, f.getUpperName(), flag.matches("%s") ? "+\"'\"" : "");
 					}
 				}
 				
