@@ -1,31 +1,36 @@
 package org.axan.sep.common.db.sqlite.orm;
 
 import org.axan.sep.common.db.sqlite.orm.base.BaseSpaceRoad;
-import org.axan.sep.common.IGameConfig;
+import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
+import java.util.HashSet;
 import java.util.Set;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
-import com.almworks.sqlite4java.SQLiteConnection;
-import java.util.HashSet;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
+import org.axan.sep.common.IGameConfig;
 
 public class SpaceRoad implements ISpaceRoad
 {
 	private final BaseSpaceRoad baseSpaceRoadProxy;
+
+	public SpaceRoad(String name, String builder, String spaceCounterAType, String spaceCounterACelestialBodyName, Integer spaceCounterATurn, String spaceCounterBType, String spaceCounterBCelestialBodyName, Integer spaceCounterBTurn)
+	{
+		baseSpaceRoadProxy = new BaseSpaceRoad(name, builder, spaceCounterAType, spaceCounterACelestialBodyName, spaceCounterATurn, spaceCounterBType, spaceCounterBCelestialBodyName, spaceCounterBTurn);
+	}
 
 	public SpaceRoad(SQLiteStatement stmnt, IGameConfig config) throws Exception
 	{
 		this.baseSpaceRoadProxy = new BaseSpaceRoad(stmnt);
 	}
 
-	public String getSpaceCounterBCelestialBodyName()
+	public String getName()
 	{
-		return baseSpaceRoadProxy.getSpaceCounterBCelestialBodyName();
+		return baseSpaceRoadProxy.getName();
 	}
 
-	public Integer getSpaceCounterATurn()
+	public String getBuilder()
 	{
-		return baseSpaceRoadProxy.getSpaceCounterATurn();
+		return baseSpaceRoadProxy.getBuilder();
 	}
 
 	public String getSpaceCounterAType()
@@ -33,9 +38,24 @@ public class SpaceRoad implements ISpaceRoad
 		return baseSpaceRoadProxy.getSpaceCounterAType();
 	}
 
+	public String getSpaceCounterACelestialBodyName()
+	{
+		return baseSpaceRoadProxy.getSpaceCounterACelestialBodyName();
+	}
+
+	public Integer getSpaceCounterATurn()
+	{
+		return baseSpaceRoadProxy.getSpaceCounterATurn();
+	}
+
 	public String getSpaceCounterBType()
 	{
 		return baseSpaceRoadProxy.getSpaceCounterBType();
+	}
+
+	public String getSpaceCounterBCelestialBodyName()
+	{
+		return baseSpaceRoadProxy.getSpaceCounterBCelestialBodyName();
 	}
 
 	public Integer getSpaceCounterBTurn()
@@ -43,12 +63,7 @@ public class SpaceRoad implements ISpaceRoad
 		return baseSpaceRoadProxy.getSpaceCounterBTurn();
 	}
 
-	public String getSpaceCounterACelestialBodyName()
-	{
-		return baseSpaceRoadProxy.getSpaceCounterACelestialBodyName();
-	}
-
-	public static <T extends ISpaceRoad> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String where, Object ... params) throws SQLiteDBException
+	public static <T extends ISpaceRoad> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String where, Object ... params) throws SQLiteDBException
 	{
 		try
 		{
@@ -68,4 +83,25 @@ public class SpaceRoad implements ISpaceRoad
 		}
 	}
 
+
+	public static <T extends ISpaceRoad> void insertOrUpdate(SQLiteConnection conn, T spaceRoad) throws SQLiteDBException
+	{
+		try
+		{
+			SQLiteStatement stmnt = conn.prepare(String.format("SELECT EXISTS ( SELECT name FROM SpaceRoad WHERE name = %s AND builder = %s) AS exist ;", "'"+spaceRoad.getName()+"'", "'"+spaceRoad.getBuilder()+"'"));
+			stmnt.step();
+			if (stmnt.columnInt(0) == 0)
+			{
+				conn.exec(String.format("INSERT INTO SpaceRoad (name, builder, spaceCounterAType, spaceCounterACelestialBodyName, spaceCounterATurn, spaceCounterBType, spaceCounterBCelestialBodyName, spaceCounterBTurn) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);", "'"+spaceRoad.getName()+"'", "'"+spaceRoad.getBuilder()+"'", "'"+spaceRoad.getSpaceCounterAType()+"'", "'"+spaceRoad.getSpaceCounterACelestialBodyName()+"'", "'"+spaceRoad.getSpaceCounterATurn()+"'", "'"+spaceRoad.getSpaceCounterBType()+"'", "'"+spaceRoad.getSpaceCounterBCelestialBodyName()+"'", "'"+spaceRoad.getSpaceCounterBTurn()+"'"));
+			}
+			else
+			{
+				conn.exec(String.format("UPDATE SpaceRoad SET  spaceCounterAType = %s,  spaceCounterACelestialBodyName = %s,  spaceCounterATurn = %s,  spaceCounterBType = %s,  spaceCounterBCelestialBodyName = %s,  spaceCounterBTurn = %s WHERE  name = %s AND builder = %s ;", "'"+spaceRoad.getSpaceCounterAType()+"'", "'"+spaceRoad.getSpaceCounterACelestialBodyName()+"'", "'"+spaceRoad.getSpaceCounterATurn()+"'", "'"+spaceRoad.getSpaceCounterBType()+"'", "'"+spaceRoad.getSpaceCounterBCelestialBodyName()+"'", "'"+spaceRoad.getSpaceCounterBTurn()+"'", "'"+spaceRoad.getName()+"'", "'"+spaceRoad.getBuilder()+"'"));
+			}
+		}
+		catch(Exception e)
+		{
+			throw new SQLiteDBException(e);
+		}
+	}
 }

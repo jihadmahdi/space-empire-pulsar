@@ -1,10 +1,10 @@
 package org.axan.sep.common.db.sqlite.orm;
 
-import org.axan.sep.common.db.sqlite.orm.SpaceRoadDeliverer;
 import org.axan.sep.common.db.sqlite.orm.VersionedUnit;
+import org.axan.sep.common.db.sqlite.orm.SpaceRoadDeliverer;
 import org.axan.sep.common.db.sqlite.orm.base.BaseVersionedSpaceRoadDeliverer;
-import org.axan.sep.common.IGameConfig;
 import com.almworks.sqlite4java.SQLiteStatement;
+import org.axan.sep.common.IGameConfig;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
 
@@ -13,6 +13,13 @@ public class VersionedSpaceRoadDeliverer implements IVersionedSpaceRoadDeliverer
 	private final VersionedUnit versionedUnitProxy;
 	private final SpaceRoadDeliverer spaceRoadDelivererProxy;
 	private final BaseVersionedSpaceRoadDeliverer baseVersionedSpaceRoadDelivererProxy;
+
+	public VersionedSpaceRoadDeliverer(String owner, String name, eUnitType type, Integer turn, Location departure, Double progress, Location destination, String sourceType, String sourceCelestialBodyName, Integer sourceTurn, String destinationType, String destinationCelestialBodyName, Integer destinationTurn, float sight)
+	{
+		spaceRoadDelivererProxy = new SpaceRoadDeliverer(owner, name, type, sourceType, sourceCelestialBodyName, sourceTurn, destinationType, destinationCelestialBodyName, destinationTurn, sight);
+		versionedUnitProxy = new VersionedUnit(owner, name, type, turn, departure, progress, destination, sight);
+		baseVersionedSpaceRoadDelivererProxy = new BaseVersionedSpaceRoadDeliverer(owner, name, type.toString(), turn, departure == null ? null : departure.x, departure == null ? null : departure.y, departure == null ? null : departure.z, progress, destination == null ? null : destination.x, destination == null ? null : destination.y, destination == null ? null : destination.z, sourceType, sourceCelestialBodyName, sourceTurn, destinationType, destinationCelestialBodyName, destinationTurn);
+	}
 
 	public VersionedSpaceRoadDeliverer(SQLiteStatement stmnt, IGameConfig config) throws Exception
 	{
@@ -25,6 +32,11 @@ public class VersionedSpaceRoadDeliverer implements IVersionedSpaceRoadDeliverer
 	public float getSight()
 	{
 		return versionedUnitProxy.getSight();
+	}
+
+	public Integer getTurn()
+	{
+		return versionedUnitProxy.getTurn();
 	}
 
 	public Location getDeparture()
@@ -42,19 +54,9 @@ public class VersionedSpaceRoadDeliverer implements IVersionedSpaceRoadDeliverer
 		return versionedUnitProxy.getDestination();
 	}
 
-	public Integer getTurn()
-	{
-		return versionedUnitProxy.getTurn();
-	}
-
 	public String getOwner()
 	{
 		return versionedUnitProxy.getOwner();
-	}
-
-	public eUnitType getType()
-	{
-		return versionedUnitProxy.getType();
 	}
 
 	public String getName()
@@ -62,14 +64,14 @@ public class VersionedSpaceRoadDeliverer implements IVersionedSpaceRoadDeliverer
 		return versionedUnitProxy.getName();
 	}
 
-	public String getDestinationType()
+	public eUnitType getType()
 	{
-		return spaceRoadDelivererProxy.getDestinationType();
+		return versionedUnitProxy.getType();
 	}
 
-	public Integer getDestinationTurn()
+	public String getSourceType()
 	{
-		return spaceRoadDelivererProxy.getDestinationTurn();
+		return spaceRoadDelivererProxy.getSourceType();
 	}
 
 	public String getSourceCelestialBodyName()
@@ -82,14 +84,19 @@ public class VersionedSpaceRoadDeliverer implements IVersionedSpaceRoadDeliverer
 		return spaceRoadDelivererProxy.getSourceTurn();
 	}
 
-	public String getSourceType()
+	public String getDestinationType()
 	{
-		return spaceRoadDelivererProxy.getSourceType();
+		return spaceRoadDelivererProxy.getDestinationType();
 	}
 
 	public String getDestinationCelestialBodyName()
 	{
 		return spaceRoadDelivererProxy.getDestinationCelestialBodyName();
+	}
+
+	public Integer getDestinationTurn()
+	{
+		return spaceRoadDelivererProxy.getDestinationTurn();
 	}
 
 }

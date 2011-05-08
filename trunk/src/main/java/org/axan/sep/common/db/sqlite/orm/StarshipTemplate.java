@@ -1,26 +1,26 @@
 package org.axan.sep.common.db.sqlite.orm;
 
 import org.axan.sep.common.db.sqlite.orm.base.BaseStarshipTemplate;
-import org.axan.sep.common.IGameConfig;
+import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
+import java.util.HashSet;
 import java.util.Set;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
-import com.almworks.sqlite4java.SQLiteConnection;
-import java.util.HashSet;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
+import org.axan.sep.common.IGameConfig;
 
 public class StarshipTemplate implements IStarshipTemplate
 {
 	private final BaseStarshipTemplate baseStarshipTemplateProxy;
 
+	public StarshipTemplate(String name, String specializedClass)
+	{
+		baseStarshipTemplateProxy = new BaseStarshipTemplate(name, specializedClass);
+	}
+
 	public StarshipTemplate(SQLiteStatement stmnt, IGameConfig config) throws Exception
 	{
 		this.baseStarshipTemplateProxy = new BaseStarshipTemplate(stmnt);
-	}
-
-	public String getSpecializedClass()
-	{
-		return baseStarshipTemplateProxy.getSpecializedClass();
 	}
 
 	public String getName()
@@ -28,7 +28,12 @@ public class StarshipTemplate implements IStarshipTemplate
 		return baseStarshipTemplateProxy.getName();
 	}
 
-	public static <T extends IStarshipTemplate> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String where, Object ... params) throws SQLiteDBException
+	public String getSpecializedClass()
+	{
+		return baseStarshipTemplateProxy.getSpecializedClass();
+	}
+
+	public static <T extends IStarshipTemplate> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String where, Object ... params) throws SQLiteDBException
 	{
 		try
 		{
@@ -48,4 +53,25 @@ public class StarshipTemplate implements IStarshipTemplate
 		}
 	}
 
+
+	public static <T extends IStarshipTemplate> void insertOrUpdate(SQLiteConnection conn, T starshipTemplate) throws SQLiteDBException
+	{
+		try
+		{
+			SQLiteStatement stmnt = conn.prepare(String.format("SELECT EXISTS ( SELECT name FROM StarshipTemplate WHERE name = %s) AS exist ;", "'"+starshipTemplate.getName()+"'"));
+			stmnt.step();
+			if (stmnt.columnInt(0) == 0)
+			{
+				conn.exec(String.format("INSERT INTO StarshipTemplate (name, specializedClass) VALUES (%s, %s);", "'"+starshipTemplate.getName()+"'", "'"+starshipTemplate.getSpecializedClass()+"'"));
+			}
+			else
+			{
+				conn.exec(String.format("UPDATE StarshipTemplate SET  specializedClass = %s WHERE  name = %s ;", "'"+starshipTemplate.getSpecializedClass()+"'", "'"+starshipTemplate.getName()+"'"));
+			}
+		}
+		catch(Exception e)
+		{
+			throw new SQLiteDBException(e);
+		}
+	}
 }

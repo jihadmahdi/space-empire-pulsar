@@ -3,8 +3,8 @@ package org.axan.sep.common.db.sqlite.orm;
 import org.axan.sep.common.db.sqlite.orm.CarbonCarrier;
 import org.axan.sep.common.db.sqlite.orm.VersionedUnit;
 import org.axan.sep.common.db.sqlite.orm.base.BaseVersionedCarbonCarrier;
-import org.axan.sep.common.IGameConfig;
 import com.almworks.sqlite4java.SQLiteStatement;
+import org.axan.sep.common.IGameConfig;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
 
@@ -13,6 +13,13 @@ public class VersionedCarbonCarrier implements IVersionedCarbonCarrier
 	private final CarbonCarrier carbonCarrierProxy;
 	private final VersionedUnit versionedUnitProxy;
 	private final BaseVersionedCarbonCarrier baseVersionedCarbonCarrierProxy;
+
+	public VersionedCarbonCarrier(String owner, String name, eUnitType type, String sourceType, String sourceCelestialBodyName, Integer sourceTurn, Integer turn, Location departure, Double progress, Location destination, String orderOwner, String orderSource, Integer orderPriority, float sight)
+	{
+		carbonCarrierProxy = new CarbonCarrier(owner, name, type, sourceType, sourceCelestialBodyName, sourceTurn, sight);
+		versionedUnitProxy = new VersionedUnit(owner, name, type, turn, departure, progress, destination, sight);
+		baseVersionedCarbonCarrierProxy = new BaseVersionedCarbonCarrier(owner, name, type.toString(), sourceType, sourceCelestialBodyName, sourceTurn, turn, departure == null ? null : departure.x, departure == null ? null : departure.y, departure == null ? null : departure.z, progress, destination == null ? null : destination.x, destination == null ? null : destination.y, destination == null ? null : destination.z, orderOwner, orderSource, orderPriority);
+	}
 
 	public VersionedCarbonCarrier(SQLiteStatement stmnt, IGameConfig config) throws Exception
 	{
@@ -42,6 +49,11 @@ public class VersionedCarbonCarrier implements IVersionedCarbonCarrier
 		return baseVersionedCarbonCarrierProxy.getOrderPriority();
 	}
 
+	public String getSourceType()
+	{
+		return carbonCarrierProxy.getSourceType();
+	}
+
 	public String getSourceCelestialBodyName()
 	{
 		return carbonCarrierProxy.getSourceCelestialBodyName();
@@ -52,14 +64,14 @@ public class VersionedCarbonCarrier implements IVersionedCarbonCarrier
 		return carbonCarrierProxy.getSourceTurn();
 	}
 
-	public String getSourceType()
-	{
-		return carbonCarrierProxy.getSourceType();
-	}
-
 	public String getOwner()
 	{
 		return carbonCarrierProxy.getOwner();
+	}
+
+	public String getName()
+	{
+		return carbonCarrierProxy.getName();
 	}
 
 	public eUnitType getType()
@@ -67,9 +79,9 @@ public class VersionedCarbonCarrier implements IVersionedCarbonCarrier
 		return carbonCarrierProxy.getType();
 	}
 
-	public String getName()
+	public Integer getTurn()
 	{
-		return carbonCarrierProxy.getName();
+		return versionedUnitProxy.getTurn();
 	}
 
 	public Location getDeparture()
@@ -85,11 +97,6 @@ public class VersionedCarbonCarrier implements IVersionedCarbonCarrier
 	public Location getDestination()
 	{
 		return versionedUnitProxy.getDestination();
-	}
-
-	public Integer getTurn()
-	{
-		return versionedUnitProxy.getTurn();
 	}
 
 }
