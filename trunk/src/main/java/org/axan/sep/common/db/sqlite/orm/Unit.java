@@ -51,7 +51,7 @@ public class Unit implements IUnit
 		return type;
 	}
 
-	public static <T extends IUnit> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String where, Object ... params) throws SQLiteDBException
+	public static <T extends IUnit> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String from, String where, Object ... params) throws SQLiteDBException
 	{
 		try
 		{
@@ -62,7 +62,7 @@ public class Unit implements IUnit
 			{
 				where = String.format("%s(VersionedUnit.turn = ( SELECT MAX(LVVersionedUnit.turn) FROM VersionedUnit LVVersionedUnit WHERE LVVersionedUnit.owner = Unit.owner AND LVVersionedUnit.name = Unit.name AND LVVersionedUnit.type = Unit.type ))", (where != null && !where.isEmpty()) ? "("+where+") AND " : "");
 			}
-			SQLiteStatement stmnt = conn.prepare(String.format("SELECT Unit.type, VersionedUnit.type, * FROM Unit LEFT JOIN VersionedUnit USING (owner, name, type) LEFT JOIN VersionedFleet USING (owner, name, turn, type) LEFT JOIN VersionedProbe USING (owner, name, turn, type) LEFT JOIN VersionedCarbonCarrier USING (owner, name, turn, type) LEFT JOIN VersionedAntiProbeMissile USING (owner, name, turn, type) LEFT JOIN VersionedSpaceRoadDeliverer USING (owner, name, turn, type) LEFT JOIN VersionedPulsarMissile USING (owner, name, turn, type) LEFT JOIN PulsarMissile USING (owner, name, type) LEFT JOIN Probe USING (owner, name, type) LEFT JOIN CarbonCarrier USING (owner, name, type) LEFT JOIN AntiProbeMissile USING (owner, name, type) LEFT JOIN SpaceRoadDeliverer USING (owner, name, type) LEFT JOIN Fleet USING (owner, name, type)%s ;", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
+			SQLiteStatement stmnt = conn.prepare(String.format("SELECT Unit.type, VersionedUnit.type, Unit.*, VersionedUnit.*, VersionedFleet.*, VersionedProbe.*, VersionedCarbonCarrier.*, VersionedAntiProbeMissile.*, VersionedSpaceRoadDeliverer.*, VersionedPulsarMissile.*, PulsarMissile.*, Probe.*, CarbonCarrier.*, AntiProbeMissile.*, SpaceRoadDeliverer.*, Fleet.* FROM Unit%s LEFT JOIN VersionedUnit USING (owner, name, type) LEFT JOIN VersionedFleet USING (owner, name, turn, type) LEFT JOIN VersionedProbe USING (owner, name, turn, type) LEFT JOIN VersionedCarbonCarrier USING (owner, name, turn, type) LEFT JOIN VersionedAntiProbeMissile USING (owner, name, turn, type) LEFT JOIN VersionedSpaceRoadDeliverer USING (owner, name, turn, type) LEFT JOIN VersionedPulsarMissile USING (owner, name, turn, type) LEFT JOIN PulsarMissile USING (owner, name, type) LEFT JOIN Probe USING (owner, name, type) LEFT JOIN CarbonCarrier USING (owner, name, type) LEFT JOIN AntiProbeMissile USING (owner, name, type) LEFT JOIN SpaceRoadDeliverer USING (owner, name, type) LEFT JOIN Fleet USING (owner, name, type)%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{
 				eUnitType type = eUnitType.valueOf(stmnt.columnString(0));

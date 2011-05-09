@@ -42,7 +42,7 @@ public class SpecialUnit implements ISpecialUnit
 		return type;
 	}
 
-	public static <T extends ISpecialUnit> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String where, Object ... params) throws SQLiteDBException
+	public static <T extends ISpecialUnit> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String from, String where, Object ... params) throws SQLiteDBException
 	{
 		try
 		{
@@ -53,7 +53,7 @@ public class SpecialUnit implements ISpecialUnit
 			{
 				where = String.format("%s(VersionedSpecialUnit.turn = ( SELECT MAX(LVVersionedSpecialUnit.turn) FROM VersionedSpecialUnit LVVersionedSpecialUnit WHERE LVVersionedSpecialUnit.owner = SpecialUnit.owner AND LVVersionedSpecialUnit.name = SpecialUnit.name AND LVVersionedSpecialUnit.type = SpecialUnit.type ))", (where != null && !where.isEmpty()) ? "("+where+") AND " : "");
 			}
-			SQLiteStatement stmnt = conn.prepare(String.format("SELECT SpecialUnit.type, VersionedSpecialUnit.type, * FROM SpecialUnit LEFT JOIN VersionedSpecialUnit USING (owner, name, type) LEFT JOIN Hero USING (owner, name, type)%s ;", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
+			SQLiteStatement stmnt = conn.prepare(String.format("SELECT SpecialUnit.type, VersionedSpecialUnit.type, SpecialUnit.*, VersionedSpecialUnit.*, Hero.* FROM SpecialUnit%s LEFT JOIN VersionedSpecialUnit USING (owner, name, type) LEFT JOIN Hero USING (owner, name, type)%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{
 				eSpecialUnitType type = eSpecialUnitType.valueOf(stmnt.columnString(0));

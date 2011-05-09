@@ -48,14 +48,14 @@ public class FleetComposition implements IFleetComposition
 		return baseFleetCompositionProxy.getQuantity();
 	}
 
-	public static <T extends IFleetComposition> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String where, Object ... params) throws SQLiteDBException
+	public static <T extends IFleetComposition> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
 	{
 		try
 		{
 			Set<T> results = new HashSet<T>();
 
 			if (where != null && params != null) where = String.format(where, params);
-			SQLiteStatement stmnt = conn.prepare(String.format("SELECT * FROM FleetComposition%s ;", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
+			SQLiteStatement stmnt = conn.prepare(String.format("SELECT FleetComposition.* FROM FleetComposition%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{
 				results.add(SQLiteORMGenerator.mapTo(expectedType, stmnt, config));

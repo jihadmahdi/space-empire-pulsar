@@ -31,6 +31,7 @@ import org.axan.sep.common.PlayerConfig;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.db.sqlite.orm.IUnit;
 import org.axan.sep.common.db.sqlite.orm.IVersionedFleet;
 import org.axan.sep.common.db.sqlite.orm.IVersionedUnit;
 import org.axan.sep.common.db.sqlite.orm.Unit;
@@ -433,10 +434,12 @@ public class TestSQLite
 			boolean exceptionThrown = false;
 			
 			Vector<String[]> probes = new Vector<String[]>();
+			Set<String> locatedUnitsName = new HashSet<String>();
 			
 			for(int i=0; i<rnd.nextInt(5)+1; ++i)
 			{
-				Location l = celestialBodiesLocation.get(rnd.nextInt(celestialBodiesLocation.size()));
+				int cb = rnd.nextInt(celestialBodiesLocation.size());
+				Location l = celestialBodiesLocation.get(cb);
 				Player owner = players.get(rnd.nextInt(players.size()));
 				
 				String unitName = String.format("U%d", ++unitIds);
@@ -445,7 +448,7 @@ public class TestSQLite
 				Location d = (progress == 0) ? null : celestialBodiesLocation.get(rnd.nextInt(celestialBodiesLocation.size()));				
 				
 				db.exec("INSERT INTO Unit (owner, name, type) VALUES ('%s', '%s', 'Probe');", owner.getName(), unitName);
-				db.exec("INSERT INTO Probe (owner, name, type) VALUES ('%s', '%s', 'Probe');", owner.getName(), unitName);
+				db.exec("INSERT INTO Probe (owner, name, type) VALUES ('%s', '%s', 'Probe');", owner.getName(), unitName);								
 				
 				if (i == 0)
 				{
@@ -473,12 +476,15 @@ public class TestSQLite
 				db.exec("INSERT INTO VersionedUnit (turn, owner, name, type, departure_x, departure_y, departure_z, progress, destination_x, destination_y, destination_z) VALUES (%d, '%s', '%s', 'Probe', %d, %d, %d, '%f', %s, %s, %s);", 1, owner.getName(), unitName, l.x, l.y, l.z, progress, d==null?"NULL":d.x, d==null?"NULL":d.y, d==null?"NULL":d.z);				
 				db.exec("INSERT INTO VersionedProbe (turn, owner, name, type) VALUES ('%d', '%s', '%s', 'Probe');", 1, owner.getName(), unitName);
 				
+				if (cb == 0) locatedUnitsName.add(unitName);
+				
 				probes.add(new String[]{unitName, owner.getName()});
 			}
 			
 			for(int i=0; i<10; ++i)
 			{
-				Location l = celestialBodiesLocation.get(rnd.nextInt(celestialBodiesLocation.size()));
+				int cb = rnd.nextInt(celestialBodiesLocation.size());
+				Location l = celestialBodiesLocation.get(cb);
 				Player owner = players.get(rnd.nextInt(players.size()));
 				
 				String unitName = String.format("U%d", ++unitIds);
@@ -496,6 +502,8 @@ public class TestSQLite
 					db.exec("INSERT INTO VersionedUnit (turn, owner, name, type, departure_x, departure_y, departure_z, progress, destination_x, destination_y, destination_z) VALUES (%d, '%s', '%s', 'AntiProbeMissile', %d, %d, %d, '%f', %s, %s, %s);", turn, owner.getName(), unitName, l.x, l.y, l.z, turn * progress / 5, d==null?"NULL":d.x, d==null?"NULL":d.y, d==null?"NULL":d.z);				
 					db.exec("INSERT INTO VersionedAntiProbeMissile (turn, owner, name, type, targetTurn, targetOwner, targetName) VALUES ('%d', '%s', '%s', 'AntiProbeMissile', %d, '%s', '%s');", turn, owner.getName(), unitName, 1, target[1], target[0]);
 				}
+				
+				if (cb == 0) locatedUnitsName.add(unitName);
 			}
 			
 			long t1 = System.currentTimeMillis();
@@ -551,7 +559,7 @@ public class TestSQLite
 				@Override
 				protected Set<? extends IVersionedUnit> job(SQLiteConnection conn) throws Throwable
 				{
-					return Unit.select(conn, sepDB.getConfig(), IVersionedUnit.class, true, null);
+					return Unit.select(conn, sepDB.getConfig(), IVersionedUnit.class, true, null, null);
 				}
 			});
 			long t3 = System.currentTimeMillis();
@@ -577,9 +585,9 @@ public class TestSQLite
 				@Override
 				protected Set<? extends IVersionedUnit> job(SQLiteConnection conn) throws Throwable
 				{
-					VersionedFleet vf = new VersionedFleet("p2", "F1", eUnitType.Fleet, sepDB.getConfig().getTurn(), celestialBodiesLocation.firstElement(), 0.0, null, sepDB.getConfig().getUnitTypeSight(eUnitType.Fleet));
+					VersionedFleet vf = new VersionedFleet("p2", "F1", eUnitType.Fleet, sepDB.getConfig().getTurn(), celestialBodiesLocation.lastElement(), 0.0, null, sepDB.getConfig().getUnitTypeSight(eUnitType.Fleet));
 					Unit.insertOrUpdate(conn, vf);
-					return Unit.select(conn, sepDB.getConfig(), IVersionedUnit.class, true, "Unit.name = 'F1'");
+					return Unit.select(conn, sepDB.getConfig(), IVersionedUnit.class, true, null, "Unit.name = 'F1'");
 				}
 			});
 			long t4 = System.currentTimeMillis();
@@ -600,9 +608,9 @@ public class TestSQLite
 				@Override
 				protected Set<? extends IVersionedUnit> job(SQLiteConnection conn) throws Throwable
 				{
-					VersionedFleet vf = new VersionedFleet("p2", "F1", eUnitType.Fleet, sepDB.getConfig().getTurn(), celestialBodiesLocation.firstElement(), 100.0, null, sepDB.getConfig().getUnitTypeSight(eUnitType.Fleet));
+					VersionedFleet vf = new VersionedFleet("p2", "F1", eUnitType.Fleet, sepDB.getConfig().getTurn(), celestialBodiesLocation.lastElement(), 100.0, null, sepDB.getConfig().getUnitTypeSight(eUnitType.Fleet));
 					Unit.insertOrUpdate(conn, vf);
-					return Unit.select(conn, sepDB.getConfig(), IVersionedUnit.class, true, "Unit.name = 'F1'");
+					return Unit.select(conn, sepDB.getConfig(), IVersionedUnit.class, true, null, "Unit.name = 'F1'");
 				}
 			});
 			long t5 = System.currentTimeMillis();
@@ -617,6 +625,27 @@ public class TestSQLite
 			f = units4.iterator().next();
 			assertTrue("Unexpected unit", f.getOwner().matches("p2") && f.getName().matches("F1") && f.getType().equals(eUnitType.Fleet) && IVersionedFleet.class.isInstance(f));
 			assertTrue("Unexpected value", f.getProgress() == 100.0);
+			
+			///
+			
+			Set<IVersionedUnit> vus = db.exec(new SQLiteJob<Set<IVersionedUnit>>()
+			{
+				@Override
+				protected Set<IVersionedUnit> job(SQLiteConnection conn) throws Throwable
+				{
+					return Unit.select(conn, sepDB.getConfig(), IVersionedUnit.class, true, "CelestialBody CB", "CB.name = 'A' AND VersionedUnit.departure_x = CB.location_x AND VersionedUnit.departure_y = CB.location_y AND VersionedUnit.departure_z = CB.location_z");
+				}
+			});
+			
+			Set<String> unlocatedUnitsName = new HashSet<String>(locatedUnitsName);
+			
+			for(IVersionedUnit vu : vus)
+			{
+				assertTrue("Unexpected unit on first celestial body.", locatedUnitsName.contains(vu.getName()));
+				unlocatedUnitsName.remove(vu.getName());
+			}
+			
+			assertTrue("Unexpected unit locations", unlocatedUnitsName.isEmpty());
 			
 			db.exportDBFile(new File("/tmp/sep_export.db"));
 		}

@@ -28,14 +28,14 @@ public class Player implements IPlayer
 		return basePlayerProxy.getName();
 	}
 
-	public static <T extends IPlayer> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String where, Object ... params) throws SQLiteDBException
+	public static <T extends IPlayer> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
 	{
 		try
 		{
 			Set<T> results = new HashSet<T>();
 
 			if (where != null && params != null) where = String.format(where, params);
-			SQLiteStatement stmnt = conn.prepare(String.format("SELECT * FROM Player%s ;", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
+			SQLiteStatement stmnt = conn.prepare(String.format("SELECT Player.* FROM Player%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{
 				results.add(SQLiteORMGenerator.mapTo(expectedType, stmnt, config));
