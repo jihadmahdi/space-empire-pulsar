@@ -33,11 +33,17 @@ import org.axan.sep.common.db.sqlite.orm.Building;
 import org.axan.sep.common.db.sqlite.orm.CelestialBody;
 import org.axan.sep.common.db.sqlite.orm.IBuilding;
 import org.axan.sep.common.db.sqlite.orm.ICelestialBody;
+import org.axan.sep.common.db.sqlite.orm.IProductiveCelestialBody;
 import org.axan.sep.common.db.sqlite.orm.IVersionedFleet;
 import org.axan.sep.common.db.sqlite.orm.IVersionedPlanet;
 import org.axan.sep.common.db.sqlite.orm.IVersionedProbe;
 import org.axan.sep.common.db.sqlite.orm.IVersionedProductiveCelestialBody;
+import org.axan.sep.common.db.sqlite.orm.IVortex;
+import org.axan.sep.common.db.sqlite.orm.ProductiveCelestialBody;
+import org.axan.sep.common.db.sqlite.orm.SpaceRoad;
 import org.axan.sep.common.db.sqlite.orm.Unit;
+import org.axan.sep.common.db.sqlite.orm.VersionedProductiveCelestialBody;
+import org.axan.sep.common.db.sqlite.orm.Vortex;
 import org.axan.sep.server.SEPServer;
 import org.axan.sep.server.model.ISEPServerDataBase.SEPServerDataBaseException;
 
@@ -172,29 +178,82 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 		Map<String, Boolean> tables = new HashMap<String, Boolean>();
 	
 		// GameConfig, already copied during DB creation TODO: Update turn.
-		Set<Area> areas = db.exec(new SQLiteJob<Set<Area>>()
+		
+		// Area
+		final Set<Area> areas = db.exec(new SQLiteJob<Set<Area>>()
 		{
 			@Override
 			protected Set<Area> job(SQLiteConnection conn) throws Throwable
 			{
-				return Area.select(conn, getConfig(), Area.class, null);
+				return Area.select(conn, getConfig(), Area.class, null, null);
 			}
 		});
 		
-		/* SUIS LA
 		currentView.getDB().exec(new SQLiteJob<Void>()
 		{
 			@Override
 			protected Void job(SQLiteConnection conn) throws Throwable
 			{
-				
+				for(Area a : areas)
+				{
+					Area.insertOrUpdate(conn, a);
+				}
+				return null;
 			}
 		});
+		
+		
+		// TODO:
+		// Hero
+		
+		/////////////////////////////:
+		// ~ Copie simple
+		/*
+		for(int currentTurn = 0; currentTurn <= maxTurn; ++currentTurn)
+		{
+			// TODO: Update current turn CelestialBodies view here.
+			
+			// Select current celestial body view.
+			Set<IVersionedProductiveCelestialBody> celestialBodiesCurrentView = currentView.getDB().exec(new SQLiteJob<Set<IVersionedProductiveCelestialBody>>()
+			{
+				@Override
+				protected Set<IVersionedProductiveCelestialBody> job(SQLiteConnection conn) throws Throwable
+				{
+					//return ProductiveCelestialBody.select(conn, getConfig(), IVersionedProductiveCelestialBody.class, false, "ProductiveCelestialBody.turn = %d", currentTurn);
+				}
+			});
+			
+			StringBuffer cbInSelection = new StringBuffer();
+			for(IVersionedProductiveCelestialBody pcb : celestialBodiesCurrentView)
+			{
+				//cbInSelection.append(arg0)
+			}
+			
+			// Sélectionner la dernière version visible des corps céleste (select dans la db player) pour l'itération courrante
+			// Les spaceRoads visibles sont celles dont le tour de construction en un point est <= à la dernière vue disponible pour ce corps céleste.
+			Set<SpaceRoad> spaceRoads = db.exec(new SQLiteJob<Set<SpaceRoad>>()
+			{
+				@Override
+				protected Set<SpaceRoad> job(SQLiteConnection conn) throws Throwable
+				{
+					return SpaceRoad.select(conn, getConfig(), SpaceRoad.class, "SpaceCounter.spaceCounterBTurn <= %d", getConfig().getTurn());
+				}
+			});
+			
+			currentView.getDB().exec(new SQLiteJob<Void>()
+			{
+				@Override
+				protected Void job(SQLiteConnection conn) throws Throwable
+				{
+					
+					//SpaceRoad.insertOrUpdate(conn, spaceRoad)
+					return null;
+				}
+			});
+		
+		}
 		*/
 		
-		// ~ Copie simple
-		
-		tables.put("Hero", false); // ?
 		
 		tables.put("SpaceRoad", false);
 		
@@ -311,7 +370,12 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 								Location location = new Location(x, y, z);
 								
 								// Select celestial body if exists in current Area.
-								Set<ICelestialBody> cbs = CelestialBody.select(conn, getConfig(), ICelestialBody.class, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
+								Set<IProductiveCelestialBody> pcbs = ProductiveCelestialBody.select(conn, getConfig(), IProductiveCelestialBody.class, false, null, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
+								Set<IVortex> vx = Vortex.select(conn, getConfig(), IVortex.class, null, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
+								Set<ICelestialBody> cbs = new HashSet<ICelestialBody>();
+								cbs.addAll(pcbs);
+								cbs.addAll(vx);
+								
 								ICelestialBody celestialBody = (cbs == null || cbs.isEmpty()) ? null : cbs.iterator().next();
 								IVersionedProductiveCelestialBody productiveCelestialBody = (celestialBody == null || !IVersionedProductiveCelestialBody.class.isInstance(celestialBody)) ? null : IVersionedProductiveCelestialBody.class.cast(celestialBody);																								
 								String celestialBodyOwnerName = (productiveCelestialBody == null) ? null : productiveCelestialBody.getOwner();								
@@ -323,7 +387,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 								*/
 								
 								// Select other player fleets on the current area
-								Set<IVersionedFleet> fleets = Unit.select(conn, getConfig(), IVersionedFleet.class, true, "departure_x = %d AND departure_y = %d AND departure_z = %d AND progress = 100.0 AND owner = '%s' AND turn = %d", location.x, location.y, location.z, playerLogin, getConfig().getTurn());								
+								Set<IVersionedFleet> fleets = Unit.select(conn, getConfig(), IVersionedFleet.class, true, null, "departure_x = %d AND departure_y = %d AND departure_z = %d AND progress = 100.0 AND owner = '%s' AND turn = %d", location.x, location.y, location.z, playerLogin, getConfig().getTurn());								
 								
 								// Check for Area visibility (default to false)
 								isVisible = false;
@@ -810,7 +874,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 				protected Void job(SQLiteConnection conn) throws Throwable
 				{										
 					// Select productive celestial body by name, last version
-					Set<IVersionedProductiveCelestialBody> pcbs = CelestialBody.select(conn, getConfig(), IVersionedProductiveCelestialBody.class, "name = '%s'", celestialBodyName);
+					Set<IVersionedProductiveCelestialBody> pcbs = ProductiveCelestialBody.select(conn, getConfig(), IVersionedProductiveCelestialBody.class, true, "name = '%s'", celestialBodyName);
 					
 					// celestialBodyName IS A ProductiveCelestialBody
 					if (!pcbs.isEmpty())
@@ -847,7 +911,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 					int carbonCost = 0, populationCost = 0, nbBuilt = 0;
 					
 					// Select current building for the given type
-					Set<IBuilding> bs = Building.select(conn, getConfig(), IBuilding.class, true, "TOTO");
+					Set<IBuilding> bs = Building.select(conn, getConfig(), IBuilding.class, true, null, "TOTO");
 					
 					IBuilding b = null;
 					if (!bs.isEmpty())
@@ -1005,7 +1069,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 	
 	boolean areaHasCelestialBody(Location location) throws SQLiteException
 	{
-		return db.prepare("EXISTS ( SELECT name FROM CelestialBody WHERE location_x = %d AND location_y = %d AND location_z = %d", new SQLiteStatementJob<Boolean>()
+		return db.prepare("EXISTS ( SELECT name FROM CelestialBody WHERE location_x = %d AND location_y = %d AND location_z = %d ) ;", new SQLiteStatementJob<Boolean>()
 		{
 			@Override
 			public Boolean job(SQLiteStatement stmnt) throws SQLiteException

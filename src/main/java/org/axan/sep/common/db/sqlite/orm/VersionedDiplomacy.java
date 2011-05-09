@@ -48,7 +48,7 @@ public class VersionedDiplomacy implements IVersionedDiplomacy
 		return baseVersionedDiplomacyProxy.getForeignPolicy();
 	}
 
-	public static <T extends IVersionedDiplomacy> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String where, Object ... params) throws SQLiteDBException
+	public static <T extends IVersionedDiplomacy> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String from, String where, Object ... params) throws SQLiteDBException
 	{
 		try
 		{
@@ -59,7 +59,7 @@ public class VersionedDiplomacy implements IVersionedDiplomacy
 			{
 				where = String.format("%s(VersionedDiplomacy.turn = ( SELECT MAX(LVVersionedDiplomacy.turn) FROM VersionedDiplomacy LVVersionedDiplomacy WHERE LVVersionedDiplomacy.name = VersionedDiplomacy.name AND LVVersionedDiplomacy.cible = VersionedDiplomacy.cible AND LVVersionedDiplomacy.turn = VersionedDiplomacy.turn AND LVVersionedDiplomacy.allowToLand = VersionedDiplomacy.allowToLand AND LVVersionedDiplomacy.foreignPolicy = VersionedDiplomacy.foreignPolicy ))", (where != null && !where.isEmpty()) ? "("+where+") AND " : "");
 			}
-			SQLiteStatement stmnt = conn.prepare(String.format("SELECT * FROM VersionedDiplomacy%s ;", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
+			SQLiteStatement stmnt = conn.prepare(String.format("SELECT VersionedDiplomacy.* FROM VersionedDiplomacy%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{
 				results.add(SQLiteORMGenerator.mapTo(expectedType, stmnt, config));

@@ -47,7 +47,7 @@ public class Building implements IBuilding
 		return baseBuildingProxy.getNbSlots();
 	}
 
-	public static <T extends IBuilding> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String where, Object ... params) throws SQLiteDBException
+	public static <T extends IBuilding> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String from, String where, Object ... params) throws SQLiteDBException
 	{
 		try
 		{
@@ -58,7 +58,7 @@ public class Building implements IBuilding
 			{
 				where = String.format("%s(Building.turn = ( SELECT MAX(LVBuilding.turn) FROM Building LVBuilding WHERE LVBuilding.type = Building.type AND LVBuilding.celestialBodyName = Building.celestialBodyName AND LVBuilding.turn = Building.turn AND LVBuilding.nbSlots = Building.nbSlots ))", (where != null && !where.isEmpty()) ? "("+where+") AND " : "");
 			}
-			SQLiteStatement stmnt = conn.prepare(String.format("SELECT Building.type, Building.type, * FROM Building LEFT JOIN ExtractionModule USING (type, celestialBodyName, turn) LEFT JOIN GovernmentModule USING (type, celestialBodyName, turn) LEFT JOIN DefenseModule USING (type, celestialBodyName, turn) LEFT JOIN StarshipPlant USING (type, celestialBodyName, turn) LEFT JOIN SpaceCounter USING (type, celestialBodyName, turn) LEFT JOIN PulsarLaunchingPad USING (type, celestialBodyName, turn)%s ;", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
+			SQLiteStatement stmnt = conn.prepare(String.format("SELECT Building.type, Building.type, Building.*, ExtractionModule.*, GovernmentModule.*, DefenseModule.*, StarshipPlant.*, SpaceCounter.*, PulsarLaunchingPad.* FROM Building%s LEFT JOIN ExtractionModule USING (type, celestialBodyName, turn) LEFT JOIN GovernmentModule USING (type, celestialBodyName, turn) LEFT JOIN DefenseModule USING (type, celestialBodyName, turn) LEFT JOIN StarshipPlant USING (type, celestialBodyName, turn) LEFT JOIN SpaceCounter USING (type, celestialBodyName, turn) LEFT JOIN PulsarLaunchingPad USING (type, celestialBodyName, turn)%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{
 				eBuildingType type = eBuildingType.valueOf(stmnt.columnString(0));

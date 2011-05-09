@@ -359,6 +359,7 @@ public class ORMGenerator
 				{
 					Field wf = wrapField(c, f);
 					if (wf == null) return "";
+
 					return super.getterDeclaration(c, wf);
 				}
 		
@@ -398,6 +399,10 @@ public class ORMGenerator
 				
 				private boolean skipStaticMethods(Class c)
 				{
+					if (c.getUpperName().matches("CelestialBody")) return true;
+					if (c.getUpperName().matches("ProductiveCelestialBody")) return false;
+					if (c.getUpperName().matches("Vortex")) return false;
+					
 					for(String k : getEnumTypes().keySet())
 					{
 						if (c.isInstanceOf(ormPackageName, k))
@@ -412,10 +417,10 @@ public class ORMGenerator
 				@Override
 				public void genStaticMethods(Class c, PrintStream psuc)
 				{
-					genStaticMethods(c, psuc, new HashSet<Class>());
+					genStaticMethods(c, psuc, new HashSet<Class>(), new StringBuffer());
 				}
 				
-				private void genStaticMethods(Class c, PrintStream psuc, Set<Class> seen)
+				private void genStaticMethods(Class c, PrintStream psuc, Set<Class> seen, StringBuffer leftJoins)
 				{
 					boolean first = false;
 					
@@ -427,7 +432,7 @@ public class ORMGenerator
 					{
 						if (skipStaticMethods(c)) return;
 						
-						psuc.format("\tpublic static <T extends I%s> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, %sString where, Object ... params) throws SQLiteDBException\n", c.getUpperName(), (versionedClass != null && versionedClass.hasField("turn")) ? "boolean lastVersion, " : "" );
+						psuc.format("\tpublic static <T extends I%s> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, %sString from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName(), (versionedClass != null && versionedClass.hasField("turn")) ? "boolean lastVersion, " : "" );
 						psuc.println("\t{");
 						psuc.println("\t\ttry");
 						psuc.println("\t\t{");
@@ -456,7 +461,7 @@ public class ORMGenerator
 						{
 							psuc.format("%s.type, %s.type, ", c.getUpperName(), versionedClass.getUpperName());
 						}
-						psuc.format("* FROM %s", c.getUpperName());			
+						psuc.format("%s.*", c.getUpperName());
 						first = true;
 					}
 					
@@ -472,23 +477,25 @@ public class ORMGenerator
 						if (seen.contains(sub)) continue;
 						seen.add(sub);
 						
-						psuc.format(" LEFT JOIN %s USING (", sub.getUpperName());
+						psuc.format(", %s.*", sub.getUpperName());
+						leftJoins.append(String.format(" LEFT JOIN %s USING (", sub.getUpperName()));
 						boolean comma = false;
 						for(Field f : jointure.getCommonFields(sub))
 						{
-							if (comma) psuc.print(", ");
+							if (comma) leftJoins.append(", ");
 							comma = true;
-							psuc.format("%s", f.getLowerName());							
+							leftJoins.append(String.format("%s", f.getLowerName()));							
 						}
-						psuc.print(")");
+						leftJoins.append(")");
 						
 						if (sub == versionedClass) jointure = versionedClass;
-						genStaticMethods(sub, psuc, seen);			
+						genStaticMethods(sub, psuc, seen, leftJoins);			
 					}
 					
 					if (first)
 					{
-						psuc.println("%s ;\", (where != null && !where.isEmpty()) ? \" WHERE \"+where : \"\"));");
+						psuc.format(" FROM %s%%s%s", c.getUpperName(), leftJoins);
+						psuc.println("%s ;\", (from != null && !from.isEmpty()) ? \", \"+from : \"\", (where != null && !where.isEmpty()) ? \" WHERE \"+where : \"\"));");
 						psuc.println("\t\t\twhile(stmnt.step())");
 						psuc.println("\t\t\t{");
 						if (versionedClass != null && versionedClass.hasField("type"))
