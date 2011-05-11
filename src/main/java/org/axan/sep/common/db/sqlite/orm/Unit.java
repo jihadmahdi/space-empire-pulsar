@@ -51,17 +51,39 @@ public class Unit implements IUnit
 		return type;
 	}
 
-	public static <T extends IUnit> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String from, String where, Object ... params) throws SQLiteDBException
+	/** Set maxVersion to null to select last version. */
+	public static <T extends IUnit> Set<T> selectMaxVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, Integer maxVersion, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, true, maxVersion, from, where, params);
+	}
+
+	public static <T extends IUnit> Set<T> selectVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, int version, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, false, version, from, where, params);
+	}
+
+	public static <T extends IUnit> Set<T> selectUnversioned(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, false, null, from, where, params);
+	}
+
+	private static <T extends IUnit> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params) throws SQLiteDBException
 	{
 		try
 		{
 			Set<T> results = new HashSet<T>();
 
 			if (where != null && params != null) where = String.format(where, params);
-			if (lastVersion)
+			String versionFilter;
+			if (maxVersion)
 			{
-				where = String.format("%s(VersionedUnit.turn = ( SELECT MAX(LVVersionedUnit.turn) FROM VersionedUnit LVVersionedUnit WHERE LVVersionedUnit.owner = Unit.owner AND LVVersionedUnit.name = Unit.name AND LVVersionedUnit.type = Unit.type ))", (where != null && !where.isEmpty()) ? "("+where+") AND " : "");
+				versionFilter = String.format("(VersionedUnit.turn = ( SELECT MAX(LVVersionedUnit.turn) FROM VersionedUnit LVVersionedUnit WHERE LVVersionedUnit.owner = Unit.owner AND LVVersionedUnit.name = Unit.name AND LVVersionedUnit.type = Unit.type%s ))", (version != null && version >= 0) ? " AND LVVersionedUnit.turn <= "+version : "");
 			}
+			else
+			{
+				versionFilter = (version == null) ? "" : String.format("(VersionedUnit.turn = %d)", version);
+			}
+			where = String.format("%s%s", (where != null && !where.isEmpty()) ? "("+where+") AND " : "", versionFilter);
 			SQLiteStatement stmnt = conn.prepare(String.format("SELECT Unit.type, VersionedUnit.type, Unit.*, VersionedUnit.*, VersionedFleet.*, VersionedProbe.*, VersionedCarbonCarrier.*, VersionedAntiProbeMissile.*, VersionedSpaceRoadDeliverer.*, VersionedPulsarMissile.*, PulsarMissile.*, Probe.*, CarbonCarrier.*, AntiProbeMissile.*, SpaceRoadDeliverer.*, Fleet.* FROM Unit%s LEFT JOIN VersionedUnit USING (owner, name, type) LEFT JOIN VersionedFleet USING (owner, name, turn, type) LEFT JOIN VersionedProbe USING (owner, name, turn, type) LEFT JOIN VersionedCarbonCarrier USING (owner, name, turn, type) LEFT JOIN VersionedAntiProbeMissile USING (owner, name, turn, type) LEFT JOIN VersionedSpaceRoadDeliverer USING (owner, name, turn, type) LEFT JOIN VersionedPulsarMissile USING (owner, name, turn, type) LEFT JOIN PulsarMissile USING (owner, name, type) LEFT JOIN Probe USING (owner, name, type) LEFT JOIN CarbonCarrier USING (owner, name, type) LEFT JOIN AntiProbeMissile USING (owner, name, type) LEFT JOIN SpaceRoadDeliverer USING (owner, name, type) LEFT JOIN Fleet USING (owner, name, type)%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{

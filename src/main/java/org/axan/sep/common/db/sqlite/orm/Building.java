@@ -47,17 +47,39 @@ public class Building implements IBuilding
 		return baseBuildingProxy.getNbSlots();
 	}
 
-	public static <T extends IBuilding> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String from, String where, Object ... params) throws SQLiteDBException
+	/** Set maxVersion to null to select last version. */
+	public static <T extends IBuilding> Set<T> selectMaxVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, Integer maxVersion, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, true, maxVersion, from, where, params);
+	}
+
+	public static <T extends IBuilding> Set<T> selectVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, int version, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, false, version, from, where, params);
+	}
+
+	public static <T extends IBuilding> Set<T> selectUnversioned(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, false, null, from, where, params);
+	}
+
+	private static <T extends IBuilding> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params) throws SQLiteDBException
 	{
 		try
 		{
 			Set<T> results = new HashSet<T>();
 
 			if (where != null && params != null) where = String.format(where, params);
-			if (lastVersion)
+			String versionFilter;
+			if (maxVersion)
 			{
-				where = String.format("%s(Building.turn = ( SELECT MAX(LVBuilding.turn) FROM Building LVBuilding WHERE LVBuilding.type = Building.type AND LVBuilding.celestialBodyName = Building.celestialBodyName AND LVBuilding.turn = Building.turn AND LVBuilding.nbSlots = Building.nbSlots ))", (where != null && !where.isEmpty()) ? "("+where+") AND " : "");
+				versionFilter = String.format("(Building.turn = ( SELECT MAX(LVBuilding.turn) FROM Building LVBuilding WHERE LVBuilding.type = Building.type AND LVBuilding.celestialBodyName = Building.celestialBodyName AND LVBuilding.turn = Building.turn AND LVBuilding.nbSlots = Building.nbSlots%s ))", (version != null && version >= 0) ? " AND LVBuilding.turn <= "+version : "");
 			}
+			else
+			{
+				versionFilter = (version == null) ? "" : String.format("(Building.turn = %d)", version);
+			}
+			where = String.format("%s%s", (where != null && !where.isEmpty()) ? "("+where+") AND " : "", versionFilter);
 			SQLiteStatement stmnt = conn.prepare(String.format("SELECT Building.type, Building.type, Building.*, ExtractionModule.*, GovernmentModule.*, DefenseModule.*, StarshipPlant.*, SpaceCounter.*, PulsarLaunchingPad.* FROM Building%s LEFT JOIN ExtractionModule USING (type, celestialBodyName, turn) LEFT JOIN GovernmentModule USING (type, celestialBodyName, turn) LEFT JOIN DefenseModule USING (type, celestialBodyName, turn) LEFT JOIN StarshipPlant USING (type, celestialBodyName, turn) LEFT JOIN SpaceCounter USING (type, celestialBodyName, turn) LEFT JOIN PulsarLaunchingPad USING (type, celestialBodyName, turn)%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{

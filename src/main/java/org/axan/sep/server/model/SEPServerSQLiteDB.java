@@ -25,20 +25,27 @@ import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
+import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.sqlite.SEPCommonSQLiteDB;
 import org.axan.sep.common.db.sqlite.orm.Area;
 import org.axan.sep.common.db.sqlite.orm.Building;
 import org.axan.sep.common.db.sqlite.orm.CelestialBody;
+import org.axan.sep.common.db.sqlite.orm.FleetComposition;
 import org.axan.sep.common.db.sqlite.orm.IBuilding;
 import org.axan.sep.common.db.sqlite.orm.ICelestialBody;
+import org.axan.sep.common.db.sqlite.orm.IFleetComposition;
+import org.axan.sep.common.db.sqlite.orm.IMovePlan;
 import org.axan.sep.common.db.sqlite.orm.IProductiveCelestialBody;
+import org.axan.sep.common.db.sqlite.orm.ISpaceRoad;
 import org.axan.sep.common.db.sqlite.orm.IVersionedFleet;
 import org.axan.sep.common.db.sqlite.orm.IVersionedPlanet;
 import org.axan.sep.common.db.sqlite.orm.IVersionedProbe;
 import org.axan.sep.common.db.sqlite.orm.IVersionedProductiveCelestialBody;
+import org.axan.sep.common.db.sqlite.orm.IVersionedUnit;
 import org.axan.sep.common.db.sqlite.orm.IVortex;
+import org.axan.sep.common.db.sqlite.orm.MovePlan;
 import org.axan.sep.common.db.sqlite.orm.ProductiveCelestialBody;
 import org.axan.sep.common.db.sqlite.orm.SpaceRoad;
 import org.axan.sep.common.db.sqlite.orm.Unit;
@@ -173,7 +180,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 		return commonDB.getConfig();
 	}
 	
-	private void compilePlayerView(String playerLogin, SEPCommonSQLiteDB currentView, int maxTurn) throws SQLiteDBException
+	private void compilePlayerView(final String playerLogin, SEPCommonSQLiteDB currentView, int maxTurn) throws SQLiteDBException
 	{
 		Map<String, Boolean> tables = new HashMap<String, Boolean>();
 	
@@ -208,35 +215,53 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 		
 		/////////////////////////////:
 		// ~ Copie simple
-		/*
-		for(int currentTurn = 0; currentTurn <= maxTurn; ++currentTurn)
+		
+		for(int i = 0; i <= maxTurn; ++i)
 		{
-			// TODO: Update current turn CelestialBodies view here.
+			final int currentTurn = i;
 			
-			// Select current celestial body view.
-			Set<IVersionedProductiveCelestialBody> celestialBodiesCurrentView = currentView.getDB().exec(new SQLiteJob<Set<IVersionedProductiveCelestialBody>>()
+			// Update deployed player probes
+			Set<IVersionedProbe> vprobes = db.exec(new SQLiteJob<Set<IVersionedProbe>>()
+			{
+				@Override
+				protected Set<IVersionedProbe> job(SQLiteConnection conn) throws Throwable
+				{
+					Set<IVersionedProbe> vunits = new HashSet<IVersionedProbe>();
+										
+					vunits.addAll(Unit.selectMaxVersion(conn, getConfig(), IVersionedProbe.class, currentTurn, null, "VersionedUnit.type = %s AND VersionedUnit.owner = %s AND VersionedUnit.progress = 100.0", eUnitType.Probe, playerLogin));
+					return vunits;
+				}
+			});
+							
+			for(final IVersionedProbe vprobe : vprobes)
+			{
+				currentView.getDB().exec(new SQLiteJob<Void>()
+				{
+					@Override
+					protected Void job(SQLiteConnection conn) throws Throwable
+					{
+						Unit.insertOrUpdate(conn, vprobe);
+						return null;
+					}
+				});
+			}
+			
+			// Update visibles celestial bodies.									
+			final Set<IVersionedProductiveCelestialBody> vpcbs = db.exec(new SQLiteJob<Set<IVersionedProductiveCelestialBody>>()
 			{
 				@Override
 				protected Set<IVersionedProductiveCelestialBody> job(SQLiteConnection conn) throws Throwable
 				{
-					//return ProductiveCelestialBody.select(conn, getConfig(), IVersionedProductiveCelestialBody.class, false, "ProductiveCelestialBody.turn = %d", currentTurn);
-				}
-			});
-			
-			StringBuffer cbInSelection = new StringBuffer();
-			for(IVersionedProductiveCelestialBody pcb : celestialBodiesCurrentView)
-			{
-				//cbInSelection.append(arg0)
-			}
-			
-			// Sélectionner la dernière version visible des corps céleste (select dans la db player) pour l'itération courrante
-			// Les spaceRoads visibles sont celles dont le tour de construction en un point est <= à la dernière vue disponible pour ce corps céleste.
-			Set<SpaceRoad> spaceRoads = db.exec(new SQLiteJob<Set<SpaceRoad>>()
-			{
-				@Override
-				protected Set<SpaceRoad> job(SQLiteConnection conn) throws Throwable
-				{
-					return SpaceRoad.select(conn, getConfig(), SpaceRoad.class, "SpaceCounter.spaceCounterBTurn <= %d", getConfig().getTurn());
+					Set<IVersionedProductiveCelestialBody> visiblesPcbs = new HashSet<IVersionedProductiveCelestialBody>(); 
+					
+					// CelestialBody visible if owned by the player
+					visiblesPcbs.addAll(ProductiveCelestialBody.selectMaxVersion(conn, getConfig(), IVersionedProductiveCelestialBody.class, currentTurn, null, "owner = %s", playerLogin));					
+					// CelestialBody visible if a player unit is stopped on it with currentTurn version.
+					visiblesPcbs.addAll(ProductiveCelestialBody.selectVersion(conn, getConfig(), IVersionedProductiveCelestialBody.class, currentTurn, "VersionedUnit VU", "(VU.owner = %s) AND ((VU.progress = 0.0 AND VU.departure_x = CelestialBody.location_x AND VU.departure_y = CelestialBody.location_y AND VU.departure_z = CelestialBody.location_z) OR (VU.progress = 100.0 AND VU.destination_x = CelestialBody.location_x AND VU.destination_y = CelestialBody.location_y AND VU.destination_z = CelestialBody.location_z))", playerLogin));					
+					// CelestialBody visible if under a deployed probe scope.
+					visiblesPcbs.addAll(ProductiveCelestialBody.selectMaxVersion(conn, getConfig(), IVersionedProductiveCelestialBody.class, currentTurn, "VersionedUnit VU", "(VU.owner = %s AND VU.type = %s AND VU.turn <= VersionedProductiveCelestialBody.turn AND VU.progress = 100.0 AND ((VU.destination_x - CelestialBody.location_x) * (VU.destination_x - CelestialBody.location_x) + (VU.destination_y - CelestialBody.location_y) * (VU.destination_y - CelestialBody.location_y) + (VU.destination_z - CelestialBody.location_z) * (VU.destination_z - CelestialBody.location_z)) <= (%d * %d))", playerLogin, eUnitType.Probe, getConfig().getUnitTypeSight(eUnitType.Probe), getConfig().getUnitTypeSight(eUnitType.Probe)));
+					
+					return visiblesPcbs;
 				}
 			});
 			
@@ -245,26 +270,160 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 				@Override
 				protected Void job(SQLiteConnection conn) throws Throwable
 				{
-					
-					//SpaceRoad.insertOrUpdate(conn, spaceRoad)
+					for(IVersionedProductiveCelestialBody vpcb : vpcbs)
+					{
+						ProductiveCelestialBody.insertOrUpdate(conn, vpcb);
+					}
 					return null;
 				}
 			});
+			
+			for(final IVersionedProductiveCelestialBody vpcb : vpcbs)
+			{
+				Set<IBuilding> buildings = db.exec(new SQLiteJob<Set<IBuilding>>()
+				{
+					@Override
+					protected Set<IBuilding> job(SQLiteConnection conn) throws Throwable
+					{
+						// Update buildings (visibles pcbs)
+						return Building.selectMaxVersion(conn, getConfig(), IBuilding.class, currentTurn, null, "celestialBodyName = %s", vpcb.getName());
+					}
+				});
+				
+				for(final IBuilding b : buildings)
+				{
+					currentView.getDB().exec(new SQLiteJob<Void>()
+					{
+						@Override
+						protected Void job(SQLiteConnection conn) throws Throwable
+						{
+							Building.insertOrUpdate(conn, b);
+							return null;
+						}
+					});
+				}
+				
+				Set<ISpaceRoad> roads = db.exec(new SQLiteJob<Set<ISpaceRoad>>()
+				{
+					@Override
+					protected Set<ISpaceRoad> job(SQLiteConnection conn) throws Throwable
+					{
+						// Update space roads (visibles pcbs)
+						return SpaceRoad.select(conn, getConfig(), ISpaceRoad.class, null, "(SpaceRoad.spaceCounterACelestialBodyName = %s OR SpaceRoad.spaceCounterBCelestialBodyName = %s) AND (MAX(SpaceRoad.spaceCounterATurn, SpaceRoad.spaceCounterBTurn) <= %d)", vpcb.getName(), vpcb.getName(), currentTurn);
+					}
+				});
+						
+				for(final ISpaceRoad road : roads)
+				{
+					currentView.getDB().exec(new SQLiteJob<Void>()
+					{
+						@Override
+						protected Void job(SQLiteConnection conn) throws Throwable
+						{
+							SpaceRoad.insertOrUpdate(conn, road);
+							return null;
+						}
+					});
+				}
+								
+				Set<IVersionedUnit> vunits = db.exec(new SQLiteJob<Set<IVersionedUnit>>()
+				{
+					@Override
+					protected Set<IVersionedUnit> job(SQLiteConnection conn) throws Throwable
+					{
+						Set<IVersionedUnit> vunits = new HashSet<IVersionedUnit>();
+						
+						// Update units on visibles pcbs
+						vunits.addAll(Unit.selectMaxVersion(conn, getConfig(), IVersionedUnit.class, currentTurn, "CelestialBody　CB", "CB.name = %s AND VersionedUnit.progress = 0.0 AND CB.location_x = VersionedUnit.departure_x AND CB.location_y AND VersionedUnit.departure_y AND CB.location_z = VersionedUnit.departure_z", vpcb.getName()));
+						
+						return vunits;
+					}
+				});
+
+				final Set<IFleetComposition> comps = new HashSet<IFleetComposition>();
+				final Set<IMovePlan> moves = new HashSet<IMovePlan>();
+				for(final IVersionedUnit vunit : vunits)
+				{
+					if (IVersionedFleet.class.isInstance(vunit))
+					{
+						db.exec(new SQLiteJob<Void>()
+						{
+							@Override
+							protected Void job(SQLiteConnection conn) throws Throwable
+							{
+								moves.addAll(MovePlan.select(conn, getConfig(), IMovePlan.class, null, "owner = %s AND name = %s AND turn = %d", vunit.getOwner(), vunit.getName(), vunit.getTurn()));
+								comps.addAll(FleetComposition.select(conn, getConfig(), IFleetComposition.class, null, "fleetOwner = %s AND fleetName = %s AND fleetTurn = %d", vunit.getOwner(), vunit.getName(), vunit.getTurn()));
+								return null;
+							}
+						});
+					}
+					
+					currentView.getDB().exec(new SQLiteJob<Void>()
+					{
+						@Override
+						protected Void job(SQLiteConnection conn) throws Throwable
+						{
+							Unit.insertOrUpdate(conn, vunit);
+							return null;
+						}
+					});
+				}
+				
+				for(final IMovePlan m : moves)
+				{
+					currentView.getDB().exec(new SQLiteJob<Void>()
+					{
+						@Override
+						protected Void job(SQLiteConnection conn) throws Throwable
+						{
+							MovePlan.insertOrUpdate(conn, m);
+							return null;
+						}
+					});
+				}
+				
+				for(final IFleetComposition c : comps)
+				{
+					currentView.getDB().exec(new SQLiteJob<Void>()
+					{
+						@Override
+						protected Void job(SQLiteConnection conn) throws Throwable
+						{
+							FleetComposition.insertOrUpdate(conn, c);
+							return null;
+						}
+					});
+				}
+			}
+			//X Update visibles celestial bodies.
+			//X		Update buildings (visibles pcbs)
+			//X		Update space roads (visibles pcbs)
+			//X		Update units (deployed probes)
+			//X		Update units (visibles pcbs)
+						tables.put("VersionedFleet", true); //X MovePlan, X FleetComposition
+			SUIS LA
+			//		Update units (encounter logged)
+						tables.put("VersionedUnit", true);
+						tables.put("VersionedFleet", true); // MovePlan, FleetComposition
+						tables.put("VersionedProbe", true);
+						tables.put("VersionedCarbonCarrier", true);
+						tables.put("VersionedSpaceRoadDeliverer", true);
+						tables.put("VersionedAntiProbeMissile", true);
+						tables.put("VersionedPulsarMissile", true);
+			//			Update special units (visibles units)
+			//			Update governments (visibles pcbs || units)
+			//				Update diplomacies (visibles governments)
+			//			Update EncounterLog, ArrivalLog (visibles units stopped on pcb)
+			
+			
 		
 		}
-		*/
 		
-		
-		tables.put("SpaceRoad", false);
-		
-		/*
-		 * Copie simple 
-		 */
-		tables.put("Area", false);
-		tables.put("Player", false); // PlayerConfig (on assume que la config joueur est une info publique).
-		
+		// Fixed
+		// Area
+		// Player // PlayerConfig (on assume que la config joueur est une info publique).
+		// Units // Copy only units with the first version <= currentTurn
 		tables.put("SpecialUnit", false);
-		
 		tables.put("Unit", false);
 		tables.put("CarbonCarrier", false);
 		tables.put("Fleet", false);
@@ -273,6 +432,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 		tables.put("SpaceRoadDeliverer", false);
 		tables.put("AntiProbeMissile", false);
 		
+		// CelestialBodies
 		tables.put("CelestialBody", false);
 		tables.put("ProductiveCelestialBody", false);
 		tables.put("Nebula", false);
@@ -280,34 +440,10 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 		tables.put("Planet", false);
 		tables.put("Vortex", false);
 		
-		// ~ Versioné
-		
 		/*
 		 * Table en live, on créé et supprime. Donc copie simple.
 		 */
 		tables.put("CarbonOrder", true);
-		
-		tables.put("VersionedProductiveCelestialBody", true); // Building
-		tables.put("VersionedNebula", true);
-		tables.put("VersionedAsteroidField", true);
-		tables.put("VersionedPlanet", true);
-		
-		tables.put("SpaceCounter", true);
-		tables.put("DefenseModule", true);
-		tables.put("PulsarLaunchingPad", true);
-		tables.put("ExtractionModule", true);
-		tables.put("GovernmentModule", true);
-		tables.put("StarshipPlant", true);
-		
-		tables.put("VersionedSpecialUnit", true);
-		
-		tables.put("VersionedUnit", true);
-		tables.put("VersionedFleet", true); // MovePlan, FleetComposition
-		tables.put("VersionedProbe", true);
-		tables.put("VersionedCarbonCarrier", true);
-		tables.put("VersionedSpaceRoadDeliverer", true);
-		tables.put("VersionedAntiProbeMissile", true);
-		tables.put("VersionedPulsarMissile", true);
 		
 		////////////////
 		
@@ -315,10 +451,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 		tables.put("Government", true);
 		
 		tables.put("VersionedDiplomacy", true);
-		tables.put("AssignedFleet", true);
-		
-		tables.put("UnitEncounterLog", true);
-		tables.put("UnitArrivalLog", true);		
+		tables.put("AssignedFleet", true);		
 		
 		/*		
 		POUR CHAQUE Table de base t FAIRE // Pour les agrégations d'éléments versionné on ne garde que la table principale
@@ -359,7 +492,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 					//Map<String, org.axan.sep.common.Diplomacy> playersPoliciesView = new Hashtable<String, org.axan.sep.common.Diplomacy>();
 					
 					// Select all probes (current turn) owned by the given player.
-					Set<IVersionedProbe> playerProbes = Unit.select(conn, getConfig(), IVersionedProbe.class, true, "owner = '%s' AND turn = %d", playerLogin, getConfig().getTurn());										
+					Set<IVersionedProbe> playerProbes = Unit.selectVersion(conn, getConfig(), IVersionedProbe.class, getConfig().getTurn(), "owner = '%s'", playerLogin);										
 					
 					boolean isVisible = false;
 					
@@ -370,7 +503,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 								Location location = new Location(x, y, z);
 								
 								// Select celestial body if exists in current Area.
-								Set<IProductiveCelestialBody> pcbs = ProductiveCelestialBody.select(conn, getConfig(), IProductiveCelestialBody.class, false, null, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
+								Set<IProductiveCelestialBody> pcbs = ProductiveCelestialBody.selectUnversioned(conn, getConfig(), IProductiveCelestialBody.class, null, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
 								Set<IVortex> vx = Vortex.select(conn, getConfig(), IVortex.class, null, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
 								Set<ICelestialBody> cbs = new HashSet<ICelestialBody>();
 								cbs.addAll(pcbs);
@@ -387,7 +520,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 								*/
 								
 								// Select other player fleets on the current area
-								Set<IVersionedFleet> fleets = Unit.select(conn, getConfig(), IVersionedFleet.class, true, null, "departure_x = %d AND departure_y = %d AND departure_z = %d AND progress = 100.0 AND owner = '%s' AND turn = %d", location.x, location.y, location.z, playerLogin, getConfig().getTurn());								
+								Set<IVersionedFleet> fleets = Unit.selectVersion(conn, getConfig(), IVersionedFleet.class, getConfig().getTurn(), null, "departure_x = %d AND departure_y = %d AND departure_z = %d AND progress = 100.0 AND owner = '%s'", location.x, location.y, location.z, playerLogin);								
 								
 								// Check for Area visibility (default to false)
 								isVisible = false;
@@ -874,7 +1007,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 				protected Void job(SQLiteConnection conn) throws Throwable
 				{										
 					// Select productive celestial body by name, last version
-					Set<IVersionedProductiveCelestialBody> pcbs = ProductiveCelestialBody.select(conn, getConfig(), IVersionedProductiveCelestialBody.class, true, "name = '%s'", celestialBodyName);
+					Set<IVersionedProductiveCelestialBody> pcbs = ProductiveCelestialBody.selectMaxVersion(conn, getConfig(), IVersionedProductiveCelestialBody.class, null, "name = '%s'", celestialBodyName);
 					
 					// celestialBodyName IS A ProductiveCelestialBody
 					if (!pcbs.isEmpty())
@@ -911,7 +1044,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 					int carbonCost = 0, populationCost = 0, nbBuilt = 0;
 					
 					// Select current building for the given type
-					Set<IBuilding> bs = Building.select(conn, getConfig(), IBuilding.class, true, null, "TOTO");
+					Set<IBuilding> bs = Building.selectMaxVersion(conn, getConfig(), IBuilding.class, null, null, "TOTO");
 					
 					IBuilding b = null;
 					if (!bs.isEmpty())

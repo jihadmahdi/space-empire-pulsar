@@ -42,17 +42,39 @@ public class SpecialUnit implements ISpecialUnit
 		return type;
 	}
 
-	public static <T extends ISpecialUnit> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String from, String where, Object ... params) throws SQLiteDBException
+	/** Set maxVersion to null to select last version. */
+	public static <T extends ISpecialUnit> Set<T> selectMaxVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, Integer maxVersion, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, true, maxVersion, from, where, params);
+	}
+
+	public static <T extends ISpecialUnit> Set<T> selectVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, int version, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, false, version, from, where, params);
+	}
+
+	public static <T extends ISpecialUnit> Set<T> selectUnversioned(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, false, null, from, where, params);
+	}
+
+	private static <T extends ISpecialUnit> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params) throws SQLiteDBException
 	{
 		try
 		{
 			Set<T> results = new HashSet<T>();
 
 			if (where != null && params != null) where = String.format(where, params);
-			if (lastVersion)
+			String versionFilter;
+			if (maxVersion)
 			{
-				where = String.format("%s(VersionedSpecialUnit.turn = ( SELECT MAX(LVVersionedSpecialUnit.turn) FROM VersionedSpecialUnit LVVersionedSpecialUnit WHERE LVVersionedSpecialUnit.owner = SpecialUnit.owner AND LVVersionedSpecialUnit.name = SpecialUnit.name AND LVVersionedSpecialUnit.type = SpecialUnit.type ))", (where != null && !where.isEmpty()) ? "("+where+") AND " : "");
+				versionFilter = String.format("(VersionedSpecialUnit.turn = ( SELECT MAX(LVVersionedSpecialUnit.turn) FROM VersionedSpecialUnit LVVersionedSpecialUnit WHERE LVVersionedSpecialUnit.owner = SpecialUnit.owner AND LVVersionedSpecialUnit.name = SpecialUnit.name AND LVVersionedSpecialUnit.type = SpecialUnit.type%s ))", (version != null && version >= 0) ? " AND LVVersionedSpecialUnit.turn <= "+version : "");
 			}
+			else
+			{
+				versionFilter = (version == null) ? "" : String.format("(VersionedSpecialUnit.turn = %d)", version);
+			}
+			where = String.format("%s%s", (where != null && !where.isEmpty()) ? "("+where+") AND " : "", versionFilter);
 			SQLiteStatement stmnt = conn.prepare(String.format("SELECT SpecialUnit.type, VersionedSpecialUnit.type, SpecialUnit.*, VersionedSpecialUnit.*, Hero.* FROM SpecialUnit%s LEFT JOIN VersionedSpecialUnit USING (owner, name, type) LEFT JOIN Hero USING (owner, name, type)%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{

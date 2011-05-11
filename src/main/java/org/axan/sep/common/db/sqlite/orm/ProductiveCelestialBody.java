@@ -38,17 +38,39 @@ public class ProductiveCelestialBody extends CelestialBody implements IProductiv
 		return baseProductiveCelestialBodyProxy.getMaxSlots();
 	}
 
-	public static <T extends IProductiveCelestialBody> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String from, String where, Object ... params) throws SQLiteDBException
+	/** Set maxVersion to null to select last version. */
+	public static <T extends IProductiveCelestialBody> Set<T> selectMaxVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, Integer maxVersion, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, true, maxVersion, from, where, params);
+	}
+
+	public static <T extends IProductiveCelestialBody> Set<T> selectVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, int version, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, false, version, from, where, params);
+	}
+
+	public static <T extends IProductiveCelestialBody> Set<T> selectUnversioned(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, false, null, from, where, params);
+	}
+
+	private static <T extends IProductiveCelestialBody> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params) throws SQLiteDBException
 	{
 		try
 		{
 			Set<T> results = new HashSet<T>();
 
 			if (where != null && params != null) where = String.format(where, params);
-			if (lastVersion)
+			String versionFilter;
+			if (maxVersion)
 			{
-				where = String.format("%s(VersionedProductiveCelestialBody.turn = ( SELECT MAX(LVVersionedProductiveCelestialBody.turn) FROM VersionedProductiveCelestialBody LVVersionedProductiveCelestialBody WHERE LVVersionedProductiveCelestialBody.name = ProductiveCelestialBody.name AND LVVersionedProductiveCelestialBody.type = ProductiveCelestialBody.type ))", (where != null && !where.isEmpty()) ? "("+where+") AND " : "");
+				versionFilter = String.format("(VersionedProductiveCelestialBody.turn = ( SELECT MAX(LVVersionedProductiveCelestialBody.turn) FROM VersionedProductiveCelestialBody LVVersionedProductiveCelestialBody WHERE LVVersionedProductiveCelestialBody.name = ProductiveCelestialBody.name AND LVVersionedProductiveCelestialBody.type = ProductiveCelestialBody.type%s ))", (version != null && version >= 0) ? " AND LVVersionedProductiveCelestialBody.turn <= "+version : "");
 			}
+			else
+			{
+				versionFilter = (version == null) ? "" : String.format("(VersionedProductiveCelestialBody.turn = %d)", version);
+			}
+			where = String.format("%s%s", (where != null && !where.isEmpty()) ? "("+where+") AND " : "", versionFilter);
 			SQLiteStatement stmnt = conn.prepare(String.format("SELECT ProductiveCelestialBody.type, VersionedProductiveCelestialBody.type, ProductiveCelestialBody.*, VersionedProductiveCelestialBody.*, VersionedAsteroidField.*, VersionedNebula.*, VersionedPlanet.*, AsteroidField.*, Nebula.*, Planet.* FROM ProductiveCelestialBody%s LEFT JOIN VersionedProductiveCelestialBody USING (name, type) LEFT JOIN VersionedAsteroidField USING (name, turn, type) LEFT JOIN VersionedNebula USING (name, turn, type) LEFT JOIN VersionedPlanet USING (name, turn, type) LEFT JOIN AsteroidField USING (name, type) LEFT JOIN Nebula USING (name, type) LEFT JOIN Planet USING (name, type)%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{
