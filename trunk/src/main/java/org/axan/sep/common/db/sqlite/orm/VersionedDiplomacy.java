@@ -48,17 +48,30 @@ public class VersionedDiplomacy implements IVersionedDiplomacy
 		return baseVersionedDiplomacyProxy.getForeignPolicy();
 	}
 
-	public static <T extends IVersionedDiplomacy> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean lastVersion, String from, String where, Object ... params) throws SQLiteDBException
+	public static <T extends IVersionedDiplomacy> Set<T> selectLastVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, -1, from, where, params);
+	}
+
+	public static <T extends IVersionedDiplomacy> Set<T> selectVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, int version, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, version, from, where, params);
+	}
+
+	public static <T extends IVersionedDiplomacy> Set<T> selectUnversioned(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, null, from, where, params);
+	}
+
+	private static <T extends IVersionedDiplomacy> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, Integer version, String from, String where, Object ... params) throws SQLiteDBException
 	{
 		try
 		{
 			Set<T> results = new HashSet<T>();
 
 			if (where != null && params != null) where = String.format(where, params);
-			if (lastVersion)
-			{
-				where = String.format("%s(VersionedDiplomacy.turn = ( SELECT MAX(LVVersionedDiplomacy.turn) FROM VersionedDiplomacy LVVersionedDiplomacy WHERE LVVersionedDiplomacy.name = VersionedDiplomacy.name AND LVVersionedDiplomacy.cible = VersionedDiplomacy.cible AND LVVersionedDiplomacy.turn = VersionedDiplomacy.turn AND LVVersionedDiplomacy.allowToLand = VersionedDiplomacy.allowToLand AND LVVersionedDiplomacy.foreignPolicy = VersionedDiplomacy.foreignPolicy ))", (where != null && !where.isEmpty()) ? "("+where+") AND " : "");
-			}
+			String versionFilter = (version == null) ? "" : (version < 0) ? "(VersionedDiplomacy.turn = ( SELECT MAX(LVVersionedDiplomacy.turn) FROM VersionedDiplomacy LVVersionedDiplomacy WHERE LVVersionedDiplomacy.name = VersionedDiplomacy.name AND LVVersionedDiplomacy.cible = VersionedDiplomacy.cible AND LVVersionedDiplomacy.turn = VersionedDiplomacy.turn AND LVVersionedDiplomacy.allowToLand = VersionedDiplomacy.allowToLand AND LVVersionedDiplomacy.foreignPolicy = VersionedDiplomacy.foreignPolicy))" : "(VersionedDiplomacy.turn = "+String.valueOf(version)+")";
+			where = String.format("%s%s", (where != null && !where.isEmpty()) ? "("+where+") AND " : "", versionFilter);
 			SQLiteStatement stmnt = conn.prepare(String.format("SELECT VersionedDiplomacy.* FROM VersionedDiplomacy%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{

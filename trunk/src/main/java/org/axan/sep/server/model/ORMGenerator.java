@@ -432,7 +432,24 @@ public class ORMGenerator
 					{
 						if (skipStaticMethods(c)) return;
 						
-						psuc.format("\tpublic static <T extends I%s> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, %sString from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName(), (versionedClass != null && versionedClass.hasField("turn")) ? "boolean lastVersion, " : "" );
+						if (versionedClass != null && versionedClass.hasField("turn"))
+						{
+							psuc.println("\t/** Set maxVersion to null to select last version. */");
+							psuc.format("\tpublic static <T extends I%s> Set<T> selectMaxVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, Integer maxVersion, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+							psuc.println("\t{\n\t\treturn select(conn, config, expectedType, true, maxVersion, from, where, params);\n\t}\n");
+							
+							psuc.format("\tpublic static <T extends I%s> Set<T> selectVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, int version, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+							psuc.println("\t{\n\t\treturn select(conn, config, expectedType, false, version, from, where, params);\n\t}\n");
+							
+							psuc.format("\tpublic static <T extends I%s> Set<T> selectUnversioned(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+							psuc.println("\t{\n\t\treturn select(conn, config, expectedType, false, null, from, where, params);\n\t}\n");
+							
+							psuc.format("\tprivate static <T extends I%s> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+						}
+						else
+						{
+							psuc.format("\tpublic static <T extends I%s> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+						}
 						psuc.println("\t{");
 						psuc.println("\t\ttry");
 						psuc.println("\t\t{");
@@ -440,10 +457,11 @@ public class ORMGenerator
 						psuc.println("\t\t\tif (where != null && params != null) where = String.format(where, params);");
 						if (versionedClass != null && versionedClass.hasField("turn"))
 						{
-							psuc.println("\t\t\tif (lastVersion)");
+							psuc.println("\t\t\tString versionFilter;");
+							psuc.println("\t\t\tif (maxVersion)");
 							psuc.println("\t\t\t{");
-							psuc.format("\t\t\t\twhere = String.format(\"%%s(%s.turn = ( SELECT MAX(LV%s.turn) FROM %s LV%s WHERE ", versionedClass.getUpperName(), versionedClass.getUpperName(), versionedClass.getUpperName(), versionedClass.getUpperName());
 							
+							psuc.format("\t\t\t\tversionFilter = String.format(\"(%s.turn = ( SELECT MAX(LV%s.turn) FROM %s LV%s WHERE ", versionedClass.getUpperName(), versionedClass.getUpperName(), versionedClass.getUpperName(), versionedClass.getUpperName());
 							boolean comma = false;
 							for(Field f : c.getCommonFields(versionedClass))
 							{
@@ -451,9 +469,14 @@ public class ORMGenerator
 								psuc.format("LV%s.%s = %s.%s", versionedClass.getUpperName(), f.getLowerName(), c.getUpperName(), f.getLowerName());
 								comma = true;
 							}
-							
-							psuc.println(" ))\", (where != null && !where.isEmpty()) ? \"(\"+where+\") AND \" : \"\");");						
+							psuc.format("%%s ))\", (version != null && version >= 0) ? \" AND LV%s.turn <= \"+version : \"\");\n", versionedClass.getUpperName());
 							psuc.println("\t\t\t}");
+							psuc.println("\t\t\telse");
+							psuc.println("\t\t\t{");
+							psuc.format("\t\t\t\tversionFilter = (version == null) ? \"\" : String.format(\"(%s.turn = %%d)\", version);\n", versionedClass.getUpperName());
+							psuc.println("\t\t\t}");
+							
+							psuc.format("\t\t\twhere = String.format(\"%%s%%s\", (where != null && !where.isEmpty()) ? \"(\"+where+\") AND \" : \"\", versionFilter);\n", versionedClass.getUpperName());
 						}
 						psuc.print("\t\t\tSQLiteStatement stmnt = conn.prepare(String.format(\"");												
 						psuc.print("SELECT ");
