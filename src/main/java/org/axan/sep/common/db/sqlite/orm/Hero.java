@@ -2,9 +2,10 @@ package org.axan.sep.common.db.sqlite.orm;
 
 import org.axan.sep.common.db.sqlite.orm.SpecialUnit;
 import org.axan.sep.common.db.sqlite.orm.base.BaseHero;
+import org.axan.sep.common.db.IHero;
 import com.almworks.sqlite4java.SQLiteStatement;
-import org.axan.sep.common.IGameConfig;
 import org.axan.sep.common.Protocol.eSpecialUnitType;
+import org.axan.sep.common.db.IGameConfig;
 
 public class Hero extends SpecialUnit implements IHero
 {

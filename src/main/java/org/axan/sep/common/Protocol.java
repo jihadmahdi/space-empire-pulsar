@@ -98,7 +98,7 @@ public interface Protocol
 	/**
 	 * Methods that can be called by the client while the game is running.
 	 */
-	public static interface ServerRunningGame extends ServerCommon
+	public static interface ServerRunningGame<T extends PlayerGameBoard> extends ServerCommon
 	{
 		public static class RunningGameCommandException extends Exception
 		{
@@ -485,7 +485,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void endTurn(List<IGameCommand> commands) throws RpcException, StateMachineNotExpectedEventException, SEPImplementationException, RunningGameCommandException;
+		void endTurn(List<IGameCommand<T>> commands) throws RpcException, StateMachineNotExpectedEventException, SEPImplementationException, RunningGameCommandException;
 	}
 	
 	/**

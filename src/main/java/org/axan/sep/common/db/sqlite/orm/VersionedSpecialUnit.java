@@ -2,9 +2,10 @@ package org.axan.sep.common.db.sqlite.orm;
 
 import org.axan.sep.common.db.sqlite.orm.SpecialUnit;
 import org.axan.sep.common.db.sqlite.orm.base.BaseVersionedSpecialUnit;
+import org.axan.sep.common.db.IVersionedSpecialUnit;
 import com.almworks.sqlite4java.SQLiteStatement;
-import org.axan.sep.common.IGameConfig;
 import org.axan.sep.common.Protocol.eSpecialUnitType;
+import org.axan.sep.common.db.IGameConfig;
 
 public class VersionedSpecialUnit extends SpecialUnit implements IVersionedSpecialUnit
 {

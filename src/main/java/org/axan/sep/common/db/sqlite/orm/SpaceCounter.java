@@ -2,9 +2,10 @@ package org.axan.sep.common.db.sqlite.orm;
 
 import org.axan.sep.common.db.sqlite.orm.Building;
 import org.axan.sep.common.db.sqlite.orm.base.BaseSpaceCounter;
+import org.axan.sep.common.db.ISpaceCounter;
 import com.almworks.sqlite4java.SQLiteStatement;
-import org.axan.sep.common.IGameConfig;
 import org.axan.sep.common.Protocol.eBuildingType;
+import org.axan.sep.common.db.IGameConfig;
 
 public class SpaceCounter extends Building implements ISpaceCounter
 {

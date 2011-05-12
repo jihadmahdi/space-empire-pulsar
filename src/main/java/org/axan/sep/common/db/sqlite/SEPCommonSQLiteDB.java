@@ -17,7 +17,7 @@ import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteStatementJob;
 import org.axan.eplib.utils.Reflect;
 import org.axan.sep.common.GameConfigCopier;
-import org.axan.sep.common.IGameConfig;
+import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.Player;
 import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
 import org.axan.sep.server.SEPServer;
@@ -202,7 +202,7 @@ public class SEPCommonSQLiteDB implements Serializable
 	private transient SQLiteDB configDB;
 	private transient IGameConfig config;
 	
-	public SEPCommonSQLiteDB(Set<Player> players, IGameConfig config) throws IOException, SQLiteDBException, GameConfigCopierException
+	public SEPCommonSQLiteDB(IGameConfig config) throws IOException, SQLiteDBException, GameConfigCopierException
 	{
 		File dbFile = File.createTempFile("SEP-commonDB", ".sep");
 		this.db = new SQLiteDB(dbFile);

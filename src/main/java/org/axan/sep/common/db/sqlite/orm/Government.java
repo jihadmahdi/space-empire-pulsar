@@ -1,13 +1,14 @@
 package org.axan.sep.common.db.sqlite.orm;
 
 import org.axan.sep.common.db.sqlite.orm.base.BaseGovernment;
+import org.axan.sep.common.db.IGovernment;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
 import java.util.HashSet;
 import java.util.Set;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
-import org.axan.sep.common.IGameConfig;
+import org.axan.sep.common.db.IGameConfig;
 
 public class Government implements IGovernment
 {
@@ -53,13 +54,39 @@ public class Government implements IGovernment
 		return baseGovernmentProxy.getPlanetTurn();
 	}
 
-	public static <T extends IGovernment> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
+	/** Set maxVersion to null to select last version. */
+	public static <T extends IGovernment> Set<T> selectMaxVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, Integer maxVersion, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, true, maxVersion, from, where, params);
+	}
+
+	public static <T extends IGovernment> Set<T> selectVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, int version, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, false, version, from, where, params);
+	}
+
+	public static <T extends IGovernment> Set<T> selectUnversioned(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return select(conn, config, expectedType, false, null, from, where, params);
+	}
+
+	private static <T extends IGovernment> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params) throws SQLiteDBException
 	{
 		try
 		{
 			Set<T> results = new HashSet<T>();
 
 			if (where != null && params != null) where = String.format(where, params);
+			String versionFilter;
+			if (maxVersion)
+			{
+				versionFilter = String.format("(Government.turn = ( SELECT MAX(LVGovernment.turn) FROM Government LVGovernment WHERE LVGovernment.owner = Government.owner AND LVGovernment.turn = Government.turn AND LVGovernment.fleetName = Government.fleetName AND LVGovernment.fleetTurn = Government.fleetTurn AND LVGovernment.planetName = Government.planetName AND LVGovernment.planetTurn = Government.planetTurn%s ))", (version != null && version >= 0) ? " AND LVGovernment.turn <= "+version : "");
+			}
+			else
+			{
+				versionFilter = (version == null) ? "" : String.format("(Government.turn = %d)", version);
+			}
+			where = String.format("%s%s", (where != null && !where.isEmpty()) ? "("+where+") AND " : "", versionFilter);
 			SQLiteStatement stmnt = conn.prepare(String.format("SELECT Government.* FROM Government%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{

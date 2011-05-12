@@ -55,6 +55,7 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.html.HTMLDocument;
 
 import org.axan.eplib.clientserver.rpc.RpcException;
+import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.eplib.utils.Basic;
 import org.axan.sep.client.SEPClient;
@@ -65,74 +66,26 @@ import org.axan.sep.client.gui.lib.SingleRowFlowLayout;
 import org.axan.sep.client.gui.lib.TristateCheckBox;
 import org.axan.sep.client.gui.lib.TypedListWrapper;
 import org.axan.sep.client.gui.lib.WrappedJLabel;
-import org.axan.sep.common.ABuilding;
-import org.axan.sep.common.ALogEntry;
 import org.axan.sep.common.AbstractGameCommandCheck;
-import org.axan.sep.common.AntiProbeMissile;
-import org.axan.sep.common.Area;
-import org.axan.sep.common.CarbonCarrier;
-import org.axan.sep.common.CarbonOrder;
-import org.axan.sep.common.DefenseModule;
-import org.axan.sep.common.Diplomacy;
-import org.axan.sep.common.ExtractionModule;
-import org.axan.sep.common.Fleet;
-import org.axan.sep.common.GovernmentModule;
-import org.axan.sep.common.ICelestialBody;
-import org.axan.sep.common.IGame;
 import org.axan.sep.common.IGameCommand;
-import org.axan.sep.common.ISpecialUnit;
-import org.axan.sep.common.LaunchedPulsarMissile;
-import org.axan.sep.common.LocalGame;
-import org.axan.sep.common.Planet;
-import org.axan.sep.common.Player;
-import org.axan.sep.common.PlayerGameBoard;
-import org.axan.sep.common.Probe;
-import org.axan.sep.common.ProductiveCelestialBody;
-import org.axan.sep.common.PulsarLauchingPad;
 import org.axan.sep.common.SEPUtils;
-import org.axan.sep.common.SpaceCounter;
-import org.axan.sep.common.SpaceRoad;
-import org.axan.sep.common.SpaceRoadDeliverer;
-import org.axan.sep.common.StarshipPlant;
 import org.axan.sep.common.StarshipTemplate;
-import org.axan.sep.common.Unit;
-import org.axan.sep.common.UnitMarker;
-import org.axan.sep.common.UnitSeenLogEntry;
-import org.axan.sep.common.Diplomacy.PlayerPolicies;
-import org.axan.sep.common.Diplomacy.PlayerPolicies.eForeignPolicy;
-import org.axan.sep.common.Fleet.Move;
-import org.axan.sep.common.IGame.AttackEnemiesFleetCheck;
-import org.axan.sep.common.IGame.Build;
-import org.axan.sep.common.IGame.BuildCheck;
-import org.axan.sep.common.IGame.BuildSpaceRoad;
-import org.axan.sep.common.IGame.ChangeDiplomacy;
-import org.axan.sep.common.IGame.DemolishCheck;
-import org.axan.sep.common.IGame.DemolishSpaceRoad;
-import org.axan.sep.common.IGame.DismantleFleet;
-import org.axan.sep.common.IGame.DismantleFleetCheck;
-import org.axan.sep.common.IGame.EmbarkGovernment;
-import org.axan.sep.common.IGame.EmbarkGovernmentCheck;
-import org.axan.sep.common.IGame.FireAntiProbeMissile;
-import org.axan.sep.common.IGame.FireAntiProbeMissileCheck;
-import org.axan.sep.common.IGame.FormFleet;
-import org.axan.sep.common.IGame.FormFleetCheck;
-import org.axan.sep.common.IGame.LaunchProbe;
-import org.axan.sep.common.IGame.LaunchProbeCheck;
-import org.axan.sep.common.IGame.MakeAntiProbeMissiles;
-import org.axan.sep.common.IGame.MakeAntiProbeMissilesCheck;
-import org.axan.sep.common.IGame.MakeProbes;
-import org.axan.sep.common.IGame.MakeProbesCheck;
-import org.axan.sep.common.IGame.MakeStarships;
-import org.axan.sep.common.IGame.MakeStarshipsCheck;
-import org.axan.sep.common.IGame.ModifyCarbonOrder;
-import org.axan.sep.common.IGame.MoveFleet;
-import org.axan.sep.common.IGame.SettleGovernment;
-import org.axan.sep.common.IGame.SettleGovernmentCheck;
 import org.axan.sep.common.IGameCommand.GameCommandException;
-import org.axan.sep.common.PlayerGameBoard.PlayerGameBoardQueryException;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.common.SEPUtils.RealLocation;
+import org.axan.sep.common.db.IArea;
+import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.IPlayer;
+import org.axan.sep.common.db.IProductiveCelestialBody;
+import org.axan.sep.common.db.IVersionedProductiveCelestialBody;
 import org.axan.sep.server.SEPServer.SEPImplementationException;
+import org.axan.sep.common.db.sqlite.ISQLiteGameCommand;
+import org.axan.sep.common.db.sqlite.SEPCommonSQLiteDB;
+import org.axan.sep.common.db.sqlite.SQLiteLocalGame;
+import org.axan.sep.common.db.sqlite.orm.ProductiveCelestialBody;
+
+import com.almworks.sqlite4java.SQLiteConnection;
+import com.almworks.sqlite4java.SQLiteJob;
 
 
 
@@ -146,7 +99,7 @@ import org.axan.sep.server.SEPServer.SEPImplementationException;
  * PURCHASED FOR THIS MACHINE, SO JIGLOO OR THIS CODE CANNOT BE USED LEGALLY FOR
  * ANY CORPORATE OR COMMERCIAL PURPOSE.
  */
-public class RunningGamePanel extends javax.swing.JPanel implements UniverseRendererListener, LocalGame.Client
+public class RunningGamePanel extends javax.swing.JPanel implements UniverseRendererListener, SQLiteLocalGame.Client
 {
 	private static final int	EAST_AREA_WIDTH						= 200;
 	private static final int	EAST_AREA_COMPONENTS_MAX_WIDTH		= EAST_AREA_WIDTH - 25;
@@ -171,10 +124,20 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		this(null, null, null);
 	}
 
-	private final Player	player;
+	private SQLiteDB getDB()
+	{
+		return currentLocalGame.getGameBoard().getDB();
+	}
+	
+	private IGameConfig getConfig()
+	{
+		return currentLocalGame.getGameBoard().getConfig();
+	}
+	
+	private final IPlayer	player;
 	private final SEPClient	client;
 
-	public RunningGamePanel(Player player, SEPClient client, UniverseRenderer universeRenderer)
+	public RunningGamePanel(IPlayer player, SEPClient client, UniverseRenderer universeRenderer)
 	{
 		super();
 		this.player = player;
@@ -183,7 +146,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		initGUI();
 	}
 	
-	public void endTurn(List<IGameCommand> commands) throws StateMachineNotExpectedEventException, RpcException, SEPImplementationException, RunningGameCommandException
+	public void endTurn(List<ISQLiteGameCommand> commands) throws StateMachineNotExpectedEventException, RpcException, SEPImplementationException, RunningGameCommandException
 	{
 		client.getRunningGameInterface().endTurn(commands);		
 	}
@@ -632,9 +595,21 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				public void actionPerformed(ActionEvent e)
 				{
 					if (currentSelectedArea == null) return;
-					if (currentSelectedArea.getCelestialBody() == null || !ProductiveCelestialBody.class.isInstance(currentSelectedArea.getCelestialBody())) return;
-					ProductiveCelestialBody productiveCelestialBody = ProductiveCelestialBody.class.cast(currentSelectedArea.getCelestialBody());
-					if (currentPlayer.isNamed(productiveCelestialBody.getOwnerName())) return;
+					IVersionedProductiveCelestialBody productiveCelestialBody = getDB().exec(new SQLiteJob<IVersionedProductiveCelestialBody>()
+					{
+						
+						@Override
+						protected IVersionedProductiveCelestialBody job(SQLiteConnection conn) throws Throwable
+						{
+							Set<IVersionedProductiveCelestialBody> r = ProductiveCelestialBody.selectMaxVersion(conn, getConfig(), IVersionedProductiveCelestialBody.class, null, null, "location_x = %d AND location_y = %d AND location_z = %d", currentSelectedArea.getLocation().x, currentSelectedArea.getLocation().y, currentSelectedArea.getLocation().z);
+							if (r == null || r.isEmpty()) return null;
+							return r.iterator().next();
+						}
+					});
+					
+					if (productiveCelestialBody == null) return;
+					
+					if (currentPlayer.getName().matches(productiveCelestialBody.getOwner())) return;
 
 					try
 					{
@@ -904,9 +879,9 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return universeRenderer;
 	}
 
-	private IGame		currentLocalGame;
+	private SQLiteLocalGame	currentLocalGame;
 
-	private Area			currentSelectedArea;
+	private IArea			currentSelectedArea;
 	private RealLocation	currentSelectedLocation;
 
 	/*
@@ -4056,8 +4031,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		});
 	}
 
-	private Stack<Player>	currentGamePlayers	= new Stack<Player>();
-	private Player			currentPlayer		= null;
+	private Stack<IPlayer>	currentGamePlayers	= new Stack<IPlayer>();
+	private IPlayer			currentPlayer		= null;
 
 	public void refreshPlayerList(Set<Player> players)
 	{

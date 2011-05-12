@@ -31,9 +31,8 @@ import org.axan.sep.common.PlayerConfig;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
-import org.axan.sep.common.db.sqlite.orm.IUnit;
-import org.axan.sep.common.db.sqlite.orm.IVersionedFleet;
-import org.axan.sep.common.db.sqlite.orm.IVersionedUnit;
+import org.axan.sep.common.db.IVersionedFleet;
+import org.axan.sep.common.db.IVersionedUnit;
 import org.axan.sep.common.db.sqlite.orm.Unit;
 import org.axan.sep.common.db.sqlite.orm.VersionedFleet;
 import org.junit.After;
@@ -559,7 +558,7 @@ public class TestSQLite
 				@Override
 				protected Set<? extends IVersionedUnit> job(SQLiteConnection conn) throws Throwable
 				{
-					return Unit.select(conn, sepDB.getConfig(), IVersionedUnit.class, true, null, null);
+					return Unit.selectMaxVersion(conn, sepDB.getConfig(), IVersionedUnit.class, null, null, null);
 				}
 			});
 			long t3 = System.currentTimeMillis();
@@ -587,7 +586,7 @@ public class TestSQLite
 				{
 					VersionedFleet vf = new VersionedFleet("p2", "F1", eUnitType.Fleet, sepDB.getConfig().getTurn(), celestialBodiesLocation.lastElement(), 0.0, null, sepDB.getConfig().getUnitTypeSight(eUnitType.Fleet));
 					Unit.insertOrUpdate(conn, vf);
-					return Unit.select(conn, sepDB.getConfig(), IVersionedUnit.class, true, null, "Unit.name = 'F1'");
+					return Unit.selectMaxVersion(conn, sepDB.getConfig(), IVersionedUnit.class, null, null, "Unit.name = 'F1'");
 				}
 			});
 			long t4 = System.currentTimeMillis();
@@ -610,7 +609,7 @@ public class TestSQLite
 				{
 					VersionedFleet vf = new VersionedFleet("p2", "F1", eUnitType.Fleet, sepDB.getConfig().getTurn(), celestialBodiesLocation.lastElement(), 100.0, null, sepDB.getConfig().getUnitTypeSight(eUnitType.Fleet));
 					Unit.insertOrUpdate(conn, vf);
-					return Unit.select(conn, sepDB.getConfig(), IVersionedUnit.class, true, null, "Unit.name = 'F1'");
+					return Unit.selectMaxVersion(conn, sepDB.getConfig(), IVersionedUnit.class, null, null, "Unit.name = 'F1'");
 				}
 			});
 			long t5 = System.currentTimeMillis();
@@ -633,7 +632,7 @@ public class TestSQLite
 				@Override
 				protected Set<IVersionedUnit> job(SQLiteConnection conn) throws Throwable
 				{
-					return Unit.select(conn, sepDB.getConfig(), IVersionedUnit.class, true, "CelestialBody CB", "CB.name = 'A' AND VersionedUnit.departure_x = CB.location_x AND VersionedUnit.departure_y = CB.location_y AND VersionedUnit.departure_z = CB.location_z");
+					return Unit.selectMaxVersion(conn, sepDB.getConfig(), IVersionedUnit.class, null, "CelestialBody CB", "CB.name = 'A' AND VersionedUnit.departure_x = CB.location_x AND VersionedUnit.departure_y = CB.location_y AND VersionedUnit.departure_z = CB.location_z");
 				}
 			});
 			

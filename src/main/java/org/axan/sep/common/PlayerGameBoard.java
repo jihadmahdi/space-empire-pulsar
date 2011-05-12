@@ -11,5 +11,19 @@ public abstract class PlayerGameBoard implements Serializable
 {
 
 	private static final long serialVersionUID = 1L;
+	
+	private int localTurn = 0;
+
+	abstract public int getTurn();
+	
+	public int getLocalTurn()
+	{
+		return localTurn;
+	}
+	
+	public void incLocalTurn()
+	{
+		++localTurn;
+	}
 
 }

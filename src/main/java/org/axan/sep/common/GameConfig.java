@@ -13,6 +13,7 @@ import java.util.Map;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.RealLocation;
+import org.axan.sep.common.db.IGameConfig;
 
 
 

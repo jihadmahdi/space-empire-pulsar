@@ -1,4 +1,4 @@
-package org.axan.sep.common;
+package org.axan.sep.common.db.sqlite;
 
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -7,39 +7,37 @@ import java.util.SortedMap;
 import java.util.Stack;
 import java.util.TreeMap;
 
+import org.axan.sep.common.AbstractGameCommandCheck;
+import org.axan.sep.common.IGame;
+import org.axan.sep.common.IGameCommand;
 import org.axan.sep.common.IGameCommand.GameCommandException;
+import org.axan.sep.common.db.sqlite.SEPClientSQLiteDB;
 
 /**
  * This class represent the game for a client from local point of view.
  * It makes the client able to execute command and see a preview of the game after each command.
  * Finally the client has to get back the command list to send it to the server and ends his turn.
  */
-public class LocalGame implements IGame
+public class SQLiteLocalGame implements IGame<SEPClientSQLiteDB>
 {
-	public static interface Client
-	{
-		void endTurn(List<IGameCommand> commands) throws Throwable;
-		void refreshLocalGameBoard(PlayerGameBoard gameBoard);
-	}
-	
 	/** Ordered map of each gameBoard view and the command that leads to the next gameBoard view. */ 
-	private SortedMap<PlayerGameBoard, IGameCommand> commands = new TreeMap<PlayerGameBoard, IGameCommand>(new Comparator<PlayerGameBoard>()
+	private SortedMap<SEPClientSQLiteDB, IGameCommand<SEPClientSQLiteDB>> commands = new TreeMap<SEPClientSQLiteDB, IGameCommand<SEPClientSQLiteDB>>(new Comparator<SEPClientSQLiteDB>()
 			{
-				public int compare(PlayerGameBoard o1, PlayerGameBoard o2)
+				public int compare(SEPClientSQLiteDB o1, SEPClientSQLiteDB o2)
 				{
-					return o1.getDate()*1000+o1.getLocalDate() - (o2.getDate()*1000+o2.getLocalDate());
+					return o1.getTurn()*1000+o1.getLocalTurn() - (o2.getTurn()*1000+o2.getLocalTurn());
 				}
 			});
 	
-	private Stack<IGameCommand> undoneCommands = new Stack<IGameCommand>();
+	private Stack<IGameCommand<SEPClientSQLiteDB>> undoneCommands = new Stack<IGameCommand<SEPClientSQLiteDB>>();
 	
-	private final Client client;
+	private final IGame.Client<SEPClientSQLiteDB> client;
 	
 	/**
 	 * Must provide the initial gameBoard.
 	 * @param initialGameBoard Initial gameBoard.
 	 */
-	public LocalGame(Client client, PlayerGameBoard initialGameBoard)
+	public SQLiteLocalGame(IGame.Client<SEPClientSQLiteDB> client, SEPClientSQLiteDB initialGameBoard)
 	{
 		this.commands.put(initialGameBoard, null);
 		this.client = client;
@@ -51,25 +49,25 @@ public class LocalGame implements IGame
 	 * @throws LocalGameCommandException If the command cannot be applied to the current gameBoard state. 
 	 */
 	@Override
-	public synchronized void executeCommand(IGameCommand command) throws GameCommandException
+	public synchronized void executeCommand(IGameCommand<SEPClientSQLiteDB> command) throws GameCommandException
 	{
 		reExecuteCommand(command);
 		undoneCommands.clear();
 		client.refreshLocalGameBoard(getGameBoard());
 	}
 	
-	private synchronized void reExecuteCommand(IGameCommand command) throws GameCommandException
+	private synchronized void reExecuteCommand(IGameCommand<SEPClientSQLiteDB> command) throws GameCommandException
 	{
 		if (turnEnded)
 		{
 			throw new GameCommandException("Turn already ended.");
 		}
 		
-		PlayerGameBoard current = commands.lastKey();
+		SEPClientSQLiteDB current = commands.lastKey();
 		if (commands.get(current) != null) throw new RuntimeException("Last gameBoard is not expected to have a command.");
 
-		PlayerGameBoard next = command.apply(current);
-		next.incLocalDate();
+		SEPClientSQLiteDB next = SEPClientSQLiteDB.class.cast(command.apply(current));
+		next.incLocalTurn();
 		
 		commands.put(current, command);
 		commands.put(next, null);
@@ -101,7 +99,7 @@ public class LocalGame implements IGame
 			throw new GameCommandException(check.getReason());
 		}
 		
-		PlayerGameBoard initialGameBoard = commands.firstKey();
+		SEPClientSQLiteDB initialGameBoard = commands.firstKey();
 		commands.clear();
 		commands.put(initialGameBoard, null);
 		
@@ -183,7 +181,7 @@ public class LocalGame implements IGame
 	 * @return
 	 */
 	@Override
-	public PlayerGameBoard getGameBoard()
+	public SEPClientSQLiteDB getGameBoard()
 	{
 		return commands.lastKey();
 	}
@@ -193,9 +191,9 @@ public class LocalGame implements IGame
 	 * @return
 	 */
 	@Override
-	public List<IGameCommand> getCommands()
+	public List<IGameCommand<SEPClientSQLiteDB>> getCommands()
 	{
-		return new LinkedList<IGameCommand>(commands.values());		
+		return new LinkedList<IGameCommand<SEPClientSQLiteDB>>(commands.values());		
 	}
 	
 	private Boolean turnEnded = false;	

@@ -6,15 +6,20 @@ import java.util.List;
 import org.axan.sep.common.IGameCommand.GameCommandException;
 import org.axan.sep.common.Protocol.eBuildingType;
 
-public interface IGame
+public interface IGame<T extends PlayerGameBoard>
 {
+	public static interface Client<T extends PlayerGameBoard>
+	{
+		void endTurn(List<IGameCommand<T>> commands) throws Throwable;
+		void refreshLocalGameBoard(T gameBoard);
+	}
 	
 	/**
 	 * Add a command to the current gameBoard and execute it to preview the next gameBoard.
 	 * @param command Command to execute.
 	 * @throws LocalGameCommandException If the command cannot be applied to the current gameBoard state. 
 	 */
-	public abstract void executeCommand(IGameCommand command) throws GameCommandException;	
+	public abstract void executeCommand(IGameCommand<T> command) throws GameCommandException;	
 
 	/**
 	 * Clear all commands and reset to initial gameBoard.
@@ -40,13 +45,13 @@ public interface IGame
 	 * Get last gameBoard state (all known commands applied).
 	 * @return
 	 */
-	public abstract PlayerGameBoard getGameBoard();
+	public abstract T getGameBoard();
 
 	/**
 	 * Return a list of all applied commands.
 	 * @return
 	 */
-	public abstract List<IGameCommand> getCommands();
+	public abstract List<IGameCommand<T>> getCommands();
 
 	/**
 	 * End turn (after turn is ended, the game must reject any command including undo/redo.
