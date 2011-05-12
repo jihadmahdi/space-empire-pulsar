@@ -1,6 +1,6 @@
 package org.axan.sep.common;
 
-public interface IGameCommand
+public interface IGameCommand<T extends PlayerGameBoard>
 {
 	public static class GameCommandException extends Exception
 	{
@@ -15,7 +15,7 @@ public interface IGameCommand
 		}
 	}
 	
-	PlayerGameBoard apply(PlayerGameBoard gameBoard) throws GameCommandException;
+	T apply(T gameBoard) throws GameCommandException;
 	Object getParams();
 	//PlayerGameBoard undo(PlayerGameBoard gameBoard);
 }

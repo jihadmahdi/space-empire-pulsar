@@ -10,28 +10,20 @@ import java.util.Map;
 import java.util.Stack;
 
 import org.axan.sep.client.SEPClient;
-import org.axan.sep.common.ABuilding;
-import org.axan.sep.common.Diplomacy;
-import org.axan.sep.common.Fleet;
-import org.axan.sep.common.ICelestialBody;
 import org.axan.sep.common.IGame;
 import org.axan.sep.common.IGameCommand;
-import org.axan.sep.common.LocalGame;
-import org.axan.sep.common.Planet;
 import org.axan.sep.common.PlayerGameBoard;
-import org.axan.sep.common.ProductiveCelestialBody;
 import org.axan.sep.common.SEPUtils;
-import org.axan.sep.common.Diplomacy.PlayerPolicies;
-import org.axan.sep.common.LocalGame.Client;
-import org.axan.sep.common.PlayerGameBoard.PlayerGameBoardQueryException;
 import org.axan.sep.common.SEPUtils.RealLocation;
+import org.axan.sep.common.db.sqlite.SEPClientSQLiteDB;
+import org.axan.sep.common.db.sqlite.SQLiteLocalGame;
 
-public class ClientAI implements Client
+public class ClientAI<T extends PlayerGameBoard> implements IGame.Client<T>
 {		
-	private final Stack<PlayerGameBoard> previousGameBoards = new Stack<PlayerGameBoard>();
+	private final Stack<T> previousGameBoards = new Stack<T>();
 	private final String playerName;
 	private String startingPlanet;
-	private IGame currentLocalGame;
+	private IGame<T> currentLocalGame;
 	private final SEPClient client;
 	private final boolean isClientTest;
 	
@@ -42,7 +34,7 @@ public class ClientAI implements Client
 		this.isClientTest = isClientTest;
 	}
 	
-	public IGame getLocalGame()
+	public IGame<T> getLocalGame()
 	{
 		return currentLocalGame;
 	}
@@ -53,26 +45,36 @@ public class ClientAI implements Client
 	}
 	
 	@Override
-	public void endTurn(List<IGameCommand> commands) throws Throwable
+	public void endTurn(List<IGameCommand<T>> commands) throws Throwable
 	{
 		client.getRunningGameInterface().endTurn(commands);
 	}
 	
 	@Override
-	public void refreshLocalGameBoard(PlayerGameBoard gameBoard)
+	public void refreshLocalGameBoard(T gameBoard)
 	{
 		getStartingPlanetName();
 	}
 	
-	public void refreshGameBoard(PlayerGameBoard gameBoard)
+	public void refreshGameBoard(T gameBoard)
 	{
 		if (currentLocalGame != null) previousGameBoards.add(currentLocalGame.getGameBoard());
-		currentLocalGame = isClientTest ? new LocalGame(this, gameBoard) : new UncheckedLocalGame(this, gameBoard);
+		if (isClientTest)
+		{
+			SQLiteLocalGame o = new SQLiteLocalGame(this, SEPClientSQLiteDB.class.cast(gameBoard));
+			currentLocalGame = o;
+		}
+		else
+		{
+			currentLocalGame = new UncheckedLocalGame(this, gameBoard);
+		}
 		refreshLocalGameBoard(gameBoard);
 	}
 	
 	public String getStartingPlanetName()
 	{
+		SUIS LA
+		
 		if (startingPlanet == null)
 		{
 			if (previousGameBoards.isEmpty() && currentLocalGame == null) throw new IllegalStateException("Gameboard not refreshed yet.");

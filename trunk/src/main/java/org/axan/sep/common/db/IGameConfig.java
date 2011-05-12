@@ -1,4 +1,4 @@
-package org.axan.sep.common;
+package org.axan.sep.common.db;
 
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Protocol.eUnitType;

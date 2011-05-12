@@ -1,14 +1,21 @@
 package org.axan.sep.common.db.sqlite.orm;
 
 import org.axan.sep.common.db.sqlite.orm.base.BaseBuilding;
+import org.axan.sep.common.db.IBuilding;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
 import java.util.HashSet;
 import java.util.Set;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
-import org.axan.sep.common.IGameConfig;
 import org.axan.sep.common.Protocol.eBuildingType;
+import org.axan.sep.common.db.IDefenseModule;
+import org.axan.sep.common.db.IExtractionModule;
+import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.IGovernmentModule;
+import org.axan.sep.common.db.IPulsarLaunchingPad;
+import org.axan.sep.common.db.ISpaceCounter;
+import org.axan.sep.common.db.IStarshipPlant;
 
 public class Building implements IBuilding
 {
@@ -105,7 +112,6 @@ public class Building implements IBuilding
 	{
 		try
 		{
-			IBuilding vbuilding = (IBuilding.class.isInstance(building) ? IBuilding.class.cast(building) : null);
 			SQLiteStatement stmnt = conn.prepare(String.format("SELECT EXISTS ( SELECT type FROM Building WHERE type = %s AND celestialBodyName = %s AND turn = %s) AS exist ;", "'"+building.getType()+"'", "'"+building.getCelestialBodyName()+"'", "'"+building.getTurn()+"'"));
 			stmnt.step();
 			if (stmnt.columnInt(0) == 0)

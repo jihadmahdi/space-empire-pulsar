@@ -3,7 +3,6 @@ package org.axan.sep.server.model;
 import java.io.IOException;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -17,7 +16,7 @@ import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteStatementJob;
 import org.axan.eplib.utils.Basic;
-import org.axan.sep.common.IGameConfig;
+import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.Rules;
 import org.axan.sep.common.SEPCommonImplementationException;
@@ -28,28 +27,48 @@ import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
+import org.axan.sep.common.db.sqlite.SEPClientSQLiteDB;
 import org.axan.sep.common.db.sqlite.SEPCommonSQLiteDB;
 import org.axan.sep.common.db.sqlite.orm.Area;
+import org.axan.sep.common.db.sqlite.orm.AssignedFleet;
 import org.axan.sep.common.db.sqlite.orm.Building;
-import org.axan.sep.common.db.sqlite.orm.CelestialBody;
+import org.axan.sep.common.db.sqlite.orm.CarbonOrder;
+import org.axan.sep.common.db.sqlite.orm.Diplomacy;
 import org.axan.sep.common.db.sqlite.orm.FleetComposition;
-import org.axan.sep.common.db.sqlite.orm.IBuilding;
-import org.axan.sep.common.db.sqlite.orm.ICelestialBody;
-import org.axan.sep.common.db.sqlite.orm.IFleetComposition;
-import org.axan.sep.common.db.sqlite.orm.IMovePlan;
-import org.axan.sep.common.db.sqlite.orm.IProductiveCelestialBody;
-import org.axan.sep.common.db.sqlite.orm.ISpaceRoad;
-import org.axan.sep.common.db.sqlite.orm.IVersionedFleet;
-import org.axan.sep.common.db.sqlite.orm.IVersionedPlanet;
-import org.axan.sep.common.db.sqlite.orm.IVersionedProbe;
-import org.axan.sep.common.db.sqlite.orm.IVersionedProductiveCelestialBody;
-import org.axan.sep.common.db.sqlite.orm.IVersionedUnit;
-import org.axan.sep.common.db.sqlite.orm.IVortex;
+import org.axan.sep.common.db.sqlite.orm.Government;
+import org.axan.sep.common.db.IArea;
+import org.axan.sep.common.db.IAssignedFleet;
+import org.axan.sep.common.db.IBuilding;
+import org.axan.sep.common.db.ICarbonOrder;
+import org.axan.sep.common.db.ICelestialBody;
+import org.axan.sep.common.db.IDiplomacy;
+import org.axan.sep.common.db.IFleetComposition;
+import org.axan.sep.common.db.IGovernment;
+import org.axan.sep.common.db.IMovePlan;
+import org.axan.sep.common.db.IPlayer;
+import org.axan.sep.common.db.IPlayerConfig;
+import org.axan.sep.common.db.IProductiveCelestialBody;
+import org.axan.sep.common.db.ISpaceRoad;
+import org.axan.sep.common.db.IStarshipTemplate;
+import org.axan.sep.common.db.IUnitArrivalLog;
+import org.axan.sep.common.db.IUnitEncounterLog;
+import org.axan.sep.common.db.IVersionedFleet;
+import org.axan.sep.common.db.IVersionedPlanet;
+import org.axan.sep.common.db.IVersionedProbe;
+import org.axan.sep.common.db.IVersionedProductiveCelestialBody;
+import org.axan.sep.common.db.IVersionedSpecialUnit;
+import org.axan.sep.common.db.IVersionedUnit;
+import org.axan.sep.common.db.IVortex;
 import org.axan.sep.common.db.sqlite.orm.MovePlan;
+import org.axan.sep.common.db.sqlite.orm.Player;
+import org.axan.sep.common.db.sqlite.orm.PlayerConfig;
 import org.axan.sep.common.db.sqlite.orm.ProductiveCelestialBody;
 import org.axan.sep.common.db.sqlite.orm.SpaceRoad;
+import org.axan.sep.common.db.sqlite.orm.SpecialUnit;
+import org.axan.sep.common.db.sqlite.orm.StarshipTemplate;
 import org.axan.sep.common.db.sqlite.orm.Unit;
-import org.axan.sep.common.db.sqlite.orm.VersionedProductiveCelestialBody;
+import org.axan.sep.common.db.sqlite.orm.UnitArrivalLog;
+import org.axan.sep.common.db.sqlite.orm.UnitEncounterLog;
 import org.axan.sep.common.db.sqlite.orm.Vortex;
 import org.axan.sep.server.SEPServer;
 import org.axan.sep.server.model.ISEPServerDataBase.SEPServerDataBaseException;
@@ -95,7 +114,7 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 	{
 		try
 		{
-			this.commonDB = new SEPCommonSQLiteDB(players, config);
+			this.commonDB = new SEPCommonSQLiteDB(config);
 			this.db = commonDB.getDB();
 			
 			// Generate Universe
@@ -182,17 +201,40 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 	
 	private void compilePlayerView(final String playerLogin, SEPCommonSQLiteDB currentView, int maxTurn) throws SQLiteDBException
 	{
-		Map<String, Boolean> tables = new HashMap<String, Boolean>();
-	
-		// GameConfig, already copied during DB creation TODO: Update turn.
+		// GameConfig, already copied during DB creation.
 		
-		// Area
-		final Set<Area> areas = db.exec(new SQLiteJob<Set<Area>>()
+		final Set<IArea> areas = new HashSet<IArea>();
+		final Set<IPlayer> players = new HashSet<IPlayer>();
+		final Set<IPlayerConfig> playerConfigs = new HashSet<IPlayerConfig>();
+		final Set<ICelestialBody> celestialBodies = new HashSet<ICelestialBody>();
+		final Set<IStarshipTemplate> starshipTemplates = new HashSet<IStarshipTemplate>();
+		final Set<ICarbonOrder> carbonOrders = new HashSet<ICarbonOrder>();
+		
+		db.exec(new SQLiteJob<Void>()
 		{
 			@Override
-			protected Set<Area> job(SQLiteConnection conn) throws Throwable
+			protected Void job(SQLiteConnection conn) throws Throwable
 			{
-				return Area.select(conn, getConfig(), Area.class, null, null);
+				// Update areas
+				areas.addAll(Area.select(conn, getConfig(), IArea.class, null, null));
+				
+				// Update players
+				players.addAll(Player.select(conn, getConfig(), IPlayer.class, null, null));
+				
+				// Update player configs
+				playerConfigs.addAll(PlayerConfig.select(conn, getConfig(), IPlayerConfig.class, null, null));
+				
+				// Update celestial bodies
+				celestialBodies.addAll(ProductiveCelestialBody.selectUnversioned(conn, getConfig(), IProductiveCelestialBody.class, null, null));
+				celestialBodies.addAll(Vortex.select(conn, getConfig(), IVortex.class, null, null));
+				
+				// Update starship templates
+				starshipTemplates.addAll(StarshipTemplate.select(conn, getConfig(), IStarshipTemplate.class, null, null));
+				
+				// Update player carbon orders (live table, assume initial player view carbon order table is empty)
+				carbonOrders.addAll(CarbonOrder.select(conn, getConfig(), ICarbonOrder.class, null, "owner = %s", playerLogin));
+				
+				return null;
 			}
 		});
 		
@@ -201,59 +243,96 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 			@Override
 			protected Void job(SQLiteConnection conn) throws Throwable
 			{
-				for(Area a : areas)
+				for(IArea a : areas)
 				{
 					Area.insertOrUpdate(conn, a);
 				}
+				
+				for(IPlayer p : players)
+				{
+					Player.insertOrUpdate(conn, p);
+				}
+				
+				for(IPlayerConfig pc : playerConfigs)
+				{
+					PlayerConfig.insertOrUpdate(conn, pc);
+				}
+				
+				for(ICelestialBody cb : celestialBodies)
+				{
+					if (IVortex.class.isInstance(cb))
+					{
+						Vortex.insertOrUpdate(conn, IVortex.class.cast(cb));
+					}
+					else if (IProductiveCelestialBody.class.isInstance(cb))
+					{
+						ProductiveCelestialBody.insertOrUpdate(conn, IProductiveCelestialBody.class.cast(cb));
+					}
+				}
+				
+				for(IStarshipTemplate st : starshipTemplates)
+				{
+					StarshipTemplate.insertOrUpdate(conn, st);
+				}
+				
+				for(ICarbonOrder co : carbonOrders)
+				{
+					CarbonOrder.insertOrUpdate(conn, co);
+				}
+				
 				return null;
 			}
 		});
 		
-		
 		// TODO:
-		// Hero
-		
-		/////////////////////////////:
-		// ~ Copie simple
+		//X	GameConfig, already copied during DB creation.
+		//X	Update turn.
+		//X	Area
+		//X	Player
+		//X		PlayerConfig (on assume que la config joueur est une info publique).
+		//X	CelestialBody
+		//X	StarshipTemplate
+		//X	CarbonOrder (current player, live table create/delete, simple copy)
+		//NOT REQUIRED, automated when updating versioned one:	Unit (only units with the first version <= currentTurn)
+		//NOT REQUIRED, idem:	SpecialUnit (first version <= currentTurn)		
+		//	AssignedFleet
 		
 		for(int i = 0; i <= maxTurn; ++i)
 		{
 			final int currentTurn = i;
 			
-			// Update deployed player probes
-			Set<IVersionedProbe> vprobes = db.exec(new SQLiteJob<Set<IVersionedProbe>>()
-			{
-				@Override
-				protected Set<IVersionedProbe> job(SQLiteConnection conn) throws Throwable
-				{
-					Set<IVersionedProbe> vunits = new HashSet<IVersionedProbe>();
-										
-					vunits.addAll(Unit.selectMaxVersion(conn, getConfig(), IVersionedProbe.class, currentTurn, null, "VersionedUnit.type = %s AND VersionedUnit.owner = %s AND VersionedUnit.progress = 100.0", eUnitType.Probe, playerLogin));
-					return vunits;
-				}
-			});
-							
-			for(final IVersionedProbe vprobe : vprobes)
-			{
-				currentView.getDB().exec(new SQLiteJob<Void>()
-				{
-					@Override
-					protected Void job(SQLiteConnection conn) throws Throwable
-					{
-						Unit.insertOrUpdate(conn, vprobe);
-						return null;
-					}
-				});
-			}
+			final Map<String, IGovernment> currentTurnGovernmentsView = new HashMap<String, IGovernment>();
+			final Map<String, Set<IDiplomacy>> currentTurnDiplomaciesView = new HashMap<String, Set<IDiplomacy>>();
+			final Map<String, IGovernment> currentTurnGovernments = new HashMap<String, IGovernment>();
+			final Map<String, Set<IDiplomacy>> currentTurnDiplomacies = new HashMap<String, Set<IDiplomacy>>();
+			final Set<IVersionedProbe> vprobes = new HashSet<IVersionedProbe>();
+			final Set<IVersionedProductiveCelestialBody> visiblesPcbs = new HashSet<IVersionedProductiveCelestialBody>();
+			final Set<IUnitArrivalLog> arrivalLogs =  new HashSet<IUnitArrivalLog>();
 			
-			// Update visibles celestial bodies.									
-			final Set<IVersionedProductiveCelestialBody> vpcbs = db.exec(new SQLiteJob<Set<IVersionedProductiveCelestialBody>>()
+			db.exec(new SQLiteJob<Void>()
 			{
 				@Override
-				protected Set<IVersionedProductiveCelestialBody> job(SQLiteConnection conn) throws Throwable
+				protected Void job(SQLiteConnection conn) throws Throwable
 				{
-					Set<IVersionedProductiveCelestialBody> visiblesPcbs = new HashSet<IVersionedProductiveCelestialBody>(); 
+					// Select db governments for currentTurn
+					Set<IGovernment> governments = Government.selectMaxVersion(conn, getConfig(), IGovernment.class, currentTurn, null, null);
+					for(IGovernment g : governments)
+					{
+						currentTurnGovernments.put(g.getOwner(), g);
+					}
 					
+					// Select db diplomacies for currentTurn
+					Set<IDiplomacy> diplomacies = Diplomacy.selectMaxVersion(conn, getConfig(), IDiplomacy.class, currentTurn, null, null);
+					for(IDiplomacy d : diplomacies)
+					{
+						if (!currentTurnDiplomacies.containsKey(d.getOwner())) currentTurnDiplomacies.put(d.getOwner(), new HashSet<IDiplomacy>());
+						currentTurnDiplomacies.get(d.getOwner()).add(d);
+					}
+					
+					// Update deployed player probes
+					vprobes.addAll(Unit.selectMaxVersion(conn, getConfig(), IVersionedProbe.class, currentTurn, null, "VersionedUnit.type = %s AND VersionedUnit.owner = %s AND VersionedUnit.progress = 100.0", eUnitType.Probe, playerLogin));
+					
+					// Update visibles celestial bodies.
 					// CelestialBody visible if owned by the player
 					visiblesPcbs.addAll(ProductiveCelestialBody.selectMaxVersion(conn, getConfig(), IVersionedProductiveCelestialBody.class, currentTurn, null, "owner = %s", playerLogin));					
 					// CelestialBody visible if a player unit is stopped on it with currentTurn version.
@@ -261,422 +340,237 @@ public class SEPServerSQLiteDB extends GameBoard implements Serializable
 					// CelestialBody visible if under a deployed probe scope.
 					visiblesPcbs.addAll(ProductiveCelestialBody.selectMaxVersion(conn, getConfig(), IVersionedProductiveCelestialBody.class, currentTurn, "VersionedUnit VU", "(VU.owner = %s AND VU.type = %s AND VU.turn <= VersionedProductiveCelestialBody.turn AND VU.progress = 100.0 AND ((VU.destination_x - CelestialBody.location_x) * (VU.destination_x - CelestialBody.location_x) + (VU.destination_y - CelestialBody.location_y) * (VU.destination_y - CelestialBody.location_y) + (VU.destination_z - CelestialBody.location_z) * (VU.destination_z - CelestialBody.location_z)) <= (%d * %d))", playerLogin, eUnitType.Probe, getConfig().getUnitTypeSight(eUnitType.Probe), getConfig().getUnitTypeSight(eUnitType.Probe)));
 					
-					return visiblesPcbs;
+					// Update player UnitArrivalLog (visibles units stopped on pcb, arrival log are inserted in db only when they are published, so no filter needed here, simple copŷ).
+					arrivalLogs.addAll(UnitArrivalLog.selectMaxVersion(conn, getConfig(), IUnitArrivalLog.class, currentTurn, null, "owner = %s", playerLogin));
+					
+					return null;
+				}				
+			});
+						
+			currentView.getDB().exec(new SQLiteJob<Void>()
+			{
+				@Override
+				protected Void job(SQLiteConnection conn) throws Throwable
+				{
+					for(IVersionedProductiveCelestialBody vpcb : visiblesPcbs)
+					{
+						ProductiveCelestialBody.insertOrUpdate(conn, vpcb);
+					}
+					
+					for(final IVersionedProbe vprobe : vprobes)
+					{
+						Unit.insertOrUpdate(conn, vprobe);
+					}
+					
+					for( IUnitArrivalLog ual : arrivalLogs)
+					{
+						UnitArrivalLog.insertOrUpdate(conn, ual);
+					}
+					return null;
 				}
 			});
+			
+			final Set<IAssignedFleet> assignedFleets = new HashSet<IAssignedFleet>();
+			final Set<IBuilding> buildings = new HashSet<IBuilding>();
+			final Set<ISpaceRoad> roads = new HashSet<ISpaceRoad>();
+			final Set<IFleetComposition> comps = new HashSet<IFleetComposition>();
+			final Set<IMovePlan> moves = new HashSet<IMovePlan>();
+			final Set<IVersionedSpecialUnit> specialsUnits = new HashSet<IVersionedSpecialUnit>();
+			final Set<IVersionedUnit> seenUnits = new HashSet<IVersionedUnit>();
+			final Set<IUnitEncounterLog> encounterLogs = new HashSet<IUnitEncounterLog>();			
+			final Set<IVersionedUnit> vunits = new HashSet<IVersionedUnit>();
+			
+			for(final IVersionedProductiveCelestialBody vpcb : visiblesPcbs)
+			{
+				final Set<IVersionedUnit> currentPCBUnits = new HashSet<IVersionedUnit>();				
+				
+				db.exec(new SQLiteJob<Void>()
+				{
+					@Override
+					protected Void job(SQLiteConnection conn) throws Throwable
+					{
+						// Update buildings (visibles pcbs)
+						buildings.addAll(Building.selectMaxVersion(conn, getConfig(), IBuilding.class, currentTurn, null, "celestialBodyName = %s", vpcb.getName()));
+						
+						// Update space roads (visibles pcbs)
+						roads.addAll(SpaceRoad.select(conn, getConfig(), ISpaceRoad.class, null, "(SpaceRoad.spaceCounterACelestialBodyName = %s OR SpaceRoad.spaceCounterBCelestialBodyName = %s) AND (MAX(SpaceRoad.spaceCounterATurn, SpaceRoad.spaceCounterBTurn) <= %d)", vpcb.getName(), vpcb.getName(), currentTurn));
+						
+						// Update units on visibles pcbs
+						currentPCBUnits.addAll(Unit.selectMaxVersion(conn, getConfig(), IVersionedUnit.class, currentTurn, "CelestialBody　CB", "CB.name = %s AND VersionedUnit.progress = 0.0 AND CB.location_x = VersionedUnit.departure_x AND CB.location_y AND VersionedUnit.departure_y AND CB.location_z = VersionedUnit.departure_z", vpcb.getName()));
+						
+						// Update assigned fleets
+						assignedFleets.addAll(AssignedFleet.select(conn, getConfig(), IAssignedFleet.class, null, "celestialBody = %s", vpcb.getName()));
+						
+						return null;
+					}
+				});
+				
+				vunits.addAll(currentPCBUnits);
+								
+				for(final IVersionedUnit vunit : currentPCBUnits)
+				{
+					db.exec(new SQLiteJob<Void>()
+					{
+						@Override
+						protected Void job(SQLiteConnection conn) throws Throwable
+						{
+							Set<IUnitEncounterLog> result = UnitEncounterLog.selectMaxVersion(conn, getConfig(), IUnitEncounterLog.class, currentTurn, null, "owner = %s AND unitName = %s AND turn = %d", vunit.getOwner(), vunit.getName(), vunit.getTurn());
+							encounterLogs.addAll(result);
+							for(IUnitEncounterLog uel : result)
+							{
+								Set<IVersionedUnit> currentUnitEncounteredUnits = Unit.selectVersion(conn, getConfig(), IVersionedUnit.class, uel.getSeenTurn(), null, "owner = %s AND name = %s AND type = %s", uel.getSeenOwner(), uel.getSeenName(), uel.getSeenType());
+								for(IVersionedUnit encounteredUnit : currentUnitEncounteredUnits)
+								{									
+									if (IVersionedFleet.class.isInstance(encounteredUnit))
+									{
+										// (Fleet) Update encountered unit FleetComposition
+										comps.addAll(FleetComposition.select(conn, getConfig(), IFleetComposition.class, null, "fleetOwner = %s AND fleetName = %s AND fleetTurn = %d", encounteredUnit.getOwner(), encounteredUnit.getName(), encounteredUnit.getTurn()));
+										// (Fleet) Update encountered unit special units
+										specialsUnits.addAll(SpecialUnit.selectVersion(conn, getConfig(), IVersionedSpecialUnit.class, currentTurn, null, "fleetOwner = %s AND fleetName = %s AND fleetTurn = %s", encounteredUnit.getOwner(), encounteredUnit.getName(), encounteredUnit.getTurn()));
+									}																		
+								}
+								
+								if (IVersionedFleet.class.isInstance(vunit))
+								{
+									// (Fleet) Update MovePlan, FleetComposition
+									moves.addAll(MovePlan.select(conn, getConfig(), IMovePlan.class, null, "owner = %s AND name = %s AND turn = %d", vunit.getOwner(), vunit.getName(), vunit.getTurn()));
+									comps.addAll(FleetComposition.select(conn, getConfig(), IFleetComposition.class, null, "fleetOwner = %s AND fleetName = %s AND fleetTurn = %d", vunit.getOwner(), vunit.getName(), vunit.getTurn()));
+									// (Fleet) Update special units
+									specialsUnits.addAll(SpecialUnit.selectVersion(conn, getConfig(), IVersionedSpecialUnit.class, currentTurn, null, "fleetOwner = %s AND fleetName = %s AND fleetTurn = %s", vunit.getOwner(), vunit.getName(), vunit.getTurn()));
+								}
+							}
+							return null;
+						}
+					});
+					
+					if (IVersionedFleet.class.isInstance(vunit))
+					{						
+						// Update governments (units)
+						IGovernment g = currentTurnGovernments.get(vunit.getOwner());
+						if (g != null && vunit.getName().matches(g.getFleetName()) && vunit.getTurn() == g.getTurn())
+						{
+							currentTurnGovernmentsView.put(g.getOwner(), g);
+						}
+					}
+				}
+				
+				// Update governments (visibles pcbs)
+				// 	Update diplomacies (visibles governments)
+				IGovernment g = currentTurnGovernments.get(vpcb.getOwner());
+				if (g != null && eCelestialBodyType.Planet.equals(vpcb.getType()) && vpcb.getName().matches(g.getPlanetName()) && vpcb.getTurn() == g.getPlanetTurn())
+				{
+					currentTurnGovernmentsView.put(g.getOwner(), g);
+					currentTurnDiplomaciesView.put(g.getOwner(), currentTurnDiplomacies.get(g.getOwner()));
+				}
+			}
 			
 			currentView.getDB().exec(new SQLiteJob<Void>()
 			{
 				@Override
 				protected Void job(SQLiteConnection conn) throws Throwable
 				{
-					for(IVersionedProductiveCelestialBody vpcb : vpcbs)
+					for(final IBuilding b : buildings)
 					{
-						ProductiveCelestialBody.insertOrUpdate(conn, vpcb);
+						Building.insertOrUpdate(conn, b);
 					}
+					
+					for(final ISpaceRoad road : roads)
+					{
+						SpaceRoad.insertOrUpdate(conn, road);
+					}
+					
+					for(IVersionedUnit vu : vunits)
+					{
+						Unit.insertOrUpdate(conn, vu);
+					}
+					
+					for(IMovePlan m : moves)
+					{
+						MovePlan.insertOrUpdate(conn, m);
+					}
+					
+					for(IFleetComposition c : comps)
+					{
+						FleetComposition.insertOrUpdate(conn, c);
+					}
+					
+					for(IVersionedSpecialUnit vsu : specialsUnits)
+					{
+						SpecialUnit.insertOrUpdate(conn, vsu);
+					}
+					
+					for(IVersionedUnit vu : seenUnits)
+					{
+						Unit.insertOrUpdate(conn, vu);
+					}
+					
+					for(IUnitEncounterLog uel : encounterLogs)
+					{
+						UnitEncounterLog.insertOrUpdate(conn, uel);
+					}
+					
+					for(String player : currentTurnGovernmentsView.keySet())
+					{
+						final IGovernment g = currentTurnGovernmentsView.get(player);
+						if (g == null) continue;
+						
+						Government.insertOrUpdate(conn, g);								
+					}
+					
+					for(String player : currentTurnDiplomaciesView.keySet())
+					{
+						final Set<IDiplomacy> diplomacies = currentTurnDiplomaciesView.get(player);
+						if (diplomacies == null || diplomacies.isEmpty()) continue;
+						
+						for(IDiplomacy d : diplomacies)
+						{
+							Diplomacy.insertOrUpdate(conn, d);
+						}							
+					}
+					
 					return null;
 				}
 			});
 			
-			for(final IVersionedProductiveCelestialBody vpcb : vpcbs)
-			{
-				Set<IBuilding> buildings = db.exec(new SQLiteJob<Set<IBuilding>>()
-				{
-					@Override
-					protected Set<IBuilding> job(SQLiteConnection conn) throws Throwable
-					{
-						// Update buildings (visibles pcbs)
-						return Building.selectMaxVersion(conn, getConfig(), IBuilding.class, currentTurn, null, "celestialBodyName = %s", vpcb.getName());
-					}
-				});
-				
-				for(final IBuilding b : buildings)
-				{
-					currentView.getDB().exec(new SQLiteJob<Void>()
-					{
-						@Override
-						protected Void job(SQLiteConnection conn) throws Throwable
-						{
-							Building.insertOrUpdate(conn, b);
-							return null;
-						}
-					});
-				}
-				
-				Set<ISpaceRoad> roads = db.exec(new SQLiteJob<Set<ISpaceRoad>>()
-				{
-					@Override
-					protected Set<ISpaceRoad> job(SQLiteConnection conn) throws Throwable
-					{
-						// Update space roads (visibles pcbs)
-						return SpaceRoad.select(conn, getConfig(), ISpaceRoad.class, null, "(SpaceRoad.spaceCounterACelestialBodyName = %s OR SpaceRoad.spaceCounterBCelestialBodyName = %s) AND (MAX(SpaceRoad.spaceCounterATurn, SpaceRoad.spaceCounterBTurn) <= %d)", vpcb.getName(), vpcb.getName(), currentTurn);
-					}
-				});
-						
-				for(final ISpaceRoad road : roads)
-				{
-					currentView.getDB().exec(new SQLiteJob<Void>()
-					{
-						@Override
-						protected Void job(SQLiteConnection conn) throws Throwable
-						{
-							SpaceRoad.insertOrUpdate(conn, road);
-							return null;
-						}
-					});
-				}
-								
-				Set<IVersionedUnit> vunits = db.exec(new SQLiteJob<Set<IVersionedUnit>>()
-				{
-					@Override
-					protected Set<IVersionedUnit> job(SQLiteConnection conn) throws Throwable
-					{
-						Set<IVersionedUnit> vunits = new HashSet<IVersionedUnit>();
-						
-						// Update units on visibles pcbs
-						vunits.addAll(Unit.selectMaxVersion(conn, getConfig(), IVersionedUnit.class, currentTurn, "CelestialBody　CB", "CB.name = %s AND VersionedUnit.progress = 0.0 AND CB.location_x = VersionedUnit.departure_x AND CB.location_y AND VersionedUnit.departure_y AND CB.location_z = VersionedUnit.departure_z", vpcb.getName()));
-						
-						return vunits;
-					}
-				});
-
-				final Set<IFleetComposition> comps = new HashSet<IFleetComposition>();
-				final Set<IMovePlan> moves = new HashSet<IMovePlan>();
-				for(final IVersionedUnit vunit : vunits)
-				{
-					if (IVersionedFleet.class.isInstance(vunit))
-					{
-						db.exec(new SQLiteJob<Void>()
-						{
-							@Override
-							protected Void job(SQLiteConnection conn) throws Throwable
-							{
-								moves.addAll(MovePlan.select(conn, getConfig(), IMovePlan.class, null, "owner = %s AND name = %s AND turn = %d", vunit.getOwner(), vunit.getName(), vunit.getTurn()));
-								comps.addAll(FleetComposition.select(conn, getConfig(), IFleetComposition.class, null, "fleetOwner = %s AND fleetName = %s AND fleetTurn = %d", vunit.getOwner(), vunit.getName(), vunit.getTurn()));
-								return null;
-							}
-						});
-					}
-					
-					currentView.getDB().exec(new SQLiteJob<Void>()
-					{
-						@Override
-						protected Void job(SQLiteConnection conn) throws Throwable
-						{
-							Unit.insertOrUpdate(conn, vunit);
-							return null;
-						}
-					});
-				}
-				
-				for(final IMovePlan m : moves)
-				{
-					currentView.getDB().exec(new SQLiteJob<Void>()
-					{
-						@Override
-						protected Void job(SQLiteConnection conn) throws Throwable
-						{
-							MovePlan.insertOrUpdate(conn, m);
-							return null;
-						}
-					});
-				}
-				
-				for(final IFleetComposition c : comps)
-				{
-					currentView.getDB().exec(new SQLiteJob<Void>()
-					{
-						@Override
-						protected Void job(SQLiteConnection conn) throws Throwable
-						{
-							FleetComposition.insertOrUpdate(conn, c);
-							return null;
-						}
-					});
-				}
-			}
 			//X Update visibles celestial bodies.
 			//X		Update buildings (visibles pcbs)
 			//X		Update space roads (visibles pcbs)
 			//X		Update units (deployed probes)
 			//X		Update units (visibles pcbs)
-						tables.put("VersionedFleet", true); //X MovePlan, X FleetComposition
-			SUIS LA
-			//		Update units (encounter logged)
-						tables.put("VersionedUnit", true);
-						tables.put("VersionedFleet", true); // MovePlan, FleetComposition
-						tables.put("VersionedProbe", true);
-						tables.put("VersionedCarbonCarrier", true);
-						tables.put("VersionedSpaceRoadDeliverer", true);
-						tables.put("VersionedAntiProbeMissile", true);
-						tables.put("VersionedPulsarMissile", true);
-			//			Update special units (visibles units)
-			//			Update governments (visibles pcbs || units)
-			//				Update diplomacies (visibles governments)
-			//			Update EncounterLog, ArrivalLog (visibles units stopped on pcb)
-			
-			
-		
+			//X			(Fleet)	MovePlan, FleetComposition
+			//X			(Fleet) Update special units (visibles units)
+			//X		Update governments (visibles pcbs)
+			//X		Update governments (units)
+			//X			Update diplomacies (visibles governments)
+			//X	Update ArrivalLog (visibles units stopped on pcb)			
+			//X	Update EncounterLog (visibles units stopped on pcb)
+			//X	Update units (encounter logged)
+			//X		(Fleet)	FleetComposition
+			//X		(Fleet) Update special units		
 		}
 		
-		// Fixed
-		// Area
-		// Player // PlayerConfig (on assume que la config joueur est une info publique).
-		// Units // Copy only units with the first version <= currentTurn
-		tables.put("SpecialUnit", false);
-		tables.put("Unit", false);
-		tables.put("CarbonCarrier", false);
-		tables.put("Fleet", false);
-		tables.put("Probe", false);
-		tables.put("PulsarMissile", false);
-		tables.put("SpaceRoadDeliverer", false);
-		tables.put("AntiProbeMissile", false);
-		
-		// CelestialBodies
-		tables.put("CelestialBody", false);
-		tables.put("ProductiveCelestialBody", false);
-		tables.put("Nebula", false);
-		tables.put("AsteroidField", false);
-		tables.put("Planet", false);
-		tables.put("Vortex", false);
-		
-		/*
-		 * Table en live, on créé et supprime. Donc copie simple.
-		 */
-		tables.put("CarbonOrder", true);
-		
-		////////////////
-		
-		tables.put("StarshipTemplate", false);
-		tables.put("Government", true);
-		
-		tables.put("VersionedDiplomacy", true);
-		tables.put("AssignedFleet", true);		
-		
-		/*		
-		POUR CHAQUE Table de base t FAIRE // Pour les agrégations d'éléments versionné on ne garde que la table principale
-			SI t est versioné ALORS
-				Traiter au cas/cas les tables versionnés et les tables en relations.				
-			SINON
-				POUR CHAQUE element e de t FAIRE
-					SI e est visible au joueur ALORS
-						Copie Insert/Replace t
-					FSI
-				FSI
-			FSI
-		FPOUR
-		 */
+		// Update turn.
+		currentView.getConfig().setTurn(maxTurn);
 	}
 	
 	@Override
 	public PlayerGameBoard getPlayerGameBoard(final String playerLogin) throws SEPServerDataBaseException
 	{
-		//SUIS LA
 		/*
 		 * PlayerGameBoard basé sur la même DB que le serveur.
 		 * Une méthode est capable d'insérer dans la DB toutes les entrées entre le tour précédent et le tour courrant visibles par le joueur.
 		 * Pour compiler un playerGameBoard complet on empile à partir du tour 0, ainsi il n'y a qu'une seule méthode primitive.
 		 */
-		
-		
-		// TODO: Create Client SQLiteDB for given player.
-		
 		try
 		{
-			return db.exec(new SQLiteJob<PlayerGameBoard>()
-			{
-				@Override
-				protected PlayerGameBoard job(SQLiteConnection conn) throws Throwable
-				{
-					org.axan.sep.common.db.sqlite.orm.Area[][][] playerUniverseView = new org.axan.sep.common.db.sqlite.orm.Area[getConfig().getDimX()][getConfig().getDimY()][getConfig().getDimZ()];
-					//Map<String, org.axan.sep.common.Diplomacy> playersPoliciesView = new Hashtable<String, org.axan.sep.common.Diplomacy>();
-					
-					// Select all probes (current turn) owned by the given player.
-					Set<IVersionedProbe> playerProbes = Unit.selectVersion(conn, getConfig(), IVersionedProbe.class, getConfig().getTurn(), "owner = '%s'", playerLogin);										
-					
-					boolean isVisible = false;
-					
-					for(int x = 0; x < getConfig().getDimX(); ++x)
-						for(int y = 0; y < getConfig().getDimY(); ++y)
-							for(int z = 0; z < getConfig().getDimZ(); ++z)
-							{
-								Location location = new Location(x, y, z);
-								
-								// Select celestial body if exists in current Area.
-								Set<IProductiveCelestialBody> pcbs = ProductiveCelestialBody.selectUnversioned(conn, getConfig(), IProductiveCelestialBody.class, null, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
-								Set<IVortex> vx = Vortex.select(conn, getConfig(), IVortex.class, null, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
-								Set<ICelestialBody> cbs = new HashSet<ICelestialBody>();
-								cbs.addAll(pcbs);
-								cbs.addAll(vx);
-								
-								ICelestialBody celestialBody = (cbs == null || cbs.isEmpty()) ? null : cbs.iterator().next();
-								IVersionedProductiveCelestialBody productiveCelestialBody = (celestialBody == null || !IVersionedProductiveCelestialBody.class.isInstance(celestialBody)) ? null : IVersionedProductiveCelestialBody.class.cast(celestialBody);																								
-								String celestialBodyOwnerName = (productiveCelestialBody == null) ? null : productiveCelestialBody.getOwner();								
-								
-								// Select current player assigned fleet on the potential celestial body
-								/* Don't need to select assigned fleet in particular as they should match the general fleets select query (filtered on location)
-								Set<AssignedFleet> afs = (celestialBody == null ? null :AssignedFleet.select(conn, getConfig(), AssignedFleet.class, false, "celestialBody = '%s' AND owner = '%s'", celestialBody.getName(), playerLogin));
-								AssignedFleet assignedFleet = (afs == null || afs.isEmpty()) ? null : afs.iterator().next();
-								*/
-								
-								// Select other player fleets on the current area
-								Set<IVersionedFleet> fleets = Unit.selectVersion(conn, getConfig(), IVersionedFleet.class, getConfig().getTurn(), null, "departure_x = %d AND departure_y = %d AND departure_z = %d AND progress = 100.0 AND owner = '%s'", location.x, location.y, location.z, playerLogin);								
-								
-								// Check for Area visibility (default to false)
-								isVisible = false;
-								
-								// Visible if area celestial body is owned by the player.
-								if (!isVisible && celestialBodyOwnerName != null && playerLogin.matches(celestialBodyOwnerName))
-								{
-									isVisible = true;
-								}
-								
-								// Visible if area contains a celestial body and player has a unit on it.
-								if (!isVisible && fleets != null && !fleets.isEmpty())
-								{
-									// Assume that fleets are never inserted/updated empty, so the filter on current turn is enough.
-									isVisible = true;
-								}
-								
-								// Area is under a player probe scope.
-								if (!isVisible) for(IVersionedProbe p : playerProbes)
-								{
-									if (!p.isDeployed()) continue;
-									
-									if (SEPUtils.getDistance(p.getDestination(), location) > p.getSight()) continue;
-									
-									isVisible = true;
-									break;
-								}
-								
-								// TODO: Se pencher d'abord sur le côté client pour voir comment on représente la DB là-bas.
-							}
-					
-					return null;
-					/*
-							{								
-								if (isVisible || area != null)
-								{
-									// If celestial body is a planet with government settled.
-									Planet planet = (productiveCelestialBody == null ? null : Planet.class.isInstance(productiveCelestialBody) ? Planet.class.cast(productiveCelestialBody) : null);
-									if (planet != null && planet.isGovernmentSettled())
-									{
-										playersPoliciesView.put(planet.getOwnerName(), db.getPlayerPolicies(planet.getOwnerName()).getPlayerView(db.getDate(), playerLogin, isVisible));							
-									}
-									
-									// If governmental fleets are located in this area
-									for(Fleet fleet : db.getUnits(location, Fleet.class))
-									{
-										if (fleet.isGovernmentFleet())
-										{
-											playersPoliciesView.put(fleet.getOwnerName(), db.getPlayerPolicies(fleet.getOwnerName()).getPlayerView(db.getDate(), playerLogin, isVisible));
-										}
-									}												
-								}
-								
-								playerUniverseView[x][y][z] = db.getCreateArea(location).getPlayerView(db.getDate(), playerLogin, isVisible);
-							}
-					
-					for(String playerName : db.getPlayersKeySet())
-					{
-						if (playersPoliciesView.containsKey(playerName)) continue;
-						playersPoliciesView.put(playerName, db.getPlayerPolicies(playerName).getPlayerView(db.getDate(), playerLogin, false));
-					}
-					
-					return new org.axan.sep.common.PlayerGameBoard(config, playerLogin, playerUniverseView, db.getSunLocation(), db.getDate(), playersPoliciesView, db.getPlayerLogs(playerLogin));		
-					 */
-				}
-			});
+			SEPCommonSQLiteDB clientDB = new SEPCommonSQLiteDB(getConfig());
+			compilePlayerView(playerLogin, clientDB, getConfig().getTurn());
+			return new SEPClientSQLiteDB(clientDB);
 		}
-		catch (SQLiteDBException e)
+		catch(Exception e)
 		{
 			throw new SEPServerDataBaseException(e);
 		}
-		
-		////
-		
-		/*
-		org.axan.sep.common.Area[][][] playerUniverseView = new org.axan.sep.common.Area[config.getDimX()][config.getDimY()][config.getDimZ()];
-
-		Set<Probe> playerProbes = db.getUnits(Probe.class, playerLogin);
-
-		Map<String, org.axan.sep.common.Diplomacy> playersPoliciesView = new Hashtable<String, org.axan.sep.common.Diplomacy>();
-		
-		boolean isVisible = false;
-
-		for(int x = 0; x < config.getDimX(); ++x)
-			for(int y = 0; y < config.getDimY(); ++y)
-				for(int z = 0; z < config.getDimZ(); ++z)
-				{
-					Location location = new Location(x, y, z);
-					Area area = db.getArea(location);
-
-					// Check for Area visibility (default to false)
-					isVisible = false;
-
-					//NOTE: location -> productiveCelestialBody
-					
-					ICelestialBody celestialBody = (area != null ? area.getCelestialBody() : null);
-					ProductiveCelestialBody productiveCelestialBody = (celestialBody != null && ProductiveCelestialBody.class.isInstance(celestialBody) ? ProductiveCelestialBody.class.cast(celestialBody) : null);
-					String celestialBodyOwnerName = (celestialBody != null ? celestialBody.getOwnerName() : null);
-					Fleet unassignedFleet = (productiveCelestialBody != null ? productiveCelestialBody.getUnasignedFleet(playerLogin) : null);
-
-					// Visible if area celestial body is owned by the player.
-					if (!isVisible && playerLogin.equals(celestialBodyOwnerName))
-					{
-						isVisible = true;
-					}
-
-					// Visible if area contains a celestial body and player has a unit on it.
-					if (!isVisible && ((unassignedFleet != null && !unassignedFleet.hasNoMoreStarships()) || (productiveCelestialBody != null && !db.getUnits(location, playerLogin).isEmpty())))
-					{
-						isVisible = true;
-					}
-
-					// Area is under a player probe scope.
-					if (!isVisible) for(Probe p : playerProbes)
-					{
-						if (org.axan.sep.common.SEPUtils.getDistance(location.asRealLocation(), p.getRealLocation()) > config.getProbeScope()) continue;
-
-						if (p.isDeployed())
-						{
-							isVisible = true;
-							break;
-						}
-
-						if (isVisible) break;
-					}
-
-					if (isVisible || area != null)
-					{
-						// If celestial body is a planet with government settled.
-						Planet planet = (productiveCelestialBody == null ? null : Planet.class.isInstance(productiveCelestialBody) ? Planet.class.cast(productiveCelestialBody) : null);
-						if (planet != null && planet.isGovernmentSettled())
-						{
-							playersPoliciesView.put(planet.getOwnerName(), db.getPlayerPolicies(planet.getOwnerName()).getPlayerView(db.getDate(), playerLogin, isVisible));							
-						}
-						
-						// If governmental fleets are located in this area
-						for(Fleet fleet : db.getUnits(location, Fleet.class))
-						{
-							if (fleet.isGovernmentFleet())
-							{
-								playersPoliciesView.put(fleet.getOwnerName(), db.getPlayerPolicies(fleet.getOwnerName()).getPlayerView(db.getDate(), playerLogin, isVisible));
-							}
-						}												
-					}
-					
-					playerUniverseView[x][y][z] = db.getCreateArea(location).getPlayerView(db.getDate(), playerLogin, isVisible);
-				}
-		
-		for(String playerName : db.getPlayersKeySet())
-		{
-			if (playersPoliciesView.containsKey(playerName)) continue;
-			playersPoliciesView.put(playerName, db.getPlayerPolicies(playerName).getPlayerView(db.getDate(), playerLogin, false));
-		}
-		
-		return new org.axan.sep.common.PlayerGameBoard(config, playerLogin, playerUniverseView, db.getSunLocation(), db.getDate(), playersPoliciesView, db.getPlayerLogs(playerLogin));
-		*/
 	}
 	
 	private static final SortedSet<ATurnResolvingEvent> resolvingEvents = new TreeSet<ATurnResolvingEvent>(); 

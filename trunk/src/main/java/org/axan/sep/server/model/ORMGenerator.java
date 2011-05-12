@@ -26,7 +26,7 @@ import org.axan.eplib.utils.Basic;
 import org.axan.eplib.utils.Reflect;
 import org.axan.eplib.yaml.YamlConfigFile;
 import org.axan.sep.common.IGame;
-import org.axan.sep.common.IGameConfig;
+import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Protocol.eSpecialUnitType;
@@ -34,8 +34,6 @@ import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.sqlite.SEPCommonSQLiteDB;
-import org.axan.sep.common.db.sqlite.orm.IUnit;
-import org.axan.sep.common.db.sqlite.orm.IVersionedUnit;
 
 import com.almworks.sqlite4java.SQLite;
 import com.almworks.sqlite4java.SQLiteConnection;
@@ -55,15 +53,18 @@ public class ORMGenerator
 			File ormTemp = File.createTempFile("SEP_ORM", ".db");
 			ormTemp.deleteOnExit();
 			
+			String baseDir = "/media/data/code/Java_Workspace/Space-Empire-Pulsar/src/main/java/";
+			String interfacePackageName = IGameConfig.class.getPackage().getName();
 			String sqlitePackageName = SEPCommonSQLiteDB.class.getPackage().getName();
 			final String ormPackageName = sqlitePackageName+".orm";
-			File outputFile = new File("/media/data/code/Java_Workspace/Space-Empire-Pulsar/src/main/java/"+ormPackageName.replace('.', '/'));
+			File interfaceOutputFile = new File(baseDir+interfacePackageName.replace('.', '/'));
+			File outputFile = new File(baseDir+ormPackageName.replace('.', '/'));
 			URL dbFileURL = Reflect.getResource(sqlitePackageName, "SEPSQLiteDB.sql");
 			File configFile = new File(Reflect.getResource(sqlitePackageName, "SEPSQLiteDB.ORM.yaml").getFile());
 			
 			YamlConfigFile cfg = YamlConfigFile.open(configFile);
 			
-			gen = new SQLiteORMGenerator(ormTemp, outputFile);
+			gen = new SQLiteORMGenerator(ormTemp, interfaceOutputFile, outputFile);
 			
 			gen.importFile(new File(dbFileURL.getFile()));
 			
@@ -114,19 +115,32 @@ public class ORMGenerator
 				@Override
 				public void genImports(Class c, PrintStream psui, PrintStream psuc)
 				{
-					Set<java.lang.Class<?>> importedClass = new TreeSet<java.lang.Class<?>>(new Comparator<java.lang.Class<?>>()
-					{
-						@Override
-						public int compare(java.lang.Class<?> o1, java.lang.Class<?> o2)
-						{
-							return o1.getCanonicalName().compareTo(o2.getCanonicalName());
-						}
-					});					
-					Collections.addAll(importedClass, SQLiteStatement.class, org.axan.sep.common.IGameConfig.class);
+					Set<String> stringImports = new TreeSet<String>();
 					
+					Set<java.lang.Class<?>> importedClass = new HashSet<java.lang.Class<?>>();					
+					Collections.addAll(importedClass, SQLiteStatement.class, org.axan.sep.common.db.IGameConfig.class);
+										
 					if (!skipStaticMethods(c))
 					{
 						Collections.addAll(importedClass, Set.class, HashSet.class, SQLiteORMGenerator.class, SQLiteConnection.class, SQLiteDBException.class);
+						
+						Class versionedClass = getVersionedClass(c);
+						
+						if (versionedClass != null && versionedClass != c)
+						{
+							stringImports.add(String.format("%s.I%s", IGameConfig.class.getPackage().getName(), versionedClass.getUpperName()));
+						}
+						
+						java.lang.Class<? extends Enum> enumClass = getEnumType(c);
+						if (enumClass != null) for(Enum name : enumClass.getEnumConstants())
+						{
+							stringImports.add(String.format("%s.I%s", IGameConfig.class.getPackage().getName(), name));
+							
+							if (versionedClass != null && versionedClass != c)
+							{
+								stringImports.add(String.format("%s.IVersioned%s", IGameConfig.class.getPackage().getName(), name));
+							}
+						}												
 					}
 					
 					List<Field> fields = c.getAllFields();
@@ -149,9 +163,14 @@ public class ORMGenerator
 					
 					for(java.lang.Class<?> clazz : importedClass)
 					{
-						psuc.format("import %s;\n", clazz.getCanonicalName());
-						psui.format("import %s;\n", clazz.getCanonicalName());
+						stringImports.add(clazz.getCanonicalName());
 					}
+					
+					for(String clazz : stringImports)
+					{
+						psuc.format("import %s;\n", clazz);
+						psui.format("import %s;\n", clazz);
+					}					
 				}
 				
 				@Override
@@ -244,7 +263,7 @@ public class ORMGenerator
 				@Override
 				public String constructorDeclaration(Class c)
 				{
-					return String.format("public %s(%s stmnt, %s config) throws %s", c.getUpperName(), SQLiteStatement.class.getSimpleName(), org.axan.sep.common.IGameConfig.class.getSimpleName(), Exception.class.getSimpleName());
+					return String.format("public %s(%s stmnt, %s config) throws %s", c.getUpperName(), SQLiteStatement.class.getSimpleName(), org.axan.sep.common.db.IGameConfig.class.getSimpleName(), Exception.class.getSimpleName());
 				}
 				
 				@Override
@@ -303,6 +322,10 @@ public class ORMGenerator
 					if (unprefixedVersionedTypes.isEmpty())
 					{
 						unprefixedVersionedTypes.put("Building", true);
+						unprefixedVersionedTypes.put("Government", true);
+						unprefixedVersionedTypes.put("Diplomacy", true);
+						unprefixedVersionedTypes.put("UnitArrivalLog", true);
+						unprefixedVersionedTypes.put("UnitEncounterLog", true);
 					}
 					
 					return unprefixedVersionedTypes;
@@ -560,7 +583,7 @@ public class ORMGenerator
 						psuc.println("\t{");
 						psuc.println("\t\ttry");
 						psuc.println("\t\t{");
-						if (versionedClass != null)
+						if (versionedClass != null && versionedClass != c)
 						{
 							psuc.format("\t\t\tI%s v%s = (I%s.class.isInstance(%s) ? I%s.class.cast(%s) : null);\n", versionedClass.getUpperName(), c.getLowerName(), versionedClass.getUpperName(), c.getLowerName(), versionedClass.getUpperName(), c.getLowerName());
 						}
@@ -782,7 +805,7 @@ public class ORMGenerator
 				}
 				
 				
-			}, ormPackageName, Exception.class, inheritances);
+			}, ormPackageName, interfacePackageName, Exception.class, inheritances);
 			
 			// TODO: assurer l'import des types paramètres et retour.
 			// TODO: méthodes cast pour les membres nested (ex: récupérer l'interface VersionedProductiveCelestialBody d'une VersionedPlanet.

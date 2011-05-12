@@ -54,15 +54,14 @@ import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.client.gui.lib.GUIUtils;
 import org.axan.sep.client.gui.lib.JImagePanel;
-import org.axan.sep.common.AsteroidField;
 import org.axan.sep.common.GameConfig;
-import org.axan.sep.common.ICelestialBody;
-import org.axan.sep.common.Nebula;
-import org.axan.sep.common.Planet;
+import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.Player;
 import org.axan.sep.common.PlayerConfig;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.SEPUtils;
+import org.axan.sep.common.Protocol.eCelestialBodyType;
+import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.server.SEPServer;
 
 
@@ -1490,7 +1489,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 	{
 		if (currentGameBoard == null)
 		{
-			saveGame(gameBoard.getDate());
+			saveGame(gameBoard.getTurn());
 		}
 		
 		currentGameBoard = gameBoard;
@@ -1567,7 +1566,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 					getGameCreationConfigEditionPlanetSlotsMinTextField().setEditable(isEditable);
 					getGameCreationConfigEditionPlanetSlotsMaxTextField().setEditable(isEditable);
-					Integer[] planetSlotsRange = gameCfg.getCelestialBodiesSlotsAmount().get(Planet.class);
+					int[] planetSlotsRange = gameCfg.getCelestialBodiesSlotsAmount(eCelestialBodyType.Planet);
 					if (planetSlotsRange != null && planetSlotsRange.length == 2)
 					{
 						getGameCreationConfigEditionPlanetSlotsMinTextField().setText(String.valueOf(planetSlotsRange[0]));
@@ -1576,7 +1575,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 					getGameCreationConfigEditionAsteroidFieldSlotsMinTextField().setEditable(isEditable);
 					getGameCreationConfigEditionAsteroidFieldSlotsMaxTextField().setEditable(isEditable);
-					Integer[] asteroidFieldSlotsRange = gameCfg.getCelestialBodiesSlotsAmount().get(AsteroidField.class);
+					int[] asteroidFieldSlotsRange = gameCfg.getCelestialBodiesSlotsAmount(eCelestialBodyType.AsteroidField);
 					if (asteroidFieldSlotsRange != null && asteroidFieldSlotsRange.length == 2)
 					{
 						getGameCreationConfigEditionAsteroidFieldSlotsMinTextField().setText(String.valueOf(asteroidFieldSlotsRange[0]));
@@ -1585,7 +1584,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 					getGameCreationConfigEditionNebulaSlotsMinTextField().setEditable(isEditable);
 					getGameCreationConfigEditionNebulaSlotsMaxTextField().setEditable(isEditable);
-					Integer[] nebulaSlotsRange = gameCfg.getCelestialBodiesSlotsAmount().get(Nebula.class);
+					int[] nebulaSlotsRange = gameCfg.getCelestialBodiesSlotsAmount(eCelestialBodyType.Nebula);
 					if (nebulaSlotsRange != null && nebulaSlotsRange.length == 2)
 					{
 						getGameCreationConfigEditionNebulaSlotsMinTextField().setText(String.valueOf(nebulaSlotsRange[0]));
@@ -1596,7 +1595,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 					getGameCreationConfigEditionPlanetCarbonMinTextField().setEditable(isEditable);
 					getGameCreationConfigEditionPlanetCarbonMaxTextField().setEditable(isEditable);
-					Integer[] planetCarbonRange = gameCfg.getCelestialBodiesStartingCarbonAmount().get(Planet.class);
+					int[] planetCarbonRange = gameCfg.getCelestialBodiesStartingCarbonAmount(eCelestialBodyType.Planet);
 					if (planetCarbonRange != null && planetCarbonRange.length == 2)
 					{
 						getGameCreationConfigEditionPlanetCarbonMinTextField().setText(String.valueOf(planetCarbonRange[0]));
@@ -1605,7 +1604,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 					getGameCreationConfigEditionAsteroidFieldCarbonMinTextField().setEditable(isEditable);
 					getGameCreationConfigEditionAsteroidFieldCarbonMaxTextField().setEditable(isEditable);
-					Integer[] asteroidFieldCarbonRange = gameCfg.getCelestialBodiesStartingCarbonAmount().get(AsteroidField.class);
+					int[] asteroidFieldCarbonRange = gameCfg.getCelestialBodiesStartingCarbonAmount(eCelestialBodyType.AsteroidField);
 					if (asteroidFieldCarbonRange != null && asteroidFieldCarbonRange.length == 2)
 					{
 						getGameCreationConfigEditionAsteroidFieldCarbonMinTextField().setText(String.valueOf(asteroidFieldCarbonRange[0]));
@@ -1614,7 +1613,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 					getGameCreationConfigEditionNebulaCarbonMinTextField().setEditable(isEditable);
 					getGameCreationConfigEditionNebulaCarbonMaxTextField().setEditable(isEditable);
-					Integer[] nebulaCarbonRange = gameCfg.getCelestialBodiesStartingCarbonAmount().get(Nebula.class);
+					int[] nebulaCarbonRange = gameCfg.getCelestialBodiesStartingCarbonAmount(eCelestialBodyType.Nebula);
 					if (nebulaCarbonRange != null && nebulaCarbonRange.length == 2)
 					{
 						getGameCreationConfigEditionNebulaCarbonMinTextField().setText(String.valueOf(nebulaCarbonRange[0]));
@@ -1623,22 +1622,22 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 
 					// /
 
-					getGameCreationConfigEditionPlanetNeutralGenTextField().setEditable(isEditable);
-					Float planetNeutralGenRate = gameCfg.getNeutralCelestialBodiesGenerationTable().get(Planet.class);
+					getGameCreationConfigEditionPlanetNeutralGenTextField().setEditable(isEditable);					
+					Float planetNeutralGenRate = gameCfg.getNeutralCelestialBodiesGenerationRate(eCelestialBodyType.Planet);
 					if (planetNeutralGenRate != null)
 					{
 						getGameCreationConfigEditionPlanetNeutralGenTextField().setText(String.valueOf(planetNeutralGenRate));
 					}
 
 					getGameCreationConfigEditionAsteroidFieldNeutralGenTextField().setEditable(isEditable);
-					Float asteroidNeutralGenRate = gameCfg.getNeutralCelestialBodiesGenerationTable().get(AsteroidField.class);
+					Float asteroidNeutralGenRate = gameCfg.getNeutralCelestialBodiesGenerationRate(eCelestialBodyType.AsteroidField);
 					if (asteroidNeutralGenRate != null)
 					{
 						getGameCreationConfigEditionAsteroidFieldNeutralGenTextField().setText(String.valueOf(asteroidNeutralGenRate));
 					}
 
 					getGameCreationConfigEditionNebulaNeutralGenTextField().setEditable(isEditable);
-					Float nebulaNeutralGenRate = gameCfg.getNeutralCelestialBodiesGenerationTable().get(Nebula.class);
+					Float nebulaNeutralGenRate = gameCfg.getNeutralCelestialBodiesGenerationRate(eCelestialBodyType.Nebula);
 					if (nebulaNeutralGenRate != null)
 					{
 						getGameCreationConfigEditionNebulaNeutralGenTextField().setText(String.valueOf(nebulaNeutralGenRate));
@@ -1688,8 +1687,8 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 					getGameCreationConfigEditionPanelVictoryTimeLimitCheckBox().setEnabled(false);
 					getGameCreationConfigEditionPanelVictoryTimeLimitTextField().setEnabled(isEditable);
 					getGameCreationConfigEditionPanelVictoryTimeLimitCheckBox().setSelected(false);
-
-					if (gameCfg.getTimeLimitVictory() != null && gameCfg.getTimeLimitVictory() > 0)
+					
+					if (gameCfg.getTimeLimitVictory() > 0)
 					{
 						getGameCreationConfigEditionPanelVictoryTimeLimitCheckBox().setSelected(true);
 						getGameCreationConfigEditionPanelVictoryTimeLimitTextField().setText(String.valueOf(gameCfg.getTimeLimitVictory()));
@@ -1842,95 +1841,64 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 					if (gameState != GameState.Creation) return;
 					if (!isAdmin) return;
 
+					GameConfig gameCfg = new GameConfig();
+					
+					/*
 					int dimX, dimY, dimZ, neutralCelestialBodiesCount, economicVictoryCarbon, economicVictoryPopulation, timeLimitVictory;
 					int planetSlotsMin, planetSlotsMax, asteroidSlotsMin, asteroidSlotsMax, nebulaSlotsMin, nebulaSlotsMax;
 					int planetCarbonMin, planetCarbonMax, asteroidCarbonMin, asteroidCarbonMax, nebulaCarbonMin, nebulaCarbonMax;
 					int sunRadius, probeScope;
+					*/
 
 					try
 					{
-						dimX = Integer.valueOf(getGameCreationConfigEditionUniverseXSizeTextField().getText());
-						dimY = Integer.valueOf(getGameCreationConfigEditionUniverseYSizeTextField().getText());
-						dimZ = Integer.valueOf(getGameCreationConfigEditionUniverseZSizeTextField().getText());
+						gameCfg.setDimX(Integer.valueOf(getGameCreationConfigEditionUniverseXSizeTextField().getText()));
+						gameCfg.setDimY(Integer.valueOf(getGameCreationConfigEditionUniverseYSizeTextField().getText()));
+						gameCfg.setDimZ(Integer.valueOf(getGameCreationConfigEditionUniverseZSizeTextField().getText()));
 
-						neutralCelestialBodiesCount = Integer.valueOf(getGameCreationConfigEditionNeutralCelestialBodiesTextField().getText());
+						gameCfg.setNeutralCelestialBodiesCount(Integer.valueOf(getGameCreationConfigEditionNeutralCelestialBodiesTextField().getText()));
 
-						sunRadius = Integer.valueOf(getGameCreationConfigEditionSunRadiusTextField().getText());
-
-						// /
-
-						Map<Class<? extends ICelestialBody>, Integer[]> slotsAmount = new Hashtable<Class<? extends ICelestialBody>, Integer[]>();
-
-						planetSlotsMin = Integer.valueOf(getGameCreationConfigEditionPlanetSlotsMinTextField().getText());
-						planetSlotsMax = Integer.valueOf(getGameCreationConfigEditionPlanetSlotsMaxTextField().getText());
-						slotsAmount.put(Planet.class, new Integer[] { planetSlotsMin, planetSlotsMax });
-
-						asteroidSlotsMin = Integer.valueOf(getGameCreationConfigEditionAsteroidFieldSlotsMinTextField().getText());
-						asteroidSlotsMax = Integer.valueOf(getGameCreationConfigEditionAsteroidFieldSlotsMaxTextField().getText());
-						slotsAmount.put(AsteroidField.class, new Integer[] { asteroidSlotsMin, asteroidSlotsMax });
-
-						nebulaSlotsMin = Integer.valueOf(getGameCreationConfigEditionNebulaSlotsMinTextField().getText());
-						nebulaSlotsMax = Integer.valueOf(getGameCreationConfigEditionNebulaSlotsMaxTextField().getText());
-						slotsAmount.put(Nebula.class, new Integer[] { nebulaSlotsMin, nebulaSlotsMax });
+						gameCfg.setSunRadius(Integer.valueOf(getGameCreationConfigEditionSunRadiusTextField().getText()));
 
 						// /
 
-						Map<Class<? extends ICelestialBody>, Integer[]> carbonAmount = new Hashtable<Class<? extends ICelestialBody>, Integer[]>();
-
-						planetCarbonMin = Integer.valueOf(getGameCreationConfigEditionPlanetCarbonMinTextField().getText());
-						planetCarbonMax = Integer.valueOf(getGameCreationConfigEditionPlanetCarbonMaxTextField().getText());
-						carbonAmount.put(Planet.class, new Integer[] { planetCarbonMin, planetCarbonMax });
-
-						asteroidCarbonMin = Integer.valueOf(getGameCreationConfigEditionAsteroidFieldCarbonMinTextField().getText());
-						asteroidCarbonMax = Integer.valueOf(getGameCreationConfigEditionAsteroidFieldCarbonMaxTextField().getText());
-						carbonAmount.put(AsteroidField.class, new Integer[] { asteroidCarbonMin, asteroidCarbonMax });
-
-						nebulaCarbonMin = Integer.valueOf(getGameCreationConfigEditionNebulaCarbonMinTextField().getText());
-						nebulaCarbonMax = Integer.valueOf(getGameCreationConfigEditionNebulaCarbonMaxTextField().getText());
-						carbonAmount.put(Nebula.class, new Integer[] { nebulaCarbonMin, nebulaCarbonMax });
+						gameCfg.setCelestialBodiesSlotsAmount(eCelestialBodyType.Planet, Integer.valueOf(getGameCreationConfigEditionPlanetSlotsMinTextField().getText()), Integer.valueOf(getGameCreationConfigEditionPlanetSlotsMaxTextField().getText()));
+						gameCfg.setCelestialBodiesSlotsAmount(eCelestialBodyType.AsteroidField, Integer.valueOf(getGameCreationConfigEditionAsteroidFieldSlotsMinTextField().getText()), Integer.valueOf(getGameCreationConfigEditionAsteroidFieldSlotsMaxTextField().getText()));
+						gameCfg.setCelestialBodiesSlotsAmount(eCelestialBodyType.Nebula, Integer.valueOf(getGameCreationConfigEditionNebulaSlotsMinTextField().getText()), Integer.valueOf(getGameCreationConfigEditionNebulaSlotsMaxTextField().getText()));  
 
 						// /
 
-						float planetNeutralGenerationRate, asteroidNeutralGenerationRate, nebulaNeutralGenerationRate;
+						Map<eCelestialBodyType, Integer[]> carbonAmount = new Hashtable<eCelestialBodyType, Integer[]>();
 
-						Map<Class<? extends ICelestialBody>, Float> neutralGenerationRates = new Hashtable<Class<? extends ICelestialBody>, Float>();
-
-						planetNeutralGenerationRate = Float.valueOf(getGameCreationConfigEditionPlanetNeutralGenTextField().getText());
-						neutralGenerationRates.put(Planet.class, planetNeutralGenerationRate);
-
-						asteroidNeutralGenerationRate = Float.valueOf(getGameCreationConfigEditionAsteroidFieldNeutralGenTextField().getText());
-						neutralGenerationRates.put(AsteroidField.class, asteroidNeutralGenerationRate);
-
-						nebulaNeutralGenerationRate = Float.valueOf(getGameCreationConfigEditionNebulaNeutralGenTextField().getText());
-						neutralGenerationRates.put(Nebula.class, nebulaNeutralGenerationRate);
+						gameCfg.setCelestialBodiesStartingCarbonAmount(eCelestialBodyType.Planet, Integer.valueOf(getGameCreationConfigEditionPlanetCarbonMinTextField().getText()), Integer.valueOf(getGameCreationConfigEditionPlanetCarbonMaxTextField().getText()));
+						gameCfg.setCelestialBodiesStartingCarbonAmount(eCelestialBodyType.AsteroidField, Integer.valueOf(getGameCreationConfigEditionAsteroidFieldCarbonMinTextField().getText()), Integer.valueOf(getGameCreationConfigEditionAsteroidFieldCarbonMaxTextField().getText()));
+						gameCfg.setCelestialBodiesStartingCarbonAmount(eCelestialBodyType.Nebula, Integer.valueOf(getGameCreationConfigEditionNebulaCarbonMinTextField().getText()), Integer.valueOf(getGameCreationConfigEditionNebulaCarbonMaxTextField().getText()));
 
 						// /
 
-						economicVictoryCarbon = Integer.valueOf(getGameCreationConfigEditionPanelVictoryEconomicCarbonTextField().getText());
-						economicVictoryPopulation = Integer.valueOf(getGameCreationConfigEditionPanelVictoryEconomicPopulationTextField().getText());
-
-						timeLimitVictory = Integer.valueOf(getGameCreationConfigEditionPanelVictoryTimeLimitTextField().getText());
-
-						// /
-
-						probeScope = Integer.valueOf(getGameCreationConfigEditionUnitsProbeScopeTextField().getText());
+						gameCfg.setNeutralCelestialBodiesGenerationRate(eCelestialBodyType.Planet, Float.valueOf(getGameCreationConfigEditionPlanetNeutralGenTextField().getText()));
+						gameCfg.setNeutralCelestialBodiesGenerationRate(eCelestialBodyType.AsteroidField, Float.valueOf(getGameCreationConfigEditionAsteroidFieldNeutralGenTextField().getText()));
+						gameCfg.setNeutralCelestialBodiesGenerationRate(eCelestialBodyType.Nebula, Float.valueOf(getGameCreationConfigEditionNebulaNeutralGenTextField().getText()));
 
 						// /
 
-						int populationPerTurnMin, populationPerTurnMax, populationLimitMin, populationLimitMax;
+						gameCfg.setEconomicVictory(Integer.valueOf(getGameCreationConfigEditionPanelVictoryEconomicPopulationTextField().getText()), Integer.valueOf(getGameCreationConfigEditionPanelVictoryEconomicCarbonTextField().getText()));
+						gameCfg.setTimeLimitVictory(Integer.valueOf(getGameCreationConfigEditionPanelVictoryTimeLimitTextField().getText()));
+						
+						// /
 
-						populationPerTurnMin = Integer.valueOf(getGameCreationConfigEditionPlanetPopulationPerTurnMinTextField().getText());
-						populationPerTurnMax = Integer.valueOf(getGameCreationConfigEditionPlanetPopulationPerTurnMaxTextField().getText());
+						gameCfg.setProbeScope(Integer.valueOf(getGameCreationConfigEditionUnitsProbeScopeTextField().getText()));
+						gameCfg.setUnitTypeSight(eUnitType.Probe, (float) gameCfg.getProbeScope());						
 
-						populationLimitMin = Integer.valueOf(getGameCreationConfigEditionPlanetPopulationLimitMinTextField().getText());
-						populationLimitMax = Integer.valueOf(getGameCreationConfigEditionPlanetPopulationLimitMaxTextField().getText());
+						// /
 
-						int playersPlanetsStartingCarbonResources, playersPlanetsStartingPopulation;
+						gameCfg.setPopulationPerTurn(Integer.valueOf(getGameCreationConfigEditionPlanetPopulationPerTurnMinTextField().getText()), Integer.valueOf(getGameCreationConfigEditionPlanetPopulationPerTurnMaxTextField().getText()));
+						gameCfg.setPopulationLimit(Integer.valueOf(getGameCreationConfigEditionPlanetPopulationLimitMinTextField().getText()), Integer.valueOf(getGameCreationConfigEditionPlanetPopulationLimitMaxTextField().getText()));
 
-						playersPlanetsStartingCarbonResources = Integer.valueOf(getGameCreationConfigEditionPlayersStartingCarbonTextField().getText());
-						playersPlanetsStartingPopulation = Integer.valueOf(getGameCreationConfigEditionPlayersStartingPopulationTextField().getText());
-
-						GameConfig gameCfg = new GameConfig(dimX, dimY, dimZ, neutralCelestialBodiesCount, populationPerTurnMin, populationPerTurnMax, populationLimitMin, populationLimitMax, carbonAmount, slotsAmount, neutralGenerationRates, getGameCreationConfigEditionPanelVictoryTeamCheckBox().isSelected(), getGameCreationConfigEditionPanelVictoryRegimicideCheckBox().isSelected(), getGameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox().isSelected(), getGameCreationConfigEditionPanelVictoryTotalConquestCheckBox().isSelected(), economicVictoryCarbon, economicVictoryPopulation, timeLimitVictory, probeScope, sunRadius, playersPlanetsStartingCarbonResources, playersPlanetsStartingPopulation);
+						gameCfg.setPlayersPlanetsStartingPopulation(Integer.valueOf(getGameCreationConfigEditionPlayersStartingPopulationTextField().getText()));
+						gameCfg.setPlayersPlanetsStartingCarbonResources(Integer.valueOf(getGameCreationConfigEditionPlayersStartingCarbonTextField().getText()));
+						
+						//GameConfig gameCfg = new GameConfig(dimX, dimY, dimZ, neutralCelestialBodiesCount, populationPerTurnMin, populationPerTurnMax, populationLimitMin, populationLimitMax, carbonAmount, slotsAmount, neutralGenerationRates, getGameCreationConfigEditionPanelVictoryTeamCheckBox().isSelected(), getGameCreationConfigEditionPanelVictoryRegimicideCheckBox().isSelected(), getGameCreationConfigEditionPanelVictoryRegimicideAssimilatePeoplesCheckBox().isSelected(), getGameCreationConfigEditionPanelVictoryTotalConquestCheckBox().isSelected(), economicVictoryCarbon, economicVictoryPopulation, timeLimitVictory, probeScope, sunRadius, playersPlanetsStartingCarbonResources, playersPlanetsStartingPopulation);
 
 						log.log(Level.INFO, "Try to update gameConfig : " + gameCfg);
 
@@ -2833,7 +2801,7 @@ public class SpaceEmpirePulsarGUI extends javax.swing.JFrame implements SEPClien
 	@Override
 	public void receiveNewTurnGameBoard(final PlayerGameBoard gameBoard)
 	{
-		saveGame(gameBoard.getDate());
+		saveGame(gameBoard.getTurn());
 		
 		SwingUtilities.invokeLater(new Runnable()
 		{

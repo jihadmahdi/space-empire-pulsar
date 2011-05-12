@@ -477,17 +477,18 @@ CREATE TABLE VersionedSpaceRoadDeliverer (
      FOREIGN KEY (owner, name, type) REFERENCES SpaceRoadDeliverer (owner, name, type)
 );     
 
-CREATE TABLE VersionedDiplomacy (
-     name TEXT NOT NULL,
-     cible TEXT NOT NULL,
+CREATE TABLE Diplomacy (
+     owner TEXT NOT NULL,
+     target TEXT NOT NULL,
      turn INTEGER NOT NULL,
      allowToLand BOOL NOT NULL,
      foreignPolicy TEXT NOT NULL,
      CHECK(foreignPolicy IN ('NEUTRAL', 'HOSTILE', 'HOSTILE_IF_OWNER')),
      CHECK(turn >= 0),
-     PRIMARY KEY (name, cible, turn),
-     FOREIGN KEY (name) REFERENCES Player,
-     FOREIGN KEY (cible) REFERENCES Player
+     CHECK(owner != target),
+     PRIMARY KEY (owner, target, turn),
+     FOREIGN KEY (owner) REFERENCES Player,
+     FOREIGN KEY (target) REFERENCES Player
 );
 
 CREATE TABLE Vortex (
@@ -561,29 +562,30 @@ CREATE TABLE FleetComposition (
 );
 
 CREATE TABLE UnitEncounterLog (
-	unitOwner TEXT NOT NULL,
+	owner TEXT NOT NULL,
 	unitName TEXT NOT NULL,
-	unitTurn INTEGER NOT NULL,
+	turn INTEGER NOT NULL,
 	unitType TEXT NOT NULL,
 	instantTime INTEGER NOT NULL,
 	seenOwner TEXT NOT NULL,
 	seenName TEXT NOT NULL,
 	seenTurn INTEGER NOT NULL,
 	seenType TEXT NOT NULL,
-	PRIMARY KEY (unitOwner, unitName, unitTurn, unitType, instantTime),
-	FOREIGN KEY (unitOwner, unitName, unitTurn, unitType) REFERENCES VersionedUnit(owner, name, turn, type),
+	PRIMARY KEY (owner, unitName, turn, unitType, instantTime),
+	FOREIGN KEY (owner, unitName, turn, unitType) REFERENCES VersionedUnit(owner, name, turn, type),
 	FOREIGN KEY (seenOwner, seenName, seenTurn, seenType) REFERENCES VersionedUnit(owner, name, turn, type)
 );
 
 CREATE TABLE UnitArrivalLog (
-	unitOwner TEXT NOT NULL,
+	owner TEXT NOT NULL,
 	unitName TEXT NOT NULL,
-	unitTurn INTEGER NOT NULL,
+	turn INTEGER NOT NULL,
 	unitType TEXT NOT NULL,
 	instantTime INTEGER NOT NULL,
 	destination TEXT NOT NULL,
 	vortex TEXT DEFAULT NULL,	
-	PRIMARY KEY (unitOwner, unitName, unitTurn, unitType, instantTime),
+	PRIMARY KEY (owner, unitName, turn, unitType, instantTime),
+	FOREIGN KEY (owner, unitName, turn, unitType) REFERENCES VersionedUnit(owner, name, turn, type),
 	FOREIGN KEY (destination) REFERENCES ProductiveCelestialBody(name),
 	FOREIGN KEY (vortex) REFERENCES Vortex(name)
 );

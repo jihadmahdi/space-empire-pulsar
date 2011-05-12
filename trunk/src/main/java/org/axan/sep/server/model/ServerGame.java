@@ -35,7 +35,7 @@ import org.axan.sep.server.model.ISEPServerDataBase.SEPServerDataBaseException;
  * Represent a running game at a specific turn. It also provide previous turns
  * archives.
  */
-public class ServerGame implements Serializable
+public class ServerGame<T extends PlayerGameBoard> implements Serializable
 {
 	private static final long							serialVersionUID	= 1L;
 
@@ -44,7 +44,7 @@ public class ServerGame implements Serializable
 	/** Resolved game turns. */
 	private GameBoard						currentGameBoard			= null;
 
-	private transient Map<String, List<IGameCommand>>	playersCurrentMove = new HashMap<String, List<IGameCommand>>();
+	private transient Map<String, List<IGameCommand<T>>>	playersCurrentMove = new HashMap<String, List<IGameCommand<T>>>();
 
 	public ServerGame(Set<Player> playerList, GameConfig gameConfig) throws SEPServerDataBaseException
 	{
@@ -101,9 +101,9 @@ public class ServerGame implements Serializable
 		command.apply(currentGameBoard);
 	}
 	
-	public void endTurn(String playerLogin, List<IGameCommand> commands) throws SEPImplementationException, RunningGameCommandException
+	public void endTurn(String playerLogin, List<IGameCommand<T>> commands) throws SEPImplementationException, RunningGameCommandException
 	{
-		for(IGameCommand command : commands)
+		for(IGameCommand<T> command : commands)
 		{
 			if (command == null) continue;
 			
@@ -189,7 +189,7 @@ public class ServerGame implements Serializable
 	{
 		in.defaultReadObject();
 
-		if (playersCurrentMove == null) {playersCurrentMove = new HashMap<String, List<IGameCommand>>();}
+		if (playersCurrentMove == null) {playersCurrentMove = new HashMap<String, List<IGameCommand<T>>>();}
 		playersCurrentMove.clear();
 
 		int nbPlayers = in.readInt();
@@ -205,8 +205,8 @@ public class ServerGame implements Serializable
 
 	}
 
-	public static ServerGame load(ObjectInputStream ois) throws IOException, ClassNotFoundException
+	public static <T extends PlayerGameBoard> ServerGame<T> load(ObjectInputStream ois) throws IOException, ClassNotFoundException
 	{	
-		return ServerGame.class.cast(ois.readObject());		
+		return ServerGame.class.cast(ois.readObject());
 	}
 }
