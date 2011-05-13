@@ -82,6 +82,7 @@ public class StarshipTemplate implements Serializable, Comparable<StarshipTempla
 		return speed;
 	}
 
+	@Override
 	public String toString()
 	{
 		return name + " Def:" + defense + " / Att:" + attack + " / AttSpe:" + attackSpecializationBonus + " / DefSpe:" + defenseSpecializationBonus;

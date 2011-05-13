@@ -12,9 +12,6 @@ import java.util.Set;
 import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
-import org.axan.sep.server.SEPServer.SEPImplementationException;
-
-
 
 /**
  * Define the game protocol (RPC services interfaces).
@@ -41,6 +38,21 @@ public interface Protocol
 	 * Special unit types.
 	 */
 	public static enum eSpecialUnitType {Hero};
+	
+	public static class SEPImplementationException extends Error
+	{
+		private static final long serialVersionUID = 1L;
+
+		public SEPImplementationException(String msg)
+		{
+			super(msg);
+		}
+
+		public SEPImplementationException(String msg, Throwable t)
+		{
+			super(msg, t);
+		}
+	}
 	
 	/**
 	 * Methods that can be called by the client at any game stage.
@@ -98,7 +110,7 @@ public interface Protocol
 	/**
 	 * Methods that can be called by the client while the game is running.
 	 */
-	public static interface ServerRunningGame<T extends PlayerGameBoard> extends ServerCommon
+	public static interface ServerRunningGame extends ServerCommon
 	{
 		public static class RunningGameCommandException extends Exception
 		{
@@ -485,7 +497,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void endTurn(List<IGameCommand<T>> commands) throws RpcException, StateMachineNotExpectedEventException, SEPImplementationException, RunningGameCommandException;
+		void endTurn(List<GameCommand<?>> commands) throws RpcException, StateMachineNotExpectedEventException, SEPImplementationException, RunningGameCommandException;
 	}
 	
 	/**

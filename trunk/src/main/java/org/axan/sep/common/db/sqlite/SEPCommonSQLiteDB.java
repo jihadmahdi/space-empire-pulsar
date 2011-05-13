@@ -9,7 +9,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
-import java.util.Set;
 import java.util.Stack;
 
 import org.axan.eplib.orm.sqlite.SQLiteDB;
@@ -17,11 +16,9 @@ import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteStatementJob;
 import org.axan.eplib.utils.Reflect;
 import org.axan.sep.common.GameConfigCopier;
-import org.axan.sep.common.db.IGameConfig;
-import org.axan.sep.common.Player;
+import org.axan.sep.common.Protocol;
 import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
-import org.axan.sep.server.SEPServer;
-import org.axan.sep.server.model.ISEPServerDataBase.SEPServerDataBaseException;
+import org.axan.sep.common.db.IGameConfig;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
@@ -48,7 +45,7 @@ public class SEPCommonSQLiteDB implements Serializable
 			}
 			else if (!method.getDeclaringClass().equals(IGameConfig.class))
 			{
-				throw new SEPServer.SEPImplementationException("SQLiteDBGameConfigInvocationHandler must be used with IGameConfig.class proxy.");
+				throw new Protocol.SEPImplementationException("SQLiteDBGameConfigInvocationHandler must be used with IGameConfig.class proxy.");
 			}
 			else
 			{
@@ -107,7 +104,7 @@ public class SEPCommonSQLiteDB implements Serializable
 					{
 						if (!Enum.class.isInstance(args[i]))
 						{
-							throw new SEPServer.SEPImplementationException("Invalid IGameConfig: Bad argument type in method (all arguments must be Enum<?>): "+method.toGenericString());
+							throw new Protocol.SEPImplementationException("Invalid IGameConfig: Bad argument type in method (all arguments must be Enum<?>): "+method.toGenericString());
 						}
 						
 						key += '-'+args[i].toString();
@@ -150,7 +147,7 @@ public class SEPCommonSQLiteDB implements Serializable
 				}
 				else
 				{
-					throw new SEPServer.SEPImplementationException("Invalid IGameConfig: Cannot recognize getter nor setter in method: "+method.toGenericString());
+					throw new Protocol.SEPImplementationException("Invalid IGameConfig: Cannot recognize getter nor setter in method: "+method.toGenericString());
 				}
 			}
 		}

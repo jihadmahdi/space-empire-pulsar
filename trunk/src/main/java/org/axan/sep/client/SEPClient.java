@@ -261,7 +261,7 @@ public class SEPClient
 		
 		if (runningGameProxy == null)
 		{
-			runningGameProxy = client.getCustomServerInterface(Protocol.ServerRunningGame.class);			
+			runningGameProxy = (Protocol.ServerRunningGame) client.getCustomServerInterface(Protocol.ServerRunningGame.class);			
 		}
 		return runningGameProxy;
 	}

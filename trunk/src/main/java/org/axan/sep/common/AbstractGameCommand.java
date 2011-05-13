@@ -43,6 +43,7 @@ public abstract class AbstractGameCommand<P, O extends AbstractGameCommandCheck>
 	
 	abstract protected PlayerGameBoard apply(O check) throws GameCommandException;
 	
+	@Override
 	public String toString()
 	{
 		StringBuffer sb = new StringBuffer();

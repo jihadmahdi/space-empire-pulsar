@@ -74,7 +74,7 @@ public class SpaceRoad implements ISpaceRoad
 			SQLiteStatement stmnt = conn.prepare(String.format("SELECT SpaceRoad.* FROM SpaceRoad%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{
-				results.add(SQLiteORMGenerator.mapTo(expectedType, stmnt, config));
+				results.add(SQLiteORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) SpaceRoad.class : expectedType, stmnt, config));
 			}
 			return results;
 		}

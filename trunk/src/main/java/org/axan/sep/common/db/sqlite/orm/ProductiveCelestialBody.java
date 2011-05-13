@@ -19,7 +19,6 @@ import org.axan.sep.common.db.IVersionedAsteroidField;
 import org.axan.sep.common.db.IVersionedNebula;
 import org.axan.sep.common.db.IVersionedPlanet;
 import org.axan.sep.common.db.IVersionedProductiveCelestialBody;
-import org.axan.sep.common.db.IVortex;
 
 public class ProductiveCelestialBody extends CelestialBody implements IProductiveCelestialBody
 {
@@ -84,7 +83,9 @@ public class ProductiveCelestialBody extends CelestialBody implements IProductiv
 			while(stmnt.step())
 			{
 				eCelestialBodyType type = eCelestialBodyType.valueOf(stmnt.columnString(0));
-				boolean isVersioned = (!stmnt.columnString(1).isEmpty());
+				String v = stmnt.columnString(1);
+				SUIS LA: SI v == null celà signifie qu'un celestial body à été inséré dans la DB sans aucune version. Il est bon de crasher dans ce cas ? Reprendre la générale du SQLiteGameBoard en utilisant les classes ORM pour les requetes.
+				boolean isVersioned = (v != null && !v.isEmpty());
 				Class<? extends IProductiveCelestialBody> clazz = (Class<? extends IProductiveCelestialBody>)  Class.forName(String.format("%s.%s%s", ProductiveCelestialBody.class.getPackage().getName(), isVersioned ? "Versioned" : "", type.toString()));
 				IProductiveCelestialBody o = SQLiteORMGenerator.mapTo(clazz, stmnt, config);
 				if (expectedType.isInstance(o))

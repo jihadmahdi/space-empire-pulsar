@@ -54,7 +54,7 @@ public class PlayerConfig implements IPlayerConfig
 			SQLiteStatement stmnt = conn.prepare(String.format("SELECT PlayerConfig.* FROM PlayerConfig%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{
-				results.add(SQLiteORMGenerator.mapTo(expectedType, stmnt, config));
+				results.add(SQLiteORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) PlayerConfig.class : expectedType, stmnt, config));
 			}
 			return results;
 		}
