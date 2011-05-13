@@ -95,7 +95,7 @@ public class UnitArrivalLog implements IUnitArrivalLog
 			SQLiteStatement stmnt = conn.prepare(String.format("SELECT UnitArrivalLog.* FROM UnitArrivalLog%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{
-				results.add(SQLiteORMGenerator.mapTo(expectedType, stmnt, config));
+				results.add(SQLiteORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) UnitArrivalLog.class : expectedType, stmnt, config));
 			}
 			return results;
 		}

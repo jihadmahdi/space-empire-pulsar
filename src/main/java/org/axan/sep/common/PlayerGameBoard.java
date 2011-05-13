@@ -7,7 +7,7 @@ import java.io.Serializable;
  * informations about the universe since the creation.
  * Must be extended whith a DB specific implementation.
  */
-public abstract class PlayerGameBoard implements Serializable
+public abstract class PlayerGameBoard implements Serializable, IGameBoard
 {
 
 	private static final long serialVersionUID = 1L;

@@ -4,23 +4,22 @@ import java.util.List;
 import java.util.Vector;
 
 import org.axan.sep.common.AbstractGameCommandCheck;
+import org.axan.sep.common.GameCommand;
 import org.axan.sep.common.IGame;
-import org.axan.sep.common.IGameCommand;
-import org.axan.sep.common.LocalGame;
 import org.axan.sep.common.PlayerGameBoard;
-import org.axan.sep.common.IGameCommand.GameCommandException;
+import org.axan.sep.common.IGameBoard.GameBoardException;
 
 public class UncheckedLocalGame implements IGame
 {
-	private final LocalGame.Client client;
+	private final IGame.Client client;
 	private final PlayerGameBoard initialGameBoard;
-	private final List<IGameCommand> commands;
+	private final List<GameCommand<?>> commands;
 	
-	public UncheckedLocalGame(LocalGame.Client client, PlayerGameBoard initialGameBoard)
+	public UncheckedLocalGame(IGame.Client client, PlayerGameBoard initialGameBoard)
 	{
 		this.client = client;
 		this.initialGameBoard = initialGameBoard;
-		this.commands = new Vector<IGameCommand>();
+		this.commands = new Vector<GameCommand<?>>();
 	}
 
 	@Override
@@ -48,7 +47,7 @@ public class UncheckedLocalGame implements IGame
 	}
 
 	@Override
-	public void endTurn() throws GameCommandException
+	public void endTurn() throws GameBoardException
 	{
 		try
 		{
@@ -56,18 +55,18 @@ public class UncheckedLocalGame implements IGame
 		}
 		catch(Throwable t)
 		{
-			throw new GameCommandException(t);
+			throw new GameBoardException(t);
 		}
 	}
 
 	@Override
-	public void executeCommand(IGameCommand command) throws GameCommandException
+	public void executeCommand(GameCommand<?> command) throws GameBoardException
 	{
 		commands.add(command);
 	}
 
 	@Override
-	public List<IGameCommand> getCommands()
+	public List<GameCommand<?>> getCommands()
 	{
 		return commands;
 	}
@@ -79,24 +78,24 @@ public class UncheckedLocalGame implements IGame
 	}
 
 	@Override
-	public void redo() throws GameCommandException
+	public void redo() throws GameBoardException
 	{
-		throw new GameCommandException("Not implemented in unchecked local game version.");
+		throw new GameBoardException("Not implemented in unchecked local game version.");
 	}
 
 	@Override
-	public void resetTurn() throws GameCommandException
+	public void resetTurn() throws GameBoardException
 	{
-		throw new GameCommandException("Not implemented in unchecked local game version.");
+		throw new GameBoardException("Not implemented in unchecked local game version.");
 	}
 
 	@Override
-	public void undo() throws GameCommandException
+	public void undo()
 	{
 		commands.remove(commands.size()-1);
 	}
 	
-	public void undo(IGameCommand command)
+	public void undo(GameCommand<?> command)
 	{
 		commands.remove(command);
 	}

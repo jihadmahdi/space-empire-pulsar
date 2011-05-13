@@ -79,11 +79,6 @@ import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IVersionedProductiveCelestialBody;
 import org.axan.sep.server.SEPServer.SEPImplementationException;
-import org.axan.sep.common.db.sqlite.ISQLiteGameCommand;
-import org.axan.sep.common.db.sqlite.SEPCommonSQLiteDB;
-import org.axan.sep.common.db.sqlite.SQLiteLocalGame;
-import org.axan.sep.common.db.sqlite.orm.ProductiveCelestialBody;
-
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteJob;
 

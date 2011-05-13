@@ -32,51 +32,37 @@ import org.axan.eplib.gameserver.server.GameServer.ServerUser;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.sep.common.CommandCheckResult;
 import org.axan.sep.common.GameConfig;
-import org.axan.sep.common.IGameCommand;
 import org.axan.sep.common.Player;
 import org.axan.sep.common.PlayerConfig;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.Protocol;
 import org.axan.sep.common.SEPUtils;
+import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
+import org.axan.sep.common.IGameBoard.GameBoardException;
+import org.axan.sep.common.GameCommand;
 import org.axan.sep.common.Protocol.ServerGameCreation;
 import org.axan.sep.common.Protocol.ServerPausedGame;
 import org.axan.sep.common.Protocol.ServerRunningGame;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
-import org.axan.sep.common.db.sqlite.SEPClientSQLiteDB;
-import org.axan.sep.server.model.ServerGame;
-import org.axan.sep.server.model.ISEPServerDataBase.SEPServerDataBaseException;
+import org.axan.sep.common.Protocol.SEPImplementationException;
 
 /**
  * SEPServer
+ * server package main class.
  */
-public class SEPServer<T extends PlayerGameBoard> implements IServer
+class SEPServer implements IServer
 {
 
 	public static Logger		log	= Logger.getLogger(SEPServer.class.getCanonicalName());
 
 	private final ExecutorService	threadPool;
 
-	public static class SEPImplementationException extends Error
-	{
-		private static final long serialVersionUID = 1L;
-
-		public SEPImplementationException(String msg)
-		{
-			super(msg);
-		}
-
-		public SEPImplementationException(String msg, Throwable t)
-		{
-			super(msg, t);
-		}
-	}
-
 	/**
 	 * ServerCommon protocol interface implementation.
 	 */
-	private static class SEPCommon<T extends PlayerGameBoard> implements Protocol.ServerCommon
+	private static class SEPCommon implements Protocol.ServerCommon
 	{
-		protected final SEPServer<T>	sepServer;
+		protected final SEPServer	sepServer;
 
 		protected final ServerUser	user;
 
@@ -88,7 +74,7 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 		 * @param user
 		 *            Current user.
 		 */
-		SEPCommon(SEPServer<T> server, ServerUser user)
+		SEPCommon(SEPServer server, ServerUser user)
 		{
 			this.sepServer = server;
 			this.user = user;
@@ -136,7 +122,7 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 	/**
 	 * ServerGameCreation protocol interface implementation.
 	 */
-	static class SEPGameCreation<T extends PlayerGameBoard> extends SEPCommon<T> implements Protocol.ServerGameCreation
+	static class SEPGameCreation extends SEPCommon implements Protocol.ServerGameCreation
 	{
 
 		/**
@@ -147,7 +133,7 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 		 * @param user
 		 *            Current user.
 		 */
-		SEPGameCreation(SEPServer<T> server, ServerUser user)
+		SEPGameCreation(SEPServer server, ServerUser user)
 		{
 			super(server, user);
 		}
@@ -238,7 +224,7 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 
 	}
 
-	private static class SEPRunningGame<T extends PlayerGameBoard> extends SEPCommon<T> implements Protocol.ServerRunningGame<T>
+	private static class SEPRunningGame extends SEPCommon implements Protocol.ServerRunningGame
 	{
 
 		/**
@@ -249,7 +235,7 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 		 * @param user
 		 *            Current user.
 		 */
-		SEPRunningGame(SEPServer<T> server, ServerUser user)
+		SEPRunningGame(SEPServer server, ServerUser user)
 		{
 			super(server, user);
 		}
@@ -267,7 +253,7 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 				// TODO: Be able to compute a full player game board (including previous turn) from the current server game board.
 				return sepServer.getCurrentGame().getPlayerGameBoard(user.getLogin());
 			}
-			catch(SEPServerDataBaseException e)
+			catch(GameBoardException e)
 			{
 				log.log(Level.SEVERE, "Player game board transformation error.", e);
 				this.getServerPlayer().abort(e);
@@ -575,7 +561,7 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 		*/
 
 		@Override
-		public void endTurn(List<IGameCommand<T>> commands) throws RpcException, StateMachineNotExpectedEventException, SEPImplementationException, RunningGameCommandException
+		public void endTurn(List<GameCommand<?>> commands) throws RpcException ,StateMachineNotExpectedEventException, SEPImplementationException, RunningGameCommandException
 		{
 			sepServer.getCurrentGame().endTurn(getLogin(), commands);
 			
@@ -592,7 +578,7 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 
 	}
 
-	private static class SEPPausedGame<T extends PlayerGameBoard> extends SEPCommon<T> implements Protocol.ServerPausedGame
+	private static class SEPPausedGame extends SEPCommon implements Protocol.ServerPausedGame
 	{
 		/**
 		 * Full constructor.
@@ -602,7 +588,7 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 		 * @param user
 		 *            Current user.
 		 */
-		SEPPausedGame(SEPServer<T> server, ServerUser user)
+		SEPPausedGame(SEPServer server, ServerUser user)
 		{
 			super(server, user);
 		}
@@ -650,7 +636,7 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 
 	private GameConfig						gameConfig	= new GameConfig();
 
-	private ServerGame<T>						game		= null;
+	private ServerGame						game		= null;
 
 	public SEPServer(int port, long timeOut)
 	{
@@ -663,7 +649,7 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 				@Override
 				public ServerGameCreation create(ServerUser user)
 				{
-					return new SEPGameCreation<T>(SEPServer.this, user);
+					return new SEPGameCreation(SEPServer.this, user);
 				}
 			});
 
@@ -671,7 +657,7 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 			{
 
 				@Override
-				public ServerRunningGame<T> create(ServerUser user)
+				public ServerRunningGame create(ServerUser user)
 				{
 					return new SEPRunningGame(SEPServer.this, user);
 				}
@@ -756,7 +742,7 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 				{
 					log.log(Level.WARNING, "RpcException(" + name + ") : " + e.getMessage());
 				}
-				catch(SEPServerDataBaseException e)
+				catch(GameBoardException e)
 				{
 					log.log(Level.SEVERE, "Player game board error.", e);
 					terminate();
@@ -788,19 +774,37 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 		return result;
 	}
 	
-	private void initCurrentGame() throws SEPServerDataBaseException
+	private void initCurrentGame() throws GameBoardException
 	{
 		synchronized(this)
 		{
 			if (game == null)
 			{
-				game = new ServerGame<T>(getPlayerList(), gameConfig);
+				try
+				{
+					game = new ServerGame(new SQLiteGameBoard(getPlayerList(), this.gameConfig));
+				}
+				catch(Throwable t)
+				{
+					throw new GameBoardException(t);
+				}
 			}
 		}
 	}
 
-	private ServerGame<T> getCurrentGame()
+	private ServerGame getCurrentGame()
 	{
+		while(game == null)
+		{
+			try
+			{
+				Thread.sleep(500);
+			}
+			catch(InterruptedException e)
+			{
+				throw new Error(e);
+			}
+		}
 		return game;
 	}
 
@@ -868,11 +872,11 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 		return gameServer.getServerAdminKey();
 	}
 
-	static class SEPGameServerListener<T extends PlayerGameBoard> implements GameServerListener
+	static class SEPGameServerListener implements GameServerListener
 	{
-		private final SEPServer<T> server;
+		private final SEPServer server;
 		
-		public SEPGameServerListener(SEPServer<T> server)
+		public SEPGameServerListener(SEPServer server)
 		{
 			this.server = server;
 		}
@@ -933,7 +937,7 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 					{
 						server.initCurrentGame();
 					}
-					catch(SEPServerDataBaseException e)
+					catch(GameBoardException e)
 					{
 						log.log(Level.SEVERE, "GameBoard creation error.", e);
 						server.terminate();
@@ -995,7 +999,7 @@ public class SEPServer<T extends PlayerGameBoard> implements IServer
 		}
 	}
 	
-	private final GameServerListener	gameServerListener	= new SEPGameServerListener<T>(this);
+	private final GameServerListener	gameServerListener	= new SEPGameServerListener(this);
 
 	private void refreshGameConfig()
 	{

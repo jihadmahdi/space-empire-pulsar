@@ -101,6 +101,7 @@ public abstract class AbstractGameCommandCheck
 	/**
 	 * Implementation class must print a useful string of the command check result.
 	 */
+	@Override
 	public String toString()
 	{
 		// TODO: Set this method abstract so each command check must define a proper customised msg.

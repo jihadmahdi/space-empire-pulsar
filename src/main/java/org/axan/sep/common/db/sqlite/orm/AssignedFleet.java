@@ -49,7 +49,7 @@ public class AssignedFleet implements IAssignedFleet
 			SQLiteStatement stmnt = conn.prepare(String.format("SELECT AssignedFleet.* FROM AssignedFleet%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{
-				results.add(SQLiteORMGenerator.mapTo(expectedType, stmnt, config));
+				results.add(SQLiteORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) AssignedFleet.class : expectedType, stmnt, config));
 			}
 			return results;
 		}

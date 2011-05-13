@@ -26,19 +26,18 @@ import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.client.SEPClient.IUserInterface;
+import org.axan.sep.common.GameCommand;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.IGame;
-import org.axan.sep.common.IGameCommand;
 import org.axan.sep.common.Player;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.StarshipTemplate;
-import org.axan.sep.common.IGameCommand.GameCommandException;
+import org.axan.sep.common.IGameBoard.GameBoardException;
 import org.axan.sep.common.Protocol.ServerGameCreation;
 import org.axan.sep.common.Protocol.ServerRunningGame;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.server.ai.ClientAI;
 import org.axan.sep.server.ai.UncheckedLocalGame;
-import org.axan.sep.server.model.GameBoard;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -231,14 +230,14 @@ public class TestSEP
 
 	}
 	
-	private static void checkErronedCommand(IGameCommand erronedCommand, IGame game, boolean isClientTest)
+	private static void checkErronedCommand(GameCommand<?> erronedCommand, IGame game, boolean isClientTest)
 	{
 		boolean exceptionThrown = false;
 		try
 		{
 			game.executeCommand(erronedCommand);
 		}
-		catch(GameCommandException e)
+		catch(GameBoardException e)
 		{
 			exceptionThrown = true;
 		}
@@ -256,7 +255,7 @@ public class TestSEP
 			{
 				game.endTurn();
 			}
-			catch(GameCommandException e)
+			catch(GameBoardException e)
 			{
 				exceptionThrown = true;
 			}
@@ -276,7 +275,7 @@ public class TestSEP
 			
 			for(ClientAI ia : ias)
 			{
-				if (ia.getDate() != turn)
+				if (ia.getTurn() != turn)
 				{
 					finished = false;
 					break;
@@ -513,7 +512,7 @@ public class TestSEP
 		ClientAI client3AITest = ui3.getAITest();
 
 		turn = -1;
-		assertEquals("Unexpected result", turn, client1AITest.getDate());
+		assertEquals("Unexpected result", turn, client1AITest.getTurn());
 
 		// client.runGame()
 		try
@@ -529,7 +528,7 @@ public class TestSEP
 			return;
 		}
 
-		assertEquals("Unexpected result", turn, client1AITest.getDate());
+		assertEquals("Unexpected result", turn, client1AITest.getTurn());
 
 		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "onGameRan", new String[] { "client1.onGameRan", "client2.onGameRan", "client3.onGameRan" });		
 		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gameRan", "gameRan");						

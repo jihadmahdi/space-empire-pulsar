@@ -59,7 +59,7 @@ public class CarbonOrder implements ICarbonOrder
 			SQLiteStatement stmnt = conn.prepare(String.format("SELECT CarbonOrder.* FROM CarbonOrder%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{
-				results.add(SQLiteORMGenerator.mapTo(expectedType, stmnt, config));
+				results.add(SQLiteORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) CarbonOrder.class : expectedType, stmnt, config));
 			}
 			return results;
 		}

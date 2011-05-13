@@ -7,34 +7,66 @@ import static org.junit.Assert.fail;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
+import org.axan.eplib.orm.sqlite.SQLiteDB;
+import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
 import org.axan.sep.client.SEPClient;
+import org.axan.sep.common.GameCommand;
 import org.axan.sep.common.IGame;
-import org.axan.sep.common.IGameCommand;
+import org.axan.sep.common.IGameBoard;
+import org.axan.sep.common.LocalGame;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.SEPUtils.RealLocation;
-import org.axan.sep.common.db.sqlite.SEPClientSQLiteDB;
-import org.axan.sep.common.db.sqlite.SQLiteLocalGame;
+import org.axan.sep.common.db.IPlanet;
+import org.axan.sep.common.db.IVersionedPlanet;
+import org.axan.sep.common.db.sqlite.SQLitePlayerGameBoard;
+import org.axan.sep.common.db.sqlite.orm.CelestialBody;
+import org.axan.sep.common.db.sqlite.orm.Nebula;
+import org.axan.sep.common.db.sqlite.orm.ProductiveCelestialBody;
 
-public class ClientAI<T extends PlayerGameBoard> implements IGame.Client<T>
-{		
-	private final Stack<T> previousGameBoards = new Stack<T>();
+import com.almworks.sqlite4java.SQLiteConnection;
+import com.almworks.sqlite4java.SQLiteException;
+import com.almworks.sqlite4java.SQLiteJob;
+
+public class ClientAI implements IGame.Client
+{
+	private static Boolean sqlite_lib_init = false;
+	
+	private final Stack<SQLitePlayerGameBoard> previousGameBoards = new Stack<SQLitePlayerGameBoard>();
 	private final String playerName;
 	private String startingPlanet;
-	private IGame<T> currentLocalGame;
+	private IGame currentLocalGame;
 	private final SEPClient client;
 	private final boolean isClientTest;
 	
 	public ClientAI(String playerName, SEPClient client, boolean isClientTest)
 	{
+		synchronized(sqlite_lib_init)
+		{
+			if (!sqlite_lib_init)
+			{
+				try
+				{
+					SQLiteDB.checkSQLiteLib("target/izpack/lib/");
+				}
+				catch(SQLiteException e)
+				{
+					throw new Error(e);
+				}
+				
+				sqlite_lib_init = true;
+			}
+		}
+		
 		this.playerName = playerName;
 		this.client = client;
 		this.isClientTest = isClientTest;
 	}
 	
-	public IGame<T> getLocalGame()
+	public IGame getLocalGame()
 	{
 		return currentLocalGame;
 	}
@@ -45,24 +77,22 @@ public class ClientAI<T extends PlayerGameBoard> implements IGame.Client<T>
 	}
 	
 	@Override
-	public void endTurn(List<IGameCommand<T>> commands) throws Throwable
+	public void endTurn(List<GameCommand<?>> commands) throws Throwable
 	{
 		client.getRunningGameInterface().endTurn(commands);
 	}
 	
-	@Override
-	public void refreshLocalGameBoard(T gameBoard)
+	public void refreshLocalGameBoard(PlayerGameBoard gameBoard)
 	{
-		getStartingPlanetName();
+		//getStartingPlanetName();
 	}
 	
-	public void refreshGameBoard(T gameBoard)
+	public void refreshGameBoard(PlayerGameBoard gameBoard)
 	{
-		if (currentLocalGame != null) previousGameBoards.add(currentLocalGame.getGameBoard());
+		if (currentLocalGame != null) previousGameBoards.add(SQLitePlayerGameBoard.class.cast(currentLocalGame.getGameBoard()));
 		if (isClientTest)
 		{
-			SQLiteLocalGame o = new SQLiteLocalGame(this, SEPClientSQLiteDB.class.cast(gameBoard));
-			currentLocalGame = o;
+			currentLocalGame = new LocalGame(this, gameBoard);
 		}
 		else
 		{
@@ -73,37 +103,40 @@ public class ClientAI<T extends PlayerGameBoard> implements IGame.Client<T>
 	
 	public String getStartingPlanetName()
 	{
-		SUIS LA
-		
 		if (startingPlanet == null)
 		{
 			if (previousGameBoards.isEmpty() && currentLocalGame == null) throw new IllegalStateException("Gameboard not refreshed yet.");
 			
-			PlayerGameBoard initial = (previousGameBoards.isEmpty()?currentLocalGame.getGameBoard():previousGameBoards.firstElement());
+			final SQLitePlayerGameBoard initial = (previousGameBoards.isEmpty()?SQLitePlayerGameBoard.class.cast(currentLocalGame.getGameBoard()):previousGameBoards.firstElement());
 			
-			for(ICelestialBody c : initial.getCelestialBodies())
+			try
 			{
-				if (Planet.class.isInstance(c))
+				startingPlanet = initial.getDB().exec(new SQLiteJob<String>()
 				{
-					Planet p = Planet.class.cast(c);
-					if (p.getOwnerName() != null && playerName.equals(p.getOwnerName()))
+					@Override
+					protected String job(SQLiteConnection conn) throws Throwable
 					{
-						return p.getName();
+						Set<IVersionedPlanet> planets = ProductiveCelestialBody.selectVersion(conn, initial.getConfig(), IVersionedPlanet.class, 0, null, "owner = %s", playerName);
+						if (planets.isEmpty()) throw new Error("No starting planet found for player '"+playerName+"'.");
+						return planets.iterator().next().getName();
 					}
-				}
+				});
 			}
-			
-			throw new Error("No starting planet found for player '"+playerName+"'.");
+			catch(SQLiteDBException e)
+			{
+				throw new Error(e);
+			}
 		}
 		return startingPlanet;
 	}
 	
-	public int getDate()
+	public int getTurn()
 	{
-		if (currentLocalGame == null) return -1;		
-		return currentLocalGame.getGameBoard().getDate();
+		if (currentLocalGame == null) return -1;
+		return currentLocalGame.getGameBoard().getTurn();
 	}
 	
+	/*
 	public void checkBuilding(String celestialBodyName, Class<? extends ABuilding> buildingType, int buildSlotsCount)
 	{
 		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
@@ -344,4 +377,5 @@ public class ClientAI<T extends PlayerGameBoard> implements IGame.Client<T>
 			fail("Cannot locate productive celestial body '"+celestialBodyName+"'");
 		}
 	}
+	*/
 }

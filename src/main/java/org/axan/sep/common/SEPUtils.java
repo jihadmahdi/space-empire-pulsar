@@ -8,7 +8,6 @@ package org.axan.sep.common;
 import java.io.File;
 import java.io.Serializable;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
@@ -145,7 +144,7 @@ public abstract class SEPUtils
 	{
 		Stack<RealLocation> result = new Stack<RealLocation>();
 		double d = getDistance(a, b);
-		float delta = ((float) 1) / ((float) (2*d));
+		float delta = (1) / ((float) (2*d));
 		RealLocation lastLoc = null;
 		RealLocation loc;
 		for(float t = 0; t < 1; t += delta)

@@ -44,7 +44,7 @@ public class StarshipTemplate implements IStarshipTemplate
 			SQLiteStatement stmnt = conn.prepare(String.format("SELECT StarshipTemplate.* FROM StarshipTemplate%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
 			while(stmnt.step())
 			{
-				results.add(SQLiteORMGenerator.mapTo(expectedType, stmnt, config));
+				results.add(SQLiteORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) StarshipTemplate.class : expectedType, stmnt, config));
 			}
 			return results;
 		}
