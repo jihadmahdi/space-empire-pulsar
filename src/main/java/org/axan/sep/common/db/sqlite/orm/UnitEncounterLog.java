@@ -5,6 +5,7 @@ import org.axan.sep.common.db.IUnitEncounterLog;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
@@ -90,19 +91,7 @@ public class UnitEncounterLog implements IUnitEncounterLog
 		try
 		{
 			Set<T> results = new HashSet<T>();
-
-			if (where != null && params != null) where = String.format(where, params);
-			String versionFilter;
-			if (maxVersion)
-			{
-				versionFilter = String.format("(UnitEncounterLog.turn = ( SELECT MAX(LVUnitEncounterLog.turn) FROM UnitEncounterLog LVUnitEncounterLog WHERE LVUnitEncounterLog.owner = UnitEncounterLog.owner AND LVUnitEncounterLog.unitName = UnitEncounterLog.unitName AND LVUnitEncounterLog.turn = UnitEncounterLog.turn AND LVUnitEncounterLog.unitType = UnitEncounterLog.unitType AND LVUnitEncounterLog.instantTime = UnitEncounterLog.instantTime AND LVUnitEncounterLog.seenOwner = UnitEncounterLog.seenOwner AND LVUnitEncounterLog.seenName = UnitEncounterLog.seenName AND LVUnitEncounterLog.seenTurn = UnitEncounterLog.seenTurn AND LVUnitEncounterLog.seenType = UnitEncounterLog.seenType%s ))", (version != null && version >= 0) ? " AND LVUnitEncounterLog.turn <= "+version : "");
-			}
-			else
-			{
-				versionFilter = (version == null) ? "" : String.format("(UnitEncounterLog.turn = %d)", version);
-			}
-			where = String.format("%s%s", (where != null && !where.isEmpty()) ? "("+where+") AND " : "", versionFilter);
-			SQLiteStatement stmnt = conn.prepare(String.format("SELECT UnitEncounterLog.* FROM UnitEncounterLog%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
+			SQLiteStatement stmnt = conn.prepare(selectQuery(expectedType, maxVersion, version, from, where, params)+";");
 			while(stmnt.step())
 			{
 				results.add(SQLiteORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) UnitEncounterLog.class : expectedType, stmnt, config));
@@ -115,6 +104,52 @@ public class UnitEncounterLog implements IUnitEncounterLog
 		}
 	}
 
+	/** Set maxVersion to null to select last version. */
+	public static <T extends IUnitEncounterLog> boolean existMaxVersion(SQLiteConnection conn, Class<T> expectedType, Integer maxVersion, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return exist(conn, expectedType, true, maxVersion, from, where, params);
+	}
+
+	public static <T extends IUnitEncounterLog> boolean existVersion(SQLiteConnection conn,Class<T> expectedType, int version, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return exist(conn, expectedType, false, version, from, where, params);
+	}
+
+	public static <T extends IUnitEncounterLog> boolean existUnversioned(SQLiteConnection conn, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return exist(conn, expectedType, false, null, from, where, params);
+	}
+
+	private static <T extends IUnitEncounterLog> boolean exist(SQLiteConnection conn, Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		try
+		{
+			SQLiteStatement stmnt = conn.prepare("SELECT EXISTS ( "+selectQuery(expectedType, maxVersion, version, from, where, params) + " );");
+			return stmnt.step() && stmnt.columnInt(0) != 0;
+		}
+		catch(Exception e)
+		{
+			throw new SQLiteDBException(e);
+		}
+	}
+
+
+	private static <T extends IUnitEncounterLog> String selectQuery(Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params)
+	{
+		where = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);
+		if (where != null) where = String.format("(%s)",where);
+		String versionFilter;
+		if (maxVersion)
+		{
+			versionFilter = String.format("(UnitEncounterLog.turn = ( SELECT MAX(LVUnitEncounterLog.turn) FROM UnitEncounterLog LVUnitEncounterLog WHERE LVUnitEncounterLog.owner = UnitEncounterLog.owner AND LVUnitEncounterLog.unitName = UnitEncounterLog.unitName AND LVUnitEncounterLog.turn = UnitEncounterLog.turn AND LVUnitEncounterLog.unitType = UnitEncounterLog.unitType AND LVUnitEncounterLog.instantTime = UnitEncounterLog.instantTime AND LVUnitEncounterLog.seenOwner = UnitEncounterLog.seenOwner AND LVUnitEncounterLog.seenName = UnitEncounterLog.seenName AND LVUnitEncounterLog.seenTurn = UnitEncounterLog.seenTurn AND LVUnitEncounterLog.seenType = UnitEncounterLog.seenType%s ))", (version != null && version >= 0) ? " AND LVUnitEncounterLog.turn <= "+version : "");
+		}
+		else
+		{
+			versionFilter = (version == null) ? "" : String.format("(UnitEncounterLog.turn = %d)", version);
+		}
+		if (versionFilter != null && !versionFilter.isEmpty()) where = (where == null) ? versionFilter : String.format("%s AND %s", where, versionFilter);
+		return String.format("SELECT UnitEncounterLog.* FROM UnitEncounterLog%s%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
+	}
 
 	public static <T extends IUnitEncounterLog> void insertOrUpdate(SQLiteConnection conn, T unitEncounterLog) throws SQLiteDBException
 	{
@@ -124,11 +159,11 @@ public class UnitEncounterLog implements IUnitEncounterLog
 			stmnt.step();
 			if (stmnt.columnInt(0) == 0)
 			{
-				conn.exec(String.format("INSERT INTO UnitEncounterLog (owner, unitName, turn, unitType, instantTime, seenOwner, seenName, seenTurn, seenType) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);", "'"+unitEncounterLog.getOwner()+"'", "'"+unitEncounterLog.getUnitName()+"'", "'"+unitEncounterLog.getTurn()+"'", "'"+unitEncounterLog.getUnitType()+"'", "'"+unitEncounterLog.getInstantTime()+"'", "'"+unitEncounterLog.getSeenOwner()+"'", "'"+unitEncounterLog.getSeenName()+"'", "'"+unitEncounterLog.getSeenTurn()+"'", "'"+unitEncounterLog.getSeenType()+"'"));
+				conn.exec(String.format("INSERT INTO UnitEncounterLog (owner, unitName, turn, unitType, instantTime, seenOwner, seenName, seenTurn, seenType) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);", "'"+unitEncounterLog.getOwner()+"'", "'"+unitEncounterLog.getUnitName()+"'", "'"+unitEncounterLog.getTurn()+"'", "'"+unitEncounterLog.getUnitType()+"'", "'"+unitEncounterLog.getInstantTime()+"'", "'"+unitEncounterLog.getSeenOwner()+"'", "'"+unitEncounterLog.getSeenName()+"'", "'"+unitEncounterLog.getSeenTurn()+"'", "'"+unitEncounterLog.getSeenType()+"'").replaceAll("'null'", "NULL"));
 			}
 			else
 			{
-				conn.exec(String.format("UPDATE UnitEncounterLog SET  seenOwner = %s,  seenName = %s,  seenTurn = %s,  seenType = %s WHERE  owner = %s AND unitName = %s AND turn = %s AND unitType = %s AND instantTime = %s ;", "'"+unitEncounterLog.getSeenOwner()+"'", "'"+unitEncounterLog.getSeenName()+"'", "'"+unitEncounterLog.getSeenTurn()+"'", "'"+unitEncounterLog.getSeenType()+"'", "'"+unitEncounterLog.getOwner()+"'", "'"+unitEncounterLog.getUnitName()+"'", "'"+unitEncounterLog.getTurn()+"'", "'"+unitEncounterLog.getUnitType()+"'", "'"+unitEncounterLog.getInstantTime()+"'"));
+				conn.exec(String.format("UPDATE UnitEncounterLog SET seenOwner = %s,  seenName = %s,  seenTurn = %s,  seenType = %s WHERE  owner = %s AND unitName = %s AND turn = %s AND unitType = %s AND instantTime = %s ;", "'"+unitEncounterLog.getSeenOwner()+"'", "'"+unitEncounterLog.getSeenName()+"'", "'"+unitEncounterLog.getSeenTurn()+"'", "'"+unitEncounterLog.getSeenType()+"'", "'"+unitEncounterLog.getOwner()+"'", "'"+unitEncounterLog.getUnitName()+"'", "'"+unitEncounterLog.getTurn()+"'", "'"+unitEncounterLog.getUnitType()+"'", "'"+unitEncounterLog.getInstantTime()+"'").replaceAll("'null'", "NULL"));
 			}
 		}
 		catch(Exception e)

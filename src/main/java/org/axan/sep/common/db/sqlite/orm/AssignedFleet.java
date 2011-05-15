@@ -5,6 +5,7 @@ import org.axan.sep.common.db.IAssignedFleet;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
@@ -44,9 +45,7 @@ public class AssignedFleet implements IAssignedFleet
 		try
 		{
 			Set<T> results = new HashSet<T>();
-
-			if (where != null && params != null) where = String.format(where, params);
-			SQLiteStatement stmnt = conn.prepare(String.format("SELECT AssignedFleet.* FROM AssignedFleet%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
+			SQLiteStatement stmnt = conn.prepare(selectQuery(expectedType, from, where, params)+";");
 			while(stmnt.step())
 			{
 				results.add(SQLiteORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) AssignedFleet.class : expectedType, stmnt, config));
@@ -59,6 +58,26 @@ public class AssignedFleet implements IAssignedFleet
 		}
 	}
 
+	public static <T extends IAssignedFleet> boolean exist(SQLiteConnection conn, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		try
+		{
+			SQLiteStatement stmnt = conn.prepare("SELECT EXISTS ( "+selectQuery(expectedType, from, where, params) + " );");
+			return stmnt.step() && stmnt.columnInt(0) != 0;
+		}
+		catch(Exception e)
+		{
+			throw new SQLiteDBException(e);
+		}
+	}
+
+
+	private static <T extends IAssignedFleet> String selectQuery(Class<T> expectedType, String from, String where, Object ... params)
+	{
+		where = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);
+		if (where != null) where = String.format("(%s)",where);
+		return String.format("SELECT AssignedFleet.* FROM AssignedFleet%s%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
+	}
 
 	public static <T extends IAssignedFleet> void insertOrUpdate(SQLiteConnection conn, T assignedFleet) throws SQLiteDBException
 	{
@@ -68,11 +87,11 @@ public class AssignedFleet implements IAssignedFleet
 			stmnt.step();
 			if (stmnt.columnInt(0) == 0)
 			{
-				conn.exec(String.format("INSERT INTO AssignedFleet (celestialBody, owner, fleetName) VALUES (%s, %s, %s);", "'"+assignedFleet.getCelestialBody()+"'", "'"+assignedFleet.getOwner()+"'", "'"+assignedFleet.getFleetName()+"'"));
+				conn.exec(String.format("INSERT INTO AssignedFleet (celestialBody, owner, fleetName) VALUES (%s, %s, %s);", "'"+assignedFleet.getCelestialBody()+"'", "'"+assignedFleet.getOwner()+"'", "'"+assignedFleet.getFleetName()+"'").replaceAll("'null'", "NULL"));
 			}
 			else
 			{
-				conn.exec(String.format("UPDATE AssignedFleet SET  fleetName = %s WHERE  celestialBody = %s AND owner = %s ;", "'"+assignedFleet.getFleetName()+"'", "'"+assignedFleet.getCelestialBody()+"'", "'"+assignedFleet.getOwner()+"'"));
+				conn.exec(String.format("UPDATE AssignedFleet SET fleetName = %s WHERE  celestialBody = %s AND owner = %s ;", "'"+assignedFleet.getFleetName()+"'", "'"+assignedFleet.getCelestialBody()+"'", "'"+assignedFleet.getOwner()+"'").replaceAll("'null'", "NULL"));
 			}
 		}
 		catch(Exception e)

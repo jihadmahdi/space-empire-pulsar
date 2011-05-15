@@ -267,5 +267,11 @@ public interface IGameConfig
 	 */
 	public float getVortexScope();
 	public void setVortexScope(float scope);
+	
+	/**
+	 * Vortex lifetime (nb of turns)
+	 */
+	public int[] getVortexLifetime();
+	public void setVortexLifetime(int min, int max);
 }
 

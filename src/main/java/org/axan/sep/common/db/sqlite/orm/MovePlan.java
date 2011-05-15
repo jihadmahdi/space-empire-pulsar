@@ -5,6 +5,7 @@ import org.axan.sep.common.db.IMovePlan;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
@@ -64,9 +65,7 @@ public class MovePlan implements IMovePlan
 		try
 		{
 			Set<T> results = new HashSet<T>();
-
-			if (where != null && params != null) where = String.format(where, params);
-			SQLiteStatement stmnt = conn.prepare(String.format("SELECT MovePlan.* FROM MovePlan%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
+			SQLiteStatement stmnt = conn.prepare(selectQuery(expectedType, from, where, params)+";");
 			while(stmnt.step())
 			{
 				results.add(SQLiteORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) MovePlan.class : expectedType, stmnt, config));
@@ -79,6 +78,26 @@ public class MovePlan implements IMovePlan
 		}
 	}
 
+	public static <T extends IMovePlan> boolean exist(SQLiteConnection conn, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		try
+		{
+			SQLiteStatement stmnt = conn.prepare("SELECT EXISTS ( "+selectQuery(expectedType, from, where, params) + " );");
+			return stmnt.step() && stmnt.columnInt(0) != 0;
+		}
+		catch(Exception e)
+		{
+			throw new SQLiteDBException(e);
+		}
+	}
+
+
+	private static <T extends IMovePlan> String selectQuery(Class<T> expectedType, String from, String where, Object ... params)
+	{
+		where = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);
+		if (where != null) where = String.format("(%s)",where);
+		return String.format("SELECT MovePlan.* FROM MovePlan%s%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
+	}
 
 	public static <T extends IMovePlan> void insertOrUpdate(SQLiteConnection conn, T movePlan) throws SQLiteDBException
 	{
@@ -88,11 +107,11 @@ public class MovePlan implements IMovePlan
 			stmnt.step();
 			if (stmnt.columnInt(0) == 0)
 			{
-				conn.exec(String.format("INSERT INTO MovePlan (owner, name, turn, priority, delay, attack, destination) VALUES (%s, %s, %s, %s, %s, %s, %s);", "'"+movePlan.getOwner()+"'", "'"+movePlan.getName()+"'", "'"+movePlan.getTurn()+"'", "'"+movePlan.getPriority()+"'", "'"+movePlan.getDelay()+"'", "'"+movePlan.getAttack()+"'", "'"+movePlan.getDestination()+"'"));
+				conn.exec(String.format("INSERT INTO MovePlan (owner, name, turn, priority, delay, attack, destination) VALUES (%s, %s, %s, %s, %s, %s, %s);", "'"+movePlan.getOwner()+"'", "'"+movePlan.getName()+"'", "'"+movePlan.getTurn()+"'", "'"+movePlan.getPriority()+"'", "'"+movePlan.getDelay()+"'", "'"+movePlan.getAttack()+"'", "'"+movePlan.getDestination()+"'").replaceAll("'null'", "NULL"));
 			}
 			else
 			{
-				conn.exec(String.format("UPDATE MovePlan SET  delay = %s,  attack = %s,  destination = %s WHERE  owner = %s AND name = %s AND turn = %s AND priority = %s ;", "'"+movePlan.getDelay()+"'", "'"+movePlan.getAttack()+"'", "'"+movePlan.getDestination()+"'", "'"+movePlan.getOwner()+"'", "'"+movePlan.getName()+"'", "'"+movePlan.getTurn()+"'", "'"+movePlan.getPriority()+"'"));
+				conn.exec(String.format("UPDATE MovePlan SET delay = %s,  attack = %s,  destination = %s WHERE  owner = %s AND name = %s AND turn = %s AND priority = %s ;", "'"+movePlan.getDelay()+"'", "'"+movePlan.getAttack()+"'", "'"+movePlan.getDestination()+"'", "'"+movePlan.getOwner()+"'", "'"+movePlan.getName()+"'", "'"+movePlan.getTurn()+"'", "'"+movePlan.getPriority()+"'").replaceAll("'null'", "NULL"));
 			}
 		}
 		catch(Exception e)

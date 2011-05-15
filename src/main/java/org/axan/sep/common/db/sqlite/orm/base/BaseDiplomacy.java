@@ -40,7 +40,7 @@ public class BaseDiplomacy implements IBaseDiplomacy
 			Object value=stmnt.columnValue(i);
 			if (value != null && col.matches("allowToLand"))
 			{
-				value = (boolean) ((Integer) value != 0);
+				value = Boolean.valueOf(value.toString());
 			}
 			row.put(col, value);
 		}

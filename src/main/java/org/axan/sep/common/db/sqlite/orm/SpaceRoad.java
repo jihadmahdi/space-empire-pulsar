@@ -5,6 +5,7 @@ import org.axan.sep.common.db.ISpaceRoad;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
@@ -69,9 +70,7 @@ public class SpaceRoad implements ISpaceRoad
 		try
 		{
 			Set<T> results = new HashSet<T>();
-
-			if (where != null && params != null) where = String.format(where, params);
-			SQLiteStatement stmnt = conn.prepare(String.format("SELECT SpaceRoad.* FROM SpaceRoad%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
+			SQLiteStatement stmnt = conn.prepare(selectQuery(expectedType, from, where, params)+";");
 			while(stmnt.step())
 			{
 				results.add(SQLiteORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) SpaceRoad.class : expectedType, stmnt, config));
@@ -84,6 +83,26 @@ public class SpaceRoad implements ISpaceRoad
 		}
 	}
 
+	public static <T extends ISpaceRoad> boolean exist(SQLiteConnection conn, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		try
+		{
+			SQLiteStatement stmnt = conn.prepare("SELECT EXISTS ( "+selectQuery(expectedType, from, where, params) + " );");
+			return stmnt.step() && stmnt.columnInt(0) != 0;
+		}
+		catch(Exception e)
+		{
+			throw new SQLiteDBException(e);
+		}
+	}
+
+
+	private static <T extends ISpaceRoad> String selectQuery(Class<T> expectedType, String from, String where, Object ... params)
+	{
+		where = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);
+		if (where != null) where = String.format("(%s)",where);
+		return String.format("SELECT SpaceRoad.* FROM SpaceRoad%s%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
+	}
 
 	public static <T extends ISpaceRoad> void insertOrUpdate(SQLiteConnection conn, T spaceRoad) throws SQLiteDBException
 	{
@@ -93,11 +112,11 @@ public class SpaceRoad implements ISpaceRoad
 			stmnt.step();
 			if (stmnt.columnInt(0) == 0)
 			{
-				conn.exec(String.format("INSERT INTO SpaceRoad (name, builder, spaceCounterAType, spaceCounterACelestialBodyName, spaceCounterATurn, spaceCounterBType, spaceCounterBCelestialBodyName, spaceCounterBTurn) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);", "'"+spaceRoad.getName()+"'", "'"+spaceRoad.getBuilder()+"'", "'"+spaceRoad.getSpaceCounterAType()+"'", "'"+spaceRoad.getSpaceCounterACelestialBodyName()+"'", "'"+spaceRoad.getSpaceCounterATurn()+"'", "'"+spaceRoad.getSpaceCounterBType()+"'", "'"+spaceRoad.getSpaceCounterBCelestialBodyName()+"'", "'"+spaceRoad.getSpaceCounterBTurn()+"'"));
+				conn.exec(String.format("INSERT INTO SpaceRoad (name, builder, spaceCounterAType, spaceCounterACelestialBodyName, spaceCounterATurn, spaceCounterBType, spaceCounterBCelestialBodyName, spaceCounterBTurn) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);", "'"+spaceRoad.getName()+"'", "'"+spaceRoad.getBuilder()+"'", "'"+spaceRoad.getSpaceCounterAType()+"'", "'"+spaceRoad.getSpaceCounterACelestialBodyName()+"'", "'"+spaceRoad.getSpaceCounterATurn()+"'", "'"+spaceRoad.getSpaceCounterBType()+"'", "'"+spaceRoad.getSpaceCounterBCelestialBodyName()+"'", "'"+spaceRoad.getSpaceCounterBTurn()+"'").replaceAll("'null'", "NULL"));
 			}
 			else
 			{
-				conn.exec(String.format("UPDATE SpaceRoad SET  spaceCounterAType = %s,  spaceCounterACelestialBodyName = %s,  spaceCounterATurn = %s,  spaceCounterBType = %s,  spaceCounterBCelestialBodyName = %s,  spaceCounterBTurn = %s WHERE  name = %s AND builder = %s ;", "'"+spaceRoad.getSpaceCounterAType()+"'", "'"+spaceRoad.getSpaceCounterACelestialBodyName()+"'", "'"+spaceRoad.getSpaceCounterATurn()+"'", "'"+spaceRoad.getSpaceCounterBType()+"'", "'"+spaceRoad.getSpaceCounterBCelestialBodyName()+"'", "'"+spaceRoad.getSpaceCounterBTurn()+"'", "'"+spaceRoad.getName()+"'", "'"+spaceRoad.getBuilder()+"'"));
+				conn.exec(String.format("UPDATE SpaceRoad SET spaceCounterAType = %s,  spaceCounterACelestialBodyName = %s,  spaceCounterATurn = %s,  spaceCounterBType = %s,  spaceCounterBCelestialBodyName = %s,  spaceCounterBTurn = %s WHERE  name = %s AND builder = %s ;", "'"+spaceRoad.getSpaceCounterAType()+"'", "'"+spaceRoad.getSpaceCounterACelestialBodyName()+"'", "'"+spaceRoad.getSpaceCounterATurn()+"'", "'"+spaceRoad.getSpaceCounterBType()+"'", "'"+spaceRoad.getSpaceCounterBCelestialBodyName()+"'", "'"+spaceRoad.getSpaceCounterBTurn()+"'", "'"+spaceRoad.getName()+"'", "'"+spaceRoad.getBuilder()+"'").replaceAll("'null'", "NULL"));
 			}
 		}
 		catch(Exception e)

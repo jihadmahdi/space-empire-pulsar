@@ -5,6 +5,7 @@ import org.axan.sep.common.db.IPlayerConfig;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
@@ -49,9 +50,7 @@ public class PlayerConfig implements IPlayerConfig
 		try
 		{
 			Set<T> results = new HashSet<T>();
-
-			if (where != null && params != null) where = String.format(where, params);
-			SQLiteStatement stmnt = conn.prepare(String.format("SELECT PlayerConfig.* FROM PlayerConfig%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
+			SQLiteStatement stmnt = conn.prepare(selectQuery(expectedType, from, where, params)+";");
 			while(stmnt.step())
 			{
 				results.add(SQLiteORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) PlayerConfig.class : expectedType, stmnt, config));
@@ -64,6 +63,26 @@ public class PlayerConfig implements IPlayerConfig
 		}
 	}
 
+	public static <T extends IPlayerConfig> boolean exist(SQLiteConnection conn, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		try
+		{
+			SQLiteStatement stmnt = conn.prepare("SELECT EXISTS ( "+selectQuery(expectedType, from, where, params) + " );");
+			return stmnt.step() && stmnt.columnInt(0) != 0;
+		}
+		catch(Exception e)
+		{
+			throw new SQLiteDBException(e);
+		}
+	}
+
+
+	private static <T extends IPlayerConfig> String selectQuery(Class<T> expectedType, String from, String where, Object ... params)
+	{
+		where = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);
+		if (where != null) where = String.format("(%s)",where);
+		return String.format("SELECT PlayerConfig.* FROM PlayerConfig%s%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
+	}
 
 	public static <T extends IPlayerConfig> void insertOrUpdate(SQLiteConnection conn, T playerConfig) throws SQLiteDBException
 	{
@@ -73,11 +92,11 @@ public class PlayerConfig implements IPlayerConfig
 			stmnt.step();
 			if (stmnt.columnInt(0) == 0)
 			{
-				conn.exec(String.format("INSERT INTO PlayerConfig (name, color, symbol, portrait) VALUES (%s, %s, %s, %s);", "'"+playerConfig.getName()+"'", "'"+playerConfig.getColor()+"'", "'"+playerConfig.getSymbol()+"'", "'"+playerConfig.getPortrait()+"'"));
+				conn.exec(String.format("INSERT INTO PlayerConfig (name, color, symbol, portrait) VALUES (%s, %s, %s, %s);", "'"+playerConfig.getName()+"'", "'"+playerConfig.getColor()+"'", "'"+playerConfig.getSymbol()+"'", "'"+playerConfig.getPortrait()+"'").replaceAll("'null'", "NULL"));
 			}
 			else
 			{
-				conn.exec(String.format("UPDATE PlayerConfig SET  color = %s,  symbol = %s,  portrait = %s WHERE  name = %s ;", "'"+playerConfig.getColor()+"'", "'"+playerConfig.getSymbol()+"'", "'"+playerConfig.getPortrait()+"'", "'"+playerConfig.getName()+"'"));
+				conn.exec(String.format("UPDATE PlayerConfig SET color = %s,  symbol = %s,  portrait = %s WHERE  name = %s ;", "'"+playerConfig.getColor()+"'", "'"+playerConfig.getSymbol()+"'", "'"+playerConfig.getPortrait()+"'", "'"+playerConfig.getName()+"'").replaceAll("'null'", "NULL"));
 			}
 		}
 		catch(Exception e)
