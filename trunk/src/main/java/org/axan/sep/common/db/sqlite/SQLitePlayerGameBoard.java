@@ -1,11 +1,11 @@
 package org.axan.sep.common.db.sqlite;
 
-import java.awt.Color;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
+import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.db.sqlite.orm.Player;
 import org.axan.sep.common.db.sqlite.orm.PlayerConfig;
@@ -67,7 +67,7 @@ public class SQLitePlayerGameBoard extends PlayerGameBoard
 							if (p.getName().matches(pc.getName()))
 							{
 								// TODO: image, portrait...
-								result.add(new org.axan.sep.common.Player(p.getName(), new org.axan.sep.common.PlayerConfig(Color.decode(pc.getColor()), null, null)));
+								result.add(new org.axan.sep.common.Player(p.getName(), new org.axan.sep.common.PlayerConfig(Basic.stringToColor(pc.getColor()), null, null)));
 								break;
 							}
 						}

@@ -5,6 +5,7 @@ import org.axan.sep.common.db.IArea;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
@@ -43,9 +44,7 @@ public class Area implements IArea
 		try
 		{
 			Set<T> results = new HashSet<T>();
-
-			if (where != null && params != null) where = String.format(where, params);
-			SQLiteStatement stmnt = conn.prepare(String.format("SELECT Area.* FROM Area%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
+			SQLiteStatement stmnt = conn.prepare(selectQuery(expectedType, from, where, params)+";");
 			while(stmnt.step())
 			{
 				results.add(SQLiteORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) Area.class : expectedType, stmnt, config));
@@ -58,6 +57,26 @@ public class Area implements IArea
 		}
 	}
 
+	public static <T extends IArea> boolean exist(SQLiteConnection conn, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		try
+		{
+			SQLiteStatement stmnt = conn.prepare("SELECT EXISTS ( "+selectQuery(expectedType, from, where, params) + " );");
+			return stmnt.step() && stmnt.columnInt(0) != 0;
+		}
+		catch(Exception e)
+		{
+			throw new SQLiteDBException(e);
+		}
+	}
+
+
+	private static <T extends IArea> String selectQuery(Class<T> expectedType, String from, String where, Object ... params)
+	{
+		where = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);
+		if (where != null) where = String.format("(%s)",where);
+		return String.format("SELECT Area.* FROM Area%s%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
+	}
 
 	public static <T extends IArea> void insertOrUpdate(SQLiteConnection conn, T area) throws SQLiteDBException
 	{
@@ -67,11 +86,11 @@ public class Area implements IArea
 			stmnt.step();
 			if (stmnt.columnInt(0) == 0)
 			{
-				conn.exec(String.format("INSERT INTO Area (location_x, location_y, location_z, isSun) VALUES (%s, %s, %s, %s);", area.getLocation() == null ? "NULL" : "'"+area.getLocation().x+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().y+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().z+"'", "'"+area.getIsSun()+"'"));
+				conn.exec(String.format("INSERT INTO Area (location_x, location_y, location_z, isSun) VALUES (%s, %s, %s, %s);", area.getLocation() == null ? "NULL" : "'"+area.getLocation().x+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().y+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().z+"'", "'"+area.getIsSun()+"'").replaceAll("'null'", "NULL"));
 			}
 			else
 			{
-				conn.exec(String.format("UPDATE Area SET  isSun = %s WHERE  location_x = %s AND location_y = %s AND location_z = %s ;", "'"+area.getIsSun()+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().x+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().y+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().z+"'"));
+				conn.exec(String.format("UPDATE Area SET isSun = %s WHERE  location_x = %s AND location_y = %s AND location_z = %s ;", "'"+area.getIsSun()+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().x+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().y+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().z+"'").replaceAll("'null'", "NULL"));
 			}
 		}
 		catch(Exception e)

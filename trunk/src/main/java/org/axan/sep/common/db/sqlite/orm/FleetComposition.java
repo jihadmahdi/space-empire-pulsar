@@ -5,6 +5,7 @@ import org.axan.sep.common.db.IFleetComposition;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
@@ -54,9 +55,7 @@ public class FleetComposition implements IFleetComposition
 		try
 		{
 			Set<T> results = new HashSet<T>();
-
-			if (where != null && params != null) where = String.format(where, params);
-			SQLiteStatement stmnt = conn.prepare(String.format("SELECT FleetComposition.* FROM FleetComposition%s%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
+			SQLiteStatement stmnt = conn.prepare(selectQuery(expectedType, from, where, params)+";");
 			while(stmnt.step())
 			{
 				results.add(SQLiteORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) FleetComposition.class : expectedType, stmnt, config));
@@ -69,6 +68,26 @@ public class FleetComposition implements IFleetComposition
 		}
 	}
 
+	public static <T extends IFleetComposition> boolean exist(SQLiteConnection conn, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		try
+		{
+			SQLiteStatement stmnt = conn.prepare("SELECT EXISTS ( "+selectQuery(expectedType, from, where, params) + " );");
+			return stmnt.step() && stmnt.columnInt(0) != 0;
+		}
+		catch(Exception e)
+		{
+			throw new SQLiteDBException(e);
+		}
+	}
+
+
+	private static <T extends IFleetComposition> String selectQuery(Class<T> expectedType, String from, String where, Object ... params)
+	{
+		where = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);
+		if (where != null) where = String.format("(%s)",where);
+		return String.format("SELECT FleetComposition.* FROM FleetComposition%s%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
+	}
 
 	public static <T extends IFleetComposition> void insertOrUpdate(SQLiteConnection conn, T fleetComposition) throws SQLiteDBException
 	{
@@ -78,11 +97,11 @@ public class FleetComposition implements IFleetComposition
 			stmnt.step();
 			if (stmnt.columnInt(0) == 0)
 			{
-				conn.exec(String.format("INSERT INTO FleetComposition (fleetOwner, fleetName, fleetTurn, starshipTemplate, quantity) VALUES (%s, %s, %s, %s, %s);", "'"+fleetComposition.getFleetOwner()+"'", "'"+fleetComposition.getFleetName()+"'", "'"+fleetComposition.getFleetTurn()+"'", "'"+fleetComposition.getStarshipTemplate()+"'", "'"+fleetComposition.getQuantity()+"'"));
+				conn.exec(String.format("INSERT INTO FleetComposition (fleetOwner, fleetName, fleetTurn, starshipTemplate, quantity) VALUES (%s, %s, %s, %s, %s);", "'"+fleetComposition.getFleetOwner()+"'", "'"+fleetComposition.getFleetName()+"'", "'"+fleetComposition.getFleetTurn()+"'", "'"+fleetComposition.getStarshipTemplate()+"'", "'"+fleetComposition.getQuantity()+"'").replaceAll("'null'", "NULL"));
 			}
 			else
 			{
-				conn.exec(String.format("UPDATE FleetComposition SET  quantity = %s WHERE  fleetOwner = %s AND fleetName = %s AND fleetTurn = %s AND starshipTemplate = %s ;", "'"+fleetComposition.getQuantity()+"'", "'"+fleetComposition.getFleetOwner()+"'", "'"+fleetComposition.getFleetName()+"'", "'"+fleetComposition.getFleetTurn()+"'", "'"+fleetComposition.getStarshipTemplate()+"'"));
+				conn.exec(String.format("UPDATE FleetComposition SET quantity = %s WHERE  fleetOwner = %s AND fleetName = %s AND fleetTurn = %s AND starshipTemplate = %s ;", "'"+fleetComposition.getQuantity()+"'", "'"+fleetComposition.getFleetOwner()+"'", "'"+fleetComposition.getFleetName()+"'", "'"+fleetComposition.getFleetTurn()+"'", "'"+fleetComposition.getStarshipTemplate()+"'").replaceAll("'null'", "NULL"));
 			}
 		}
 		catch(Exception e)

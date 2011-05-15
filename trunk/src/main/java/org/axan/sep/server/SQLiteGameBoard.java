@@ -38,6 +38,7 @@ import org.axan.sep.common.db.ICelestialBody;
 import org.axan.sep.common.db.IDiplomacy;
 import org.axan.sep.common.db.IFleetComposition;
 import org.axan.sep.common.db.IGovernment;
+import org.axan.sep.common.db.IGovernmentModule;
 import org.axan.sep.common.db.IMovePlan;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
@@ -169,7 +170,7 @@ class SQLiteGameBoard extends GameBoard implements Serializable
 				insertCelestialBody(celestialBodyType, nextName, celestialBodyLocation);
 			}
 			
-			config.setTurn(1);
+			// TODO: Bug ! getConfig().setTurn(1);
 		}
 		catch(SQLiteException e)
 		{
@@ -215,7 +216,7 @@ class SQLiteGameBoard extends GameBoard implements Serializable
 				starshipTemplates.addAll(StarshipTemplate.select(conn, getConfig(), IStarshipTemplate.class, null, null));
 				
 				// Update player carbon orders (live table, assume initial player view carbon order table is empty)
-				carbonOrders.addAll(CarbonOrder.select(conn, getConfig(), ICarbonOrder.class, null, "owner = %s", playerLogin));
+				carbonOrders.addAll(CarbonOrder.select(conn, getConfig(), ICarbonOrder.class, null, "owner = '%s'", playerLogin));
 				
 				return null;
 			}
@@ -313,18 +314,18 @@ class SQLiteGameBoard extends GameBoard implements Serializable
 					}
 					
 					// Update deployed player probes
-					vprobes.addAll(Unit.selectMaxVersion(conn, getConfig(), IVersionedProbe.class, currentTurn, null, "VersionedUnit.type = %s AND VersionedUnit.owner = %s AND VersionedUnit.progress = 100.0", eUnitType.Probe, playerLogin));
+					vprobes.addAll(Unit.selectMaxVersion(conn, getConfig(), IVersionedProbe.class, currentTurn, null, "VersionedUnit.type = '%s' AND VersionedUnit.owner = '%s' AND VersionedUnit.progress = 100.0", eUnitType.Probe, playerLogin));
 					
 					// Update visibles celestial bodies.
 					// CelestialBody visible if owned by the player
-					visiblesPcbs.addAll(ProductiveCelestialBody.selectMaxVersion(conn, getConfig(), IVersionedProductiveCelestialBody.class, currentTurn, null, "owner = %s", playerLogin));					
+					visiblesPcbs.addAll(ProductiveCelestialBody.selectMaxVersion(conn, getConfig(), IVersionedProductiveCelestialBody.class, currentTurn, null, "owner = '%s'", playerLogin));					
 					// CelestialBody visible if a player unit is stopped on it with currentTurn version.
-					visiblesPcbs.addAll(ProductiveCelestialBody.selectVersion(conn, getConfig(), IVersionedProductiveCelestialBody.class, currentTurn, "VersionedUnit VU", "(VU.owner = %s) AND ((VU.progress = 0.0 AND VU.departure_x = CelestialBody.location_x AND VU.departure_y = CelestialBody.location_y AND VU.departure_z = CelestialBody.location_z) OR (VU.progress = 100.0 AND VU.destination_x = CelestialBody.location_x AND VU.destination_y = CelestialBody.location_y AND VU.destination_z = CelestialBody.location_z))", playerLogin));					
+					visiblesPcbs.addAll(ProductiveCelestialBody.selectVersion(conn, getConfig(), IVersionedProductiveCelestialBody.class, currentTurn, "VersionedUnit VU", "(VU.owner = '%s') AND ((VU.progress = 0.0 AND VU.departure_x = CelestialBody.location_x AND VU.departure_y = CelestialBody.location_y AND VU.departure_z = CelestialBody.location_z) OR (VU.progress = 100.0 AND VU.destination_x = CelestialBody.location_x AND VU.destination_y = CelestialBody.location_y AND VU.destination_z = CelestialBody.location_z))", playerLogin));					
 					// CelestialBody visible if under a deployed probe scope.
-					visiblesPcbs.addAll(ProductiveCelestialBody.selectMaxVersion(conn, getConfig(), IVersionedProductiveCelestialBody.class, currentTurn, "VersionedUnit VU", "(VU.owner = %s AND VU.type = %s AND VU.turn <= VersionedProductiveCelestialBody.turn AND VU.progress = 100.0 AND ((VU.destination_x - CelestialBody.location_x) * (VU.destination_x - CelestialBody.location_x) + (VU.destination_y - CelestialBody.location_y) * (VU.destination_y - CelestialBody.location_y) + (VU.destination_z - CelestialBody.location_z) * (VU.destination_z - CelestialBody.location_z)) <= (%d * %d))", playerLogin, eUnitType.Probe, getConfig().getUnitTypeSight(eUnitType.Probe), getConfig().getUnitTypeSight(eUnitType.Probe)));
+					visiblesPcbs.addAll(ProductiveCelestialBody.selectMaxVersion(conn, getConfig(), IVersionedProductiveCelestialBody.class, currentTurn, "VersionedUnit VU", "(VU.owner = '%s' AND VU.type = '%s' AND VU.turn <= VersionedProductiveCelestialBody.turn AND VU.progress = 100.0 AND ((VU.destination_x - CelestialBody.location_x) * (VU.destination_x - CelestialBody.location_x) + (VU.destination_y - CelestialBody.location_y) * (VU.destination_y - CelestialBody.location_y) + (VU.destination_z - CelestialBody.location_z) * (VU.destination_z - CelestialBody.location_z)) <= (%f * %f))", playerLogin, eUnitType.Probe, getConfig().getUnitTypeSight(eUnitType.Probe), getConfig().getUnitTypeSight(eUnitType.Probe)));
 					
 					// Update player UnitArrivalLog (visibles units stopped on pcb, arrival log are inserted in db only when they are published, so no filter needed here, simple copŷ).
-					arrivalLogs.addAll(UnitArrivalLog.selectMaxVersion(conn, getConfig(), IUnitArrivalLog.class, currentTurn, null, "owner = %s", playerLogin));
+					arrivalLogs.addAll(UnitArrivalLog.selectMaxVersion(conn, getConfig(), IUnitArrivalLog.class, currentTurn, null, "owner = '%s'", playerLogin));
 					
 					return null;
 				}				
@@ -373,16 +374,16 @@ class SQLiteGameBoard extends GameBoard implements Serializable
 					protected Void job(SQLiteConnection conn) throws Throwable
 					{
 						// Update buildings (visibles pcbs)
-						buildings.addAll(Building.selectMaxVersion(conn, getConfig(), IBuilding.class, currentTurn, null, "celestialBodyName = %s", vpcb.getName()));
+						buildings.addAll(Building.selectMaxVersion(conn, getConfig(), IBuilding.class, currentTurn, null, "Building.celestialBodyName = '%s'", vpcb.getName()));
 						
 						// Update space roads (visibles pcbs)
-						roads.addAll(SpaceRoad.select(conn, getConfig(), ISpaceRoad.class, null, "(SpaceRoad.spaceCounterACelestialBodyName = %s OR SpaceRoad.spaceCounterBCelestialBodyName = %s) AND (MAX(SpaceRoad.spaceCounterATurn, SpaceRoad.spaceCounterBTurn) <= %d)", vpcb.getName(), vpcb.getName(), currentTurn));
+						roads.addAll(SpaceRoad.select(conn, getConfig(), ISpaceRoad.class, null, "(SpaceRoad.spaceCounterACelestialBodyName = '%s' OR SpaceRoad.spaceCounterBCelestialBodyName = '%s') AND (MAX(SpaceRoad.spaceCounterATurn, SpaceRoad.spaceCounterBTurn) <= %d)", vpcb.getName(), vpcb.getName(), currentTurn));
 						
 						// Update units on visibles pcbs
-						currentPCBUnits.addAll(Unit.selectMaxVersion(conn, getConfig(), IVersionedUnit.class, currentTurn, "CelestialBody　CB", "CB.name = %s AND VersionedUnit.progress = 0.0 AND CB.location_x = VersionedUnit.departure_x AND CB.location_y AND VersionedUnit.departure_y AND CB.location_z = VersionedUnit.departure_z", vpcb.getName()));
+						currentPCBUnits.addAll(Unit.selectMaxVersion(conn, getConfig(), IVersionedUnit.class, currentTurn, "CelestialBody CB", "CB.name = '%s' AND VersionedUnit.progress = 0.0 AND CB.location_x = VersionedUnit.departure_x AND CB.location_y AND VersionedUnit.departure_y AND CB.location_z = VersionedUnit.departure_z", vpcb.getName()));
 						
 						// Update assigned fleets
-						assignedFleets.addAll(AssignedFleet.select(conn, getConfig(), IAssignedFleet.class, null, "celestialBody = %s", vpcb.getName()));
+						assignedFleets.addAll(AssignedFleet.select(conn, getConfig(), IAssignedFleet.class, null, "celestialBody = '%s'", vpcb.getName()));
 						
 						return null;
 					}
@@ -397,29 +398,29 @@ class SQLiteGameBoard extends GameBoard implements Serializable
 						@Override
 						protected Void job(SQLiteConnection conn) throws Throwable
 						{
-							Set<IUnitEncounterLog> result = UnitEncounterLog.selectMaxVersion(conn, getConfig(), IUnitEncounterLog.class, currentTurn, null, "owner = %s AND unitName = %s AND turn = %d", vunit.getOwner(), vunit.getName(), vunit.getTurn());
+							Set<IUnitEncounterLog> result = UnitEncounterLog.selectMaxVersion(conn, getConfig(), IUnitEncounterLog.class, currentTurn, null, "owner = '%s' AND unitName = '%s' AND turn = %d", vunit.getOwner(), vunit.getName(), vunit.getTurn());
 							encounterLogs.addAll(result);
 							for(IUnitEncounterLog uel : result)
 							{
-								Set<IVersionedUnit> currentUnitEncounteredUnits = Unit.selectVersion(conn, getConfig(), IVersionedUnit.class, uel.getSeenTurn(), null, "owner = %s AND name = %s AND type = %s", uel.getSeenOwner(), uel.getSeenName(), uel.getSeenType());
+								Set<IVersionedUnit> currentUnitEncounteredUnits = Unit.selectVersion(conn, getConfig(), IVersionedUnit.class, uel.getSeenTurn(), null, "owner = '%s' AND name = '%s' AND type = '%s'", uel.getSeenOwner(), uel.getSeenName(), uel.getSeenType());
 								for(IVersionedUnit encounteredUnit : currentUnitEncounteredUnits)
 								{									
 									if (IVersionedFleet.class.isInstance(encounteredUnit))
 									{
 										// (Fleet) Update encountered unit FleetComposition
-										comps.addAll(FleetComposition.select(conn, getConfig(), IFleetComposition.class, null, "fleetOwner = %s AND fleetName = %s AND fleetTurn = %d", encounteredUnit.getOwner(), encounteredUnit.getName(), encounteredUnit.getTurn()));
+										comps.addAll(FleetComposition.select(conn, getConfig(), IFleetComposition.class, null, "fleetOwner = '%s' AND fleetName = '%s' AND fleetTurn = %d", encounteredUnit.getOwner(), encounteredUnit.getName(), encounteredUnit.getTurn()));
 										// (Fleet) Update encountered unit special units
-										specialsUnits.addAll(SpecialUnit.selectVersion(conn, getConfig(), IVersionedSpecialUnit.class, currentTurn, null, "fleetOwner = %s AND fleetName = %s AND fleetTurn = %s", encounteredUnit.getOwner(), encounteredUnit.getName(), encounteredUnit.getTurn()));
+										specialsUnits.addAll(SpecialUnit.selectVersion(conn, getConfig(), IVersionedSpecialUnit.class, currentTurn, null, "fleetOwner = '%s' AND fleetName = '%s' AND fleetTurn = '%s'", encounteredUnit.getOwner(), encounteredUnit.getName(), encounteredUnit.getTurn()));
 									}																		
 								}
 								
 								if (IVersionedFleet.class.isInstance(vunit))
 								{
 									// (Fleet) Update MovePlan, FleetComposition
-									moves.addAll(MovePlan.select(conn, getConfig(), IMovePlan.class, null, "owner = %s AND name = %s AND turn = %d", vunit.getOwner(), vunit.getName(), vunit.getTurn()));
-									comps.addAll(FleetComposition.select(conn, getConfig(), IFleetComposition.class, null, "fleetOwner = %s AND fleetName = %s AND fleetTurn = %d", vunit.getOwner(), vunit.getName(), vunit.getTurn()));
+									moves.addAll(MovePlan.select(conn, getConfig(), IMovePlan.class, null, "owner = '%s' AND name = '%s' AND turn = %d", vunit.getOwner(), vunit.getName(), vunit.getTurn()));
+									comps.addAll(FleetComposition.select(conn, getConfig(), IFleetComposition.class, null, "fleetOwner = '%s' AND fleetName = '%s' AND fleetTurn = %d", vunit.getOwner(), vunit.getName(), vunit.getTurn()));
 									// (Fleet) Update special units
-									specialsUnits.addAll(SpecialUnit.selectVersion(conn, getConfig(), IVersionedSpecialUnit.class, currentTurn, null, "fleetOwner = %s AND fleetName = %s AND fleetTurn = %s", vunit.getOwner(), vunit.getName(), vunit.getTurn()));
+									specialsUnits.addAll(SpecialUnit.selectVersion(conn, getConfig(), IVersionedSpecialUnit.class, currentTurn, null, "fleetOwner = '%s' AND fleetName = '%s' AND fleetTurn = '%s'", vunit.getOwner(), vunit.getName(), vunit.getTurn()));
 								}
 							}
 							return null;
@@ -533,6 +534,7 @@ class SQLiteGameBoard extends GameBoard implements Serializable
 		}
 		
 		// Update turn.
+		//SUIS LA: Régler le problème de thread dead lock et de DB locked (la solution actuelle au dead lock entraine une DB locked ?)
 		currentView.getConfig().setTurn(maxTurn);
 	}
 	
@@ -557,7 +559,7 @@ class SQLiteGameBoard extends GameBoard implements Serializable
 							if (p.getName().matches(pc.getName()))
 							{
 								// TODO: image, portrait...
-								result.add(new org.axan.sep.common.Player(p.getName(), new org.axan.sep.common.PlayerConfig(Color.decode(pc.getColor()), null, null)));
+								result.add(new org.axan.sep.common.Player(p.getName(), new org.axan.sep.common.PlayerConfig(Basic.stringToColor(pc.getColor()), null, null)));
 								break;
 							}
 						}
@@ -1016,111 +1018,171 @@ class SQLiteGameBoard extends GameBoard implements Serializable
 	
 	void insertCelestialBody(eCelestialBodyType celestialBodyType, String name, Location location) throws SQLiteException
 	{
-		boolean productiveCelestialBody = (celestialBodyType != eCelestialBodyType.Vortex);
-		db.exec("INSERT INTO CelestialBody (name, location_x, location_y, location_z, type) VALUES ('%s', %d, %d, %d, '%s');", name, location.x, location.y, location.z, celestialBodyType);
+		final ICelestialBody cb;
+		
+		final boolean productiveCelestialBody = (celestialBodyType != eCelestialBodyType.Vortex);
+		
+		int[] carbonAmount;
+		int initialCarbon;
+		int[] slotsAmount;
+		int maxSlots;
 		
 		if (productiveCelestialBody)
 		{
 			// Fix carbon amount to the mean value.
-			int[] carbonAmount = getConfig().getCelestialBodiesStartingCarbonAmount(celestialBodyType);
-			int initialCarbon = rnd.nextInt(carbonAmount[1] - carbonAmount[0]) + carbonAmount[0];
+			carbonAmount = getConfig().getCelestialBodiesStartingCarbonAmount(celestialBodyType);
+			initialCarbon = rnd.nextInt(carbonAmount[1] - carbonAmount[0]) + carbonAmount[0];
 			
 			// Fix slots amount to the mean value.
-			int[] slotsAmount = getConfig().getCelestialBodiesSlotsAmount(celestialBodyType);
-			int maxSlots = rnd.nextInt(slotsAmount[1] - slotsAmount[0]) + slotsAmount[0];
-			if (maxSlots <= 0) maxSlots = 1;			
+			slotsAmount = getConfig().getCelestialBodiesSlotsAmount(celestialBodyType);
+			maxSlots = rnd.nextInt(slotsAmount[1] - slotsAmount[0]) + slotsAmount[0];
+			if (maxSlots <= 0) maxSlots = 1;
 			
-			db.exec("INSERT INTO ProductiveCelestialBody (name, initialCarbonStock, maxSlots, type) VALUES ('%s', %d, %d, '%s')", name, initialCarbon, maxSlots, celestialBodyType);
+			switch(celestialBodyType)
+			{
+				case AsteroidField:
+				{
+					cb = new VersionedAsteroidField(name, celestialBodyType, location, initialCarbon, maxSlots, getConfig().getTurn(), null, initialCarbon, 0);
+					break;
+				}
+				case Nebula:
+				{
+					cb = new VersionedNebula(name, celestialBodyType, location, initialCarbon, maxSlots, getConfig().getTurn(), null, initialCarbon, 0);
+					break;
+				}
+				
+				case Planet:
+				{
+					int[] populationPerTurnRange = getConfig().getPopulationPerTurn();
+					int populationPerTurn = rnd.nextInt(populationPerTurnRange[1] - populationPerTurnRange[0]) + populationPerTurnRange[0];
+					
+					int[] populationLimitRange = getConfig().getPopulationLimit();
+					int maxPopulation = rnd.nextInt(populationLimitRange[1] - populationLimitRange[0]) + populationLimitRange[0];
+										
+					cb = new VersionedPlanet(name, celestialBodyType, location, initialCarbon, maxSlots, getConfig().getTurn(), null, initialCarbon, 0, populationPerTurn, maxPopulation, 0);
+					break;
+				}
+				
+				default:
+				{
+					throw new Protocol.SEPImplementationException("'"+celestialBodyType+"' not implemented.");
+				}
+			}
+		}
+		else
+		{
+			switch(celestialBodyType)
+			{
+				case Vortex:
+				{
+					/*
+					int turn = getConfig().getTurn();
+					int[] lifetimeRange = getConfig().getVortexLifetime();
+					int lifetime = rnd.nextInt(lifetimeRange[1] - lifetimeRange[0]) + lifetimeRange[0];				
+					
+					cb = new Vortex(name, celestialBodyType, location, turn, turn+lifetime, );
+					*/
+					// TODO:
+					throw new Protocol.SEPImplementationException("insertCelestialBody(Vortex, ...) not Implemented");
+				}
+				
+				default:
+				{
+					throw new Protocol.SEPImplementationException("'"+celestialBodyType+"' not implemented.");
+				}
+			}
 		}
 		
-		switch(celestialBodyType)
+		if (cb != null)
 		{
-			case Vortex:
+			db.exec(new SQLiteJob<Void>()
 			{
-				// TODO:
-				throw new Protocol.SEPImplementationException("insertCelestialBody(Vortex, ...) not Implemented");
-			}
-			case AsteroidField:
-			case Nebula:
-			{
-				db.exec("INSERT INTO %s (name, type) VALUES ('%s', '%s');", celestialBodyType, name, celestialBodyType);
-				break;
-			}
-			
-			case Planet:
-			{
-				int[] populationPerTurnRange = getConfig().getPopulationPerTurn();
-				int populationPerTurn = rnd.nextInt(populationPerTurnRange[1] - populationPerTurnRange[0]) + populationPerTurnRange[0];
-				
-				int[] populationLimitRange = getConfig().getPopulationLimit();
-				int maxPopulation = rnd.nextInt(populationLimitRange[1] - populationLimitRange[0]) + populationLimitRange[0];
-				
-				db.exec("INSERT INTO Planet (name, populationPerTurn, maxPopulation, type) VALUES ('%s', %d, %d, '%s');", name, populationPerTurn, maxPopulation, celestialBodyType);
-				break;
-			}
-			
-			default:
-			{
-				throw new Protocol.SEPImplementationException("'"+celestialBodyType+"' not implemented.");
-			}
+				@Override
+				protected Void job(SQLiteConnection conn) throws Throwable
+				{
+					if (productiveCelestialBody)
+					{
+						ProductiveCelestialBody.insertOrUpdate(conn, IProductiveCelestialBody.class.cast(cb));
+					}
+					else
+					{
+						Vortex.insertOrUpdate(conn, IVortex.class.cast(cb));
+					}
+					
+					return null;
+				}
+			});
 		}
 	}
 
-	void insertPlayer(org.axan.sep.common.Player player) throws SQLiteException
-	{
-		db.exec("INSERT INTO Player (name) VALUES ('%s');", player.getName());
-		db.exec("INSERT INTO PlayerConfig (name, color, symbol, portrait) VALUES ('%s', '%s', NULL, NULL);", player.getName(), player.getConfig().getColor().getRGB());		
+	void insertPlayer(final org.axan.sep.common.Player player) throws SQLiteException
+	{		
+		db.exec(new SQLiteJob<Void>()
+		{			
+			@Override
+			protected Void job(SQLiteConnection conn) throws Throwable
+			{
+				Player.insertOrUpdate(conn, new Player(player.getName()));
+				// TODO: Symbol & Portrait
+				PlayerConfig.insertOrUpdate(conn, new PlayerConfig(player.getName(), Basic.colorToString(player.getConfig().getColor()), null, null));
+				return null;
+			}
+		});		
 	}
 	
-	void insertArea(Location location, boolean isSun) throws SQLiteException
+	void insertArea(final Location location, final boolean isSun) throws SQLiteException
 	{
-		db.exec("INSERT INTO Area (location_x, location_y, location_z, isSun) VALUES (%d, %d, %d, %d);", location.x, location.y, location.z, isSun ? 1 : 0);
+		db.exec(new SQLiteJob<Void>()
+		{
+			
+			@Override
+			protected Void job(SQLiteConnection conn) throws Throwable
+			{
+				Area.insertOrUpdate(conn, new Area(location, isSun));
+				return null;
+			}
+		});
 	}
 
-	boolean areaExists(Location location) throws SQLiteException
+	boolean areaExists(final Location location) throws SQLiteException
 	{
-		return db.prepare("SELECT EXISTS ( SELECT location_x FROM Area WHERE location_x = %d AND location_y = %d AND location_z = %d );", new SQLiteStatementJob<Boolean>()
+		return db.exec(new SQLiteJob<Boolean>()
 		{
+			
 			@Override
-			public Boolean job(SQLiteStatement stmnt) throws SQLiteException
+			protected Boolean job(SQLiteConnection conn) throws Throwable
 			{
-				try
-				{
-					stmnt.step();
-					return (stmnt.columnInt(0) != 0);
-				}
-				catch(SQLiteException e)
-				{
-					e.printStackTrace();
-					throw e;
-				}
+				return Area.exist(conn, IArea.class, null, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
 			}
-		}, location.x, location.y, location.z, location.x, location.y, location.z);
+		});
 	}
 	
-	boolean areaHasCelestialBody(Location location) throws SQLiteException
+	boolean areaHasCelestialBody(final Location location) throws SQLiteException
 	{
-		return db.prepare("SELECT EXISTS ( SELECT name FROM CelestialBody WHERE location_x = %d AND location_y = %d AND location_z = %d ) ;", new SQLiteStatementJob<Boolean>()
+		return db.exec(new SQLiteJob<Boolean>()
 		{
+			
 			@Override
-			public Boolean job(SQLiteStatement stmnt) throws SQLiteException
+			protected Boolean job(SQLiteConnection conn) throws Throwable
 			{
-				return (stmnt.columnInt(0) != 0);
-			}			
-		},location.x, location.y, location.z,location.x, location.y, location.z);
+				if (ProductiveCelestialBody.existUnversioned(conn, IProductiveCelestialBody.class, null, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z)) return true;
+				return Vortex.exist(conn, IVortex.class, null, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
+			}
+		});
 	}
 	
-	boolean areaIsSun(Location location) throws SQLiteException
+	boolean areaIsSun(final Location location) throws SQLiteException
 	{
-		return db.prepare("SELECT isSun FROM Area WHERE location_x = %d AND location_y = %d AND location_z = %d;", new SQLiteStatementJob<Boolean>()
+		return db.exec(new SQLiteJob<Boolean>()
 		{
+			
 			@Override
-			public Boolean job(SQLiteStatement stmnt) throws SQLiteException
+			protected Boolean job(SQLiteConnection conn) throws Throwable
 			{
-				stmnt.step();
-				return (stmnt.columnInt(0) != 0);
+				Set<IArea> areas = Area.select(conn, getConfig(), IArea.class, null, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
+				return (!areas.isEmpty() && areas.iterator().next().getIsSun());
 			}
-		}, location.x, location.y, location.z, location.x, location.y, location.z);
+		});		
 	}
 	
 	boolean isTravellingTheSun(RealLocation a, RealLocation b) throws SQLiteException
@@ -1151,20 +1213,38 @@ class SQLiteGameBoard extends GameBoard implements Serializable
 		int[] populationLimitRange = getConfig().getPopulationLimit();
 		int populationLimit = (populationLimitRange[1] - populationLimitRange[0])/2 + populationLimitRange[0];
 
-		db.exec("INSERT INTO CelestialBody (name, location_x, location_y, location_z, type) VALUES ('%s', %d, %d, %d, '%s');", planetName, planetLocation.x, planetLocation.y, planetLocation.z, eCelestialBodyType.Planet);
-		db.exec("INSERT INTO ProductiveCelestialBody (name, initialCarbonStock, maxSlots, type) VALUES ('%s', %d, %d, '%s');", planetName, carbonStock, slots, eCelestialBodyType.Planet);
-		db.exec("INSERT INTO Planet (name, populationPerTurn, maxPopulation, type) VALUES ('%s', %d, %d, '%s');", planetName, populationPerTurn, populationLimit, eCelestialBodyType.Planet);
-		db.exec("INSERT INTO VersionedProductiveCelestialBody (name, turn, carbonStock, currentCarbon, owner, type) VALUES ('%s', %d, %d, %d, '%s', '%s');", planetName, 0, carbonStock, getConfig().getPlayersPlanetsStartingCarbonResources(), ownerName, eCelestialBodyType.Planet);
-		db.exec("INSERT INTO VersionedPlanet (name, turn, currentPopulation, type) VALUES ('%s', %d, %d, '%s');", planetName, 0, getConfig().getPlayersPlanetsStartingPopulation(), eCelestialBodyType.Planet);
+		int currentCarbon = getConfig().getPlayersPlanetsStartingCarbonResources();
+		int currentPopulation = getConfig().getPlayersPlanetsStartingPopulation();
+		
+		final IVersionedPlanet planet = new VersionedPlanet(planetName, eCelestialBodyType.Planet, planetLocation, carbonStock, slots, getConfig().getTurn(), ownerName, carbonStock, currentCarbon, populationPerTurn, populationLimit, currentPopulation);		
+		final IGovernmentModule governmentModule;
+		final IGovernment government;
 		
 		// If victory rule "Regimicide" is on, starting planet has a pre-built government module.	    
 	    if (getConfig().isRegimicide())
 		{
 	    	// Buildin, GovernmentModule, Government
-	    	db.exec("INSERT INTO Building (type, nbSlots, celestialBodyName, turn) VALUES ('%s', %d, '%s', %d);", eBuildingType.GovernmentModule, 1, planetName, 0);
-	    	db.exec("INSERT INTO GovernmentModule (type, celestialBodyName, turn) VALUES ('%s', '%s', %d);", eBuildingType.GovernmentModule, planetName, 0);
-	    	db.exec("INSERT INTO Government (owner, turn, planetName, planetTurn) VALUES ('%s', %d, '%s', %d);", ownerName, 0, planetName, 0);
+	    	governmentModule = new GovernmentModule(eBuildingType.GovernmentModule, planet.getName(), getConfig().getTurn(), 1);
+	    	government = new Government(ownerName, getConfig().getTurn(), null, null, planetName, getConfig().getTurn());
 		}
+	    else
+	    {
+	    	governmentModule = null;
+	    	government = null;
+	    }
+	    
+	    db.exec(new SQLiteJob<Void>()
+		{
+			
+			@Override
+			protected Void job(SQLiteConnection conn) throws Throwable
+			{
+				ProductiveCelestialBody.insertOrUpdate(conn, planet);
+				if (governmentModule != null) Building.insertOrUpdate(conn, governmentModule);
+				if (government != null) Government.insertOrUpdate(conn, government);
+				return null;
+			}
+		});
 	}
 	
 	/// Tests

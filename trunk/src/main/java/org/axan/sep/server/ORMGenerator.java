@@ -11,6 +11,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -40,6 +41,10 @@ import com.almworks.sqlite4java.SQLiteStatement;
 
 class ORMGenerator
 {
+	private static interface RecursiveDoer<T>
+	{
+		T doIt(Class c);
+	}
 	
 	public static void main(String[] args)
 	{
@@ -120,7 +125,7 @@ class ORMGenerator
 										
 					if (!skipStaticMethods(c))
 					{
-						Collections.addAll(importedClass, Set.class, HashSet.class, SQLiteORMGenerator.class, SQLiteConnection.class, SQLiteDBException.class);
+						Collections.addAll(importedClass, Set.class, HashSet.class, SQLiteORMGenerator.class, SQLiteConnection.class, SQLiteDBException.class, Locale.class);
 						
 						Class versionedClass = getVersionedClass(c);
 						
@@ -438,258 +443,400 @@ class ORMGenerator
 				@Override
 				public void genStaticMethods(Class c, PrintStream psuc)
 				{
-					genStaticMethods(c, psuc, new HashSet<Class>(), new StringBuffer());
-				}
-				
-				private void genStaticMethods(Class c, PrintStream psuc, Set<Class> seen, StringBuffer leftJoins)
-				{
 					boolean first = false;
 					
 					Class versionedClass = getVersionedClass(c);
 					
 					java.lang.Class<? extends Enum> enumType = getEnumType(c);
 					
-					if (seen.isEmpty())
+					if (skipStaticMethods(c)) return;
+					
+					///// select
+					
+					if (versionedClass != null && versionedClass.hasField("turn"))
 					{
-						if (skipStaticMethods(c)) return;
+						psuc.println("\t/** Set maxVersion to null to select last version. */");
+						psuc.format("\tpublic static <T extends I%s> Set<T> selectMaxVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, Integer maxVersion, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+						psuc.println("\t{\n\t\treturn select(conn, config, expectedType, true, maxVersion, from, where, params);\n\t}\n");
 						
-						if (versionedClass != null && versionedClass.hasField("turn"))
+						psuc.format("\tpublic static <T extends I%s> Set<T> selectVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, int version, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+						psuc.println("\t{\n\t\treturn select(conn, config, expectedType, false, version, from, where, params);\n\t}\n");
+						
+						psuc.format("\tpublic static <T extends I%s> Set<T> selectUnversioned(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+						psuc.println("\t{\n\t\treturn select(conn, config, expectedType, false, null, from, where, params);\n\t}\n");
+						
+						psuc.format("\tprivate static <T extends I%s> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+					}
+					else
+					{
+						psuc.format("\tpublic static <T extends I%s> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+					}
+					psuc.println("\t{");
+					psuc.println("\t\ttry");
+					psuc.println("\t\t{");
+					psuc.println("\t\t\tSet<T> results = new HashSet<T>();");	
+					psuc.print("\t\t\tSQLiteStatement stmnt = conn.prepare(");
+					if (versionedClass != null && versionedClass.hasField("turn"))
+					{
+						psuc.print("selectQuery(expectedType, maxVersion, version, from, where, params)");
+					}
+					else
+					{
+						psuc.print("selectQuery(expectedType, from, where, params)");
+					}
+					psuc.println("+\";\");");
+					psuc.println("\t\t\twhile(stmnt.step())");
+					psuc.println("\t\t\t{");
+					if (versionedClass != null && versionedClass.hasField("type"))
+					{
+						psuc.format("\t\t\t\t%s type = %s.valueOf(stmnt.columnString(0));\n", enumType.getSimpleName(), enumType.getSimpleName());
+						if (versionedClass != null)
 						{
-							psuc.println("\t/** Set maxVersion to null to select last version. */");
-							psuc.format("\tpublic static <T extends I%s> Set<T> selectMaxVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, Integer maxVersion, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
-							psuc.println("\t{\n\t\treturn select(conn, config, expectedType, true, maxVersion, from, where, params);\n\t}\n");
-							
-							psuc.format("\tpublic static <T extends I%s> Set<T> selectVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, int version, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
-							psuc.println("\t{\n\t\treturn select(conn, config, expectedType, false, version, from, where, params);\n\t}\n");
-							
-							psuc.format("\tpublic static <T extends I%s> Set<T> selectUnversioned(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
-							psuc.println("\t{\n\t\treturn select(conn, config, expectedType, false, null, from, where, params);\n\t}\n");
-							
-							psuc.format("\tprivate static <T extends I%s> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
-						}
-						else
-						{
-							psuc.format("\tpublic static <T extends I%s> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
-						}
-						psuc.println("\t{");
-						psuc.println("\t\ttry");
+							psuc.println("\t\t\t\tString v = stmnt.columnString(1);");
+							psuc.format("\t\t\t\tif (v == null) throw new Error(\"%s with no %s !\");\n", c.getUpperName(), versionedClass.getUpperName());
+							psuc.println("\t\t\t\tboolean isVersioned = (!v.isEmpty());");
+						}						
+						psuc.format("\t\t\t\tClass<? extends I%s> clazz = (Class<? extends I%s>)  Class.forName(String.format(\"%%s.%%s%%s\", %s.class.getPackage().getName(), ", c.getUpperName(), c.getUpperName(), c.getUpperName());
+						psuc.format("%s, type.toString()));\n", getUnprefixedVersionedTypes().containsKey(c.getUpperName()) ? "\"\"" : "isVersioned ? \"Versioned\" : \"\"");						
+						
+						psuc.format("\t\t\t\tI%s o = SQLiteORMGenerator.mapTo(clazz, stmnt, config);\n", c.getUpperName());
+						psuc.println("\t\t\t\tif (expectedType.isInstance(o))");
+						psuc.println("\t\t\t\t{");
+						psuc.println("\t\t\t\t\tresults.add(expectedType.cast(o));");
+						psuc.println("\t\t\t\t}");
+					}
+					else
+					{
+						psuc.format("\t\t\t\tresults.add(SQLiteORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) %s.class : expectedType, stmnt, config));\n", c.getUpperName());
+					}
+					psuc.println("\t\t\t}");
+					psuc.println("\t\t\treturn results;");
+					psuc.println("\t\t}");
+					psuc.println("\t\tcatch(Exception e)");
+					psuc.println("\t\t{");
+					psuc.format("\t\t\tthrow new %s(e);\n", SQLiteDBException.class.getSimpleName());
+					psuc.println("\t\t}");
+					psuc.println("\t}\n");
+					
+					/// Exist
+					
+					if (versionedClass != null && versionedClass.hasField("turn"))
+					{
+						psuc.println("\t/** Set maxVersion to null to select last version. */");
+						psuc.format("\tpublic static <T extends I%s> boolean existMaxVersion(SQLiteConnection conn, Class<T> expectedType, Integer maxVersion, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+						psuc.println("\t{\n\t\treturn exist(conn, expectedType, true, maxVersion, from, where, params);\n\t}\n");
+						
+						psuc.format("\tpublic static <T extends I%s> boolean existVersion(SQLiteConnection conn,Class<T> expectedType, int version, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+						psuc.println("\t{\n\t\treturn exist(conn, expectedType, false, version, from, where, params);\n\t}\n");
+						
+						psuc.format("\tpublic static <T extends I%s> boolean existUnversioned(SQLiteConnection conn, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+						psuc.println("\t{\n\t\treturn exist(conn, expectedType, false, null, from, where, params);\n\t}\n");
+						
+						psuc.format("\tprivate static <T extends I%s> boolean exist(SQLiteConnection conn, Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+					}
+					else
+					{
+						psuc.format("\tpublic static <T extends I%s> boolean exist(SQLiteConnection conn, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+					}
+					psuc.println("\t{");
+					psuc.println("\t\ttry");
+					psuc.println("\t\t{");
+					psuc.print("\t\t\tSQLiteStatement stmnt = conn.prepare(\"SELECT EXISTS ( \"+");
+					if (versionedClass != null && versionedClass.hasField("turn"))
+					{
+						psuc.print("selectQuery(expectedType, maxVersion, version, from, where, params)");
+					}
+					else
+					{
+						psuc.print("selectQuery(expectedType, from, where, params)");
+					}
+					psuc.println(" + \" );\");");
+					psuc.println("\t\t\treturn stmnt.step() && stmnt.columnInt(0) != 0;");
+					psuc.println("\t\t}");
+					psuc.println("\t\tcatch(Exception e)");
+					psuc.println("\t\t{");
+					psuc.format("\t\t\tthrow new %s(e);\n", SQLiteDBException.class.getSimpleName());
+					psuc.println("\t\t}");
+					psuc.println("\t}\n");
+					
+					psuc.println();
+					/// selectQuery
+					
+					if (versionedClass != null && versionedClass.hasField("turn"))
+					{
+						psuc.format("\tprivate static <T extends I%s> String selectQuery(Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params)\n", c.getUpperName());
+					}
+					else
+					{
+						psuc.format("\tprivate static <T extends I%s> String selectQuery(Class<T> expectedType, String from, String where, Object ... params)\n", c.getUpperName());
+					}
+					psuc.println("\t{");
+					psuc.println("\t\twhere = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);");
+					psuc.println("\t\tif (where != null) where = String.format(\"(%s)\",where);");
+					
+					if (c.hasField("type"))
+					{
+						psuc.println("\t\tString typeFilter = null;");
+						psuc.println("\t\tif (expectedType != null)");
 						psuc.println("\t\t{");
-						psuc.println("\t\t\tSet<T> results = new HashSet<T>();\n");
-						psuc.println("\t\t\tif (where != null && params != null) where = String.format(where, params);");
-						if (versionedClass != null && versionedClass.hasField("turn"))
-						{
-							psuc.println("\t\t\tString versionFilter;");
-							psuc.println("\t\t\tif (maxVersion)");
-							psuc.println("\t\t\t{");
-							
-							psuc.format("\t\t\t\tversionFilter = String.format(\"(%s.turn = ( SELECT MAX(LV%s.turn) FROM %s LV%s WHERE ", versionedClass.getUpperName(), versionedClass.getUpperName(), versionedClass.getUpperName(), versionedClass.getUpperName());
-							boolean comma = false;
-							for(Field f : c.getCommonFields(versionedClass))
-							{
-								if (comma) psuc.print(" AND ");
-								psuc.format("LV%s.%s = %s.%s", versionedClass.getUpperName(), f.getLowerName(), c.getUpperName(), f.getLowerName());
-								comma = true;
-							}
-							psuc.format("%%s ))\", (version != null && version >= 0) ? \" AND LV%s.turn <= \"+version : \"\");\n", versionedClass.getUpperName());
-							psuc.println("\t\t\t}");
-							psuc.println("\t\t\telse");
-							psuc.println("\t\t\t{");
-							psuc.format("\t\t\t\tversionFilter = (version == null) ? \"\" : String.format(\"(%s.turn = %%d)\", version);\n", versionedClass.getUpperName());
-							psuc.println("\t\t\t}");
-							
-							psuc.format("\t\t\twhere = String.format(\"%%s%%s\", (where != null && !where.isEmpty()) ? \"(\"+where+\") AND \" : \"\", versionFilter);\n", versionedClass.getUpperName());
-						}
-						psuc.print("\t\t\tSQLiteStatement stmnt = conn.prepare(String.format(\"");												
-						psuc.print("SELECT ");
-						if (versionedClass != null && versionedClass.hasField("type"))
-						{
-							psuc.format("%s.type, %s.type, ", c.getUpperName(), versionedClass.getUpperName());
-						}
-						psuc.format("%s.*", c.getUpperName());
-						first = true;
+						psuc.println("\t\t\tString type = expectedType.isInterface() ? expectedType.getSimpleName().substring(1) : expectedType.getSimpleName();");
+						psuc.println("\t\t\ttypeFilter = String.format(\"%s.type IS NOT NULL\", type);");
+						psuc.println("\t\t}");
+						psuc.println("\t\tif (typeFilter != null && !typeFilter.isEmpty()) where = (where == null) ? typeFilter : String.format(\"%s AND %s\", where, typeFilter);");
 					}
 					
-					Set<Class> subers = c.getSubers();
-					Vector<Class> jointures = new Vector<Class>(subers.size()+1);
-					if (versionedClass != null && versionedClass != c) jointures.add(versionedClass);
-					jointures.addAll(subers);
-					
-					Class jointure = c;
-					
-					for(Class sub : jointures)
+					if (versionedClass != null && versionedClass.hasField("turn"))
 					{
-						if (seen.contains(sub)) continue;
-						seen.add(sub);
-						
-						psuc.format(", %s.*", sub.getUpperName());
-						leftJoins.append(String.format(" LEFT JOIN %s USING (", sub.getUpperName()));
+						psuc.println("\t\tString versionFilter;");
+						psuc.println("\t\tif (maxVersion)");
+						psuc.println("\t\t{");
+													
+						psuc.format("\t\t\tversionFilter = String.format(\"(%s.turn = ( SELECT MAX(LV%s.turn) FROM %s LV%s WHERE ", versionedClass.getUpperName(), versionedClass.getUpperName(), versionedClass.getUpperName(), versionedClass.getUpperName());
 						boolean comma = false;
-						for(Field f : jointure.getCommonFields(sub))
+						for(Field f : c.getCommonFields(versionedClass))
 						{
-							if (comma) leftJoins.append(", ");
+							if (comma) psuc.print(" AND ");
+							psuc.format("LV%s.%s = %s.%s", versionedClass.getUpperName(), f.getLowerName(), c.getUpperName(), f.getLowerName());
 							comma = true;
-							leftJoins.append(String.format("%s", f.getLowerName()));							
 						}
-						leftJoins.append(")");
+						psuc.format("%%s ))\", (version != null && version >= 0) ? \" AND LV%s.turn <= \"+version : \"\");\n", versionedClass.getUpperName());
+						psuc.println("\t\t}");
+						psuc.println("\t\telse");
+						psuc.println("\t\t{");
+						psuc.format("\t\t\tversionFilter = (version == null) ? \"\" : String.format(\"(%s.turn = %%d)\", version);\n", versionedClass.getUpperName());
+						psuc.println("\t\t}");
 						
-						if (sub == versionedClass) jointure = versionedClass;
-						genStaticMethods(sub, psuc, seen, leftJoins);			
+						psuc.println("\t\tif (versionFilter != null && !versionFilter.isEmpty()) where = (where == null) ? versionFilter : String.format(\"%s AND %s\", where, versionFilter);");
 					}
 					
-					if (first)
+					psuc.print("\t\treturn String.format(\"SELECT ");
+					if (versionedClass != null && versionedClass.hasField("type"))
 					{
-						psuc.format(" FROM %s%%s%s", c.getUpperName(), leftJoins);
-						psuc.println("%s ;\", (from != null && !from.isEmpty()) ? \", \"+from : \"\", (where != null && !where.isEmpty()) ? \" WHERE \"+where : \"\"));");
-						psuc.println("\t\t\twhile(stmnt.step())");
-						psuc.println("\t\t\t{");
-						if (versionedClass != null && versionedClass.hasField("type"))
-						{
-							psuc.format("\t\t\t\t%s type = %s.valueOf(stmnt.columnString(0));\n", enumType.getSimpleName(), enumType.getSimpleName());
-							if (versionedClass != null)
-							{
-								psuc.println("\t\t\t\tboolean isVersioned = (!stmnt.columnString(1).isEmpty());");
-							}						
-							psuc.format("\t\t\t\tClass<? extends I%s> clazz = (Class<? extends I%s>)  Class.forName(String.format(\"%%s.%%s%%s\", %s.class.getPackage().getName(), ", c.getUpperName(), c.getUpperName(), c.getUpperName());
-							psuc.format("%s, type.toString()));\n", getUnprefixedVersionedTypes().containsKey(c.getUpperName()) ? "\"\"" : "isVersioned ? \"Versioned\" : \"\"");						
-							
-							psuc.format("\t\t\t\tI%s o = SQLiteORMGenerator.mapTo(clazz, stmnt, config);\n", c.getUpperName());
-							psuc.println("\t\t\t\tif (expectedType.isInstance(o))");
-							psuc.println("\t\t\t\t{");
-							psuc.println("\t\t\t\t\tresults.add(expectedType.cast(o));");
-							psuc.println("\t\t\t\t}");
-						}
-						else
-						{
-							psuc.format("\t\t\t\tresults.add(SQLiteORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) %s.class : expectedType, stmnt, config));\n", c.getUpperName());
-						}
-						psuc.println("\t\t\t}");
-						psuc.println("\t\t\treturn results;");
-						psuc.println("\t\t}");
-						psuc.println("\t\tcatch(Exception e)");
-						psuc.println("\t\t{");
-						psuc.format("\t\t\tthrow new %s(e);\n", SQLiteDBException.class.getSimpleName());
-						psuc.println("\t\t}");
-						psuc.println("\t}\n");
+						psuc.format("%s.type, %s.type, ", c.getUpperName(), versionedClass.getUpperName());
 					}
+					//psuc.format("%s.*", c.getUpperName());
+					
+					final Set<Class> seen = new HashSet<Class>();
+					final Class[] jointure = {c};
+					final Class from = c;
+					final StringBuffer select = new StringBuffer();
+					final StringBuffer leftJoins = new StringBuffer();
+					
+					RecursiveDoer<Void> doJointures = new RecursiveDoer<Void>()
+					{
+						@Override
+						public Void doIt(Class c)
+						{
+							if (seen.contains(c)) return null;
+							seen.add(c);
+							
+							for(Class sup : c.getSupers())
+							{
+								doIt(sup);
+							}
+							
+							Class versionedClass = getVersionedClass(c);
+							if (versionedClass != null && versionedClass != c) doIt(versionedClass);
+							
+							if (select.length() > 0) select.append(", ");
+							select.append(String.format("%s.*", c.getUpperName()));
+							
+							if (from != c && jointure[0] != c)
+							{
+								leftJoins.append(String.format(" LEFT JOIN %s USING (", c.getUpperName()));
+								boolean comma = false;
+								for(Field f : jointure[0].getCommonFields(c))
+								{
+									if (comma) leftJoins.append(", ");
+									comma = true;
+									leftJoins.append(String.format("%s", f.getLowerName()));							
+								}
+								leftJoins.append(")");
+								
+								if (c == versionedClass) jointure[0] = versionedClass;							
+							}
+							
+							for(Class sub : c.getSubers())
+							{
+								doIt(sub);
+							}
+								
+							return null;
+						}
+					};
+					
+					doJointures.doIt(c);
+					psuc.append(select);
+					
+					psuc.format(" FROM %s%%s%s", c.getUpperName(), leftJoins);
+					psuc.println("%s\", (from != null && !from.isEmpty()) ? \", \"+from : \"\", (where != null && !where.isEmpty()) ? \" WHERE \"+where : \"\");");
+					psuc.println("\t}");
 					
 					//// InsertOrUpdate
-					if (first)
+					psuc.println();
+					
+					psuc.format("\tpublic static <T extends I%s> void insertOrUpdate(SQLiteConnection conn, T %s) throws SQLiteDBException\n", c.getUpperName(), c.getLowerName());
+					psuc.println("\t{");
+					psuc.println("\t\ttry");
+					psuc.println("\t\t{");
+					if (versionedClass != null && versionedClass != c)
 					{
-						psuc.println();
-						
-						psuc.format("\tpublic static <T extends I%s> void insertOrUpdate(SQLiteConnection conn, T %s) throws SQLiteDBException\n", c.getUpperName(), c.getLowerName());
-						psuc.println("\t{");
-						psuc.println("\t\ttry");
-						psuc.println("\t\t{");
-						if (versionedClass != null && versionedClass != c)
-						{
-							psuc.format("\t\t\tI%s v%s = (I%s.class.isInstance(%s) ? I%s.class.cast(%s) : null);\n", versionedClass.getUpperName(), c.getLowerName(), versionedClass.getUpperName(), c.getLowerName(), versionedClass.getUpperName(), c.getLowerName());
-						}
-						psuc.format("\t\t\tSQLiteStatement stmnt = conn.prepare(String.format(\"SELECT EXISTS ( SELECT %s FROM %s WHERE", c.getAllFields().iterator().next().getLowerName(), c.getUpperName());
+						psuc.format("\t\t\tI%s v%s = (I%s.class.isInstance(%s) ? I%s.class.cast(%s) : null);\n", versionedClass.getUpperName(), c.getLowerName(), versionedClass.getUpperName(), c.getLowerName(), versionedClass.getUpperName(), c.getLowerName());
+					}
+					psuc.format("\t\t\tSQLiteStatement stmnt = conn.prepare(String.format(\"SELECT EXISTS ( SELECT %s FROM %s WHERE", c.getAllFields().iterator().next().getLowerName(), c.getUpperName());
 
-						boolean comma = false;
-						StringBuffer values = new StringBuffer();
-						for(Field f : c.getFields())
+					boolean comma = false;
+					StringBuffer values = new StringBuffer();
+					for(Field f : c.getFields())
+					{
+						if (!f.isPrimaryKey()) continue;
+						
+						if (comma)
 						{
-							if (!f.isPrimaryKey()) continue;
+							psuc.print(" AND");
+							values.append(", ");
+						}
+						
+						psuc.print(getFieldQuery(f, " AND"));
+						values.append(getFieldValue(c.getLowerName(), f));
+						
+						comma = true;
+					}
+					psuc.format(") AS exist ;\", ");
+					psuc.format("%s));\n", values);
+					
+					values.setLength(0);
+					psuc.println("\t\t\tstmnt.step();");
+					psuc.println("\t\t\tif (stmnt.columnInt(0) == 0)");
+					psuc.println("\t\t\t{");
+					
+					seen.removeAll(seen);
+					final StringBuffer inserts = new StringBuffer();
+					final StringBuffer updates = new StringBuffer();
+					final String varName = c.getLowerName();
+					RecursiveDoer<Void> doInsertUpdateSupers = new RecursiveDoer<Void>()
+					{
+						@Override
+						public Void doIt(Class c)
+						{
+							if (seen.contains(c)) return null;
 							
-							if (comma)
+							for(Class sup : c.getSupers())
 							{
-								psuc.print(" AND");
-								values.append(", ");
+								doIt(sup);
 							}
 							
-							psuc.print(getFieldQuery(f, " AND"));
-							values.append(getFieldValue(c.getLowerName(), f));
-							
-							comma = true;
+							inserts.append(String.format("\t\t\t\tconn.exec(%s);\n", generateInsertQuery(c, varName)));
+							updates.append(String.format("\t\t\t\tconn.exec(%s);\n", generateUpdateQuery(c, varName)));
+
+							seen.add(c);
+							return null;
 						}
-						psuc.format(") AS exist ;\", ");
-						psuc.format("%s));\n", values);
-						
-						values.setLength(0);
-						psuc.println("\t\t\tstmnt.step();");
-						psuc.println("\t\t\tif (stmnt.columnInt(0) == 0)");
-						psuc.println("\t\t\t{");
-						
-						psuc.format("\t\t\t\tconn.exec(%s);\n", generateInsertQuery(c, c.getLowerName()));
-						values.append(String.format("\t\t\t\tconn.exec(%s);\n", generateUpdateQuery(c, c.getLowerName())));
-						if (versionedClass != null && versionedClass != c)
+					};
+					
+					doInsertUpdateSupers.doIt(c);
+					
+					psuc.append(inserts);
+					values.append(updates);					
+					if (versionedClass != null && versionedClass != c)
+					{
+						final StringBuffer vinserts = new StringBuffer();
+						final StringBuffer vupdates = new StringBuffer();
+						RecursiveDoer<Void> doVInsertUpdateSupers = new RecursiveDoer<Void>()
 						{
-							psuc.format("\t\t\t\tif (v%s != null)\n\t\t\t\t{\n\t\t\t\t\tconn.exec(%s);\n\t\t\t\t}\n", c.getLowerName(), generateInsertQuery(versionedClass, "v"+c.getLowerName()));
-							values.append(String.format("\t\t\t\tif (v%s != null)\n\t\t\t\t{\n\t\t\t\t\tconn.exec(%s);\n\t\t\t\t}\n", c.getLowerName(), generateUpdateQuery(versionedClass, "v"+c.getLowerName())));
-						}
-						
-						if (c.hasField("type"))
-						{
-							psuc.format("\t\t\t\tswitch(%s.getType())\n", c.getLowerName());
-							values.append(String.format("\t\t\t\tswitch(%s.getType())\n", c.getLowerName()));
-							psuc.println("\t\t\t\t{");
-							values.append("\t\t\t\t{\n");
-							
-							for(Enum<?> e : enumType.getEnumConstants())
+							@Override
+							public Void doIt(Class c)
 							{
-								psuc.format("\t\t\t\t\tcase %s:\n", e.name());
-								values.append(String.format("\t\t\t\t\tcase %s:\n", e.name()));
-								psuc.println("\t\t\t\t\t{");
-								values.append("\t\t\t\t\t{\n");
+								if (seen.contains(c)) return null;
 								
-								for(Class sub : c.getSubers())
+								for(Class sup : c.getSupers())
 								{
-									if (sub.getUpperName().matches(e.name()))
-									{
-										psuc.format("\t\t\t\t\t\tI%s %s = I%s.class.cast(%s);\n", sub.getUpperName(), sub.getLowerName(), sub.getUpperName(), c.getLowerName());
-										values.append(String.format("\t\t\t\t\t\tI%s %s = I%s.class.cast(%s);\n", sub.getUpperName(), sub.getLowerName(), sub.getUpperName(), c.getLowerName()));
-										psuc.format("\t\t\t\t\t\tconn.exec(%s);\n", generateInsertQuery(sub, sub.getLowerName()));
-										values.append(String.format("\t\t\t\t\t\tconn.exec(%s);\n", generateUpdateQuery(sub, sub.getLowerName())));
-										if (versionedClass != c)
-										{
-											Class vsub = getVersionedClass(sub);
-											if (vsub != null && vsub != sub)
-											{
-												psuc.format("\t\t\t\t\t\tif (v%s != null)\n", c.getLowerName());
-												values.append(String.format("\t\t\t\t\t\tif (v%s != null)\n", c.getLowerName()));
-												psuc.println("\t\t\t\t\t\t{");
-												values.append("\t\t\t\t\t\t{\n");
-												psuc.format("\t\t\t\t\t\t\tI%s %s = I%s.class.cast(%s);\n", vsub.getUpperName(), vsub.getLowerName(), vsub.getUpperName(), c.getLowerName());
-												values.append(String.format("\t\t\t\t\t\t\tI%s %s = I%s.class.cast(%s);\n", vsub.getUpperName(), vsub.getLowerName(), vsub.getUpperName(), c.getLowerName()));
-												psuc.format("\t\t\t\t\t\t\tconn.exec(%s);\n", generateInsertQuery(vsub, vsub.getLowerName()));
-												values.append(String.format("\t\t\t\t\t\t\tconn.exec(%s);\n", generateUpdateQuery(vsub, vsub.getLowerName())));
-												psuc.println("\t\t\t\t\t\t}");
-												values.append("\t\t\t\t\t\t}\n");
-											}																					
-										}
-									}
+									doIt(sup);
 								}
 								
-								psuc.println("\t\t\t\t\t\tbreak;");
-								values.append("\t\t\t\t\t\tbreak;\n");
-								psuc.println("\t\t\t\t\t}");
-								values.append("\t\t\t\t\t}\n");
+								vinserts.append(String.format("\t\t\t\tif (v%s != null)\n\t\t\t\t{\n\t\t\t\t\tconn.exec(%s);\n\t\t\t\t}\n", varName, generateInsertQuery(c, "v"+varName)));
+								vupdates.append(String.format("\t\t\t\tif (v%s != null)\n\t\t\t\t{\n\t\t\t\t\tconn.exec(%s);\n\t\t\t\t}\n", varName, generateUpdateQuery(c, "v"+varName)));
+								
+								seen.add(c);
+								return null;
 							}
-							psuc.println("\t\t\t\t}");
-							values.append("\t\t\t\t}\n");
-						}
+						};
 						
-						/*
-						 * switch (unit.getType())
-							{
-								case AntiProbeMissile:
-								{
-						 */
+						doVInsertUpdateSupers.doIt(versionedClass);
 						
-						psuc.println("\t\t\t}");
-						psuc.println("\t\t\telse");
-						psuc.println("\t\t\t{");
-						psuc.print(values);					
-						psuc.println("\t\t\t}");
-						psuc.println("\t\t}");
-						psuc.println("\t\tcatch(Exception e)");
-						psuc.println("\t\t{");
-						psuc.println("\t\t\tthrow new SQLiteDBException(e);");
-						psuc.println("\t\t}");
-						psuc.println("\t}");
+						psuc.append(vinserts);
+						values.append(vupdates);
 					}
+					
+					if (c.hasField("type"))
+					{
+						psuc.format("\t\t\t\tswitch(%s.getType())\n", c.getLowerName());
+						values.append(String.format("\t\t\t\tswitch(%s.getType())\n", c.getLowerName()));
+						psuc.println("\t\t\t\t{");
+						values.append("\t\t\t\t{\n");
+						
+						for(Enum<?> e : enumType.getEnumConstants())
+						{							
+							for(Class sub : c.getSubers())
+							{
+								if (sub.getUpperName().matches(e.name()))
+								{
+									psuc.format("\t\t\t\t\tcase %s:\n", e.name());
+									values.append(String.format("\t\t\t\t\tcase %s:\n", e.name()));
+									psuc.println("\t\t\t\t\t{");
+									values.append("\t\t\t\t\t{\n");
+									
+									psuc.format("\t\t\t\t\t\tI%s %s = I%s.class.cast(%s);\n", sub.getUpperName(), sub.getLowerName(), sub.getUpperName(), c.getLowerName());
+									values.append(String.format("\t\t\t\t\t\tI%s %s = I%s.class.cast(%s);\n", sub.getUpperName(), sub.getLowerName(), sub.getUpperName(), c.getLowerName()));
+									psuc.format("\t\t\t\t\t\tconn.exec(%s);\n", generateInsertQuery(sub, sub.getLowerName()));
+									values.append(String.format("\t\t\t\t\t\tconn.exec(%s);\n", generateUpdateQuery(sub, sub.getLowerName())));
+									if (versionedClass != c)
+									{
+										Class vsub = getVersionedClass(sub);
+										if (vsub != null && vsub != sub)
+										{
+											psuc.format("\t\t\t\t\t\tif (v%s != null)\n", c.getLowerName());
+											values.append(String.format("\t\t\t\t\t\tif (v%s != null)\n", c.getLowerName()));
+											psuc.println("\t\t\t\t\t\t{");
+											values.append("\t\t\t\t\t\t{\n");
+											psuc.format("\t\t\t\t\t\t\tI%s %s = I%s.class.cast(%s);\n", vsub.getUpperName(), vsub.getLowerName(), vsub.getUpperName(), c.getLowerName());
+											values.append(String.format("\t\t\t\t\t\t\tI%s %s = I%s.class.cast(%s);\n", vsub.getUpperName(), vsub.getLowerName(), vsub.getUpperName(), c.getLowerName()));
+											psuc.format("\t\t\t\t\t\t\tconn.exec(%s);\n", generateInsertQuery(vsub, vsub.getLowerName()));
+											values.append(String.format("\t\t\t\t\t\t\tconn.exec(%s);\n", generateUpdateQuery(vsub, vsub.getLowerName())));
+											psuc.println("\t\t\t\t\t\t}");
+											values.append("\t\t\t\t\t\t}\n");
+										}																					
+									}
+									
+									psuc.println("\t\t\t\t\t\tbreak;");
+									values.append("\t\t\t\t\t\tbreak;\n");
+									psuc.println("\t\t\t\t\t}");
+									values.append("\t\t\t\t\t}\n");
+								}
+							}
+						}
+						psuc.println("\t\t\t\t}");
+						values.append("\t\t\t\t}\n");
+					}
+					
+					/*
+					 * switch (unit.getType())
+						{
+							case AntiProbeMissile:
+							{
+					 */
+					
+					psuc.println("\t\t\t}");
+					psuc.println("\t\t\telse");
+					psuc.println("\t\t\t{");
+					psuc.print(values);					
+					psuc.println("\t\t\t}");
+					psuc.println("\t\t}");
+					psuc.println("\t\tcatch(Exception e)");
+					psuc.println("\t\t{");
+					psuc.println("\t\t\tthrow new SQLiteDBException(e);");
+					psuc.println("\t\t}");
+					psuc.println("\t}");
 				}
 				
 				private String generateUpdateQuery(Class c, String var)
@@ -733,7 +880,7 @@ class ORMGenerator
 					}
 					
 					if (set.length() == 0) return "\";\"";
-					return String.format("String.format(\"UPDATE %s SET %s WHERE %s ;\", %s, %s)", c.getUpperName(), set, where, setValues, whereValues);
+					return String.format("String.format(\"UPDATE %s SET%s WHERE %s ;\", %s, %s).replaceAll(\"'null'\", \"NULL\")", c.getUpperName(), set, where, setValues, whereValues);
 				}
 				
 				private String generateInsertQuery(Class c, String var)
@@ -761,7 +908,7 @@ class ORMGenerator
 						comma = true;
 					}
 					
-					result.append(String.format(") VALUES (%s);\", %s)", flags, values));
+					result.append(String.format(") VALUES (%s);\", %s).replaceAll(\"'null'\", \"NULL\")", flags, values));
 					return result.toString();
 				}
 				

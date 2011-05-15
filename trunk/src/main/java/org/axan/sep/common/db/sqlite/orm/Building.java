@@ -5,6 +5,7 @@ import org.axan.sep.common.db.IBuilding;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
@@ -75,23 +76,13 @@ public class Building implements IBuilding
 		try
 		{
 			Set<T> results = new HashSet<T>();
-
-			if (where != null && params != null) where = String.format(where, params);
-			String versionFilter;
-			if (maxVersion)
-			{
-				versionFilter = String.format("(Building.turn = ( SELECT MAX(LVBuilding.turn) FROM Building LVBuilding WHERE LVBuilding.type = Building.type AND LVBuilding.celestialBodyName = Building.celestialBodyName AND LVBuilding.turn = Building.turn AND LVBuilding.nbSlots = Building.nbSlots%s ))", (version != null && version >= 0) ? " AND LVBuilding.turn <= "+version : "");
-			}
-			else
-			{
-				versionFilter = (version == null) ? "" : String.format("(Building.turn = %d)", version);
-			}
-			where = String.format("%s%s", (where != null && !where.isEmpty()) ? "("+where+") AND " : "", versionFilter);
-			SQLiteStatement stmnt = conn.prepare(String.format("SELECT Building.type, Building.type, Building.*, ExtractionModule.*, GovernmentModule.*, DefenseModule.*, StarshipPlant.*, SpaceCounter.*, PulsarLaunchingPad.* FROM Building%s LEFT JOIN ExtractionModule USING (type, celestialBodyName, turn) LEFT JOIN GovernmentModule USING (type, celestialBodyName, turn) LEFT JOIN DefenseModule USING (type, celestialBodyName, turn) LEFT JOIN StarshipPlant USING (type, celestialBodyName, turn) LEFT JOIN SpaceCounter USING (type, celestialBodyName, turn) LEFT JOIN PulsarLaunchingPad USING (type, celestialBodyName, turn)%s ;", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : ""));
+			SQLiteStatement stmnt = conn.prepare(selectQuery(expectedType, maxVersion, version, from, where, params)+";");
 			while(stmnt.step())
 			{
 				eBuildingType type = eBuildingType.valueOf(stmnt.columnString(0));
-				boolean isVersioned = (!stmnt.columnString(1).isEmpty());
+				String v = stmnt.columnString(1);
+				if (v == null) throw new Error("Building with no Building !");
+				boolean isVersioned = (!v.isEmpty());
 				Class<? extends IBuilding> clazz = (Class<? extends IBuilding>)  Class.forName(String.format("%s.%s%s", Building.class.getPackage().getName(), "", type.toString()));
 				IBuilding o = SQLiteORMGenerator.mapTo(clazz, stmnt, config);
 				if (expectedType.isInstance(o))
@@ -107,6 +98,59 @@ public class Building implements IBuilding
 		}
 	}
 
+	/** Set maxVersion to null to select last version. */
+	public static <T extends IBuilding> boolean existMaxVersion(SQLiteConnection conn, Class<T> expectedType, Integer maxVersion, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return exist(conn, expectedType, true, maxVersion, from, where, params);
+	}
+
+	public static <T extends IBuilding> boolean existVersion(SQLiteConnection conn,Class<T> expectedType, int version, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return exist(conn, expectedType, false, version, from, where, params);
+	}
+
+	public static <T extends IBuilding> boolean existUnversioned(SQLiteConnection conn, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		return exist(conn, expectedType, false, null, from, where, params);
+	}
+
+	private static <T extends IBuilding> boolean exist(SQLiteConnection conn, Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params) throws SQLiteDBException
+	{
+		try
+		{
+			SQLiteStatement stmnt = conn.prepare("SELECT EXISTS ( "+selectQuery(expectedType, maxVersion, version, from, where, params) + " );");
+			return stmnt.step() && stmnt.columnInt(0) != 0;
+		}
+		catch(Exception e)
+		{
+			throw new SQLiteDBException(e);
+		}
+	}
+
+
+	private static <T extends IBuilding> String selectQuery(Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params)
+	{
+		where = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);
+		if (where != null) where = String.format("(%s)",where);
+		String typeFilter = null;
+		if (expectedType != null)
+		{
+			String type = expectedType.isInterface() ? expectedType.getSimpleName().substring(1) : expectedType.getSimpleName();
+			typeFilter = String.format("%s.type IS NOT NULL", type);
+		}
+		if (typeFilter != null && !typeFilter.isEmpty()) where = (where == null) ? typeFilter : String.format("%s AND %s", where, typeFilter);
+		String versionFilter;
+		if (maxVersion)
+		{
+			versionFilter = String.format("(Building.turn = ( SELECT MAX(LVBuilding.turn) FROM Building LVBuilding WHERE LVBuilding.type = Building.type AND LVBuilding.celestialBodyName = Building.celestialBodyName AND LVBuilding.turn = Building.turn AND LVBuilding.nbSlots = Building.nbSlots%s ))", (version != null && version >= 0) ? " AND LVBuilding.turn <= "+version : "");
+		}
+		else
+		{
+			versionFilter = (version == null) ? "" : String.format("(Building.turn = %d)", version);
+		}
+		if (versionFilter != null && !versionFilter.isEmpty()) where = (where == null) ? versionFilter : String.format("%s AND %s", where, versionFilter);
+		return String.format("SELECT Building.type, Building.type, Building.*, ExtractionModule.*, GovernmentModule.*, DefenseModule.*, StarshipPlant.*, SpaceCounter.*, PulsarLaunchingPad.* FROM Building%s LEFT JOIN ExtractionModule USING (type, celestialBodyName, turn) LEFT JOIN GovernmentModule USING (type, celestialBodyName, turn) LEFT JOIN DefenseModule USING (type, celestialBodyName, turn) LEFT JOIN StarshipPlant USING (type, celestialBodyName, turn) LEFT JOIN SpaceCounter USING (type, celestialBodyName, turn) LEFT JOIN PulsarLaunchingPad USING (type, celestialBodyName, turn)%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
+	}
 
 	public static <T extends IBuilding> void insertOrUpdate(SQLiteConnection conn, T building) throws SQLiteDBException
 	{
@@ -116,56 +160,56 @@ public class Building implements IBuilding
 			stmnt.step();
 			if (stmnt.columnInt(0) == 0)
 			{
-				conn.exec(String.format("INSERT INTO Building (type, celestialBodyName, turn, nbSlots) VALUES (%s, %s, %s, %s);", "'"+building.getType()+"'", "'"+building.getCelestialBodyName()+"'", "'"+building.getTurn()+"'", "'"+building.getNbSlots()+"'"));
+				conn.exec(String.format("INSERT INTO Building (type, celestialBodyName, turn, nbSlots) VALUES (%s, %s, %s, %s);", "'"+building.getType()+"'", "'"+building.getCelestialBodyName()+"'", "'"+building.getTurn()+"'", "'"+building.getNbSlots()+"'").replaceAll("'null'", "NULL"));
 				switch(building.getType())
 				{
 					case PulsarLaunchingPad:
 					{
 						IPulsarLaunchingPad pulsarLaunchingPad = IPulsarLaunchingPad.class.cast(building);
-						conn.exec(String.format("INSERT INTO PulsarLaunchingPad (type, celestialBodyName, turn, firedDate) VALUES (%s, %s, %s, %s);", "'"+pulsarLaunchingPad.getType()+"'", "'"+pulsarLaunchingPad.getCelestialBodyName()+"'", "'"+pulsarLaunchingPad.getTurn()+"'", "'"+pulsarLaunchingPad.getFiredDate()+"'"));
+						conn.exec(String.format("INSERT INTO PulsarLaunchingPad (type, celestialBodyName, turn, firedDate) VALUES (%s, %s, %s, %s);", "'"+pulsarLaunchingPad.getType()+"'", "'"+pulsarLaunchingPad.getCelestialBodyName()+"'", "'"+pulsarLaunchingPad.getTurn()+"'", "'"+pulsarLaunchingPad.getFiredDate()+"'").replaceAll("'null'", "NULL"));
 						break;
 					}
 					case SpaceCounter:
 					{
 						ISpaceCounter spaceCounter = ISpaceCounter.class.cast(building);
-						conn.exec(String.format("INSERT INTO SpaceCounter (type, celestialBodyName, turn) VALUES (%s, %s, %s);", "'"+spaceCounter.getType()+"'", "'"+spaceCounter.getCelestialBodyName()+"'", "'"+spaceCounter.getTurn()+"'"));
+						conn.exec(String.format("INSERT INTO SpaceCounter (type, celestialBodyName, turn) VALUES (%s, %s, %s);", "'"+spaceCounter.getType()+"'", "'"+spaceCounter.getCelestialBodyName()+"'", "'"+spaceCounter.getTurn()+"'").replaceAll("'null'", "NULL"));
 						break;
 					}
 					case GovernmentModule:
 					{
 						IGovernmentModule governmentModule = IGovernmentModule.class.cast(building);
-						conn.exec(String.format("INSERT INTO GovernmentModule (type, celestialBodyName, turn) VALUES (%s, %s, %s);", "'"+governmentModule.getType()+"'", "'"+governmentModule.getCelestialBodyName()+"'", "'"+governmentModule.getTurn()+"'"));
+						conn.exec(String.format("INSERT INTO GovernmentModule (type, celestialBodyName, turn) VALUES (%s, %s, %s);", "'"+governmentModule.getType()+"'", "'"+governmentModule.getCelestialBodyName()+"'", "'"+governmentModule.getTurn()+"'").replaceAll("'null'", "NULL"));
 						break;
 					}
 					case DefenseModule:
 					{
 						IDefenseModule defenseModule = IDefenseModule.class.cast(building);
-						conn.exec(String.format("INSERT INTO DefenseModule (type, celestialBodyName, turn) VALUES (%s, %s, %s);", "'"+defenseModule.getType()+"'", "'"+defenseModule.getCelestialBodyName()+"'", "'"+defenseModule.getTurn()+"'"));
+						conn.exec(String.format("INSERT INTO DefenseModule (type, celestialBodyName, turn) VALUES (%s, %s, %s);", "'"+defenseModule.getType()+"'", "'"+defenseModule.getCelestialBodyName()+"'", "'"+defenseModule.getTurn()+"'").replaceAll("'null'", "NULL"));
 						break;
 					}
 					case StarshipPlant:
 					{
 						IStarshipPlant starshipPlant = IStarshipPlant.class.cast(building);
-						conn.exec(String.format("INSERT INTO StarshipPlant (type, celestialBodyName, turn) VALUES (%s, %s, %s);", "'"+starshipPlant.getType()+"'", "'"+starshipPlant.getCelestialBodyName()+"'", "'"+starshipPlant.getTurn()+"'"));
+						conn.exec(String.format("INSERT INTO StarshipPlant (type, celestialBodyName, turn) VALUES (%s, %s, %s);", "'"+starshipPlant.getType()+"'", "'"+starshipPlant.getCelestialBodyName()+"'", "'"+starshipPlant.getTurn()+"'").replaceAll("'null'", "NULL"));
 						break;
 					}
 					case ExtractionModule:
 					{
 						IExtractionModule extractionModule = IExtractionModule.class.cast(building);
-						conn.exec(String.format("INSERT INTO ExtractionModule (type, celestialBodyName, turn) VALUES (%s, %s, %s);", "'"+extractionModule.getType()+"'", "'"+extractionModule.getCelestialBodyName()+"'", "'"+extractionModule.getTurn()+"'"));
+						conn.exec(String.format("INSERT INTO ExtractionModule (type, celestialBodyName, turn) VALUES (%s, %s, %s);", "'"+extractionModule.getType()+"'", "'"+extractionModule.getCelestialBodyName()+"'", "'"+extractionModule.getTurn()+"'").replaceAll("'null'", "NULL"));
 						break;
 					}
 				}
 			}
 			else
 			{
-				conn.exec(String.format("UPDATE Building SET  nbSlots = %s WHERE  type = %s AND celestialBodyName = %s AND turn = %s ;", "'"+building.getNbSlots()+"'", "'"+building.getType()+"'", "'"+building.getCelestialBodyName()+"'", "'"+building.getTurn()+"'"));
+				conn.exec(String.format("UPDATE Building SET nbSlots = %s WHERE  type = %s AND celestialBodyName = %s AND turn = %s ;", "'"+building.getNbSlots()+"'", "'"+building.getType()+"'", "'"+building.getCelestialBodyName()+"'", "'"+building.getTurn()+"'").replaceAll("'null'", "NULL"));
 				switch(building.getType())
 				{
 					case PulsarLaunchingPad:
 					{
 						IPulsarLaunchingPad pulsarLaunchingPad = IPulsarLaunchingPad.class.cast(building);
-						conn.exec(String.format("UPDATE PulsarLaunchingPad SET  firedDate = %s WHERE  type = %s AND celestialBodyName = %s AND turn = %s ;", "'"+pulsarLaunchingPad.getFiredDate()+"'", "'"+pulsarLaunchingPad.getType()+"'", "'"+pulsarLaunchingPad.getCelestialBodyName()+"'", "'"+pulsarLaunchingPad.getTurn()+"'"));
+						conn.exec(String.format("UPDATE PulsarLaunchingPad SET firedDate = %s WHERE  type = %s AND celestialBodyName = %s AND turn = %s ;", "'"+pulsarLaunchingPad.getFiredDate()+"'", "'"+pulsarLaunchingPad.getType()+"'", "'"+pulsarLaunchingPad.getCelestialBodyName()+"'", "'"+pulsarLaunchingPad.getTurn()+"'").replaceAll("'null'", "NULL"));
 						break;
 					}
 					case SpaceCounter:

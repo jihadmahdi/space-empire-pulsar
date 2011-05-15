@@ -939,6 +939,7 @@ class SEPServer implements IServer
 					}
 					catch(GameBoardException e)
 					{
+						e.printStackTrace();
 						log.log(Level.SEVERE, "GameBoard creation error.", e);
 						server.terminate();
 					}

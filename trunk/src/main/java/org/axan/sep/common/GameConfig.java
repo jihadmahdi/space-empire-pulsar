@@ -814,4 +814,18 @@ public class GameConfig implements IGameConfig, Serializable
 	{
 		vortexScope = scope;
 	}
+	
+	private int[] vortexLifetime = new int[] {3, 10};
+	
+	@Override
+	public int[] getVortexLifetime()
+	{
+		return vortexLifetime;
+	}
+	
+	@Override
+	public void setVortexLifetime(int min, int max)
+	{
+		vortexLifetime = new int[] {min, max};
+	}
 }
