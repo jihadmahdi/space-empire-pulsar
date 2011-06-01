@@ -62,7 +62,7 @@ A tout moment, le joueur peut donner ordre aux flottes stationnées pacifiquemen
 =====Flottes étrangères en stationnement: S'en débarasser !=====
 A tout moment, le joueur peut donner ordre aux forces de son corps céleste d'abattre les flottes étrangèes en stationnement.
 Il doit définir sa politique intérieure de sorte à déclarer ennemie au moins l'une des forces présente, puis l'attaquer.
-Le conflit se résoud d'abord suivant la polituque intérieure du corps céleste attaquant, puis les politiques de conquètes des forces étrangères en présence.
+Le conflit se résoud d'abord suivant la politique intérieure du corps céleste attaquant, puis les politiques de conquètes des forces étrangères en présence.
 S'il perds, le corps céleste reviens à l'une des alliance victorieuse, tirée au hasard selon la proportion de chaque joueur restant.
 
 ===Pacte d'alliance===

@@ -18,11 +18,11 @@ Les joueurs sont alors ajouté à la liste des joueurs et l'initiateur de la par
 Une fois la partie lancée, le nombre de joueur est fixé et il est impossible d'en ajouter.
 //Minimum: 2//
 
-===Quantité de 資 de départ===
+===Quantité de 炭 de départ===
 Quantité de ressource carbone disponible sur les planètes de départ de chaque joueurs.
 //Par défaut: 150K//
 
-===Le niveau de 資 des corps célestes neutres===
+===Le niveau de 炭 des corps célestes neutres===
 Quantité de ressource carbone disponible sur les corps célestes neutres (fourchette).
 Afin de garder l'équilibre du jeu, les champs d'astéroïdes ne devraient pas fournir plus de 60% des ressources fournies par les nébuleuses.
 //Par défaut://
@@ -72,14 +72,14 @@ Le premier joueur ayant conquis tous les corps célestes et détruit toute les f
 A noter qu'il est nécéssaire de décocher les autres conditions de victoire pour pouvoir profiter de celle-ci pleinement.
 
 ===Victoire économique===
-Le premier joueur ayant atteind les seuils de ressource 資 et 人 fixées gagne la partie.
+Le premier joueur ayant atteind les seuils de ressource 炭 et 人 fixées gagne la partie.
 
 ===Limite temps===
 Le jeu se termine au bout d'un nombre de tour fixé, le joueur ayant le plus haut score global gagne la partie.
 
 ==Calcul du score global d'un joueur==
 Le score global d'un joueur est calculé en prenant en compte toute ces possessions:
-Nombre et types de corps célestes, total des ressources 人 et 資, nombre et puissance des flottes, nombres et types de constructions.
+Nombre et types de corps célestes, total des ressources 人 et 炭, nombre et puissance des flottes, nombres et types de constructions.
 
 ===A DEFINIR===
 Poids de chaque paramètre dans la formule finale de calcul du score.

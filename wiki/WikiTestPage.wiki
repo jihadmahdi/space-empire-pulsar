@@ -1,4 +1,4 @@
-#summary Index : Page de test Wiki
+#summary Index : Méta : Utilisation du Wiki : Page de test Wiki
 
 =Page de test Wiki=
 =Titres 1=
@@ -30,7 +30,7 @@ Cinquième ligne
 ||
 ||	##人 par tour##	||	Production de population à chaque tour de jeu.	||
 ||	##人 max##		||	Valeur maximale de population autorisée sur la planète, au delà la production s'arrète, jusqu'a ce que la population soit redevenue inférieure au maximum autorisé. ||
-||	##資 max##		||	Réserve en ressource carbone disponible sur le corps céleste, cette valeur diminue à chaque tour passé a extraire le carbone, jusqu'a ce que le corps céleste soit stérile. ||
+||	##炭 max##		||	Réserve en ressource carbone disponible sur le corps céleste, cette valeur diminue à chaque tour passé a extraire le carbone, jusqu'a ce que le corps céleste soit stérile. ||
 ||	##Nb. slots##	||	Nombre d'emplacement disponibles sur le corps céleste pour la construction de modules. ||
 ||
 

@@ -1,12 +1,12 @@
 #summary Index : Cahier des charges : Fonctionnalités
 
 =Fonctionnalités=
-Cette page drèsse la liste des fonctionnalités de Space Empire Pulsar, triées suivant les règles de MoSCoW:
+Cette page dresse la liste des fonctionnalités de Space Empire Pulsar, triées suivant les règles de MoSCoW:
 
 ==Must==
 (Fonctionnalités obligatoire)
 	¤ Implémentation des règles étendues telles que décrite dans le CdC.
-	¤ Architecture Client/Serveur (SGS).
+	¤ Architecture Client/Serveur.
 	¤ Support Multilangue simple (fichier .lng).
 ==Should==
 (Fonctionnalités qui devrait être implémentées)

@@ -80,7 +80,7 @@ Pour les détails concernant le calcul des caractéristiques des flottes équiva
 ==Calcul de la valeur d'un vaisseau==
 Afin de garantir un équilibre de prix et de puissance entre les vaisseaux, la formule suivante est proposée :
 Soit 人 le coût en population.
-Soit 資 le coût en ressource (carbonne).
+Soit 炭 le coût en ressource (carbonne).
 Soit k une constante permettant de changer l'échèlle de mesure, car on souhaite parler de ressource en milliers, mais se limiter à des nombres a deux chiffres pour les caractéristiques.
 k=60
 
@@ -88,11 +88,11 @@ k=60
 <math>omega_Arme = omega_Armure = 1/3</math>
 <math>omega_Vitesse = 5</math>
 
-<math>2*人 + 資 = k * ( (omega_Attaque * Attaque) + (omega_Défense * Défense) + (omega_Arme * Attaque * Arme) + (omega_Armure * Défense * Armure) + (omega_Vitesse * Vitesse) )</math>
+<math>2*人 + 炭 = k * ( (omega_Attaque * Attaque) + (omega_Défense * Défense) + (omega_Arme * Attaque * Arme) + (omega_Armure * Défense * Armure) + (omega_Vitesse * Vitesse) )</math>
 
 Voici la liste des différents vaisseaux :
 
-===Sonde (900人/300資)===
+===Sonde (900人/300炭)===
 La sonde est un petit vaisseau d'exploration composé d'un module de voyage et d'un module de communication lequel est largué du premier lorsque la zone destination est atteinte.
 Exempt de tout dispositif d'attaque, il permet en revanche de scanner les zones voisines dans la limite de sa porté (3Z).
 Elle peut être envoyé sur toute zone vide ou corps céleste et y demeurer, la limite de porté étant définie par la porté de rayonnement du soleil, rayonnement nécéssaire à l'autonomie de la sonde (module communication).
@@ -106,18 +106,18 @@ note: Une sonde déployée sur la zone d'un corps céleste étranger peut à tou
 	Vitesse: 1.5 Z/T
 }}
 
-===Missiles anti-sonde (0人/200資)===
-Les missiles anti-sondes cont comme leur nom l'indique des missiles entièrement automatisés et dédié à la destruction des sondes.
-chaque missile est lancé avec pour cible une sonde localisée qu'il détruiera à son arrivée.
-Dans le cas où la sonde n'est déjà plus présente à l'arrivé du missile, celui-ci s'auto-détruit.
-Dans le cas où le missile cible une sonde présente dans la même zone qu'un corps céleste, le missile est détruit avant de pouvoir atteindre la sonde (à condition que le corps céleste dispose d'unitées de défense, vaisseau ou module de défense).
+===Missiles anti-sonde (0人/200炭)===
+Les missiles anti-sondes sont comme leur nom l'indique des missiles dédiés à la destruction des sondes.
+Chaque missile est lancé avec pour cible une sonde localisée qu'il détruiera à son arrivée.
+Dans le cas où la sonde n'est déjà plus présente à l'arrivé du missile, celui-ci est perdu (et s'auto-détruit).
+Dans le cas où le missile cible une sonde présente dans la même zone qu'un corps céleste, le missile est détruit avant de pouvoir atteindre la sonde (à condition que le corps céleste dispose d'unitées de défense, vaisseau ou module de défense hostile à la destruction de la sonde).
 {{
 	Attaque: 1
 	Defense: 1
 	Vitesse: 3Z/T
 }}
 
-===Vaisseau gouvernemental (200人/200資)===
+===Vaisseau gouvernemental (200人/200炭)===
 Le vaisseau gouvernemental ne peut être produit que sur la planète disposant du module gouvernemental et sert à transporter le gouvernement (en fuite, par exemple).
 C'est un vaisseau particulièrement rapide, équipé d'armes légères en cas d'imprévu (on préfèrera cependant généralement lui adjoindre une flotte complète).
 Lorsque le vaisseau gouvernemental est en déplacement, toute communication est impossible pour le joueur, c'est à dire qu'il ne peut plus donner d'ordre a ses planètes et flottes, il est contraint de passer ses tours jusqu'à ce que son gouvernement arrive à se poser.
@@ -128,7 +128,7 @@ Le joueur récupère la communication dès que le vaisseau est à l'arrêt. Cepe
 	Vitesse: 2.5 Z/T
 }}
 
-===Vaisseaux léger (A DEFINIR人/A DEFINIR資)===
+===Vaisseaux léger (A DEFINIR人/A DEFINIR炭)===
 Les vaisseaux léger de chaque classes partagent les mêmes caractéristiques de base.
 On souhaite qu'un vaisseau léger BN puisse abattre 3 vaisseaux légers TdT et survivre.
 {{
@@ -138,7 +138,7 @@ On souhaite qu'un vaisseau léger BN puisse abattre 3 vaisseaux légers TdT et s
 	Defense de classe: A DEFINIR
 }}
 
-===Vaisseaux moyen (A DEFINIR人/A DEFINIR資)===
+===Vaisseaux moyen (A DEFINIR人/A DEFINIR炭)===
 Les vaisseaux moyen de chaque classes partagent les mêmes caractéristiques de base.
 On souhaite qu'un vaisseau moyen BN puisse abattre 4 vaisseaux moyen TdT et survivre.
 On souhaite qu'un vaisseau moyen puisse abattre 10 vaisseaux Ego légers et survivre.
@@ -151,7 +151,7 @@ On souhaite qu'un vaisseau moyen puisse abattre 10 vaisseaux Ego légers et surv
 	
 
 
-===Vaisseaux lourds (A DEFINIR人/A DEFINIR資)===
+===Vaisseaux lourds (A DEFINIR人/A DEFINIR炭)===
 Les vaisseaux lourds de chaque classes partagent les même caractéristiques de base.
 On souhaite qu'un vaisseau lourd BN puisse abattre 5 vaisseaux lourds TdT et survivre.
 On souhaite qu'un vaisseau lourd puisse abattre 10 vaisseux Ego moyens et survivre.

@@ -7,7 +7,7 @@ C'est donc une entité particulière qu'il vous faut protéger et sans laquelle 
 En d'autres termes, le gouvernement représente le joueur.
 
 Concrètement, le gouvernement peut prendre deux formes, une seule pouvant exister à la fois et en un seul exemplaire par joueur:
-	¤ Celle de la construction "Module gouvernemental", établi sur une planète à laquelle il apporte des bonus de production de 人 et 資.
+	¤ Celle de la construction "Module gouvernemental", établi sur une planète à laquelle il apporte des bonus de production de 人 et 炭.
 	¤ Celle d'un "Vaisseau gouvernemental", qui n'apporte aucun bonus en stationnement, et qui perds toute communication lorsqu'il est en déplacement.
 	
 Le vaisseau gouvernemental ne peut être créé que sur la planète disposant du module gouvernemental.
@@ -20,7 +20,7 @@ Lorsqu'il arrive a destination, plusieurs cas de figure se présentent:
 	¤ La destination est une planète sauvage, ou neutre dont le comportement est "ennemi": Le vaisseau gouernemental est attaqué, soit il est détruit, soit il survit et se pose sur la planète et récupère la communication.
 Le gouvernement peut rétablir un module gouvernemental lorsqu'il est en stationnement sur une planète appartenant au joueur.
 
-Durant son voyage, gouvernement est coupé du reste de l'empire (communication impossible), le joueur perds donc l'actualisation des informations de son empire, et ne peut plus passer d'ordres, il n'a pas non plus de rapport sur les éventuelles attaques subies par ses planètes ou flottes.
+Durant son voyage, le gouvernement est coupé du reste de l'empire (communication impossible), le joueur perds donc l'actualisation des informations de son empire, et ne peut plus passer d'ordres, il n'a pas non plus de rapport sur les éventuelles attaques subies par ses planètes ou flottes.
 Le joueur perds aussi le chat multijoueur.
 Dès que son gouvernement arrive à s'établir sur un corps céleste, il retrouve les informations à jour et le log des informations passées.
 Bien qu'il soit le centre de décision, le vaisseau gouvernemental ne peut pas changer de direction durant un trajet car comme toute autre flotte il voyage en hyper-space.

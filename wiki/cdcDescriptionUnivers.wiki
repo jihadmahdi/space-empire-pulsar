@@ -23,7 +23,7 @@ C'est à dire qu'une flotte qui serait envoyée pour attaquer un corps céleste 
 Le gouvernement n'aura pu que déduire son échec par l'absence de communication au jour prévu de l'attaque.
 De même, une flotte qui en aurait aperçue une autre durant son voyage (c'est à dire que les deux flottes se sont croisées au même moment sur la même zone), ou bien qui aurait détruit une sonde ennemi sur son passage, ne pourra en faire le rapport qu'une fois arrivée sur un corps céleste.
 
-Les seules exceptions étant les sondes, celles-ci sont équipées d'équipement lourd leur permettant de communiquer dès lors qu'elles se déploient et reste stationnement.
+Les seules exceptions étant les sondes, celles-ci sont équipées d'équipement lourd leur permettant de communiquer dès lors qu'elles se déploient et restent en stationnement.
 
 ==Phénomènes astraux==
 Les phénomènes astraux sont des évènements dont la probabilité reste mystérieuse et qui se produisent donc au hasard durant la partie.
@@ -43,9 +43,9 @@ Les phénomènes astraux sont des évènements dont la probabilité reste mysté
 ===Pulsar===
 	Un pulsar est à l'état naturel le résultat de l'explosion d'un astre, dont résulte une étoile morte tournant rapidement sur elle-même (période de l'ordre de la seconde), et émettant un fort rayonnement électromagnétique dans la direction de son axe magnétique.
 	Celui-ci n'étant chez les pulsar, comme chez de nombreux autres corps céleste, pas parfaitement aligné avec l'axe de rotation, le faisceau émis en direction de l'axe magnétique balaie en réalité un cône.
-	L'astrophysicien 松山正則 (//Masanori Matsuyama//) fut le premier à étudier les effets de tels corps et à en explorer les utilisations possibles. Dans son article 明日は森閑　(//Demain le silence//) il attire l'attention sur les dérives millitaires qui pourraient selon lui réduire sous peu l'univers au silence.
-	En effet, on observe que la zone couverte par le cône que forme le rayonnement d'un pulsar se trouve soumise à une perturbation magnétique suffisante pour rendent innutilisables tous les moyens de communication spaciaux connus (les communications locales à un corps céleste ne sont pas sujets à ces perturbations).
-	De nos jours, les craintes de 松山 (//Matsuyama//) sont confirmées puisque l'armée est arrivé à fabriquer articiellement de petits pulsars capables d'émèttre sur 4 ou 5 zones spatiales, et projète de construire des canons capables de les propulser n'importe où dans la galaxie. 
+	L'astrophysicien Masanori Matsuyama (//松山正則//) fut le premier à étudier les effets de tels corps et à en explorer les utilisations possibles. Dans son article 明日は森閑　(//Demain le silence//) il attire l'attention sur les dérives millitaires qui pourraient selon lui réduire sous peu l'univers au silence.
+	En effet, on observe que la zone couverte par le cône que forme le rayonnement d'un pulsar se trouve soumise à une perturbation magnétique suffisante pour rendre innutilisables tous les moyens de communication spaciaux connus (les communications locales à un corps céleste ne sont pas sujetes à ces perturbations).
+	De nos jours, les craintes de M. Matsuyama sont confirmées puisque l'armée est arrivé à fabriquer articiellement de petits pulsars capables d'émèttre sur 4 ou 5 zones spatiales, et projète de construire des canons capables de les propulser n'importe où dans la galaxie. 
 	
 	cf. le "Canon à pulsar" dans la liste des [cdcDescriptionConstructions|Constructions].
 	

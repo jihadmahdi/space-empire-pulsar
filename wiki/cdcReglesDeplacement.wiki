@@ -40,12 +40,12 @@ Cette fonctionnalitée permet entre autre de synchroniser l'arrivée de flottes 
 Entre joueurs alliés, qui partagent la même vue, il est possible de synchroniser une de ses flottes avec une flotte allié déjà en route, à condition que le temps de trajet de celle-ci soit suppérieur au trajet que mettrais la flotte à synchroniser.
 Dans ce cas, le joueur choisi pour destination la flotte alliée avec laquelle se synchroniser, et la flotte calcule d'elle même le retard qu'il lui faut appliquer pour être certaine d'arriver à destination en même temps que la flotte alliée.
 
-==Cas d'une destination incertaine, politique de rapatriement des flottes==
+==Cas d'une destination incertaine, politique de rapatriement des flottes (OBSOLETE, cf. Missile anti-sonde))==
 Nous apellons destination incertaine une sonde que l'on prend pour cible pour la détruire, ou un vortex sur lequel on se rend mais qui peut très bien disparaître avant que l'on y arrive.
 Lorsqu'on envoie une flotte sur ce type de destination, on est libre de spéficier le corps céleste sur lequel doit se rendre la flotte après avoir visité la zone occupée par la sonde / le vortex.
 En l'absence de choix du joueur, la flotte est rapatriée par défaut sur le corps céleste allié le plus proche (tel que connu au moment de l'envoi).
 
-==Cas particulier des Sondes==
+==Cas particulier des Sondes (OBSOLETE: cf. Missile anti-sonde)==
 La sonde est la seule unité à pouvoir stationner sur une zone vide.
 Après sa fabrication, la sonde doit être lancée sur un zone, pouvant être un corps céleste, ou vide.
 Une fois sa destination atteinte, la sonde se déploie, elle n'a alors plus la capacité de se déplacer mais permet de voir ce qui se passe autour d'elle (jusqu'a une certaine limite).
