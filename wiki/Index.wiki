@@ -5,8 +5,8 @@ Space Empire Pulsar sera un jeu de stratégie tour par tour, multijoueur, inspir
 Il devrait être implémenté en JAVA, ce qui le rend multiplateforme.
 
 ==Status==
-||Rédaction du cahier des charges||80%||
-||Spécification et conception||Développement en cours||
+||Rédaction du cahier des charges||90%||
+||Développement||en cours||
 
 ==Version PDF==
 Le site entier est disponible au format PDF, le fichier est mis à jour automatiquement tous les soirs.
