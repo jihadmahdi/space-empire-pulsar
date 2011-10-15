@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -59,7 +60,8 @@ public class TestSEP
 
 	private static ExecutorService	threadPool	= Executors.newCachedThreadPool();
 
-	static private org.axan.eplib.utils.Test tester;
+	private static enum eTest {Server, Clients};
+	static private org.axan.eplib.utils.Test<eTest> tester;
 	
 	/**
 	 * @throws java.lang.Exception
@@ -84,15 +86,9 @@ public class TestSEP
 	@Before
 	public void setUp() throws Exception
 	{
-		PipedInputStream serverPipeOut = new PipedInputStream();
-		serverOut = new BufferedReader(new InputStreamReader(serverPipeOut));
-		SEPServer.log = org.axan.eplib.utils.Test.getTestLogger(new PipedOutputStream(serverPipeOut));
-
-		PipedInputStream clientPipeOut = new PipedInputStream();
-		clientOut = new BufferedReader(new InputStreamReader(clientPipeOut));
-		SEPClient.log = org.axan.eplib.utils.Test.getTestLogger(new PipedOutputStream(clientPipeOut));
-		
-		tester = new org.axan.eplib.utils.Test(5000, "Clients", clientOut, "Server", serverOut);
+		tester = org.axan.eplib.utils.Test.getTester(5000, 1048576, eTest.Server, eTest.Clients);
+		SEPServer.log = tester.getLogger(eTest.Server);
+		SEPClient.log = tester.getLogger(eTest.Clients);
 	}
 
 	/**
@@ -266,11 +262,18 @@ public class TestSEP
 		}
 	}
 	
-	private static void waitForNextTurn(int turn, ClientAI ... ias) throws InterruptedException
+	private static void waitForNextTurn(long timeOut, int turn, ClientAI ... ias) throws TimeoutException, InterruptedException
 	{	
+		
 		boolean finished;
+		long start = System.currentTimeMillis();
 		do
 		{
+			if (System.currentTimeMillis() - start > timeOut)
+			{
+				//throw new TimeoutException();
+			}
+			
 			finished = true;
 			
 			for(ClientAI ia : ias)
@@ -287,30 +290,54 @@ public class TestSEP
 		}while(!finished);		
 	}
 	
+	// Server/Client ports
+	final int PORT = 3131;
+	// JUnit Timeout
+	final int TIMEOUT_JUNIT = 1000*9999;
+	// Network Timeout
+	final int TIMEOUT_NET = 1000*30;
+	// Client is connected test timeout
+	final int TIMEOUT_CLIENT_CONNECTION = 1000*10;
+	
 	/**
 	 * Test for client side.
+	 * @throws InterruptedException 
 	 */
-	@Test
-	public void testClient() {test(true);}
+	@Test(timeout=TIMEOUT_JUNIT)
+	public void testClient() throws InterruptedException
+	{
+		for(int i=0; i < 10; ++i)
+		{
+			System.err.println("i == "+i);
+			long start = System.currentTimeMillis();
+			while(System.currentTimeMillis() - start < TIMEOUT_NET)
+			{
+				Thread.sleep(1000);
+				System.err.print(".");
+			}
+			System.err.println();
+			
+			tester.flush();
+			test(true);
+		}
+	}
 	
 	/**
 	 * Test for server side.
 	 */
-	@Test
+	//@Test
 	public void testServer() {test(false);}
 	
 	private void test(boolean isClientTest)
-	{
-		final int PORT = 3131;
-		final int TIMEOUT = 999999*1000;//10000;
-		final int CONNECTION_TIMEOUT = 10000;
+	{	
+		Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.ALL);
 		
 		int turn = 0;
 		
 		assertTrue("Unexpected remaining log", tester.flush());
 		System.out.println("Step: Server creation");
 
-		SEPServer server = new SEPServer(PORT, TIMEOUT);
+		SEPServer server = new SEPServer(PORT, TIMEOUT_NET);
 		assertNotNull("Unexpected result", server);
 
 		// server.getClientsNumber()
@@ -338,15 +365,23 @@ public class TestSEP
 		
 		// server.start
 		server.start();
+		try
+		{
+			Thread.sleep(500);
+		}
+		catch(InterruptedException e)
+		{
+			fail(e.getMessage());
+		}
 
-		tester.checkNextTrace(serverOut, SEPServer.class, "start", "Server started");
+		tester.checkNextTrace(eTest.Server, SEPServer.class, "start", "Server started");
 
 		assertTrue("Unexpected remaining log", tester.flush());
 		System.out.println("Step: Client1 connection");
 		
 		// Client 1
 
-		TestClientUserInterface ui1 = new TestClientUserInterface(isClientTest, "client1", SERVER_ADMIN_KEY, "localhost", PORT, TIMEOUT);
+		TestClientUserInterface ui1 = new TestClientUserInterface(isClientTest, "client1", SERVER_ADMIN_KEY, "localhost", PORT, TIMEOUT_NET);
 		SEPClient client1 = ui1.getClient();
 
 		assertEquals("Unexpected client login", "client1", client1.getLogin());
@@ -356,13 +391,13 @@ public class TestSEP
 		client1.connect();
 
 		// client.isConnected()
-		for(long start = System.currentTimeMillis(); !client1.isConnected() && System.currentTimeMillis() - start < CONNECTION_TIMEOUT;)
+		for(long start = System.currentTimeMillis(); !client1.isConnected() && System.currentTimeMillis() - start < TIMEOUT_CLIENT_CONNECTION;)
 			;
 		assertTrue("Expected to be connected", client1.isConnected());
 
-		tester.checkNextTrace(clientOut, SEPClient.class, "connect", "Client 'client1' connected");
-		tester.checkNextTrace(clientOut, TestSEP.TestClientUserInterface.class, "refreshPlayerList", "client1.refreshPlayerList([client1])");
-		tester.checkNextTrace(clientOut, TestSEP.TestClientUserInterface.class, "displayGameCreationPanel", "client1.displayGameCreationPanel");
+		tester.checkNextTrace(eTest.Clients, SEPClient.class, "connect", "Client 'client1' connected");
+		tester.checkNextTrace(eTest.Clients, TestSEP.TestClientUserInterface.class, "refreshPlayerList", "client1.refreshPlayerList([client1])");
+		tester.checkNextTrace(eTest.Clients, TestSEP.TestClientUserInterface.class, "displayGameCreationPanel", "client1.displayGameCreationPanel");
 
 		assertTrue("Unexpected remaining log", tester.flush());
 		System.out.println("Step: Client1 getting gameCreation interface");
@@ -381,7 +416,7 @@ public class TestSEP
 
 		// Client 2
 
-		TestClientUserInterface ui2 = new TestClientUserInterface(isClientTest, "client2", "localhost", PORT, TIMEOUT);
+		TestClientUserInterface ui2 = new TestClientUserInterface(isClientTest, "client2", "localhost", PORT, TIMEOUT_NET);
 		SEPClient client2 = ui2.getClient();
 
 		assertEquals("Unexpected client login", "client2", client2.getLogin());
@@ -391,13 +426,13 @@ public class TestSEP
 		System.out.println("Step: Client2 connection");
 		
 		client2.connect();
-		for(long start = System.currentTimeMillis(); !client2.isConnected() && System.currentTimeMillis() - start < CONNECTION_TIMEOUT;)
+		for(long start = System.currentTimeMillis(); !client2.isConnected() && System.currentTimeMillis() - start < TIMEOUT_CLIENT_CONNECTION;)
 			;
 		assertTrue("Expected to be connected", client2.isConnected());
 
-		tester.checkNextTrace(clientOut, SEPClient.class, "connect", "Client 'client2' connected");
-		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "refreshPlayerList", new String[] { "client1.refreshPlayerList([client1, client2])", "client2.refreshPlayerList([client1, client2])" });
-		tester.checkNextTrace(clientOut, TestSEP.TestClientUserInterface.class, "displayGameCreationPanel", "client2.displayGameCreationPanel");
+		tester.checkNextTrace(eTest.Clients, SEPClient.class, "connect", "Client 'client2' connected");
+		tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "refreshPlayerList", new String[] { "client1.refreshPlayerList([client1, client2])", "client2.refreshPlayerList([client1, client2])" });
+		tester.checkNextTrace(eTest.Clients, TestSEP.TestClientUserInterface.class, "displayGameCreationPanel", "client2.displayGameCreationPanel");
 		
 		assertTrue("Unexpected remaining log", tester.flush());
 		System.out.println("Step: Client2 getting gameCreation interface");
@@ -463,30 +498,30 @@ public class TestSEP
 			return;
 		}
 
-		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "refreshGameConfig", new String[] { "client1.refreshGameConfig(2)", "client2.refreshGameConfig(2)" });
-		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "refreshGameConfig", new String[] { "client1.refreshGameConfig(1)", "client2.refreshGameConfig(1)" });
+		tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "refreshGameConfig", new String[] { "client1.refreshGameConfig(2)", "client2.refreshGameConfig(2)" });
+		tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "refreshGameConfig", new String[] { "client1.refreshGameConfig(1)", "client2.refreshGameConfig(1)" });
 		
-		tester.checkNextTrace(serverOut, SEPServer.SEPGameCreation.class, "updateGameConfig", "client2 tried to update game config but is not admin.");
+		tester.checkNextTrace(eTest.Server, SEPServer.SEPGameCreation.class, "updateGameConfig", "client2 tried to update game config but is not admin.");
 
 		// Client 3
 
 		assertTrue("Unexpected remaining log", tester.flush());
 		System.out.println("Step: Client3 connection");
 		
-		TestClientUserInterface ui3 = new TestClientUserInterface(isClientTest, "client3", "localhost", PORT, TIMEOUT);
+		TestClientUserInterface ui3 = new TestClientUserInterface(isClientTest, "client3", "localhost", PORT, TIMEOUT_NET);
 		SEPClient client3 = ui3.getClient();
 
 		assertEquals("Unexpected client login", "client3", client3.getLogin());
 		assertFalse("No connection expected", client3.isConnected());
 
 		client3.connect();
-		for(long start = System.currentTimeMillis(); !client3.isConnected() && System.currentTimeMillis() - start < CONNECTION_TIMEOUT;)
+		for(long start = System.currentTimeMillis(); !client3.isConnected() && System.currentTimeMillis() - start < TIMEOUT_CLIENT_CONNECTION;)
 			;
 		assertTrue("Expected to be connected", client3.isConnected());
 
-		tester.checkNextTrace(clientOut, SEPClient.class, "connect", "Client 'client3' connected");
-		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "refreshPlayerList", new String[] { "client1.refreshPlayerList([client1, client2, client3])", "client2.refreshPlayerList([client1, client2, client3])", "client3.refreshPlayerList([client1, client2, client3])" });
-		tester.checkNextTrace(clientOut, TestSEP.TestClientUserInterface.class, "displayGameCreationPanel", "client3.displayGameCreationPanel");
+		tester.checkNextTrace(eTest.Clients, SEPClient.class, "connect", "Client 'client3' connected");
+		tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "refreshPlayerList", new String[] { "client1.refreshPlayerList([client1, client2, client3])", "client2.refreshPlayerList([client1, client2, client3])", "client3.refreshPlayerList([client1, client2, client3])" });
+		tester.checkNextTrace(eTest.Clients, TestSEP.TestClientUserInterface.class, "displayGameCreationPanel", "client3.displayGameCreationPanel");
 
 		assertTrue("Unexpected remaining log", tester.flush());
 		System.out.println("Step: Client3 getting gameCreation interface");
@@ -518,21 +553,23 @@ public class TestSEP
 		try
 		{
 			client1.runGame();
-			turn = 0;
-			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
+			turn = 1;
+			waitForNextTurn(120*1000, turn, client1AITest, client2AITest, client3AITest);
 		}
 		catch(Throwable t)
 		{
+			tester.flush();
+			t.printStackTrace();			
 			fail("Unexpected exception thrown : " + t.getMessage());
-			t.printStackTrace();
 			return;
 		}
 
 		assertEquals("Unexpected result", turn, client1AITest.getTurn());
 
-		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "onGameRan", new String[] { "client1.onGameRan", "client2.onGameRan", "client3.onGameRan" });		
-		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gameRan", "gameRan");						
-		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
+		tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "onGameRan", new String[] { "client1.onGameRan", "client2.onGameRan", "client3.onGameRan" });		
+		tester.checkNextTrace(eTest.Server, SEPServer.SEPGameServerListener.class, "gameRan", "gameRan");						
+		
+		tester.checkAllUnorderedTraces(eTest.Server, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
 		
 		assertTrue("Unexpected remaining log", tester.flush());
 		System.out.println("Step: getting clients runningGame interfaces");
@@ -1263,8 +1300,15 @@ public class TestSEP
 
 		// server.stop()
 		server.stop();
-		tester.checkNextTrace(serverOut, SEPServer.class, "stop", "Stopping server");
+		tester.checkNextTrace(eTest.Server, SEPServer.class, "stop", "Stopping server");
 
 		assertTrue("Unexpected remaining log", tester.flush());
+		
+		server.stop();
+		server.terminate();
+		
+		client1.disconnect();
+		client2.disconnect();
+		client3.disconnect();
 	}
 }

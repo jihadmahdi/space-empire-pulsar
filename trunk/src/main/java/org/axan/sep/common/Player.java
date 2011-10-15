@@ -10,6 +10,7 @@ import java.io.Serializable;
 /**
  * 
  */
+@Deprecated // Use common.db.IPlayer instead.
 public class Player implements Serializable, Comparable<Player>
 {
 	/**

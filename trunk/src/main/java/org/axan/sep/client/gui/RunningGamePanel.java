@@ -67,10 +67,8 @@ import org.axan.sep.client.gui.lib.TristateCheckBox;
 import org.axan.sep.client.gui.lib.TypedListWrapper;
 import org.axan.sep.client.gui.lib.WrappedJLabel;
 import org.axan.sep.common.AbstractGameCommandCheck;
-import org.axan.sep.common.IGameCommand;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.StarshipTemplate;
-import org.axan.sep.common.IGameCommand.GameCommandException;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.IArea;
@@ -78,7 +76,6 @@ import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IVersionedProductiveCelestialBody;
-import org.axan.sep.server.SEPServer.SEPImplementationException;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteJob;
 
@@ -94,7 +91,7 @@ import com.almworks.sqlite4java.SQLiteJob;
  * PURCHASED FOR THIS MACHINE, SO JIGLOO OR THIS CODE CANNOT BE USED LEGALLY FOR
  * ANY CORPORATE OR COMMERCIAL PURPOSE.
  */
-public class RunningGamePanel extends javax.swing.JPanel implements UniverseRendererListener, SQLiteLocalGame.Client
+public class RunningGamePanel extends javax.swing.JPanel implements UniverseRendererListener/*, SQLiteLocalGame.Client*/
 {
 	private static final int	EAST_AREA_WIDTH						= 200;
 	private static final int	EAST_AREA_COMPONENTS_MAX_WIDTH		= EAST_AREA_WIDTH - 25;

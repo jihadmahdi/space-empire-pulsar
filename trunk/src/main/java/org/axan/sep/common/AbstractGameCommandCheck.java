@@ -5,6 +5,7 @@ package org.axan.sep.common;
  * This is used to say if a game command is possible or not, and provide additional informations (command price, fail reason, ...).
  * It is also used in command implementation as the check step is responsible for query gameBoard about the objects which command will modify.
  */
+@Deprecated // Not used anymore in server package.
 public abstract class AbstractGameCommandCheck
 {
 	/** Checked gameBoard. */

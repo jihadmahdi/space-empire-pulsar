@@ -519,6 +519,10 @@
 						<configuration>
 							<tasks>
 								<echo>####PROCESS-RESOURCES###</echo>
+								<echo>fixTestResources.sh</echo>								
+								<exec executable="sh" dir="${basedir}">
+									<arg value="fixTestResources.sh" />									
+								</exec>
 							</tasks>
 						</configuration>
 					</execution>

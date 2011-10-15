@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.axan.sep.common.IGameBoard.GameBoardException;
 
+@Deprecated
 public interface IGame
 {
         public static interface Client
@@ -15,7 +16,7 @@ public interface IGame
         /**
          * Add a command to the current gameBoard and execute it to preview the next gameBoard.
          * @param command Command to execute.
-         * @throws LocalGameCommandException If the command cannot be applied to the current gameBoard state. 
+         * @throws GameBoardException If the command cannot be applied to the current gameBoard state. 
          */
         public abstract void executeCommand(GameCommand<?> command) throws GameBoardException;       
 

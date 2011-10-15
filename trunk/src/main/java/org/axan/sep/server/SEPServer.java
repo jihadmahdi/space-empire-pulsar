@@ -5,6 +5,7 @@
  */
 package org.axan.sep.server;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -29,6 +30,10 @@ import org.axan.eplib.gameserver.server.GameServer;
 import org.axan.eplib.gameserver.server.GameServer.ExecutorFactory;
 import org.axan.eplib.gameserver.server.GameServer.GameServerListener;
 import org.axan.eplib.gameserver.server.GameServer.ServerUser;
+import org.axan.eplib.orm.ISQLDataBase;
+import org.axan.eplib.orm.SQLDataBaseException;
+import org.axan.eplib.orm.hsqldb.HSQLDB;
+import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.sep.common.CommandCheckResult;
 import org.axan.sep.common.GameConfig;
@@ -50,7 +55,7 @@ import org.axan.sep.common.Protocol.SEPImplementationException;
  * SEPServer
  * server package main class.
  */
-class SEPServer implements IServer
+public class SEPServer implements IServer
 {
 
 	public static Logger		log	= Logger.getLogger(SEPServer.class.getCanonicalName());
@@ -251,12 +256,13 @@ class SEPServer implements IServer
 			try
 			{
 				// TODO: Be able to compute a full player game board (including previous turn) from the current server game board.
-				return sepServer.getCurrentGame().getPlayerGameBoard(user.getLogin());
+				return sepServer.getCurrentGame().getPlayerGameBoard(createNewDB(), user.getLogin());
 			}
 			catch(GameBoardException e)
 			{
-				log.log(Level.SEVERE, "Player game board transformation error.", e);
+				e.printStackTrace();
 				this.getServerPlayer().abort(e);
+				log.log(Level.SEVERE, "Player game board transformation error.", e);
 				return null;
 			}
 		}
@@ -680,6 +686,22 @@ class SEPServer implements IServer
 		}
 		threadPool = Executors.newCachedThreadPool();
 	}
+	
+	private static ISQLDataBase createNewDB() throws GameBoardException
+	{
+		try
+		{
+			File dbFile = File.createTempFile("SEP_Common_", ".sep");
+			return new SQLiteDB(dbFile);
+			//return new HSQLDB(dbFile, "sa", "");			
+		}
+		catch(Throwable t)
+		{
+			t.printStackTrace();
+			log.log(Level.SEVERE, t.getMessage(), t);
+			throw new GameBoardException(t);
+		}
+	}
 
 	public Map<Player, Boolean> getPlayerStateList()
 	{
@@ -736,7 +758,7 @@ class SEPServer implements IServer
 			{
 				try
 				{
-					players.get(name).getClientInterface().receiveNewTurnGameBoard(getCurrentGame().getPlayerGameBoard(name));
+					players.get(name).getClientInterface().receiveNewTurnGameBoard(getCurrentGame().getPlayerGameBoard(createNewDB(), name));
 				}
 				catch(RpcException e)
 				{
@@ -782,7 +804,7 @@ class SEPServer implements IServer
 			{
 				try
 				{
-					game = new ServerGame(new SQLiteGameBoard(getPlayerList(), this.gameConfig));
+					game = new ServerGame(new GameBoard(createNewDB(), getPlayerList(), this.gameConfig));
 				}
 				catch(Throwable t)
 				{
@@ -939,9 +961,9 @@ class SEPServer implements IServer
 					}
 					catch(GameBoardException e)
 					{
-						e.printStackTrace();
-						log.log(Level.SEVERE, "GameBoard creation error.", e);
+						e.printStackTrace();						
 						server.terminate();
+						log.log(Level.SEVERE, "GameBoard creation error.", e);
 					}
 				}
 			});

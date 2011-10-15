@@ -14,6 +14,7 @@ import org.axan.sep.common.IGameBoard.GameBoardException;
  * It makes the client able to execute command and see a preview of the game after each command.
  * Finally the client has to get back the command list to send it to the server and ends his turn.
  */
+@Deprecated
 public class LocalGame implements IGame
 {
 	/** Ordered map of each gameBoard view and the command that leads to the next gameBoard view. */ 

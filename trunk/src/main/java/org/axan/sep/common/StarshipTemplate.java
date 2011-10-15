@@ -10,6 +10,7 @@ import java.io.Serializable;
 /**
  * Represent a Starship model.
  */
+@Deprecated // Use common.db.IStarshipTemplate instead.
 public class StarshipTemplate implements Serializable, Comparable<StarshipTemplate>
 {
 	public final int	defense;

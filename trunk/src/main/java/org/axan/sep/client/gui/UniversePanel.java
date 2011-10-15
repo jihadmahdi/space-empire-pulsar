@@ -25,12 +25,7 @@ import javax.swing.event.ChangeListener;
 
 import org.axan.eplib.utils.Basic;
 import org.axan.sep.client.gui.lib.JImagePanel;
-import org.axan.sep.common.Area;
-import org.axan.sep.common.ICelestialBody;
 import org.axan.sep.common.PlayerGameBoard;
-import org.axan.sep.common.ProductiveCelestialBody;
-import org.axan.sep.common.Unit;
-import org.axan.sep.common.UnitMarker;
 import org.axan.sep.common.SEPUtils.RealLocation;
 
 
