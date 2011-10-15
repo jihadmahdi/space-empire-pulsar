@@ -1,0 +1,50 @@
+Reverse study/cleaning of current code.
+Starting from common package, recursively look if classes are actually used in server package or not.
+
+[D]eprecated
+[U]sed
+
+D	common.AbstractGameCommandCheck
+D	common.CommandCheckResult
+D	common.eStarshipSpecializationClass
+
+U	common.GameCommand
+Generic<P> class is an abstraction of any game command (e.g. build, move, ...). It holds the command parameters as the generic type P and must be extended to implement the apply(IGameBoard) method. As the apply method use the IGameBoard interface, it is available for both client/server side. GameCommand implementations actually only delegate commands to their IGameBoard instance (i.e. GameCommand implementations are common to client/server).
+U		server.ServerGame
+Server-side game view. It is saved/loaded by the server as game is. It keeps track of the last gameboard and handle players endTurn() commands. It also calls resolveCurrentTurn() on current game board when all players end their turn.
+U			server.SEPServer
+Server instance. It run the listening thread, instanciate server-side clients (state-machines). Hold current running game instance (server.ServerGame) In charge of methds such as getPlayerList(), checkForNextTurn().
+TODO: Move methods that deal with running game to ServerGame. Only keep in SEPServer general methods that do not care about game stae.
+
+U	common.GameConfig
+Represents the game configuration. It implements IGameConfig which is just a list of getters/setters. Note that methods prototypes must comply the syntax expected by the SEPCommonDB proxy mechanism.
+Used by SEPServer as initial config during game creation. Then proxied via IGameConfig by common.SEPCommonDB in server.GameBoard
+
+U	common.GameConfigCopier
+Utility class, used to copy GameConfig object (but can copy any object) according to target.setXXX(source.getXXX()) mechanism.
+
+D	common.IGame
+Concept replaced by IGameBoard ?
+
+U	common.IGameBoard
+IGameBoard is a gameboard abstraction. Final classes are implemented client-side (common.PlayerGameBoard) and server-side (server.GameBoard). They provide GameCommand implementations with real processing.
+
+D	common.LocalGame
+D	common.Player
+
+U	common.PlayerGameBoard
+Client-side implementation of IGameBoard. Clients get a new instance from the server each new turn, and then use it to preview current turn commands locally. Finaly clients validate their turn by sending commands list to the server who process endTurn computation and send new PlayerGameBoard view to clients.
+
+U	common.Protocol
+Describe clients/server protocol. Server methods are divided by game state.
+
+U	common.SEPCommonImplementationException
+extends Error. Used by common.Rules.
+U		common.Rules
+Implements game rules (such as getBuildingCanBeUpgraded(eBuildingType)). Kind of GameConfig, but implements algorithmic functions (e.g. the price of a given building type upgrade according to the current upgrade level).
+Note: Can imagine several Rules implementations and GameConfig with a choice of witch implementation to use.
+
+U	common.SEPUtils
+Utility class.
+
+D	common.StarshipTemplate
