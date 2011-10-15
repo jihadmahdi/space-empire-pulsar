@@ -5,6 +5,7 @@ import java.io.Serializable;
 /**
  * This class represent a command possibility result (is the command possible or not), it provide optional impossibility reason message.
  */
+@Deprecated // All references in server package are commented code.
 public class CommandCheckResult implements Serializable
 {
 	private static final long	serialVersionUID	= 1L;

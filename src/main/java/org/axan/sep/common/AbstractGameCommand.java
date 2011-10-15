@@ -5,6 +5,7 @@ import java.lang.reflect.Field;
 
 import org.axan.eplib.utils.Basic;
 
+@Deprecated // Look at common.GameCommand instead.
 public abstract class AbstractGameCommand<P, O extends AbstractGameCommandCheck> implements IGameCommand, Serializable
 {
 	P params;

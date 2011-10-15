@@ -5,6 +5,7 @@
  */
 package org.axan.sep.server;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -20,6 +21,9 @@ import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.axan.eplib.orm.ISQLDataBase;
+import org.axan.eplib.orm.SQLDataBaseException;
+import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.sep.common.CommandCheckResult;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.GameCommand;
@@ -56,9 +60,9 @@ class ServerGame implements Serializable
 		}
 	}
 	
-	public PlayerGameBoard getPlayerGameBoard(String playerLogin) throws GameBoardException
+	public PlayerGameBoard getPlayerGameBoard(ISQLDataBase db, String playerLogin) throws GameBoardException
 	{
-		return currentGameBoard.getPlayerGameBoard(playerLogin);
+		return currentGameBoard.getPlayerGameBoard(db, playerLogin);
 	}
 	
 	private void checkCommandResult(CommandCheckResult result) throws RunningGameCommandException

@@ -28,7 +28,7 @@ public class GameConfigCopier
 		for(Method getter : clazz.getMethods())
 		{
 			
-			System.err.println(getter.toGenericString());
+			//System.err.println(getter.toGenericString());
 			
 			if (isGetter(getter))
 			{

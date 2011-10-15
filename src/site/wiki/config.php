@@ -1,32 +1,23 @@
 <?php
-define("APP_CONFIG", true);
-
-if (defined("CGIKI_CONFIG") === false)
-{
-	require_once("cgiki/config.php");
-}
+$appAbsoluteDir = realpath(dirname(__FILE__));
+require_once("cgiki/config.php");
 
 $ENABLE_TRACE = false;
 
 $ENABLED_TRACE =	array(
-//'external-url-functions',
-						'generate_summary',
+						//'external-url-functions',
+						//'generate_summary',
 						//'gikiplugin-render-MyCWS',
 						//'content',
-//'gikiplugin-inc-MyCWS'
-//'gikiplugin-render-MyCWS'
+						//'gikiplugin-inc-MyCWS'
+						//'gikiplugin-render-MyCWS'
 );
 
 // Application config
-$appDir = "sep/wiki/";
-
-//print $wwwAbsoluteDir."; ".$appDir."<br>";
-$appDir = removeCommonSubPaths($wwwAbsoluteDir, $appDir);
-//die($wwwAbsoluteDir."; ".$appDir);
-
-$appAbsoluteDir = $wwwAbsoluteDir.$appDir;
 //$appAbsoluteLocation = "http://".$wwwServerName."/".$appDir;
 $appAbsoluteLocation = "http://".$wwwServerName."/wiki/"; // Because of sub-domain link
+
+$IMG_ALT_BASE_PATH = $appAbsoluteLocation;
 
 // The directory data is stored in (must be world-writable and, if possible, above
 // the web root). This can be a relative path, but must have the trailing slash.
@@ -34,7 +25,7 @@ $appAbsoluteLocation = "http://".$wwwServerName."/wiki/"; // Because of sub-doma
 
 // Local cache directory
 $cacheSubDir = "cache";
-$cache_dir = $appAbsoluteDir.$cacheSubDir;
+$cache_dir = $appAbsoluteDir."/".$cacheSubDir;
 define("GIKI_CACHE_VERSION", "1.0");
 
 // E.P.

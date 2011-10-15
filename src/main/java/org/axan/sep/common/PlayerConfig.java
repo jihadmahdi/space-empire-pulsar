@@ -14,6 +14,7 @@ import java.util.Random;
  * Represent a GameCreation player config.
  * It is an immuable class.
  */
+@Deprecated // Use common.db.IPlayerConfig instead.
 public class PlayerConfig implements Serializable
 {
 	private static final Random	random	= new Random();

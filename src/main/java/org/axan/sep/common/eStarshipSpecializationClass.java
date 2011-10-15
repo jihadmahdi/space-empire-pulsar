@@ -1,5 +1,6 @@
 package org.axan.sep.common;
 
+@Deprecated // All references in server package are commented code.
 public enum eStarshipSpecializationClass
 {
 	ARTILLERY, DESTROYER, FIGHTER;

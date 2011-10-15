@@ -3,11 +3,8 @@ package org.axan.sep.server;
 import java.io.File;
 import java.io.PrintStream;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,29 +12,27 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.Vector;
 
 import org.axan.eplib.orm.Class;
 import org.axan.eplib.orm.ClassGeneratorListener;
+import org.axan.eplib.orm.DataBaseORMGenerator;
+import org.axan.eplib.orm.ISQLDataBaseStatementJob;
+import org.axan.eplib.orm.SQLDataBaseException;
 import org.axan.eplib.orm.Class.Field;
 import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
-import org.axan.eplib.orm.sqlite.SQLiteDB.SQLiteDBException;
+import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.eplib.utils.Basic;
 import org.axan.eplib.utils.Reflect;
 import org.axan.eplib.yaml.YamlConfigFile;
-import org.axan.sep.common.db.IGameConfig;
-import org.axan.sep.common.db.sqlite.SEPCommonSQLiteDB;
-import org.axan.sep.common.db.sqlite.orm.Player;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Protocol.eSpecialUnitType;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
-
-import com.almworks.sqlite4java.SQLiteConnection;
-import com.almworks.sqlite4java.SQLiteStatement;
+import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.SEPCommonDB;
 
 class ORMGenerator
 {
@@ -58,12 +53,12 @@ class ORMGenerator
 			
 			String baseDir = "/media/data/code/Java_Workspace/Space-Empire-Pulsar/src/main/java/";
 			String interfacePackageName = IGameConfig.class.getPackage().getName();
-			String sqlitePackageName = SEPCommonSQLiteDB.class.getPackage().getName();
+			String sqlitePackageName = SEPCommonDB.class.getPackage().getName();
 			final String ormPackageName = sqlitePackageName+".orm";
 			File interfaceOutputFile = new File(baseDir+interfacePackageName.replace('.', '/'));
 			File outputFile = new File(baseDir+ormPackageName.replace('.', '/'));
 			URL dbFileURL = Reflect.getResource(sqlitePackageName, "SEPSQLiteDB.sql");
-			File configFile = new File(Reflect.getResource(sqlitePackageName, "SEPSQLiteDB.ORM.yaml").getFile());
+			File configFile = new File(Reflect.getResource(sqlitePackageName, "SEPSQLDB.ORM.yaml").getFile());
 			
 			YamlConfigFile cfg = YamlConfigFile.open(configFile);
 			
@@ -121,11 +116,11 @@ class ORMGenerator
 					Set<String> stringImports = new TreeSet<String>();
 					
 					Set<java.lang.Class<?>> importedClass = new HashSet<java.lang.Class<?>>();					
-					Collections.addAll(importedClass, SQLiteStatement.class, org.axan.sep.common.db.IGameConfig.class);
+					Collections.addAll(importedClass, ISQLDataBaseStatement.class, org.axan.sep.common.db.IGameConfig.class);
 										
 					if (!skipStaticMethods(c))
 					{
-						Collections.addAll(importedClass, Set.class, HashSet.class, SQLiteORMGenerator.class, SQLiteConnection.class, SQLiteDBException.class, Locale.class);
+						Collections.addAll(importedClass, Set.class, HashSet.class, DataBaseORMGenerator.class, SEPCommonDB.class, SQLDataBaseException.class, SQLiteDB.class, Locale.class, ISQLDataBaseStatementJob.class);
 						
 						Class versionedClass = getVersionedClass(c);
 						
@@ -177,6 +172,38 @@ class ORMGenerator
 				}
 				
 				@Override
+				public String extendsClause(Class c)
+				{
+					if (!c.getUpperName().matches("VersionedUnit") && c.isInstanceOf(c.getPackage(), "VersionedUnit") != null)
+					{
+						return "VersionedUnit";
+					}
+					
+					if (!c.getUpperName().matches("VersionedProductiveCelestialBody") && c.isInstanceOf(c.getPackage(), "VersionedProductiveCelestialBody") != null)
+					{
+						return "VersionedProductiveCelestialBody";
+					}
+					
+					return "";
+				}
+				
+				@Override
+				public String superCall(Class c)
+				{
+					if (!c.getUpperName().matches("VersionedUnit") && c.isInstanceOf(c.getPackage(), "VersionedUnit") != null)
+					{
+						return String.format("base%sProxy", c.getUpperName());
+					}
+					
+					if (!c.getUpperName().matches("VersionedProductiveCelestialBody") && c.isInstanceOf(c.getPackage(), "VersionedProductiveCelestialBody") != null)
+					{
+						return String.format("base%sProxy", c.getUpperName());
+					}
+					
+					return "";
+				}
+				
+				@Override
 				public String fieldsDeclarations(Class c)
 				{
 					StringBuffer sb = new StringBuffer();
@@ -186,13 +213,13 @@ class ORMGenerator
 						if (f.getLowerName().endsWith("_x"))
 						{
 							Field nf = getLocationRelationField(f);
-							sb.append(String.format("private %s %s;", nf.getType().getSimpleName(), nf.getLowerName()));
+							sb.append(String.format("\tprivate final %s %s;\n", nf.getType().getSimpleName(), nf.getLowerName()));
 						}
 						
 						if (f.getLowerName().matches("type"))
 						{
 							Field nf = wrapField(c, f);
-							sb.append(String.format("private %s %s;", nf.getType().getSimpleName(), nf.getLowerName()));
+							sb.append(String.format("\tprivate final %s %s;\n", nf.getType().getSimpleName(), nf.getLowerName()));
 						}
 					}
 					
@@ -227,6 +254,7 @@ class ORMGenerator
 					return super.fullConstructorParameter(c, wf);
 				}
 				
+				/*
 				@Override
 				public String fullConstructorField(Class c, Field f)
 				{
@@ -234,7 +262,9 @@ class ORMGenerator
 					if (wf == null || f.equals(wf)) return "";
 					return String.format("this.%s = %s;", wf.getLowerName(), wf.getLowerName());
 				}
+				*/
 				
+				/*
 				@Override
 				public String fullConstructorProxyParameter(Class c, Field f)
 				{
@@ -243,6 +273,7 @@ class ORMGenerator
 					
 					return super.fullConstructorProxyParameter(c, wf);
 				}
+				*/
 				
 				@Override
 				public String fullConstructorBaseParameter(Class c, Field f)
@@ -264,22 +295,52 @@ class ORMGenerator
 				}
 				
 				@Override
-				public String constructorDeclaration(Class c)
+				public String constructorAdditionalDeclaration(Class c)
 				{
-					return String.format("public %s(%s stmnt, %s config) throws %s", c.getUpperName(), SQLiteStatement.class.getSimpleName(), org.axan.sep.common.db.IGameConfig.class.getSimpleName(), Exception.class.getSimpleName());
+					if (c.isInstanceOf(c.getPackage(), "Unit") != null)
+					{
+						return String.format("%s config", org.axan.sep.common.db.IGameConfig.class.getSimpleName());
+					}
+					
+					return "";
 				}
 				
+				@Override
+				public String constructorAdditionalParams(Class c)
+				{
+					if (c.isInstanceOf(c.getPackage(), "Unit") != null)
+					{
+						return "config";
+					}
+					
+					return "";
+				}
+				
+				private String staticFactoryAdditionalParams(Class c)
+				{
+					if (c.isInstanceOf(c.getPackage(), "Unit") != null)
+					{
+						return "db.getConfig()";
+					}
+					
+					return "";
+				}
+				
+				/*
 				@Override
 				public String constructorCreateProxy(Class c, Class sup)
 				{
 					return String.format("this.%sProxy = new %s(stmnt, config);", sup.getLowerName(), sup.getUpperName());
-				}	
+				}
+				*/	
 				
+				/*
 				@Override
 				public String constructorSuperCall(Class c)
 				{
 					return "super(stmnt, config);";
 				}
+				*/
 				
 				@Override
 				public String constructorFields(Class c)
@@ -371,7 +432,7 @@ class ORMGenerator
 				{
 					for(Map.Entry<String, java.lang.Class<? extends Enum>> e : getEnumTypes().entrySet())
 					{
-						if (c.isInstanceOf(ormPackageName, e.getKey()))
+						if (c.isInstanceOf(ormPackageName, e.getKey()) != null)
 						{
 							return e.getValue();
 						}												
@@ -389,6 +450,7 @@ class ORMGenerator
 					return super.getterDeclaration(c, wf);
 				}
 		
+				/*
 				@Override
 				public String getterProxy(Class c, Field f, Class proxy)
 				{
@@ -397,6 +459,7 @@ class ORMGenerator
 					// Type ?
 					return super.getterProxy(c, wf, proxy);
 				}
+				*/
 				
 				@Override
 				public String getter(Class c, Field f)
@@ -420,6 +483,14 @@ class ORMGenerator
 						return true;
 					}
 					
+					Class vs = c.isInstanceOf(c.getPackage(), "VersionedUnit");
+					if (vs == null) vs = c.isInstanceOf(c.getPackage(), "VersionedProductiveCelestialBody");
+					
+					if (vs != null)
+					{
+						return vs.hasField(field.getLowerName()) && !c.getSpecificFields().contains(field);
+					}
+					
 					return false;
 				}
 				
@@ -431,7 +502,7 @@ class ORMGenerator
 					
 					for(String k : getEnumTypes().keySet())
 					{
-						if (c.isInstanceOf(ormPackageName, k))
+						if (c.isInstanceOf(ormPackageName, k) != null)
 						{
 							return !c.getUpperName().matches(k);
 						}												
@@ -456,26 +527,27 @@ class ORMGenerator
 					if (versionedClass != null && versionedClass.hasField("turn"))
 					{
 						psuc.println("\t/** Set maxVersion to null to select last version. */");
-						psuc.format("\tpublic static <T extends I%s> Set<T> selectMaxVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, Integer maxVersion, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
-						psuc.println("\t{\n\t\treturn select(conn, config, expectedType, true, maxVersion, from, where, params);\n\t}\n");
+						psuc.format("\tpublic static <T extends I%s> Set<T> selectMaxVersion(%s db, Class<T> expectedType, Integer maxVersion, String from, String where, Object ... params) throws %s\n", c.getUpperName(), SEPCommonDB.class.getSimpleName(), SQLDataBaseException.class.getSimpleName());
+						psuc.println("\t{\n\t\treturn select(db, expectedType, true, maxVersion, from, where, params);\n\t}\n");
 						
-						psuc.format("\tpublic static <T extends I%s> Set<T> selectVersion(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, int version, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
-						psuc.println("\t{\n\t\treturn select(conn, config, expectedType, false, version, from, where, params);\n\t}\n");
+						psuc.format("\tpublic static <T extends I%s> Set<T> selectVersion(%s db, Class<T> expectedType, int version, String from, String where, Object ... params) throws %s\n", c.getUpperName(), SEPCommonDB.class.getSimpleName(), SQLDataBaseException.class.getSimpleName());
+						psuc.println("\t{\n\t\treturn select(db, expectedType, false, version, from, where, params);\n\t}\n");
 						
-						psuc.format("\tpublic static <T extends I%s> Set<T> selectUnversioned(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
-						psuc.println("\t{\n\t\treturn select(conn, config, expectedType, false, null, from, where, params);\n\t}\n");
+						psuc.format("\tpublic static <T extends I%s> Set<T> selectUnversioned(%s db, Class<T> expectedType, String from, String where, Object ... params) throws %s\n", c.getUpperName(), SEPCommonDB.class.getSimpleName(), SQLDataBaseException.class.getSimpleName());
+						psuc.println("\t{\n\t\treturn select(db, expectedType, false, null, from, where, params);\n\t}\n");
 						
-						psuc.format("\tprivate static <T extends I%s> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+						psuc.format("\tprivate static <T extends I%s> Set<T> select(%s db, Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params) throws %s\n", c.getUpperName(), SEPCommonDB.class.getSimpleName(), SQLDataBaseException.class.getSimpleName());
 					}
 					else
 					{
-						psuc.format("\tpublic static <T extends I%s> Set<T> select(SQLiteConnection conn, IGameConfig config, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+						psuc.format("\tpublic static <T extends I%s> Set<T> select(%s db, Class<T> expectedType, String from, String where, Object ... params) throws %s\n", c.getUpperName(), SEPCommonDB.class.getSimpleName(), SQLDataBaseException.class.getSimpleName());
 					}
 					psuc.println("\t{");
+					psuc.format("\t\t%s stmnt = null;\n", ISQLDataBaseStatement.class.getSimpleName());
 					psuc.println("\t\ttry");
 					psuc.println("\t\t{");
 					psuc.println("\t\t\tSet<T> results = new HashSet<T>();");	
-					psuc.print("\t\t\tSQLiteStatement stmnt = conn.prepare(");
+					psuc.print("\t\t\tstmnt = db.getDB().prepare(");
 					if (versionedClass != null && versionedClass.hasField("turn"))
 					{
 						psuc.print("selectQuery(expectedType, maxVersion, version, from, where, params)");
@@ -484,7 +556,18 @@ class ORMGenerator
 					{
 						psuc.print("selectQuery(expectedType, from, where, params)");
 					}
-					psuc.println("+\";\");");
+					psuc.format("+\";\", new %s<%s>()\n", ISQLDataBaseStatementJob.class.getSimpleName(), ISQLDataBaseStatement.class.getSimpleName());
+					psuc.println("\t\t\t{");
+					psuc.println("\t\t\t\t@Override");
+					psuc.format("\t\t\t\tpublic %s job(%s stmnt) throws %s\n", ISQLDataBaseStatement.class.getSimpleName(), ISQLDataBaseStatement.class.getSimpleName(), SQLDataBaseException.class.getSimpleName());
+					psuc.println("\t\t\t\t{");
+					psuc.println("\t\t\t\t\treturn stmnt;");
+					psuc.println("\t\t\t\t}");
+					psuc.println("\t\t\t});");
+							
+					String addParams = staticFactoryAdditionalParams(c);
+					addParams = addParams == null || addParams.isEmpty() ? "" : ", "+addParams;
+					
 					psuc.println("\t\t\twhile(stmnt.step())");
 					psuc.println("\t\t\t{");
 					if (versionedClass != null && versionedClass.hasField("type"))
@@ -499,7 +582,7 @@ class ORMGenerator
 						psuc.format("\t\t\t\tClass<? extends I%s> clazz = (Class<? extends I%s>)  Class.forName(String.format(\"%%s.%%s%%s\", %s.class.getPackage().getName(), ", c.getUpperName(), c.getUpperName(), c.getUpperName());
 						psuc.format("%s, type.toString()));\n", getUnprefixedVersionedTypes().containsKey(c.getUpperName()) ? "\"\"" : "isVersioned ? \"Versioned\" : \"\"");						
 						
-						psuc.format("\t\t\t\tI%s o = SQLiteORMGenerator.mapTo(clazz, stmnt, config);\n", c.getUpperName());
+						psuc.format("\t\t\t\tI%s o = %s.mapTo(clazz, stmnt%s);\n", c.getUpperName(), DataBaseORMGenerator.class.getSimpleName(), addParams);
 						psuc.println("\t\t\t\tif (expectedType.isInstance(o))");
 						psuc.println("\t\t\t\t{");
 						psuc.println("\t\t\t\t\tresults.add(expectedType.cast(o));");
@@ -507,14 +590,18 @@ class ORMGenerator
 					}
 					else
 					{
-						psuc.format("\t\t\t\tresults.add(SQLiteORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) %s.class : expectedType, stmnt, config));\n", c.getUpperName());
+						psuc.format("\t\t\t\tresults.add(%s.mapTo(expectedType.isInterface() ? (Class<T>) %s.class : expectedType, stmnt%s));\n", DataBaseORMGenerator.class.getSimpleName(), c.getUpperName(), addParams);
 					}
 					psuc.println("\t\t\t}");
 					psuc.println("\t\t\treturn results;");
 					psuc.println("\t\t}");
 					psuc.println("\t\tcatch(Exception e)");
 					psuc.println("\t\t{");
-					psuc.format("\t\t\tthrow new %s(e);\n", SQLiteDBException.class.getSimpleName());
+					psuc.format("\t\t\tthrow new %s(e);\n", SQLDataBaseException.class.getSimpleName());
+					psuc.println("\t\t}");
+					psuc.println("\t\tfinally");
+					psuc.println("\t\t{");
+					psuc.println("\t\t\tif (stmnt != null) stmnt.dispose();");
 					psuc.println("\t\t}");
 					psuc.println("\t}\n");
 					
@@ -523,25 +610,37 @@ class ORMGenerator
 					if (versionedClass != null && versionedClass.hasField("turn"))
 					{
 						psuc.println("\t/** Set maxVersion to null to select last version. */");
-						psuc.format("\tpublic static <T extends I%s> boolean existMaxVersion(SQLiteConnection conn, Class<T> expectedType, Integer maxVersion, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
-						psuc.println("\t{\n\t\treturn exist(conn, expectedType, true, maxVersion, from, where, params);\n\t}\n");
+						psuc.format("\tpublic static <T extends I%s> boolean existMaxVersion(%s db, Class<T> expectedType, Integer maxVersion, String from, String where, Object ... params) throws %s\n", c.getUpperName(), SEPCommonDB.class.getSimpleName(), SQLDataBaseException.class.getSimpleName());
+						psuc.println("\t{\n\t\treturn exist(db, expectedType, true, maxVersion, from, where, params);\n\t}\n");
 						
-						psuc.format("\tpublic static <T extends I%s> boolean existVersion(SQLiteConnection conn,Class<T> expectedType, int version, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
-						psuc.println("\t{\n\t\treturn exist(conn, expectedType, false, version, from, where, params);\n\t}\n");
+						psuc.format("\tpublic static <T extends I%s> boolean existVersion(%s db,Class<T> expectedType, int version, String from, String where, Object ... params) throws %s\n", c.getUpperName(), SEPCommonDB.class.getSimpleName(), SQLDataBaseException.class.getSimpleName());
+						psuc.println("\t{\n\t\treturn exist(db, expectedType, false, version, from, where, params);\n\t}\n");
 						
-						psuc.format("\tpublic static <T extends I%s> boolean existUnversioned(SQLiteConnection conn, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
-						psuc.println("\t{\n\t\treturn exist(conn, expectedType, false, null, from, where, params);\n\t}\n");
+						psuc.format("\tpublic static <T extends I%s> boolean existUnversioned(%s db, Class<T> expectedType, String from, String where, Object ... params) throws %s\n", c.getUpperName(), SEPCommonDB.class.getSimpleName(), SQLDataBaseException.class.getSimpleName());
+						psuc.println("\t{\n\t\treturn exist(db, expectedType, false, null, from, where, params);\n\t}\n");
 						
-						psuc.format("\tprivate static <T extends I%s> boolean exist(SQLiteConnection conn, Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+						psuc.format("\tprivate static <T extends I%s> boolean exist(%s db, Class<T> expectedType, boolean maxVersion, Integer version, String from, String where, Object ... params) throws %s\n", c.getUpperName(), SEPCommonDB.class.getSimpleName(), SQLDataBaseException.class.getSimpleName());
 					}
 					else
 					{
-						psuc.format("\tpublic static <T extends I%s> boolean exist(SQLiteConnection conn, Class<T> expectedType, String from, String where, Object ... params) throws SQLiteDBException\n", c.getUpperName());
+						psuc.format("\tpublic static <T extends I%s> boolean exist(%s db, Class<T> expectedType, String from, String where, Object ... params) throws %s\n", c.getUpperName(), SEPCommonDB.class.getSimpleName(), SQLDataBaseException.class.getSimpleName());
 					}
 					psuc.println("\t{");
+					//psuc.format("\t\t%s stmnt = null;\n", ISQLDataBaseStatement.class.getSimpleName());
 					psuc.println("\t\ttry");
 					psuc.println("\t\t{");
-					psuc.print("\t\t\tSQLiteStatement stmnt = conn.prepare(\"SELECT EXISTS ( \"+");
+					/*
+					boolean exist = db.prepare("SELECT key FROM GameConfig WHERE key = '%s'", new ISQLDataBaseStatementJob<Boolean>()
+					{
+						@Override
+						public Boolean job(ISQLDataBaseStatement stmnt) throws SQLDataBaseException
+						{
+							return stmnt.step() && stmnt.columnString(0) != null;
+						}
+					}, key);
+					 */
+					psuc.print("\t\t\treturn db.getDB().prepare(");
+					//psuc.print("\t\t\tstmnt = db.getDB().prepare(\"SELECT EXISTS ( \"+");
 					if (versionedClass != null && versionedClass.hasField("turn"))
 					{
 						psuc.print("selectQuery(expectedType, maxVersion, version, from, where, params)");
@@ -550,12 +649,28 @@ class ORMGenerator
 					{
 						psuc.print("selectQuery(expectedType, from, where, params)");
 					}
-					psuc.println(" + \" );\");");
-					psuc.println("\t\t\treturn stmnt.step() && stmnt.columnInt(0) != 0;");
+					psuc.format("+\" ;\", new %s<%s>()\n", ISQLDataBaseStatementJob.class.getSimpleName(), Boolean.class.getSimpleName());
+					psuc.println("\t\t\t{");
+					psuc.println("\t\t\t\t@Override");
+					psuc.format("\t\t\t\tpublic %s job(%s stmnt) throws %s\n", Boolean.class.getSimpleName(), ISQLDataBaseStatement.class.getSimpleName(), SQLDataBaseException.class.getSimpleName());
+					psuc.println("\t\t\t\t{");
+					psuc.println("\t\t\t\t\ttry");
+					psuc.println("\t\t\t\t\t{");
+					psuc.println("\t\t\t\t\t\treturn stmnt.step() && stmnt.columnValue(0) != null;");
+					psuc.println("\t\t\t\t\t}");
+					psuc.println("\t\t\t\t\tfinally");
+					psuc.println("\t\t\t\t\t{");
+					psuc.println("\t\t\t\t\t\tif (stmnt != null) stmnt.dispose();");
+					psuc.println("\t\t\t\t\t}");
+					//psuc.println("\t\t\t\t\treturn stmnt;");
+					psuc.println("\t\t\t\t}");
+					psuc.println("\t\t\t});");
+					
+					//psuc.println("\t\t\treturn stmnt.step() && stmnt.columnInt(0) != 0;");
 					psuc.println("\t\t}");
 					psuc.println("\t\tcatch(Exception e)");
 					psuc.println("\t\t{");
-					psuc.format("\t\t\tthrow new %s(e);\n", SQLiteDBException.class.getSimpleName());
+					psuc.format("\t\t\tthrow new %s(e);\n", SQLDataBaseException.class.getSimpleName());
 					psuc.println("\t\t}");
 					psuc.println("\t}\n");
 					
@@ -675,16 +790,13 @@ class ORMGenerator
 					//// InsertOrUpdate
 					psuc.println();
 					
-					psuc.format("\tpublic static <T extends I%s> void insertOrUpdate(SQLiteConnection conn, T %s) throws SQLiteDBException\n", c.getUpperName(), c.getLowerName());
+					psuc.format("\tpublic static <T extends I%s> void insertOrUpdate(%s db, T %s) throws %s\n", c.getUpperName(), SEPCommonDB.class.getSimpleName(), c.getLowerName(), SQLDataBaseException.class.getSimpleName());
 					psuc.println("\t{");
 					psuc.println("\t\ttry");
 					psuc.println("\t\t{");
-					if (versionedClass != null && versionedClass != c)
-					{
-						psuc.format("\t\t\tI%s v%s = (I%s.class.isInstance(%s) ? I%s.class.cast(%s) : null);\n", versionedClass.getUpperName(), c.getLowerName(), versionedClass.getUpperName(), c.getLowerName(), versionedClass.getUpperName(), c.getLowerName());
-					}
-					psuc.format("\t\t\tSQLiteStatement stmnt = conn.prepare(String.format(\"SELECT EXISTS ( SELECT %s FROM %s WHERE", c.getAllFields().iterator().next().getLowerName(), c.getUpperName());
-
+					
+					psuc.format("\t\t\tboolean exist = %s(db, %s.getClass(), null, \"", (versionedClass != null && versionedClass.hasField("turn")) ? "existUnversioned" : "exist", c.getLowerName());
+					
 					boolean comma = false;
 					StringBuffer values = new StringBuffer();
 					for(Field f : c.getFields())
@@ -697,17 +809,43 @@ class ORMGenerator
 							values.append(", ");
 						}
 						
-						psuc.print(getFieldQuery(f, " AND"));
+						psuc.print(getFieldQuery(c.getUpperName(), f, " AND"));
 						values.append(getFieldValue(c.getLowerName(), f));
 						
 						comma = true;
 					}
-					psuc.format(") AS exist ;\", ");
-					psuc.format("%s));\n", values);
+					psuc.format("\", %s);\n", values);				
 					
+					if (versionedClass != null && versionedClass != c)
+					{
+						psuc.format("\t\t\tI%s v%s = (I%s.class.isInstance(%s) ? I%s.class.cast(%s) : null);\n", versionedClass.getUpperName(), c.getLowerName(), versionedClass.getUpperName(), c.getLowerName(), versionedClass.getUpperName(), c.getLowerName());
+						
+						psuc.format("\t\t\tboolean vexist = existVersion(db, v%s.getClass(), v%s.getTurn(), null, \"", c.getLowerName(), c.getLowerName());
+						
+						comma = false;
+						values.setLength(0);
+						for(Field f : versionedClass.getFields())
+						{
+							if (!f.isPrimaryKey()) continue;
+							
+							if (comma)
+							{
+								psuc.print(" AND");
+								values.append(", ");
+							}
+							
+							psuc.print(getFieldQuery(versionedClass.getUpperName(), f, " AND"));
+							values.append(getFieldValue("v"+c.getLowerName(), f));
+							
+							comma = true;
+						}
+						psuc.format("\", %s);\n", values);
+						
+						psuc.format("\t\t\tif (vexist && !exist) throw new Error(\"Versioned %s cannot exist without unversioned entry.\");\n", c.getUpperName());
+					}
+										
 					values.setLength(0);
-					psuc.println("\t\t\tstmnt.step();");
-					psuc.println("\t\t\tif (stmnt.columnInt(0) == 0)");
+					psuc.println("\t\t\tif (exist)");
 					psuc.println("\t\t\t{");
 					
 					seen.removeAll(seen);
@@ -726,8 +864,9 @@ class ORMGenerator
 								doIt(sup);
 							}
 							
-							inserts.append(String.format("\t\t\t\tconn.exec(%s);\n", generateInsertQuery(c, varName)));
-							updates.append(String.format("\t\t\t\tconn.exec(%s);\n", generateUpdateQuery(c, varName)));
+							inserts.append(String.format("\t\t\t\tif (!exist) db.getDB().exec(%s);\n", generateInsertQuery(c, varName)));
+							String update = generateUpdateQuery(c, varName);
+							if (update != null) updates.append(String.format("\t\t\t\tdb.getDB().exec(%s);\n", update));
 
 							seen.add(c);
 							return null;
@@ -736,8 +875,8 @@ class ORMGenerator
 					
 					doInsertUpdateSupers.doIt(c);
 					
-					psuc.append(inserts);
-					values.append(updates);					
+					psuc.append(updates);
+					values.append(inserts);					
 					if (versionedClass != null && versionedClass != c)
 					{
 						final StringBuffer vinserts = new StringBuffer();
@@ -754,8 +893,9 @@ class ORMGenerator
 									doIt(sup);
 								}
 								
-								vinserts.append(String.format("\t\t\t\tif (v%s != null)\n\t\t\t\t{\n\t\t\t\t\tconn.exec(%s);\n\t\t\t\t}\n", varName, generateInsertQuery(c, "v"+varName)));
-								vupdates.append(String.format("\t\t\t\tif (v%s != null)\n\t\t\t\t{\n\t\t\t\t\tconn.exec(%s);\n\t\t\t\t}\n", varName, generateUpdateQuery(c, "v"+varName)));
+								vinserts.append(String.format("\t\t\t\tif (v%s != null)\n\t\t\t\t{\n\t\t\t\t\tdb.getDB().exec(%s);\n\t\t\t\t}\n", varName, generateInsertQuery(c, "v"+varName)));
+								String update = generateUpdateQuery(c, "v"+varName);
+								if (update != null) vupdates.append(String.format("\t\t\t\tif (vexist && v%s != null)\n\t\t\t\t{\n\t\t\t\t\tdb.getDB().exec(%s);\n\t\t\t\t}\n", varName, update));
 								
 								seen.add(c);
 								return null;
@@ -764,8 +904,8 @@ class ORMGenerator
 						
 						doVInsertUpdateSupers.doIt(versionedClass);
 						
-						psuc.append(vinserts);
-						values.append(vupdates);
+						psuc.append(vupdates);
+						values.append(vinserts);
 					}
 					
 					if (c.hasField("type"))
@@ -788,21 +928,23 @@ class ORMGenerator
 									
 									psuc.format("\t\t\t\t\t\tI%s %s = I%s.class.cast(%s);\n", sub.getUpperName(), sub.getLowerName(), sub.getUpperName(), c.getLowerName());
 									values.append(String.format("\t\t\t\t\t\tI%s %s = I%s.class.cast(%s);\n", sub.getUpperName(), sub.getLowerName(), sub.getUpperName(), c.getLowerName()));
-									psuc.format("\t\t\t\t\t\tconn.exec(%s);\n", generateInsertQuery(sub, sub.getLowerName()));
-									values.append(String.format("\t\t\t\t\t\tconn.exec(%s);\n", generateUpdateQuery(sub, sub.getLowerName())));
+									String update = generateUpdateQuery(sub, sub.getLowerName());
+									if (update != null) psuc.format("\t\t\t\t\t\tdb.getDB().exec(%s);\n", update);
+									values.append(String.format("\t\t\t\t\t\tif (!exist) db.getDB().exec(%s);\n", generateInsertQuery(sub, sub.getLowerName())));
 									if (versionedClass != c)
 									{
 										Class vsub = getVersionedClass(sub);
 										if (vsub != null && vsub != sub)
 										{
-											psuc.format("\t\t\t\t\t\tif (v%s != null)\n", c.getLowerName());
+											psuc.format("\t\t\t\t\t\tif (vexist && v%s != null)\n", c.getLowerName());
 											values.append(String.format("\t\t\t\t\t\tif (v%s != null)\n", c.getLowerName()));
 											psuc.println("\t\t\t\t\t\t{");
 											values.append("\t\t\t\t\t\t{\n");
 											psuc.format("\t\t\t\t\t\t\tI%s %s = I%s.class.cast(%s);\n", vsub.getUpperName(), vsub.getLowerName(), vsub.getUpperName(), c.getLowerName());
 											values.append(String.format("\t\t\t\t\t\t\tI%s %s = I%s.class.cast(%s);\n", vsub.getUpperName(), vsub.getLowerName(), vsub.getUpperName(), c.getLowerName()));
-											psuc.format("\t\t\t\t\t\t\tconn.exec(%s);\n", generateInsertQuery(vsub, vsub.getLowerName()));
-											values.append(String.format("\t\t\t\t\t\t\tconn.exec(%s);\n", generateUpdateQuery(vsub, vsub.getLowerName())));
+											update = generateUpdateQuery(vsub, vsub.getLowerName());
+											if (update != null) psuc.format("\t\t\t\t\t\t\tdb.getDB().exec(%s);\n", update);
+											values.append(String.format("\t\t\t\t\t\t\tdb.getDB().exec(%s);\n", generateInsertQuery(vsub, vsub.getLowerName())));
 											psuc.println("\t\t\t\t\t\t}");
 											values.append("\t\t\t\t\t\t}\n");
 										}																					
@@ -827,14 +969,14 @@ class ORMGenerator
 					 */
 					
 					psuc.println("\t\t\t}");
-					psuc.println("\t\t\telse");
+					psuc.println((versionedClass == null || versionedClass == c) ? "\t\t\telse" : "\t\t\tif (!exist || !vexist)");
 					psuc.println("\t\t\t{");
 					psuc.print(values);					
 					psuc.println("\t\t\t}");
 					psuc.println("\t\t}");
 					psuc.println("\t\tcatch(Exception e)");
 					psuc.println("\t\t{");
-					psuc.println("\t\t\tthrow new SQLiteDBException(e);");
+					psuc.format("\t\t\tthrow new %s(e);\n", SQLDataBaseException.class.getSimpleName());
 					psuc.println("\t\t}");
 					psuc.println("\t}");
 				}
@@ -859,7 +1001,7 @@ class ORMGenerator
 								setValues.append(", ");
 							}
 							
-							set.append(getFieldQuery(f, ","));
+							set.append(getFieldQuery(null, f, ","));
 							setValues.append(getFieldValue(var, f));
 							
 							npkComma = true;
@@ -872,14 +1014,14 @@ class ORMGenerator
 								whereValues.append(", ");
 							}
 							
-							where.append(getFieldQuery(f, " AND"));
+							where.append(getFieldQuery(c.getUpperName(), f, " AND"));
 							whereValues.append(getFieldValue(var, f));
 							
 							pkComma = true;
 						}						
 					}
 					
-					if (set.length() == 0) return "\";\"";
+					if (set.length() == 0) return null; // "\";\"";
 					return String.format("String.format(\"UPDATE %s SET%s WHERE %s ;\", %s, %s).replaceAll(\"'null'\", \"NULL\")", c.getUpperName(), set, where, setValues, whereValues);
 				}
 				
@@ -928,10 +1070,10 @@ class ORMGenerator
 					}
 				}
 				
-				private String getFieldQuery(Field f, String comma)
+				private String getFieldQuery(String table, Field f, String comma)
 				{
 					String flag = getFieldQueryFlag(f);					
-					return String.format(" %s = %s", f.getLowerName(), flag);
+					return String.format(" %s%s = %s", table == null ? "" : table+".", f.getLowerName(), flag);
 				}
 				
 				private String getFieldValue(String var, Field f)

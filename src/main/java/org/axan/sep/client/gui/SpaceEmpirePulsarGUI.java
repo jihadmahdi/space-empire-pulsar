@@ -62,6 +62,7 @@ import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Protocol.eUnitType;
+import org.axan.sep.server.SEPServer;
 
 
 
