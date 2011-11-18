@@ -88,7 +88,31 @@ public class PlayerGameBoard implements Serializable, IGameBoard
 		{
 			throw new GameBoardException(e);
 		}
-	}	
+	}
+	
+	public void undo() throws GameBoardException
+	{
+		// TODO: PlayerGameBoard.undo (IGameBoard.undo ?)
+		throw new GameBoardException("Not implemented yet");
+	}
+	
+	public void redo() throws GameBoardException
+	{
+		// TODO: PlayerGameBoard.redo (IGameBoard.redo ?)
+		throw new GameBoardException("Not implemented yet");
+	}
+	
+	public void resetTurn() throws GameBoardException
+	{
+		// TODO: PlayerGameBoard.resetTurn (IGameBoard.resetTurn ?)
+		throw new GameBoardException("Not implemented yet");
+	}
+	
+	public void endTurn() throws GameBoardException
+	{
+		// TODO: PlayerGameBoard.endTurn (IGameBoard.endTurn ?)
+		throw new GameBoardException("Not implemented yet");
+	}
 	
 	@Override
 	public PlayerGameBoard build(String playerLogin, String celestialBodyName, eBuildingType buildingType) throws GameBoardException

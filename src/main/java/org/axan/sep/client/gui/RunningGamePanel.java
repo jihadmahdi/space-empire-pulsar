@@ -67,15 +67,31 @@ import org.axan.sep.client.gui.lib.TristateCheckBox;
 import org.axan.sep.client.gui.lib.TypedListWrapper;
 import org.axan.sep.client.gui.lib.WrappedJLabel;
 import org.axan.sep.common.AbstractGameCommandCheck;
+import org.axan.sep.common.GameCommand;
+import org.axan.sep.common.IGameBoard;
+import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.StarshipTemplate;
+import org.axan.sep.common.IGameBoard.GameBoardException;
+import org.axan.sep.common.Protocol.SEPImplementationException;
+import org.axan.sep.common.Protocol.eCelestialBodyType;
+import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.IArea;
+import org.axan.sep.common.db.ICelestialBody;
+import org.axan.sep.common.db.IFleet;
 import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IProductiveCelestialBody;
+import org.axan.sep.common.db.IUnit;
 import org.axan.sep.common.db.IVersionedProductiveCelestialBody;
+import org.axan.sep.common.db.SEPCommonDB;
+import org.axan.sep.common.db.orm.Area;
+import org.axan.sep.common.db.orm.CelestialBody;
+import org.axan.sep.common.db.orm.ProductiveCelestialBody;
+import org.axan.sep.common.db.orm.Vortex;
+
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteJob;
 
@@ -116,14 +132,14 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		this(null, null, null);
 	}
 
-	private SQLiteDB getDB()
+	private SEPCommonDB getDB()
 	{
-		return currentLocalGame.getGameBoard().getDB();
+		return currentLocalGame.getDB();
 	}
 	
 	private IGameConfig getConfig()
 	{
-		return currentLocalGame.getGameBoard().getConfig();
+		return currentLocalGame.getConfig();
 	}
 	
 	private final IPlayer	player;
@@ -138,7 +154,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		initGUI();
 	}
 	
-	public void endTurn(List<ISQLiteGameCommand> commands) throws StateMachineNotExpectedEventException, RpcException, SEPImplementationException, RunningGameCommandException
+	public void endTurn(List<GameCommand<?>> commands) throws StateMachineNotExpectedEventException, RpcException, SEPImplementationException, RunningGameCommandException
 	{
 		client.getRunningGameInterface().endTurn(commands);		
 	}
@@ -287,9 +303,9 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				{
 					try
 					{
-						currentLocalGame.undo();
+						currentLocalGame.undo();						
 					}
-					catch(GameCommandException e1)
+					catch(GameBoardException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}					
@@ -318,7 +334,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					{
 						currentLocalGame.redo();
 					}
-					catch(GameCommandException e1)
+					catch(GameBoardException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}					
@@ -347,7 +363,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					{
 						currentLocalGame.resetTurn();
 					}
-					catch(GameCommandException e1)
+					catch(GameBoardException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}					
@@ -376,7 +392,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					{
 						currentLocalGame.endTurn();
 					}
-					catch(GameCommandException e1)
+					catch(GameBoardException e1)
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}
@@ -586,6 +602,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				@Override
 				public void actionPerformed(ActionEvent e)
 				{
+					showRunningGameCommandExceptionMsg(new Exception("Not implemented yet"));
+					/*
 					if (currentSelectedArea == null) return;
 					IVersionedProductiveCelestialBody productiveCelestialBody = getDB().exec(new SQLiteJob<IVersionedProductiveCelestialBody>()
 					{
@@ -611,6 +629,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 					{
 						showRunningGameCommandExceptionMsg(e1);
 					}
+					*/
 				}
 			});
 		}
@@ -707,33 +726,34 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return runningGameCelestialBodyDetailsBuildingsList;
 	}
 
-	private final TypedListWrapper.TypedListElementSelector<Unit>		UNIT_SELECTOR	= new TypedListWrapper.TypedListElementSelector<Unit>()
+	// TODO: IUnit ? IVersionedUnit ?
+	private final TypedListWrapper.TypedListElementSelector<IUnit>		UNIT_SELECTOR	= new TypedListWrapper.TypedListElementSelector<IUnit>()
 																						{
 																							@Override
-																							public boolean equals(Unit o1, Unit o2)
+																							public boolean equals(IUnit o1, IUnit o2)
 																							{
-																								return o1.getOwnerName().equals(o2.getOwnerName()) && o1.getName().equals(o2.getName());
+																								return o1.getOwner().equals(o2.getOwner()) && o1.getName().equals(o2.getName());
 																							}
 																						};
 
-	private final TypedListWrapper.AbstractTypedJListCellRender<Unit>	UNIT_RENDERER	= new TypedListWrapper.AbstractTypedJListCellRender<Unit>()
+	private final TypedListWrapper.AbstractTypedJListCellRender<IUnit>	UNIT_RENDERER	= new TypedListWrapper.AbstractTypedJListCellRender<IUnit>()
 																						{
 																							@Override
-																							public Component getListCellRendererComponent(JList list, Unit unit, int index, boolean isSelected, boolean cellHasFocus)
+																							public Component getListCellRendererComponent(JList list, IUnit unit, int index, boolean isSelected, boolean cellHasFocus)
 																							{
 																								super.getListCellRendererComponent(list, unit, index, isSelected, cellHasFocus);
-																								label.setText(unit.getClass().getSimpleName() + " [" + ((unit.getOwnerName() != null) ? unit.getOwnerName() : "unknown") + "] " + unit.getName());
+																								label.setText(unit.getClass().getSimpleName() + " [" + ((unit.getOwner() != null) ? unit.getOwner() : "unknown") + "] " + unit.getName());
 																								return label;
 																							}
 																						};
 
-	private TypedListWrapper<JList, Unit>								runningGameCelestialBodyDetailsUnitsList;
+	private TypedListWrapper<JList, IUnit>								runningGameCelestialBodyDetailsUnitsList;
 
-	private TypedListWrapper<JList, Unit> getRunningGameCelestialBodyDetailsUnitsList()
+	private TypedListWrapper<JList, IUnit> getRunningGameCelestialBodyDetailsUnitsList()
 	{
 		if (runningGameCelestialBodyDetailsUnitsList == null)
 		{
-			runningGameCelestialBodyDetailsUnitsList = new TypedListWrapper<JList, Unit>(Unit.class, new JList(), UNIT_SELECTOR);
+			runningGameCelestialBodyDetailsUnitsList = new TypedListWrapper<JList, IUnit>(IUnit.class, new JList(), UNIT_SELECTOR);
 
 			runningGameCelestialBodyDetailsUnitsList.setCellRenderer(UNIT_RENDERER);
 
@@ -746,21 +766,14 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 				@Override
 				public void valueChanged(ListSelectionEvent e)
 				{
-					Unit selectedUnit = runningGameCelestialBodyDetailsUnitsList.getSelectedElement();
+					IUnit selectedUnit = runningGameCelestialBodyDetailsUnitsList.getSelectedElement();
 					if (selectedUnit == null) return;
 
 					refreshUnitDetails();
 
 					if (runningGameCelestialBodyDetailsUnitsList.getComponent().isFocusOwner())
 					{
-						if (Fleet.class.isInstance(selectedUnit) && Fleet.class.cast(selectedUnit).isUnasignedFleet())
-						{
-							getRunningGameTabbedPanel().setSelectedComponent(getActionPanel());
-						}
-						else
-						{
-							getRunningGameTabbedPanel().setSelectedComponent(getActionPanel());
-						}
+						getRunningGameTabbedPanel().setSelectedComponent(getActionPanel());
 					}
 				}
 			});
@@ -871,7 +884,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		return universeRenderer;
 	}
 
-	private SQLiteLocalGame	currentLocalGame;
+	private PlayerGameBoard	currentLocalGame;
 
 	private IArea			currentSelectedArea;
 	private RealLocation	currentSelectedLocation;
@@ -886,7 +899,7 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 	{
 		if (currentLocalGame == null) return;
 
-		Area newSelection = currentLocalGame.getGameBoard().getArea(location);
+		IArea newSelection = Area.selectOne(getDB(), IArea.class, null, "location_x = ? AND location_y = ? AND location_z = ?", location.x, location.y, location.z);
 		if (currentSelectedArea == newSelection) return;
 
 		currentSelectedArea = newSelection;
@@ -896,6 +909,8 @@ public class RunningGamePanel extends javax.swing.JPanel implements UniverseRend
 		getRunningGameCelestialBodyDetailsContentLabel().setText(selectedAreaDisplay.substring(0, (selectedAreaDisplay.indexOf("Buildings") < 0) ? selectedAreaDisplay.length() : selectedAreaDisplay.indexOf("Buildings")));		
 		
 		// Celestial body
+		
+		
 		
 		ICelestialBody celestialBody = currentSelectedArea.getCelestialBody();
 
