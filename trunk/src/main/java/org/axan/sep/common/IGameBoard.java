@@ -1,8 +1,11 @@
 package org.axan.sep.common;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.axan.sep.common.Protocol.eBuildingType;
+import org.axan.sep.common.db.orm.Player;
+import org.axan.sep.common.db.orm.PlayerConfig;
 
 public interface IGameBoard
 {
@@ -27,10 +30,7 @@ public interface IGameBoard
 		}
 	}
 	
-	/**
-	 * Return current gameboard players list.
-	 */
-	Set<Player> getPlayers() throws GameBoardException;
+	Map<Player, PlayerConfig> getPlayerList() throws GameBoardException;
 	
 	///////////////////// Commands
 	

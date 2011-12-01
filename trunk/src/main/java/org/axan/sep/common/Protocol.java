@@ -13,6 +13,11 @@ import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 
+import org.axan.sep.common.IGameBoard.GameBoardException;
+import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.orm.Player;
+import org.axan.sep.common.db.orm.PlayerConfig;
+
 /**
  * Define the game protocol (RPC services interfaces).
  */
@@ -65,7 +70,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		Set<Player> getPlayerList() throws RpcException, StateMachineNotExpectedEventException;
+		Map<Player, PlayerConfig> getPlayerList() throws GameBoardException, RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Return the current game config.
@@ -73,7 +78,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException.
 		 */
-		GameConfig getGameConfig() throws RpcException, StateMachineNotExpectedEventException;								
+		IGameConfig getGameConfig() throws RpcException, StateMachineNotExpectedEventException;								
 	}
 	
 	/**
@@ -87,7 +92,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void updatePlayerConfig(PlayerConfig playerCfg) throws RpcException, StateMachineNotExpectedEventException;
+		void updatePlayerConfig(PlayerConfig playerCfg) throws GameBoardException, RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Send a message to the GameCreation Chat.
@@ -104,7 +109,7 @@ public interface Protocol
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 * @throws ServerPrivilegeException If player is not authorised (admin).
 		 */
-		void updateGameConfig(GameConfig gameCfg) throws RpcException, StateMachineNotExpectedEventException, ServerPrivilegeException;
+		void updateGameConfig(GameConfig gameCfg) throws ServerPrivilegeException, GameBoardException, RpcException, StateMachineNotExpectedEventException;
 	}
 	
 	/**
@@ -533,7 +538,7 @@ public interface Protocol
 		 * @param playerList New player list.
 		 * @throws RpcException On connection error.
 		 */
-		void refreshPlayerList(Set<Player> playerList) throws RpcException;
+		void refreshPlayerList(Map<Player, PlayerConfig> playerList) throws RpcException;
 
 		/**
 		 * Server notify the client to refresh the game config. Client is expected to display it in GameCreation panel.

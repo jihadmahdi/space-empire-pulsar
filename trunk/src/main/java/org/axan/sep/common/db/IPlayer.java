@@ -1,7 +1,7 @@
 package org.axan.sep.common.db;
 
 
-public interface IPlayer
+public interface IPlayer extends Comparable<IPlayer>
 {
-	public String getName();
+	String getName();
 }

@@ -2,7 +2,9 @@ package org.axan.sep.common;
 
 import java.io.Serializable;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.axan.eplib.orm.SQLDataBaseException;
 import org.axan.eplib.utils.Basic;
@@ -59,24 +61,23 @@ public class PlayerGameBoard implements Serializable, IGameBoard
 	}
 	
 	@Override
-	public Set<org.axan.sep.common.Player> getPlayers() throws GameBoardException
-	{
+	public Map<Player, PlayerConfig> getPlayerList() throws GameBoardException
+	{		
 		try
 		{
-			Set<IPlayer> players = Player.select(commonDB, IPlayer.class, null, null);
-			Set<IPlayerConfig> playerConfigs = PlayerConfig.select(commonDB, IPlayerConfig.class, null, null);
+			Set<Player> players = Player.select(commonDB, Player.class, null, null);
+			Set<PlayerConfig> playerConfigs = PlayerConfig.select(commonDB, PlayerConfig.class, null, null);
 			
-			Set<org.axan.sep.common.Player> result = new HashSet<org.axan.sep.common.Player>();							
-			
-			
-			for(IPlayer p : players)
+			Map<Player, PlayerConfig> result = new TreeMap<Player, PlayerConfig>();						
+						
+			for(Player p : players)
 			{
-				for(IPlayerConfig pc : playerConfigs)
+				for(PlayerConfig pc : playerConfigs)
 				{
 					if (p.getName().matches(pc.getName()))
 					{
 						// TODO: image, portrait...
-						result.add(new org.axan.sep.common.Player(p.getName(), new org.axan.sep.common.PlayerConfig(Basic.stringToColor(pc.getColor()), null, null)));
+						result.put(p, pc);
 						break;
 					}
 				}

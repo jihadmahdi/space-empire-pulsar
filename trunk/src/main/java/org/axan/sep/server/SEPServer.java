@@ -5,6 +5,7 @@
  */
 package org.axan.sep.server;
 
+import java.awt.Color;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -16,10 +17,13 @@ import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor.AbortPolicy;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,10 +39,10 @@ import org.axan.eplib.orm.SQLDataBaseException;
 import org.axan.eplib.orm.hsqldb.HSQLDB;
 import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
+import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.CommandCheckResult;
 import org.axan.sep.common.GameConfig;
-import org.axan.sep.common.Player;
-import org.axan.sep.common.PlayerConfig;
+import org.axan.sep.common.GameConfigCopier;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.Protocol;
 import org.axan.sep.common.SEPUtils;
@@ -50,6 +54,11 @@ import org.axan.sep.common.Protocol.ServerPausedGame;
 import org.axan.sep.common.Protocol.ServerRunningGame;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.common.Protocol.SEPImplementationException;
+import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.orm.Player;
+import org.axan.sep.common.db.orm.PlayerConfig;
+
+// TODO: add synchronized to SEPServer and ServerGame methods that need it.
 
 /**
  * SEPServer
@@ -59,6 +68,7 @@ public class SEPServer implements IServer
 {
 
 	public static Logger		log	= Logger.getLogger(SEPServer.class.getCanonicalName());
+	private static Random		rnd = new Random();
 
 	private final ExecutorService	threadPool;
 
@@ -90,11 +100,6 @@ public class SEPServer implements IServer
 			return user.getLogin();
 		}
 
-		Player getPlayer()
-		{
-			return sepServer.players.get(user.getLogin()).getPlayer();
-		}
-
 		ServerPlayer getServerPlayer()
 		{
 			return sepServer.players.get(user.getLogin());
@@ -106,9 +111,9 @@ public class SEPServer implements IServer
 		 * @see common.Protocol.ServerCommon#getPlayerList()
 		 */
 		@Override
-		public Set<Player> getPlayerList()
+		public Map<Player, PlayerConfig> getPlayerList() throws GameBoardException
 		{
-			return sepServer.getPlayerList();
+			return sepServer.getGameInCreation().getPlayerList();
 		}
 
 		/*
@@ -117,9 +122,9 @@ public class SEPServer implements IServer
 		 * @see common.Protocol.ServerCommon#getGameConfig()
 		 */
 		@Override
-		public GameConfig getGameConfig() throws RpcException, StateMachineNotExpectedEventException
+		public IGameConfig getGameConfig()
 		{
-			return sepServer.gameConfig;
+			return sepServer.getGameInCreation().getConfig();
 		}
 
 	}
@@ -157,23 +162,32 @@ public class SEPServer implements IServer
 				@Override
 				public void run()
 				{
-					sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
+					try
 					{
-
-						@Override
-						public void doIt(ServerPlayer player)
+						final Player p = sepServer.getGameInCreation().getPlayer(user.getLogin());
+						
+						sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
 						{
-							try
+
+							@Override
+							public void doIt(ServerPlayer player)
 							{
-								player.getClientInterface().receiveGameCreationMessage(getPlayer(), msg);
+								try
+								{
+									player.getClientInterface().receiveGameCreationMessage(p, msg);
+								}
+								catch(RpcException e)
+								{
+									log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
+									player.abort(e);
+								}
 							}
-							catch(RpcException e)
-							{
-								log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
-								player.abort(e);
-							}
-						}
-					});
+						});
+					}
+					catch(GameBoardException e)
+					{
+						log.log(Level.SEVERE, "GameBoardException", e);
+					}					
 				}
 			});
 		}
@@ -184,7 +198,7 @@ public class SEPServer implements IServer
 		 * @see common.Protocol.ServerGameCreation#updateGameConfig(common.GameConfig)
 		 */
 		@Override
-		public void updateGameConfig(GameConfig gameCfg) throws ServerPrivilegeException
+		public void updateGameConfig(GameConfig gameCfg) throws ServerPrivilegeException, GameBoardException
 		{
 			if (!user.isAdmin())
 			{
@@ -192,9 +206,9 @@ public class SEPServer implements IServer
 				throw new ServerPrivilegeException("Only admin can update game config.");
 			}
 
-			synchronized(sepServer.gameConfig)
+			synchronized(sepServer)
 			{
-				sepServer.gameConfig = gameCfg;
+				sepServer.getGameInCreation().updateGameConfig(gameCfg);			
 				sepServer.threadPool.execute(new Runnable()
 				{
 
@@ -213,15 +227,23 @@ public class SEPServer implements IServer
 		 * @see common.Protocol.ServerGameCreation#updatePlayerConfig(common.PlayerConfig)
 		 */
 		@Override
-		public void updatePlayerConfig(final PlayerConfig playerCfg)
+		public void updatePlayerConfig(final PlayerConfig playerCfg) throws GameBoardException
 		{
+			if (getLogin().compareTo(playerCfg.getName()) != 0)
+			{
+				Error e = new Error("Cannot update "+playerCfg.getName()+" config.");
+				log.log(Level.WARNING, user.getLogin()+" tried to update "+playerCfg.getName()+" config.");
+				this.getServerPlayer().abort(e);
+				throw e;			
+			}
+			
+			sepServer.getGameInCreation().updatePlayerConfig(playerCfg);			
 			sepServer.threadPool.execute(new Runnable()
 			{
 
 				@Override
 				public void run()
 				{
-					getServerPlayer().setConfig(playerCfg);
 					sepServer.refreshPlayerList();
 				}
 			});
@@ -256,7 +278,7 @@ public class SEPServer implements IServer
 			try
 			{
 				// TODO: Be able to compute a full player game board (including previous turn) from the current server game board.
-				return sepServer.getCurrentGame().getPlayerGameBoard(createNewDB(), user.getLogin());
+				return sepServer.getRunningGame().getPlayerGameBoard(createNewDB(), user.getLogin());
 			}
 			catch(GameBoardException e)
 			{
@@ -287,23 +309,32 @@ public class SEPServer implements IServer
 				public void run()
 				{
 					// TODO : Filter running game message according to pulsar effect.
-					sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
+					try
 					{
-
-						@Override
-						public void doIt(ServerPlayer player)
+						final Player p = sepServer.getRunningGame().getPlayer(user.getLogin());
+						
+						sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
 						{
-							try
-							{
-								player.getClientInterface().receiveRunningGameMessage(getPlayer(), msg);
+	
+							@Override
+							public void doIt(ServerPlayer player)
+							{								
+								try
+								{
+									player.getClientInterface().receiveRunningGameMessage(p, msg);
+								}
+								catch(RpcException e)
+								{
+									log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
+									player.abort(e);
+								}							
 							}
-							catch(RpcException e)
-							{
-								log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
-								player.abort(e);
-							}
-						}
-					});
+						});
+					}
+					catch(GameBoardException e)
+					{
+						log.log(Level.SEVERE, "GameBoardException", e);
+					}
 				}
 			});
 		}
@@ -567,9 +598,9 @@ public class SEPServer implements IServer
 		*/
 
 		@Override
-		public void endTurn(List<GameCommand<?>> commands) throws RpcException ,StateMachineNotExpectedEventException, SEPImplementationException, RunningGameCommandException
+		public void endTurn(List<GameCommand<?>> commands) throws RpcException, StateMachineNotExpectedEventException, SEPImplementationException, RunningGameCommandException
 		{
-			sepServer.getCurrentGame().endTurn(getLogin(), commands);
+			sepServer.getRunningGame().endTurn(getLogin(), commands);
 			
 			sepServer.threadPool.execute(new Runnable()
 			{
@@ -577,7 +608,18 @@ public class SEPServer implements IServer
 				@Override
 				public void run()
 				{
-					sepServer.checkForNextTurn();
+					try
+					{
+						sepServer.getRunningGame().checkForNextTurn();
+					}
+					catch(RunningGameCommandException e)
+					{
+						log.log(Level.SEVERE, "Fatal error while resolving next turn", e);
+						sepServer.terminate();
+						return;
+					}
+					
+					sepServer.refreshPlayerGameBoards();
 				}
 			});
 		}				
@@ -614,41 +656,50 @@ public class SEPServer implements IServer
 				@Override
 				public void run()
 				{
-					sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
+					try
 					{
-
-						@Override
-						public void doIt(ServerPlayer player)
+						final Player p = sepServer.getRunningGame().getPlayer(user.getLogin());
+						
+						sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
 						{
-							try
-							{
-								player.getClientInterface().receivePausedGameMessage(getPlayer(), msg);
+	
+							@Override
+							public void doIt(ServerPlayer player)
+							{								
+								try
+								{
+									player.getClientInterface().receivePausedGameMessage(p, msg);
+								}
+								catch(RpcException e)
+								{
+									log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
+									player.abort(e);
+								}							
 							}
-							catch(RpcException e)
-							{
-								log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
-								player.abort(e);
-							}
-						}
-					});
+						});
+					}
+					catch(GameBoardException e)
+					{
+						log.log(Level.SEVERE, "GameBoardException", e);
+					}
 				}
 			});
 		}
 	}
 
 	private final GameServer				gameServer;
-
 	private final Map<String, ServerPlayer>	players		= new HashMap<String, ServerPlayer>();
 
-	private GameConfig						gameConfig	= new GameConfig();
-
-	private ServerGame						game		= null;
+	private ServerGame						game		= new ServerGame();
 
 	public SEPServer(int port, long timeOut)
 	{
-		gameServer = new GameServer(gameServerListener, port, timeOut);
+		gameServer = new GameServer(gameServerListener, port, timeOut);		
+		
 		try
 		{
+			gameServer.enableFTPServer("./game", port+1);
+			
 			gameServer.registerGameCreationCommandExecutorFactory(Protocol.ServerGameCreation.class, new ExecutorFactory<Protocol.ServerGameCreation>()
 			{
 
@@ -703,7 +754,7 @@ public class SEPServer implements IServer
 		}
 	}
 
-	public Map<Player, Boolean> getPlayerStateList()
+	private Map<Player, Boolean> getPlayerStateList()
 	{
 		Map<Player, Boolean> result = new HashMap<Player, Boolean>();
 
@@ -712,43 +763,26 @@ public class SEPServer implements IServer
 			for(String name : players.keySet())
 			{
 				ServerPlayer player = players.get(name);
-
+				
 				if (player != null)
 				{
-					result.put(player.getPlayer(), player.isConnected());
+					try
+					{
+						result.put(getGameInCreation().getPlayer(name), player.isConnected());
+					}
+					catch(GameBoardException e)
+					{
+						if (player.isConnected())
+						{
+							log.log(Level.SEVERE, "Connected player "+name+" is unknown.", e);
+						}
+					}
 				}
 			}
 		}
 
 		return result;
-	}
-
-	private void checkForNextTurn()
-	{
-		log.log(Level.FINEST, "Checking for next turn...");
-
-		synchronized(players)
-		{
-			for(String name : players.keySet())
-			{
-				if (!getCurrentGame().isTurnEnded(name)) return;
-			}
-		}
-
-		log.log(Level.INFO, "Resolving new turn");
-		try
-		{
-			getCurrentGame().resolveCurrentTurn();
-		}
-		catch(RunningGameCommandException e)
-		{
-			log.log(Level.SEVERE, "Running game command error.", e);
-			terminate();
-			return;
-		}
-
-		refreshPlayerGameBoards();
-	}
+	}	
 
 	private void refreshPlayerGameBoards()
 	{
@@ -758,7 +792,7 @@ public class SEPServer implements IServer
 			{
 				try
 				{
-					players.get(name).getClientInterface().receiveNewTurnGameBoard(getCurrentGame().getPlayerGameBoard(createNewDB(), name));
+					players.get(name).getClientInterface().receiveNewTurnGameBoard(getRunningGame().getPlayerGameBoard(createNewDB(), name));
 				}
 				catch(RpcException e)
 				{
@@ -775,10 +809,10 @@ public class SEPServer implements IServer
 
 	/**
 	 * @return
-	 */
-	public Set<Player> getPlayerList()
+	 *//*
+	public Map<Player, PlayerConfig> getPlayerList()
 	{
-		Set<Player> result = new TreeSet<Player>();
+		Map<Player, PlayerConfig> result = new TreeMap<Player, PlayerConfig>();		
 
 		synchronized(players)
 		{
@@ -788,35 +822,35 @@ public class SEPServer implements IServer
 
 				if (player != null && player.isConnected())
 				{
-					result.add(player.getPlayer());
+					result.put(player.getPlayer(), player.getConfig());
 				}
 			}
 		}
 
 		return result;
-	}
+	}*/
 	
-	private void initCurrentGame() throws GameBoardException
+	private void runGame() throws GameBoardException
 	{
+		
+		
 		synchronized(this)
 		{
-			if (game == null)
+			if (game.isGameInCreation())
 			{
-				try
-				{
-					game = new ServerGame(new GameBoard(createNewDB(), getPlayerList(), this.gameConfig));
-				}
-				catch(Throwable t)
-				{
-					throw new GameBoardException(t);
-				}
+				game.run(createNewDB());
 			}
 		}
 	}
 
-	private ServerGame getCurrentGame()
+	private ServerGame getGameInCreation()
 	{
-		while(game == null)
+		return game;
+	}
+	
+	private ServerGame getRunningGame()
+	{
+		while(game.isGameInCreation())
 		{
 			try
 			{
@@ -841,6 +875,17 @@ public class SEPServer implements IServer
 		return gameServer.getAddress();
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.axan.eplib.clientserver.IServer#getPort()
+	 */	
+	@Override
+	public int getPort()
+	{
+		return gameServer.getPort();
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -920,6 +965,18 @@ public class SEPServer implements IServer
 				else
 				{
 					server.players.put(player.getLogin(), new ServerPlayer(player));
+					if (server.getGameInCreation().isGameInCreation())
+					{
+						try
+						{
+							server.getGameInCreation().addPlayer(player.getLogin());
+						}
+						catch(GameBoardException e)
+						{
+							log.log(Level.SEVERE, "addPlayer error", e);
+							player.disconnect();
+						}
+					}
 				}
 			}
 			server.refreshPlayerList();
@@ -936,6 +993,14 @@ public class SEPServer implements IServer
 			if (server.players.containsKey(player.getLogin()))
 			{
 				server.players.get(player.getLogin()).setServerUser(null);
+				if (server.getGameInCreation().isGameInCreation())
+				{
+					try
+					{
+						server.getGameInCreation().removePlayer(player.getLogin());
+					}
+					catch(GameBoardException e) { /* NOOP */ }
+				}
 				server.refreshPlayerList();
 			}
 		}
@@ -957,7 +1022,7 @@ public class SEPServer implements IServer
 				{
 					try
 					{
-						server.initCurrentGame();
+						server.runGame();
 					}
 					catch(GameBoardException e)
 					{
@@ -1034,7 +1099,7 @@ public class SEPServer implements IServer
 			{
 				try
 				{
-					player.getClientInterface().refreshGameConfig(gameConfig);
+					player.getClientInterface().refreshGameConfig((GameConfig) getGameInCreation().getConfig());
 				}
 				catch(RpcException e)
 				{
@@ -1045,25 +1110,33 @@ public class SEPServer implements IServer
 	}
 
 	private void refreshPlayerList()
-	{
-		final Set<Player> playerList = getPlayerList();
-
-		doForEachConnectedPlayer(new DoItToOnePlayer()
+	{		
+		try
 		{
-
-			@Override
-			public void doIt(ServerPlayer player)
+			final Map<Player, PlayerConfig> playerList = getGameInCreation().getPlayerList();
+			
+			doForEachConnectedPlayer(new DoItToOnePlayer()
 			{
-				try
+
+				@Override
+				public void doIt(ServerPlayer player)
 				{
-					player.getClientInterface().refreshPlayerList(playerList);
+					try
+					{
+						player.getClientInterface().refreshPlayerList(playerList);
+					}
+					catch(RpcException e)
+					{
+						log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
+					}
 				}
-				catch(RpcException e)
-				{
-					log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
-				}
-			}
-		});
+			});
+		}
+		catch(GameBoardException e)
+		{
+			log.log(Level.SEVERE, "GameBoardException", e);
+			return;
+		}		
 	}
 
 	private static interface DoItToOnePlayer

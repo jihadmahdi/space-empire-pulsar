@@ -5,33 +5,34 @@
  */
 package org.axan.sep.server;
 
+import java.awt.Color;
+import java.util.Random;
 import java.util.logging.Level;
 
+import org.apache.commons.lang.math.RandomUtils;
 import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.gameserver.server.GameServer.ServerUser;
-import org.axan.sep.common.Player;
-import org.axan.sep.common.PlayerConfig;
+import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.Protocol;
+import org.axan.sep.common.db.orm.Player;
+import org.axan.sep.common.db.orm.PlayerConfig;
 
 
 /**
  * This class represent a Player from server point of view.
  */
 class ServerPlayer
-{	
-	private final String		name;
-	private PlayerConfig	config;
-	private ServerUser			serverUser;
-	private Player			cachedClientPlayer;
-
+{
+	private static final Random rnd = new Random();
+	
+	private ServerUser			serverUser;	
+	
 	/**
 	 * Full constructor.
 	 */
 	public ServerPlayer(ServerUser user)
 	{
-		this.name = user.getLogin();
 		this.serverUser = user;
-		this.config = new PlayerConfig();		
 	}
 
 	/**
@@ -39,22 +40,18 @@ class ServerPlayer
 	 */
 	public String getName()
 	{
-		return name;
+		return serverUser.getLogin();
 	}
 
 	/**
 	 * Compute this serverPlayer instant snapshot as a common Player object.
 	 * 
 	 * @return Player common player object.
-	 */
+	 *//*
 	public Player getPlayer()
 	{
-		if (cachedClientPlayer == null)
-		{
-			cachedClientPlayer = new Player(name, config);
-		}
-		return cachedClientPlayer;
-	}
+		return player;
+	}*/
 
 	/**
 	 * @param serverUser
@@ -104,10 +101,15 @@ class ServerPlayer
 
 	/**
 	 * @param playerCfg
-	 */
+	 *//*
 	public void setConfig(PlayerConfig playerCfg)
 	{
-		this.config = playerCfg;
-		this.cachedClientPlayer = null;
+		if (playerCfg.getName().compareTo(getName()) != 0) throw new Error("Player.name != PlayerConfig.name");
+		this.config = playerCfg;		
 	}
+	
+	public PlayerConfig getConfig()
+	{
+		return config;
+	}*/
 }

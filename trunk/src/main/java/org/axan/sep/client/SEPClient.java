@@ -1,27 +1,29 @@
-/**
- * @author Escallier Pierre
- * @file SEPClient.java
- * @date 3 avr. 2009
- */
 package org.axan.sep.client;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.axan.eplib.clientserver.ftp.FTPClient;
 import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.gameserver.client.GameClient;
 import org.axan.eplib.gameserver.common.IClientUser;
 import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.eplib.gameserver.common.IServerUser.ServerSavingGameException;
+import org.axan.eplib.orm.SQLDataBaseException;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
+import org.axan.eplib.utils.Operations.INotParameterisedOperationWithReturn;
 import org.axan.sep.common.GameConfig;
-import org.axan.sep.common.Player;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.Protocol;
-
-
-
+import org.axan.sep.common.db.IPlayerConfig;
+import org.axan.sep.common.db.SEPCommonDB;
+import org.axan.sep.common.db.orm.Player;
+import org.axan.sep.common.db.orm.PlayerConfig;
 
 /**
  * 
@@ -61,7 +63,7 @@ public class SEPClient
 		 * Must return fast (let's spawn a new thread to make the job).
 		 * @param playerList new player list.
 		 */
-		void refreshPlayerList(Set<Player> playerList);
+		void refreshPlayerList(Map<Player, PlayerConfig> playerList);
 
 		/**
 		 * New GameCreation message received from another player.
@@ -112,13 +114,14 @@ public class SEPClient
 		{
 			this.client = client;
 		}
-
+		
 		/* (non-Javadoc)
 		 * @see common.Protocol.Client#refreshPlayerList(java.util.Set)
 		 */
 		@Override
-		public void refreshPlayerList(Set<Player> playerList)
+		public void refreshPlayerList(Map<Player, PlayerConfig> playerList) throws RpcException
 		{
+			client.refreshPlayerList(playerList);
 			client.ui.refreshPlayerList(playerList);
 		}
 
@@ -152,6 +155,7 @@ public class SEPClient
 		@Override
 		public void receiveNewTurnGameBoard(PlayerGameBoard gameBoard) throws RpcException
 		{
+			client.setGameBoard(gameBoard);
 			client.ui.receiveNewTurnGameBoard(gameBoard);
 		}
 
@@ -165,6 +169,9 @@ public class SEPClient
 	
 	private final GameClient client;
 	private final IUserInterface ui;
+	private PlayerGameBoard gameBoard=null;
+	
+	private final Map<String, IPlayerConfig> playerConfigs = new HashMap<String, IPlayerConfig>();
 	
 	public SEPClient(IUserInterface ui, String login, String server, int port, long timeOut)
 	{
@@ -175,6 +182,7 @@ public class SEPClient
 	{
 		this.ui = ui;
 		this.client = new GameClient(ui, login, pwd, server, port, timeOut);
+		
 		try
 		{
 			this.client.registerClientCommandExecutor(Protocol.Client.class, new SEPClientProtocol(this));
@@ -184,6 +192,56 @@ public class SEPClient
 			e.printStackTrace();
 			throw new Error(e);
 		}
+	}
+	
+	public boolean isRunning()
+	{
+		return getGameBoard() != null;
+	}
+	
+	private synchronized void refreshPlayerList(Map<Player, PlayerConfig> playerList)
+	{
+		if (!isRunning())
+		{
+			playerConfigs.clear();
+			for(IPlayerConfig pc : playerList.values())
+			{
+				playerConfigs.put(pc.getName(), pc);
+			}
+		}
+	}
+	
+	/**
+	 * Get player config no matter the game current state (in creation or running)
+	 * @param playerName
+	 * @return
+	 * @throws SQLDataBaseException 
+	 */
+	public synchronized IPlayerConfig getPlayerConfig(String playerName) throws SQLDataBaseException
+	{
+		if (!isRunning())
+		{
+			return playerConfigs.get(playerName);
+		}
+		else
+		{
+			return PlayerConfig.selectOne(getDB(), PlayerConfig.class, null, "name = %s", playerName);
+		}		
+	}
+	
+	public void setGameBoard(PlayerGameBoard gameBoard)
+	{
+		this.gameBoard = gameBoard;
+	}
+	
+	public PlayerGameBoard getGameBoard()
+	{
+		return gameBoard;
+	}
+	
+	public SEPCommonDB getDB()
+	{
+		return gameBoard==null?null:gameBoard.getDB();
 	}
 
 	public void connect()
@@ -212,6 +270,36 @@ public class SEPClient
 		return client.getLogin();
 	}
 	
+	public String getPassword()
+	{
+		return client.getPassword();
+	}
+	
+	public String getServer()
+	{
+		return client.getServer();
+	}
+	
+	public FTPClient getFTPClient()
+	{
+		return client.getFTPClient();
+	}
+	
+	public void uploadFile(String localFilepath, String remoteFilename) throws IOException
+	{
+		client.uploadFile(localFilepath, remoteFilename);
+	}
+	
+	public URL getUserDirectoryURL(String username)
+	{
+		return client.getUserDirectoryURL(username);
+	}
+	
+	public URL getHomeDirectoryURL()
+	{
+		return client.getHomeDirectoryURL();
+	}
+	
 	public void runGame() throws ServerPrivilegeException, StateMachineNotExpectedEventException, RpcException
 	{
 		client.getServerInterface().runGame();
@@ -227,7 +315,7 @@ public class SEPClient
 		client.getServerInterface().resumeGame();
 	}
 	
-	public boolean isGameSaved(String savedGameId) throws ServerPrivilegeException, ServerSavingGameException, StateMachineNotExpectedEventException, RpcException
+	public boolean isGameSaved(String savedGameId) throws ServerPrivilegeException, StateMachineNotExpectedEventException, RpcException, ServerSavingGameException
 	{
 		return client.getServerInterface().isGameSaved(savedGameId);
 	}

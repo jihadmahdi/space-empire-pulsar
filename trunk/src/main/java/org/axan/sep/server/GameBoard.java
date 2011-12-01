@@ -9,15 +9,18 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.orm.ISQLDataBase;
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.eplib.orm.ISQLDataBaseStatementJob;
 import org.axan.eplib.orm.SQLDataBaseException;
 import org.axan.eplib.orm.sqlite.SQLiteDB;
+import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.IGameBoard;
 import org.axan.sep.common.PlayerGameBoard;
@@ -169,7 +172,7 @@ class GameBoard implements Serializable, IGameBoard
 	
 	// Game DataBase
 	
-	public GameBoard(ISQLDataBase db, Set<org.axan.sep.common.Player> players, org.axan.sep.common.GameConfig config) throws IOException, GameConfigCopierException, SQLDataBaseException
+	public GameBoard(ISQLDataBase db, Map<Player, PlayerConfig> players, org.axan.sep.common.GameConfig config) throws IOException, GameConfigCopierException, SQLDataBaseException
 	{
 		this.commonDB = new SEPCommonDB(db, config);
 		this.db = commonDB.getDB();
@@ -192,9 +195,9 @@ class GameBoard implements Serializable, IGameBoard
 		// Add the players starting planets.
 		Set<Location> playersPlanetLocations = new HashSet<Location>();
 		
-		for(org.axan.sep.common.Player player : players)
+		for(Player player : players.keySet())
 		{
-			insertPlayer(player);								
+			insertPlayer(player, players.get(player));								
 			
 			// Found a location to pop the planet.
 			Location planetLocation;
@@ -548,23 +551,42 @@ class GameBoard implements Serializable, IGameBoard
 		currentView.getConfig().setTurn(maxTurn);
 	}
 	
-	@Override
-	public Set<org.axan.sep.common.Player> getPlayers() throws GameBoardException
-	{
+	public Player getPlayer(String playerLogin) throws GameBoardException
+	{		
+		Set<Player> rs;
+		
 		try
 		{
-			Set<org.axan.sep.common.Player> result = new HashSet<org.axan.sep.common.Player>();
-			Set<IPlayer> players = Player.select(commonDB, IPlayer.class, null, null);
-			Set<IPlayerConfig> playerConfigs = PlayerConfig.select(commonDB, IPlayerConfig.class, null, null);
+			rs = Player.select(commonDB, Player.class, null, "name = %s", playerLogin);			
+		}
+		catch(SQLDataBaseException e)
+		{
+			throw new GameBoardException("SQLDataBaseException", e);
+		}
+		
+		if (rs == null || rs.isEmpty()) throw new GameBoardException("Player "+playerLogin+" is unkown");
+		
+		return rs.iterator().next();
+	}
+	
+	@Override
+	public Map<Player, PlayerConfig> getPlayerList() throws GameBoardException
+	{
+		Map<Player, PlayerConfig> result = new TreeMap<Player, PlayerConfig>();
+		
+		try
+		{
+			Set<Player> ps = Player.select(commonDB, Player.class, null, null);
+			Set<PlayerConfig> pcs = PlayerConfig.select(commonDB, PlayerConfig.class, null, null);
 			
-			for(IPlayer p : players)
+			for(Player p : ps)
 			{
-				for(IPlayerConfig pc : playerConfigs)
+				for(PlayerConfig pc : pcs)
 				{
-					if (p.getName().matches(pc.getName()))
+					if (p.getName().compareTo(pc.getName()) == 0)
 					{
-						// TODO: image, portrait...
-						result.add(new org.axan.sep.common.Player(p.getName(), new org.axan.sep.common.PlayerConfig(Basic.stringToColor(pc.getColor()), null, null)));
+						result.put(p, pc);
+						pcs.remove(pc);
 						break;
 					}
 				}
@@ -1106,11 +1128,11 @@ class GameBoard implements Serializable, IGameBoard
 		}
 	}
 
-	void insertPlayer(org.axan.sep.common.Player player) throws SQLDataBaseException
+	void insertPlayer(Player player, PlayerConfig config) throws SQLDataBaseException
 	{		
-		Player.insertOrUpdate(commonDB, new Player(player.getName()));
+		Player.insertOrUpdate(commonDB, player);
 		// TODO: Symbol & Portrait
-		PlayerConfig.insertOrUpdate(commonDB, new PlayerConfig(player.getName(), Basic.colorToString(player.getConfig().getColor()), null, null));		
+		PlayerConfig.insertOrUpdate(commonDB, config);		
 	}
 	
 	void insertArea(Location location, boolean isSun) throws SQLDataBaseException

@@ -5,6 +5,7 @@
  */
 package org.axan.sep.server;
 
+import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -16,23 +17,32 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.axan.eplib.clientserver.rpc.RpcException;
+import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.eplib.orm.ISQLDataBase;
 import org.axan.eplib.orm.SQLDataBaseException;
 import org.axan.eplib.orm.sqlite.SQLiteDB;
+import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
+import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.CommandCheckResult;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.GameCommand;
-import org.axan.sep.common.Player;
 import org.axan.sep.common.PlayerGameBoard;
+import org.axan.sep.common.Protocol;
 import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
 import org.axan.sep.common.IGameBoard.GameBoardException;
 import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
 import org.axan.sep.common.Protocol.SEPImplementationException;
+import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.orm.Player;
+import org.axan.sep.common.db.orm.PlayerConfig;
 import org.axan.sep.server.SEPServer;
 
 /**
@@ -44,19 +54,140 @@ class ServerGame implements Serializable
 	private static final long							serialVersionUID	= 1L;
 
 	private static final Logger							log					= SEPServer.log;
+	
+	private static final Random							rnd = new Random();
 
 	/** Resolved game turns. */
 	private GameBoard						currentGameBoard			= null;
 
+	/** Current turn players moves. */
 	private transient Map<String, List<GameCommand<?>>>	playersCurrentMove = new HashMap<String, List<GameCommand<?>>>();
+	
+	/** List players during game creation, must not be used whence game is ran. */
+	private transient Map<Player, PlayerConfig> players = new TreeMap<Player, PlayerConfig>();
+	
+	/** During game creation, temporary game config. */
+	private transient GameConfig gameConfig = new GameConfig();
 
-	public ServerGame(GameBoard initialGameBoard) throws GameBoardException
+	public ServerGame()
 	{
-		this.currentGameBoard = initialGameBoard;
-				
-		for(Player p : this.currentGameBoard.getPlayers())
+		
+	}
+	
+	public void addPlayer(String playerLogin) throws GameBoardException
+	{
+		if (!isGameInCreation()) throw new GameBoardException("Cannot update game config when game is already running.");
+		
+		for(Player p : players.keySet())
+		{
+			if (p.getName().compareTo(playerLogin) == 0)
+			{
+				throw new GameBoardException("Player "+playerLogin+" already exists.");
+			}
+		}
+		
+		//TODO: Portrait & Symbol
+		players.put(new Player(playerLogin), new PlayerConfig(playerLogin, Basic.colorToString(new Color(rnd.nextInt(0xFFFFFF))), null, null));		
+	}
+	
+	public void removePlayer(String playerLogin) throws GameBoardException
+	{
+		if (!isGameInCreation()) throw new GameBoardException("Cannot update game config when game is already running.");
+		
+		for(Player p : players.keySet())
+		{
+			if (p.getName().compareTo(playerLogin) == 0)
+			{
+				players.remove(p);
+				return;
+			}
+		}
+		
+		throw new GameBoardException("Player "+playerLogin+" is unknown.");
+	}
+	
+	public Player getPlayer(String playerLogin) throws GameBoardException
+	{
+		if (isGameInCreation()) // Game in creation
+		{
+			for(Player p : players.keySet())
+			{
+				if (p.getName().compareTo(playerLogin) == 0) return p;
+			}
+			
+			return null;
+		}
+		else
+		{
+			return currentGameBoard.getPlayer(playerLogin);
+		}
+	}
+	
+	public Map<Player, PlayerConfig> getPlayerList() throws GameBoardException
+	{
+		if (isGameInCreation()) // Game in creation
+		{
+			return players;
+		}
+		else
+		{
+			return currentGameBoard.getPlayerList();			
+		}
+	}
+	
+	public IGameConfig getConfig()
+	{
+		if (isGameInCreation())
+		{
+			return gameConfig;
+		}
+		else
+		{
+			return currentGameBoard.getConfig();
+		}
+	}
+	
+	public void updateGameConfig(GameConfig gameCfg) throws GameBoardException
+	{
+		if (!isGameInCreation()) throw new GameBoardException("Cannot update game config when game is already running.");		
+		this.gameConfig = gameCfg;		
+	}
+	
+	public void updatePlayerConfig(PlayerConfig playerCfg) throws GameBoardException
+	{
+		if (!isGameInCreation()) throw new GameBoardException("Cannot update game config when game is already running.");
+		
+		for(Player p : players.keySet())
+		{
+			if (p.getName().compareTo(playerCfg.getName()) == 0)
+			{
+				players.put(p, playerCfg);
+				return;
+			}
+		}
+		
+		throw new GameBoardException("Player "+playerCfg.getName()+" unknown.");		
+	}
+	
+	public boolean isGameInCreation()
+	{
+		return currentGameBoard == null;
+	}
+	
+	public void run(ISQLDataBase db) throws GameBoardException
+	{
+		for(Player p : players.keySet())
 		{
 			playersCurrentMove.put(p.getName(), null);
+		}
+		
+		try
+		{
+			currentGameBoard = new GameBoard(db, players, gameConfig);
+		}
+		catch(Exception e)
+		{
+			throw new GameBoardException(e);
 		}
 	}
 	
@@ -158,14 +289,27 @@ class ServerGame implements Serializable
 		playersCurrentMove.put(playerLogin, commands);
 	}
 	
-	public boolean isTurnEnded(String playerLogin)
+	private boolean isTurnEnded(String playerLogin)
 	{
 		// TODO: Implement the case for which a player who already loss the game don't need to end turn (actually don't even play anymore).
 		// TODO: + any case for which the player just has to pass his turn (pulsar...).
 		return playersCurrentMove.get(playerLogin) != null;
 	}
+	
+	public void checkForNextTurn() throws RunningGameCommandException
+	{
+		log.log(Level.FINEST, "Checking for next turn...");
 
-	public void resolveCurrentTurn() throws RunningGameCommandException
+		for(String playerLogin : playersCurrentMove.keySet())
+		{
+			if (!isTurnEnded(playerLogin)) return;
+		}
+
+		log.log(Level.INFO, "Resolving new turn");
+		resolveCurrentTurn();
+	}
+
+	private void resolveCurrentTurn() throws RunningGameCommandException
 	{		
 		// Check all players have ended turn.
 		for(String playerLogin : playersCurrentMove.keySet())

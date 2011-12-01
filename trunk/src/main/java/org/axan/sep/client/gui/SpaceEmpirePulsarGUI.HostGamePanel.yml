@@ -1,0 +1,19 @@
+JPanel(name=hostGamePanel):
+  - JButton(name=btnOk, text=btn.host, onAction=[$validate, ok])
+  - JButton(name=btnCancel, text=btn.cancel, onAction=cancel)
+  - JSpinner(name=spnPort, value=8081, enabled=true)
+  - JSpinner(name=spnTimeout, value=5)
+  - MigLayout: |
+               [pref]          [grow]
+               >"lbl.login"   txtLogin
+               >"lbl.port"    spnPort
+               >"lbl.timeout" spnTimeout
+               >btnOk+*=1,btnCancel  [grow,bottom]
+bind:
+  - this.login: txtLogin.text
+  - this.port: spnPort.value
+  - this.timeout: spnTimeout.value
+validate:
+  - txtLogin.text: {label: lbl.login, mandatory: true}
+  - spnPort.value: {label: lbl.port, minValue: 1, mandatory: true}
+  - spnTimeout.value: {label: lbl.timeout, minValue: 1, maxValue: 10, mandatory: true}

@@ -1,0 +1,18 @@
+JFrame(name=mainFrame, title=title, size=packed, preferredSize=1024x768, defaultCloseOperation=DO_NOTHING_ON_CLOSE, onWindowClosing=close):
+  - JMenuBar(name=menu):
+    - JMenu(name=gameMenu, text=menu.game):
+      - JMenuItem(name=hostGameMenuItem, text=menu.game.host, onAction=showHostGamePanel)
+      - JMenuItem(name=joinGameMenuItem, text=menu.game.join, onAction=showJoinGamePanel)
+      - JSeparator()
+      - JMenuItem(name=quitGameMenuItem, text=menu.game.quit, onAction=quitGame)
+  - JImagePanel(name=logoPanel, image="img/logo.png", autoSize=true)
+  - HostGamePanel(name=hostGamePanel)
+  - JoinGamePanel(name=joinGamePanel)
+  - GameCreationPanel(name=gameCreationPanel)
+  - MigLayout: |
+               [[insets 0]]
+               [grow]
+               logoPanel [grow]
+bind:
+  - gameCreationPanel.sepClient: this.sepClient
+#  - quitGameMenuItem.enable: ${this.isGameRunning}
