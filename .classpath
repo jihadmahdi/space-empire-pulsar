@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="org/axan/sep/server/model/old/|org/axan/sep/server/model/ServerGameTurn.java|org/axan/sep/server/model/PlayerGameMove.java|org/axan/sep/common/ABuilding.java|org/axan/sep/common/ALogEntry.java|org/axan/sep/common/AntiProbeMissile.java|org/axan/sep/common/Area.java|org/axan/sep/common/AsteroidField.java|org/axan/sep/common/CarbonCarrier.java|org/axan/sep/common/CarbonOrder.java|org/axan/sep/common/ConflictLogEntry.java|org/axan/sep/common/DefenseModule.java|org/axan/sep/common/Diplomacy.java|org/axan/sep/common/EstimatedPulsarMarker.java|org/axan/sep/common/ExtractionModule.java|org/axan/sep/common/Fleet.java|org/axan/sep/common/FleetBattleSkillsModifierAdaptor.java|org/axan/sep/common/GovernmentModule.java|org/axan/sep/common/GovernmentStarship.java|org/axan/sep/common/ICelestialBody.java|org/axan/sep/common/IMarker.java|org/axan/sep/common/IMobile.java|org/axan/sep/common/IObservable.java|org/axan/sep/common/ISpecialUnit.java|org/axan/sep/common/LaunchedPulsarMissile.java|org/axan/sep/common/MobileUnitMarker.java|org/axan/sep/common/Nebula.java|org/axan/sep/common/Planet.java|org/axan/sep/common/Probe.java|org/axan/sep/common/ProductiveCelestialBody.java|org/axan/sep/common/PulsarEffectMarker.java|org/axan/sep/common/PulsarLauchingPad.java|org/axan/sep/common/SpaceCounter.java|org/axan/sep/common/SpaceRoad.java|org/axan/sep/common/SpaceRoadDeliverer.java|org/axan/sep/common/StarshipPlant.java|org/axan/sep/common/Unit.java|org/axan/sep/common/UnitMarker.java|org/axan/sep/common/UnitSeenLogEntry.java|org/axan/sep/common/Vortex.java|org/axan/sep/common/old/|org/axan/sep/server/ISEPServerDataBase.java|org/axan/sep/server/GameMoveCommand.java|org/axan/sep/common/AbstractGameCommand.java" kind="src" output="target/classes" path="src/main/java"/>
-	<classpathentry excluding="**" kind="src" output="target/classes" path="src"/>
-	<classpathentry excluding="**" kind="src" output="target/classes" path="src/main"/>
-	<classpathentry kind="src" output="target/test-classes" path="src/test/java"/>
-	<classpathentry excluding="**" kind="src" output="target/test-classes" path="src/test/resources"/>
+	<classpathentry excluding="org/axan/sep/pretests/|org/axan/sep/common/AbstractGameCommand.java|org/axan/sep/client/gui/OLDSpaceEmpirePulsarGUI.java|org/axan/sep/client/gui/RunningGamePanel.java|org/axan/sep/client/gui/UniversePanel.java" including="**/*.yml|**/*.java" kind="src" output="target/classes" path="src/main/java"/>
+	<classpathentry kind="src" path="src/test/java"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
-	<classpathentry kind="con" path="org.maven.ide.eclipse.MAVEN2_CLASSPATH_CONTAINER"/>
+	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

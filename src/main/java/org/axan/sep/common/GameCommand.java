@@ -37,7 +37,7 @@ public abstract class GameCommand<P>
 		}
 	}
 	
-	static class BuildCommand extends GameCommand<BuildParams>
+	static class BuildCommand extends GameCommand<BuildParams> implements Serializable
 	{
 		public BuildCommand(String playerLogin, BuildParams params)
 		{

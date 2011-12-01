@@ -5,6 +5,6 @@ public interface IPlayerConfig
 {
 	public String getName();
 	public String getColor();
-	public Byte[] getSymbol();
-	public Byte[] getPortrait();
+	public String getSymbol();
+	public String getPortrait();
 }

@@ -1,0 +1,11 @@
+JPanel(name=gameChatPanel):
+  - JScrollPane(name=scrollPane, vScrollBar=always, hScrollBar=never):
+      JEditorPane(name=editorPane, editable=false):
+        contentType: "text/html"
+        text: "<b><u>HTML</u></b> <i>enabled</i> <font color='blue'>Chat</font>"
+  - JTextField(name=txtMessage, onAction=sendChat)
+  - MigLayout: |
+      [[insets 0]]
+      [grow]
+      scrollPane   [grow]
+      txtMessage   [bottom]

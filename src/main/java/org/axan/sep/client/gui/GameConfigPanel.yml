@@ -1,0 +1,6 @@
+JPanel(name=gameConfigPanel):
+  - JLabel(name=lbl,text=config.todo)
+  - MigLayout: |
+      [[insets 0]]
+      [grow]
+      |-lbl  [grow]

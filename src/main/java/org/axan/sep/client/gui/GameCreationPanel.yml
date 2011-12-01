@@ -1,0 +1,32 @@
+JPanel(name=gameCreationPanel):
+  # Dock Left
+  - JPanel(name=dockedLeftPanel, border=lime):
+    - GameConfigPanel(name=configPanel, border=red)
+    - GameChatPanel(name=chatPanel, border=green)
+    - JPanel(name=btnsPanel, border=blue):
+      - JLabel(text="BtnsPanel")
+      - JButton(name=btnStart,text=btn.start,onAction=[$validate, validateForm, start])
+    - MigLayout: |
+        [[insets 0]]
+        [grow]
+        configPanel   [grow, top]
+        chatPanel     [grow, center]
+        btnsPanel     [bottom]
+
+  # Dock Right
+  - JPanel(name=dockedRightPanel, border=orange):    
+    - PlayersListPanel(name=playersListPanel, border=olive)
+    - MigLayout: |
+        [[insets 0]]
+        [grow]
+        playersListPanel    [grow, center]
+
+  #gameCreationPanel layout      
+  - MigLayout: |
+      [[insets 0]]
+      [grow]             [200px]
+      <dockedLeftPanel   >dockedRightPanel  [grow]
+      
+bind:
+  - chatPanel.sepClient: this.sepClient
+  - playersListPanel.sepClient: this.sepClient

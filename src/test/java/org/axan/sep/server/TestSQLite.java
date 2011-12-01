@@ -22,6 +22,7 @@ import org.axan.eplib.orm.hsqldb.HSQLDB;
 import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.eplib.utils.Reflect;
 import org.axan.sep.common.GameConfig;
+import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
 import org.axan.sep.common.PlayerConfig;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
@@ -389,7 +390,7 @@ public class TestSQLite
 	private long unitIds = 1;
 	
 	@Test
-	public void testSEPSQLiteDB()
+	public void testSEPSQLiteDB() throws IOException, GameConfigCopierException, SQLDataBaseException, Exception
 	{		
 		GameConfig config = new GameConfig();
 		final GameBoard sepDB;
@@ -399,260 +400,251 @@ public class TestSQLite
 		players.add(new org.axan.sep.common.Player("p1", new PlayerConfig()));
 		players.add(new org.axan.sep.common.Player("p2", new PlayerConfig()));
 		players.add(new org.axan.sep.common.Player("p3", new PlayerConfig()));
-		
-		try
+				
+		sepDB = new GameBoard(createNewDB(), new HashSet<org.axan.sep.common.Player>(players), config);
+		db = sepDB.getDB();
+	
+		final Vector<Location> celestialBodiesLocation = db.prepare("SELECT location_x, location_y, location_z FROM CelestialBody;", new ISQLDataBaseStatementJob<Vector<Location>>()
 		{
-			sepDB = new GameBoard(createNewDB(), new HashSet<org.axan.sep.common.Player>(players), config);
-			db = sepDB.getDB();
-		
-			final Vector<Location> celestialBodiesLocation = db.prepare("SELECT location_x, location_y, location_z FROM CelestialBody;", new ISQLDataBaseStatementJob<Vector<Location>>()
+			@Override
+			public Vector<Location> job(ISQLDataBaseStatement stmnt) throws SQLDataBaseException
 			{
-				@Override
-				public Vector<Location> job(ISQLDataBaseStatement stmnt) throws SQLDataBaseException
+				Vector<Location> result = new Vector<Location>();
+				
+				while(stmnt.step())
 				{
-					Vector<Location> result = new Vector<Location>();
-					
-					while(stmnt.step())
-					{
-						result.add(new Location(stmnt.columnInt(0), stmnt.columnInt(1), stmnt.columnInt(2)));
-					}
-					
-					return result;
+					result.add(new Location(stmnt.columnInt(0), stmnt.columnInt(1), stmnt.columnInt(2)));
 				}
-			});
+				
+				return result;
+			}
+		});
+		
+		boolean exceptionThrown = false;
+		
+		Vector<String[]> probes = new Vector<String[]>();
+		Set<String> locatedUnitsName = new HashSet<String>();
+		
+		for(int i=0; i<rnd.nextInt(5)+1; ++i)
+		{
+			int cb = rnd.nextInt(celestialBodiesLocation.size());
+			Location l = celestialBodiesLocation.get(cb);
+			org.axan.sep.common.Player owner = players.get(rnd.nextInt(players.size()));
 			
-			boolean exceptionThrown = false;
+			String unitName = String.format("U%d", ++unitIds);
+			float progress = rnd.nextBoolean() ? rnd.nextFloat() : 0;
 			
-			Vector<String[]> probes = new Vector<String[]>();
-			Set<String> locatedUnitsName = new HashSet<String>();
+			Location d = (progress == 0) ? null : celestialBodiesLocation.get(rnd.nextInt(celestialBodiesLocation.size()));				
 			
-			for(int i=0; i<rnd.nextInt(5)+1; ++i)
+			db.exec("INSERT INTO Unit (owner, name, type) VALUES (?, ?, 'Probe');", owner.getName(), unitName);
+			db.exec("INSERT INTO Probe (owner, name, type) VALUES (?, ?, 'Probe');", owner.getName(), unitName);								
+			
+			if (i == 0)
 			{
-				int cb = rnd.nextInt(celestialBodiesLocation.size());
-				Location l = celestialBodiesLocation.get(cb);
-				org.axan.sep.common.Player owner = players.get(rnd.nextInt(players.size()));
-				
-				String unitName = String.format("U%d", ++unitIds);
-				float progress = rnd.nextBoolean() ? rnd.nextFloat() : 0;
-				
-				Location d = (progress == 0) ? null : celestialBodiesLocation.get(rnd.nextInt(celestialBodiesLocation.size()));				
-				
-				db.exec("INSERT INTO Unit (owner, name, type) VALUES (?, ?, 'Probe');", owner.getName(), unitName);
-				db.exec("INSERT INTO Probe (owner, name, type) VALUES (?, ?, 'Probe');", owner.getName(), unitName);								
-				
-				if (i == 0)
+				do
 				{
-					do
-					{
-						d = new Location(rnd.nextInt(20), rnd.nextInt(20), rnd.nextInt(20));
-					}while(sepDB.areaExists(d));
-							
-					exceptionThrown = false;
-					
+					d = new Location(rnd.nextInt(20), rnd.nextInt(20), rnd.nextInt(20));
+				}while(sepDB.areaExists(d));
+						
+				exceptionThrown = false;
+				
+				try
+				{
+					//db.exec("INSERT INTO VersionedUnit (turn, owner, name, type, departure_x, departure_y, departure_z, progress, destination_x, destination_y, destination_z) VALUES (%d, '%s', '%s', 'Probe', %d, %d, %d, '%f', %s, %s, %s);", 1, owner.getName(), unitName, l.x, l.y, l.z, progress, d.x, d.y, d.z);
+					db.exec("INSERT INTO VersionedUnit (turn, owner, name, type, departure_x, departure_y, departure_z, progress, destination_x, destination_y, destination_z) VALUES (?, ?, ?, 'Probe', ?, ?, ?, ?, ?, ?, ?);", 1, owner.getName(), unitName, l.x, l.y, l.z, progress, d.x, d.y, d.z);
+				}
+				catch(SQLDataBaseException e)
+				{
+					exceptionThrown = true;
+					assertTrue("Unexpected reason : "+e.getMessage(), e.getMessage().endsWith("[constraint failed]"));
+				}
+				assertTrue("Exception expected.", exceptionThrown);
+				
+				d = null;
+			}
+			
+			db.exec("INSERT INTO VersionedUnit (turn, owner, name, type, departure_x, departure_y, departure_z, progress, destination_x, destination_y, destination_z) VALUES (?, ?, ?, 'Probe', ?, ?, ?, ?, ?, ?, ?);", 1, owner.getName(), unitName, l.x, l.y, l.z, progress, d==null?null:d.x, d==null?null:d.y, d==null?null:d.z);				
+			db.exec("INSERT INTO VersionedProbe (turn, owner, name, type) VALUES (?, ?, ?, 'Probe');", 1, owner.getName(), unitName);
+			
+			if (cb == 0) locatedUnitsName.add(unitName);
+			
+			probes.add(new String[]{unitName, owner.getName()});
+		}
+		
+		for(int i=0; i<10; ++i)
+		{
+			int cb = rnd.nextInt(celestialBodiesLocation.size());
+			Location l = celestialBodiesLocation.get(cb);
+			org.axan.sep.common.Player owner = players.get(rnd.nextInt(players.size()));
+			
+			String unitName = String.format("U%d", ++unitIds);
+			float progress = rnd.nextBoolean() ? rnd.nextFloat() : 0;
+			
+			Location d = (progress == 0) ? null : celestialBodiesLocation.get(rnd.nextInt(celestialBodiesLocation.size()));				
+			
+			String[] target = probes.get(rnd.nextInt(probes.size()));
+			
+			db.exec("INSERT INTO Unit (owner, name, type) VALUES (?, ?, 'AntiProbeMissile');", owner.getName(), unitName);
+			db.exec("INSERT INTO AntiProbeMissile (owner, name, type) VALUES (?, ?, 'AntiProbeMissile');", owner.getName(), unitName);
+
+			for(int turn=1; turn<6; ++turn)
+			{
+				db.exec("INSERT INTO VersionedUnit (turn, owner, name, type, departure_x, departure_y, departure_z, progress, destination_x, destination_y, destination_z) VALUES (?, ?, ?, 'AntiProbeMissile', ?, ?, ?, ?, ?, ?, ?);", turn, owner.getName(), unitName, l.x, l.y, l.z, turn * progress / 5, d==null?null:d.x, d==null?null:d.y, d==null?null:d.z);				
+				db.exec("INSERT INTO VersionedAntiProbeMissile (turn, owner, name, type, targetTurn, targetOwner, targetName) VALUES (?, ?, ?, 'AntiProbeMissile', ?, ?, ?);", turn, owner.getName(), unitName, 1, target[1], target[0]);
+			}
+			
+			if (cb == 0) locatedUnitsName.add(unitName);
+		}
+		
+		long t1 = System.currentTimeMillis();
+		String q = "SELECT U.type, * FROM Unit U LEFT JOIN	VersionedUnit VU USING (name, owner, type) LEFT JOIN	PulsarMissile PM USING (name, owner, type) LEFT JOIN	Probe P USING (name, owner, type) LEFT JOIN	AntiProbeMissile APM USING (name, owner, type) LEFT JOIN	CarbonCarrier CC USING (name, owner, type) LEFT JOIN	SpaceRoadDeliverer SRD USING (name, owner, type) LEFT JOIN	Fleet F USING (name, owner, type) LEFT JOIN	VersionedPulsarMissile VPM USING (name, owner, turn) LEFT JOIN	VersionedProbe VP USING (name, owner, turn) LEFT JOIN	VersionedAntiProbeMissile VAPM USING (name, owner, turn) LEFT JOIN	VersionedCarbonCarrier VCC USING (name, owner, turn) LEFT JOIN	VersionedFleet VF USING (name, owner, turn) WHERE VU.turn = 1;";
+		q = "SELECT U.type, U.name, U.owner, VU.turn, VU.progress FROM Unit U LEFT JOIN	VersionedUnit VU USING (name, owner, type) LEFT JOIN	PulsarMissile PM USING (name, owner, type) LEFT JOIN	Probe P USING (name, owner, type) LEFT JOIN	AntiProbeMissile APM USING (name, owner, type) LEFT JOIN	CarbonCarrier CC USING (name, owner, type) LEFT JOIN	SpaceRoadDeliverer SRD USING (name, owner, type) LEFT JOIN	Fleet F USING (name, owner, type) LEFT JOIN	VersionedPulsarMissile VPM USING (name, owner, turn) LEFT JOIN	VersionedProbe VP USING (name, owner, turn) LEFT JOIN	VersionedAntiProbeMissile VAPM USING (name, owner, turn) LEFT JOIN	VersionedCarbonCarrier VCC USING (name, owner, turn) LEFT JOIN	VersionedFleet VF USING (name, owner, turn) WHERE VU.turn = ( SELECT MAX(VVUU.turn) FROM VersionedUnit VVUU WHERE VVUU.name = VU.name AND VVUU.owner = VU.owner );";
+		Set<IVersionedUnit> units = db.prepare(q, new ISQLDataBaseStatementJob<Set<IVersionedUnit>>()
+		{
+			@Override
+			public Set<IVersionedUnit> job(ISQLDataBaseStatement stmnt) throws SQLDataBaseException
+			{					
+				Set<Map<String, String>> results = new HashSet<Map<String, String>>();
+				Set<IVersionedUnit> units = new HashSet<IVersionedUnit>();
+				
+				while(stmnt.step())
+				{
 					try
 					{
-						//db.exec("INSERT INTO VersionedUnit (turn, owner, name, type, departure_x, departure_y, departure_z, progress, destination_x, destination_y, destination_z) VALUES (%d, '%s', '%s', 'Probe', %d, %d, %d, '%f', %s, %s, %s);", 1, owner.getName(), unitName, l.x, l.y, l.z, progress, d.x, d.y, d.z);
-						db.exec("INSERT INTO VersionedUnit (turn, owner, name, type, departure_x, departure_y, departure_z, progress, destination_x, destination_y, destination_z) VALUES (?, ?, ?, 'Probe', ?, ?, ?, ?, ?, ?, ?);", 1, owner.getName(), unitName, l.x, l.y, l.z, progress, d.x, d.y, d.z);
+						// DEAD LOCK, VersionedUnit constructor need GameConfig to make query while already in job, waiting for result produce dead lock.
+						eUnitType type = eUnitType.valueOf(stmnt.columnString(0));
+						Class<? extends IVersionedUnit> clazz = (Class<? extends IVersionedUnit>)  Class.forName(String.format("%s.Versioned%s", Unit.class.getPackage().getName(), type.toString()));
+						units.add(DataBaseORMGenerator.mapTo(clazz, stmnt, sepDB.getConfig()));
 					}
-					catch(SQLDataBaseException e)
+					catch(Exception e)
 					{
-						exceptionThrown = true;
-						assertTrue("Unexpected reason : "+e.getMessage(), e.getMessage().endsWith("[constraint failed]"));
+						throw new SQLDataBaseException(e);
 					}
-					assertTrue("Exception expected.", exceptionThrown);
 					
-					d = null;
-				}
-				
-				db.exec("INSERT INTO VersionedUnit (turn, owner, name, type, departure_x, departure_y, departure_z, progress, destination_x, destination_y, destination_z) VALUES (?, ?, ?, 'Probe', ?, ?, ?, ?, ?, ?, ?);", 1, owner.getName(), unitName, l.x, l.y, l.z, progress, d==null?null:d.x, d==null?null:d.y, d==null?null:d.z);				
-				db.exec("INSERT INTO VersionedProbe (turn, owner, name, type) VALUES (?, ?, ?, 'Probe');", 1, owner.getName(), unitName);
-				
-				if (cb == 0) locatedUnitsName.add(unitName);
-				
-				probes.add(new String[]{unitName, owner.getName()});
-			}
-			
-			for(int i=0; i<10; ++i)
-			{
-				int cb = rnd.nextInt(celestialBodiesLocation.size());
-				Location l = celestialBodiesLocation.get(cb);
-				org.axan.sep.common.Player owner = players.get(rnd.nextInt(players.size()));
-				
-				String unitName = String.format("U%d", ++unitIds);
-				float progress = rnd.nextBoolean() ? rnd.nextFloat() : 0;
-				
-				Location d = (progress == 0) ? null : celestialBodiesLocation.get(rnd.nextInt(celestialBodiesLocation.size()));				
-				
-				String[] target = probes.get(rnd.nextInt(probes.size()));
-				
-				db.exec("INSERT INTO Unit (owner, name, type) VALUES (?, ?, 'AntiProbeMissile');", owner.getName(), unitName);
-				db.exec("INSERT INTO AntiProbeMissile (owner, name, type) VALUES (?, ?, 'AntiProbeMissile');", owner.getName(), unitName);
-
-				for(int turn=1; turn<6; ++turn)
-				{
-					db.exec("INSERT INTO VersionedUnit (turn, owner, name, type, departure_x, departure_y, departure_z, progress, destination_x, destination_y, destination_z) VALUES (?, ?, ?, 'AntiProbeMissile', ?, ?, ?, ?, ?, ?, ?);", turn, owner.getName(), unitName, l.x, l.y, l.z, turn * progress / 5, d==null?null:d.x, d==null?null:d.y, d==null?null:d.z);				
-					db.exec("INSERT INTO VersionedAntiProbeMissile (turn, owner, name, type, targetTurn, targetOwner, targetName) VALUES (?, ?, ?, 'AntiProbeMissile', ?, ?, ?);", turn, owner.getName(), unitName, 1, target[1], target[0]);
-				}
-				
-				if (cb == 0) locatedUnitsName.add(unitName);
-			}
-			
-			long t1 = System.currentTimeMillis();
-			String q = "SELECT U.type, * FROM Unit U LEFT JOIN	VersionedUnit VU USING (name, owner, type) LEFT JOIN	PulsarMissile PM USING (name, owner, type) LEFT JOIN	Probe P USING (name, owner, type) LEFT JOIN	AntiProbeMissile APM USING (name, owner, type) LEFT JOIN	CarbonCarrier CC USING (name, owner, type) LEFT JOIN	SpaceRoadDeliverer SRD USING (name, owner, type) LEFT JOIN	Fleet F USING (name, owner, type) LEFT JOIN	VersionedPulsarMissile VPM USING (name, owner, turn) LEFT JOIN	VersionedProbe VP USING (name, owner, turn) LEFT JOIN	VersionedAntiProbeMissile VAPM USING (name, owner, turn) LEFT JOIN	VersionedCarbonCarrier VCC USING (name, owner, turn) LEFT JOIN	VersionedFleet VF USING (name, owner, turn) WHERE VU.turn = 1;";
-			q = "SELECT U.type, U.name, U.owner, VU.turn, VU.progress FROM Unit U LEFT JOIN	VersionedUnit VU USING (name, owner, type) LEFT JOIN	PulsarMissile PM USING (name, owner, type) LEFT JOIN	Probe P USING (name, owner, type) LEFT JOIN	AntiProbeMissile APM USING (name, owner, type) LEFT JOIN	CarbonCarrier CC USING (name, owner, type) LEFT JOIN	SpaceRoadDeliverer SRD USING (name, owner, type) LEFT JOIN	Fleet F USING (name, owner, type) LEFT JOIN	VersionedPulsarMissile VPM USING (name, owner, turn) LEFT JOIN	VersionedProbe VP USING (name, owner, turn) LEFT JOIN	VersionedAntiProbeMissile VAPM USING (name, owner, turn) LEFT JOIN	VersionedCarbonCarrier VCC USING (name, owner, turn) LEFT JOIN	VersionedFleet VF USING (name, owner, turn) WHERE VU.turn = ( SELECT MAX(VVUU.turn) FROM VersionedUnit VVUU WHERE VVUU.name = VU.name AND VVUU.owner = VU.owner );";
-			Set<IVersionedUnit> units = db.prepare(q, new ISQLDataBaseStatementJob<Set<IVersionedUnit>>()
-			{
-				@Override
-				public Set<IVersionedUnit> job(ISQLDataBaseStatement stmnt) throws SQLDataBaseException
-				{					
-					Set<Map<String, String>> results = new HashSet<Map<String, String>>();
-					Set<IVersionedUnit> units = new HashSet<IVersionedUnit>();
-					
-					while(stmnt.step())
+					/*
+					Map<String, String> row = new HashMap<String, String>(stmnt.columnCount());
+					for(int i=0; i<stmnt.columnCount(); ++i)
 					{
-						try
+						String col = stmnt.getColumnName(i);
+						if (row.containsKey(col) && ( (stmnt.columnString(i) == null && row.get(col) != null) || ((stmnt.columnString(i) != null && row.get(col) == null)) || (stmnt.columnString(i) != null && row.get(col) != null && stmnt.columnString(i).compareTo(row.get(col)) != 0)))
 						{
-							// DEAD LOCK, VersionedUnit constructor need GameConfig to make query while already in job, waiting for result produce dead lock.
-							eUnitType type = eUnitType.valueOf(stmnt.columnString(0));
-							Class<? extends IVersionedUnit> clazz = (Class<? extends IVersionedUnit>)  Class.forName(String.format("%s.Versioned%s", Unit.class.getPackage().getName(), type.toString()));
-							units.add(DataBaseORMGenerator.mapTo(clazz, stmnt, sepDB.getConfig()));
+							throw new SQLiteException(-1, "Different values for the same column '"+col+"'");
 						}
-						catch(Exception e)
-						{
-							throw new SQLDataBaseException(e);
-						}
+						System.out.format("%s type: %s", col, stmnt.columnType(i));
 						
-						/*
-						Map<String, String> row = new HashMap<String, String>(stmnt.columnCount());
-						for(int i=0; i<stmnt.columnCount(); ++i)
-						{
-							String col = stmnt.getColumnName(i);
-							if (row.containsKey(col) && ( (stmnt.columnString(i) == null && row.get(col) != null) || ((stmnt.columnString(i) != null && row.get(col) == null)) || (stmnt.columnString(i) != null && row.get(col) != null && stmnt.columnString(i).compareTo(row.get(col)) != 0)))
-							{
-								throw new SQLiteException(-1, "Different values for the same column '"+col+"'");
-							}
-							System.out.format("%s type: %s", col, stmnt.columnType(i));
-							
-							row.put(stmnt.getColumnName(i), stmnt.columnString(i));
-						}
-						
-						results.add(row);
-						*/
+						row.put(stmnt.getColumnName(i), stmnt.columnString(i));
 					}
 					
-					return units;
+					results.add(row);
+					*/
 				}
-			});
-			long t2 = System.currentTimeMillis();
-			
-			Set<? extends IVersionedUnit> units2 = Unit.selectMaxVersion(sepDB.getSEPDB(), IVersionedUnit.class, null, null, null); 
-			
-			long t3 = System.currentTimeMillis();
-			
-			for(IVersionedUnit vu : units)
-			{
-				System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getTurn());
-			}
-			System.out.println("in "+(t2-t1)+"ms");
-			
-			for(IVersionedUnit vu : units2)
-			{
-				System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getTurn());
-				if (vu.getOwner().matches("p2") && vu.getName().matches("F1"))
-				{
-					fail("Unexpected unit exist.");
-				}
-			}
-			System.out.println("in "+(t3-t2)+"ms");
-			
-			/*
-			Set<? extends IVersionedUnit> units3 = db.exec(new SQLiteJob<Set<? extends IVersionedUnit>>()
-			{
-				@Override
-				protected Set<? extends IVersionedUnit> job(SQLiteConnection conn) throws Throwable
-				{
-					VersionedFleet vf = new VersionedFleet("p2", "F1", eUnitType.Fleet, sepDB.getConfig().getTurn(), celestialBodiesLocation.lastElement(), 0.0, null, sepDB.getConfig().getUnitTypeSight(eUnitType.Fleet));
-					Unit.insertOrUpdate(conn, vf);
-					return Unit.selectMaxVersion(conn, sepDB.getConfig(), IVersionedUnit.class, null, null, "Unit.name = 'F1'");
-				}
-			});
-			long t4 = System.currentTimeMillis();
-			
-			for(IVersionedUnit vu : units3)
-			{
-				System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getTurn());
-			}
-			System.out.println("in "+(t4-t3)+"ms");
-			
-			assertTrue("Only one unit expected to match.", units3.size() == 1);
-			IVersionedUnit f = units3.iterator().next();
-			assertTrue("Unexpected unit", f.getOwner().matches("p2") && f.getName().matches("F1") && f.getType().equals(eUnitType.Fleet) && IVersionedFleet.class.isInstance(f));
-			assertTrue("Unexpected value", f.getProgress() == 0.0);
-			
-			Set<? extends IVersionedUnit> units4 = db.exec(new SQLiteJob<Set<? extends IVersionedUnit>>()
-			{
-				@Override
-				protected Set<? extends IVersionedUnit> job(SQLiteConnection conn) throws Throwable
-				{
-					VersionedFleet vf = new VersionedFleet("p2", "F1", eUnitType.Fleet, sepDB.getConfig().getTurn(), celestialBodiesLocation.lastElement(), 100.0, null, sepDB.getConfig().getUnitTypeSight(eUnitType.Fleet));
-					Unit.insertOrUpdate(conn, vf);
-					return Unit.selectMaxVersion(conn, sepDB.getConfig(), IVersionedUnit.class, null, null, "Unit.name = 'F1'");
-				}
-			});
-			long t5 = System.currentTimeMillis();
-			
-			for(IVersionedUnit vu : units4)
-			{
-				System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getTurn());
-			}
-			System.out.println("in "+(t5-t4)+"ms");
-			
-			assertTrue("Only one unit expected to match.", units4.size() == 1);
-			f = units4.iterator().next();
-			assertTrue("Unexpected unit", f.getOwner().matches("p2") && f.getName().matches("F1") && f.getType().equals(eUnitType.Fleet) && IVersionedFleet.class.isInstance(f));
-			assertTrue("Unexpected value", f.getProgress() == 100.0);
-			
-			///
-			
-			Set<IVersionedUnit> vus = db.exec(new SQLiteJob<Set<IVersionedUnit>>()
-			{
-				@Override
-				protected Set<IVersionedUnit> job(SQLiteConnection conn) throws Throwable
-				{
-					return Unit.selectMaxVersion(conn, sepDB.getConfig(), IVersionedUnit.class, null, "CelestialBody CB", "CB.name = 'A' AND VersionedUnit.departure_x = CB.location_x AND VersionedUnit.departure_y = CB.location_y AND VersionedUnit.departure_z = CB.location_z");
-				}
-			});
-			
-			Set<String> unlocatedUnitsName = new HashSet<String>(locatedUnitsName);
-			
-			for(IVersionedUnit vu : vus)
-			{
-				assertTrue("Unexpected unit on first celestial body.", locatedUnitsName.contains(vu.getName()));
-				unlocatedUnitsName.remove(vu.getName());
-			}
-			
-			assertTrue("Unexpected unit locations", unlocatedUnitsName.isEmpty());
-			
-			Set<IPlayer> ps = db.exec(new SQLiteJob<Set<IPlayer>>()
-			{
 				
-				@Override
-				protected Set<IPlayer> job(SQLiteConnection conn) throws Throwable
-				{
-					return Player.select(conn, sepDB.getConfig(), IPlayer.class, null, null);
-				}
-			});
-			
-			assertTrue("Unexpected result", ps.size() == 3);
-			*/
-			
-			db.exportDBFile(new File("/tmp/sep_export.db"));
-		}
-		catch(Exception e)
+				return units;
+			}
+		});
+		long t2 = System.currentTimeMillis();
+		
+		Set<? extends IVersionedUnit> units2 = Unit.selectMaxVersion(sepDB.getSEPDB(), IVersionedUnit.class, null, null, null); 
+		
+		long t3 = System.currentTimeMillis();
+		
+		for(IVersionedUnit vu : units)
 		{
-			e.printStackTrace();
-			fail(e.getMessage());
-			return;
+			System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getTurn());
 		}
+		System.out.println("in "+(t2-t1)+"ms");
+		
+		for(IVersionedUnit vu : units2)
+		{
+			System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getTurn());
+			if (vu.getOwner().matches("p2") && vu.getName().matches("F1"))
+			{
+				fail("Unexpected unit exist.");
+			}
+		}
+		System.out.println("in "+(t3-t2)+"ms");
+		
+		/*
+		Set<? extends IVersionedUnit> units3 = db.exec(new SQLiteJob<Set<? extends IVersionedUnit>>()
+		{
+			@Override
+			protected Set<? extends IVersionedUnit> job(SQLiteConnection conn) throws Throwable
+			{
+				VersionedFleet vf = new VersionedFleet("p2", "F1", eUnitType.Fleet, sepDB.getConfig().getTurn(), celestialBodiesLocation.lastElement(), 0.0, null, sepDB.getConfig().getUnitTypeSight(eUnitType.Fleet));
+				Unit.insertOrUpdate(conn, vf);
+				return Unit.selectMaxVersion(conn, sepDB.getConfig(), IVersionedUnit.class, null, null, "Unit.name = 'F1'");
+			}
+		});
+		long t4 = System.currentTimeMillis();
+		
+		for(IVersionedUnit vu : units3)
+		{
+			System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getTurn());
+		}
+		System.out.println("in "+(t4-t3)+"ms");
+		
+		assertTrue("Only one unit expected to match.", units3.size() == 1);
+		IVersionedUnit f = units3.iterator().next();
+		assertTrue("Unexpected unit", f.getOwner().matches("p2") && f.getName().matches("F1") && f.getType().equals(eUnitType.Fleet) && IVersionedFleet.class.isInstance(f));
+		assertTrue("Unexpected value", f.getProgress() == 0.0);
+		
+		Set<? extends IVersionedUnit> units4 = db.exec(new SQLiteJob<Set<? extends IVersionedUnit>>()
+		{
+			@Override
+			protected Set<? extends IVersionedUnit> job(SQLiteConnection conn) throws Throwable
+			{
+				VersionedFleet vf = new VersionedFleet("p2", "F1", eUnitType.Fleet, sepDB.getConfig().getTurn(), celestialBodiesLocation.lastElement(), 100.0, null, sepDB.getConfig().getUnitTypeSight(eUnitType.Fleet));
+				Unit.insertOrUpdate(conn, vf);
+				return Unit.selectMaxVersion(conn, sepDB.getConfig(), IVersionedUnit.class, null, null, "Unit.name = 'F1'");
+			}
+		});
+		long t5 = System.currentTimeMillis();
+		
+		for(IVersionedUnit vu : units4)
+		{
+			System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getTurn());
+		}
+		System.out.println("in "+(t5-t4)+"ms");
+		
+		assertTrue("Only one unit expected to match.", units4.size() == 1);
+		f = units4.iterator().next();
+		assertTrue("Unexpected unit", f.getOwner().matches("p2") && f.getName().matches("F1") && f.getType().equals(eUnitType.Fleet) && IVersionedFleet.class.isInstance(f));
+		assertTrue("Unexpected value", f.getProgress() == 100.0);
+		
+		///
+		
+		Set<IVersionedUnit> vus = db.exec(new SQLiteJob<Set<IVersionedUnit>>()
+		{
+			@Override
+			protected Set<IVersionedUnit> job(SQLiteConnection conn) throws Throwable
+			{
+				return Unit.selectMaxVersion(conn, sepDB.getConfig(), IVersionedUnit.class, null, "CelestialBody CB", "CB.name = 'A' AND VersionedUnit.departure_x = CB.location_x AND VersionedUnit.departure_y = CB.location_y AND VersionedUnit.departure_z = CB.location_z");
+			}
+		});
+		
+		Set<String> unlocatedUnitsName = new HashSet<String>(locatedUnitsName);
+		
+		for(IVersionedUnit vu : vus)
+		{
+			assertTrue("Unexpected unit on first celestial body.", locatedUnitsName.contains(vu.getName()));
+			unlocatedUnitsName.remove(vu.getName());
+		}
+		
+		assertTrue("Unexpected unit locations", unlocatedUnitsName.isEmpty());
+		
+		Set<IPlayer> ps = db.exec(new SQLiteJob<Set<IPlayer>>()
+		{
+			
+			@Override
+			protected Set<IPlayer> job(SQLiteConnection conn) throws Throwable
+			{
+				return Player.select(conn, sepDB.getConfig(), IPlayer.class, null, null);
+			}
+		});
+		
+		assertTrue("Unexpected result", ps.size() == 3);
+		*/
+		
+		db.exportDBFile(new File("/tmp/sep_export.db"));
 	}
 }

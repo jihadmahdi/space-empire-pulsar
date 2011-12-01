@@ -2,18 +2,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/maven-v4_0_0.xsd">
-	<!--
-		//TODO: Externaliser toutes les valeurs dans <properties/>, y compris
-		les variables "à ne pas toucher" qui seront classées.
-	-->
+	<!-- //TODO: Externaliser toutes les valeurs dans <properties/>, y compris 
+		les variables "à ne pas toucher" qui seront classées. -->
 	<modelVersion>4.0.0</modelVersion>
 
 	<!-- The Basics -->
 	<groupId>epsofts</groupId>
 	<artifactId>${projectArtifactId}</artifactId>
-	<!--
-		Utiliser une property pour la version risque de poser problème ?
-	-->
+	<!-- Utiliser une property pour la version risque de poser problème ? -->
 	<version>${projectVersion}</version>
 	<packaging>jar</packaging>
 
@@ -47,14 +43,21 @@
 			<scope>test</scope>
 			<optional>true</optional>
 		</dependency>
-		
-		<!-- BerkeleyDB
+
 		<dependency>
-      		<groupId>com.sleepycat</groupId>
-      		<artifactId>je</artifactId>
-      		<version>3.3.87</version>
-    	</dependency>
-    	-->	
+			<groupId>org.javabuilders</groupId>
+			<artifactId>javabuilder-swing</artifactId>
+			<version>1.1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.javabuilders</groupId>
+			<artifactId>javabuilder-swing-glazedlists</artifactId>
+			<version>1.1.0</version>
+		</dependency>
+
+		<!-- BerkeleyDB <dependency> <groupId>com.sleepycat</groupId> <artifactId>je</artifactId> 
+			<version>3.3.87</version> </dependency> -->
 	</dependencies>
 	<!-- <parent></parent> -->
 	<!-- <dependencyManagement></dependencyManagement> -->
@@ -62,9 +65,7 @@
 	<properties>
 		<!-- project specific -->
 		<projectArtifactId>space-empire-pulsar</projectArtifactId>
-		<!--
-			Utiliser une property pour la version risque de poser problème ?
-		-->
+		<!-- Utiliser une property pour la version risque de poser problème ? -->
 		<projectVersionBase>0.2</projectVersionBase>
 		<projectVersionSnapshot>-SNAPSHOT</projectVersionSnapshot>
 		<projectVersion>${projectVersionBase}r${buildNumber}${projectVersionSnapshot}</projectVersion>
@@ -72,7 +73,9 @@
 
 		<projectName>Space-Empire-Pulsar</projectName>
 		<description>
-			Space Empire Pulsar est un jeu de stratégie tour par tour, multijoueur, inspiré de Konquest avec de nouvelles règles et une vue en 3D.
+			Space Empire Pulsar est un jeu de stratégie tour par
+			tour, multijoueur, inspiré de Konquest avec de nouvelles règles et
+			une vue en 3D.
 		</description>
 
 		<jvmArgs>-Xmx256M -Djava.util.logging.config.file=logging.properties</jvmArgs>
@@ -83,9 +86,9 @@
 		<releaseResourcesSubDirectory>release</releaseResourcesSubDirectory>
 		<filteredReleaseResourcesSubDirectory>filtered-release</filteredReleaseResourcesSubDirectory>
 
-		<resourcesSubDirectory>resources</resourcesSubDirectory>
-		<!--<resourcesSubDirectory>java</resourcesSubDirectory>-->
-		<!--<filteredResourcesSubDirectory>filtered-resources</filteredResourcesSubDirectory>-->
+		<!--<resourcesSubDirectory>resources</resourcesSubDirectory> -->
+		<resourcesSubDirectory>java</resourcesSubDirectory>
+		<!--<filteredResourcesSubDirectory>filtered-resources</filteredResourcesSubDirectory> -->
 		<filteredResourcesSubDirectory>java</filteredResourcesSubDirectory>
 
 		<releaseResourcesDirectory>${releaseResourcesBaseDirectory}/${releaseResourcesSubDirectory}</releaseResourcesDirectory>
@@ -108,7 +111,8 @@
 		<hostDomain>axan.org</hostDomain>
 
 		<!-- Auteur -->
-		<authorName>Auriol Arnaud, Bezille Yoann, Cabanes Romain, Pierre Escallier</authorName>
+		<authorName>Auriol Arnaud, Bezille Yoann, Cabanes Romain, Pierre
+			Escallier</authorName>
 		<authorMail>p.escallier@laposte.net</authorMail>
 
 		<!-- External tools -->
@@ -121,7 +125,7 @@
 		<tmp>/tmp</tmp>
 
 		<!-- computed -->
-		<url>http://${projectArtifactId}.${hostDomain}</url>		
+		<url>http://${projectArtifactId}.${hostDomain}</url>
 		<finalReleaseResourcesDirectory>${packagingDirectory}</finalReleaseResourcesDirectory>
 		<packagingLibDirectory>${packagingDirectory}/${libSubDirectory}</packagingLibDirectory>
 	</properties>
@@ -158,18 +162,19 @@
 					<include>**/*.properties</include>
 				</includes>
 				<excludes>
-					<exclude>**/*.java</exclude>
 					<exclude>**/CVS</exclude>
 					<exclude>**/SVN</exclude>
 				</excludes>
 			</resource>
 			<resource>
 				<filtering>false</filtering>
-				<directory>${resourcesBaseDirectory}</directory>
+				<directory>${resourcesDirectory}</directory>
 				<includes>
-					<include>${resourcesSubDirectory}/**</include>
+					<include>**</include>
 				</includes>
 				<excludes>
+					<exclude>**/*.properties</exclude>
+					<exclude>**/*.java</exclude>
 					<exclude>**/CVS</exclude>
 					<exclude>**/SVN</exclude>
 				</excludes>
@@ -187,7 +192,70 @@
 				<version>1.0-alpha-5</version>
 			</extension>
 		</extensions>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>						
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.apache.maven.plugins</groupId>
+										<artifactId>maven-dependency-plugin</artifactId>
+										<versionRange>[1.0.0,)</versionRange>
+										<goals>
+											<goal>copy-dependencies</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<execute>
+											<runOnIncremental>false</runOnIncremental>
+										</execute>
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.apache.maven.plugins</groupId>
+										<artifactId>maven-antrun-plugin</artifactId>
+										<versionRange>[0.0.0,)</versionRange>										
+										<goals>
+											<goal>run</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<execute>
+											<ignore />
+										</execute>
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<encoding>UTF-8</encoding>
+					<source>1.6</source>
+					<target>1.6</target>
+					<includes>
+						<include>**/*.yml</include>
+						<include>**/*.java</include>
+					</includes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<configuration>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>buildnumber-maven-plugin</artifactId>
@@ -210,15 +278,6 @@
 				</configuration>
 			</plugin>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<encoding>UTF-8</encoding>
-					<source>1.6</source>
-					<target>1.6</target>
-				</configuration>
-			</plugin>
-			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>cobertura-maven-plugin</artifactId>
 				<executions>
@@ -233,28 +292,6 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
 				<executions>
-					<!-- Ne semble pas nécéssaire
-					<execution>
-			            <id>copy</id>
-			            <phase>compile</phase>
-			            <goals>
-			              <goal>copy</goal>
-			            </goals>
-			            <configuration>
-			              <artifactItems>
-			                <artifactItem>
-			                  <groupId>com.almworks.sqlite4java</groupId>
-			                  <artifactId>libsqlite4java-linux-i386</artifactId>
-			                  <version>${sqlite4java.version}</version>
-			                  <type>so</type>
-			                  <overWrite>true</overWrite>
-			                  <outputDirectory>${project.build.directory}/lib</outputDirectory>
-			                </artifactItem>
-			              </artifactItems>
-			            </configuration>
-			        </execution>
-			        -->
-								
 					<execution>
 						<id>copy-dependencies</id>
 						<phase>process-resources</phase>
@@ -276,16 +313,10 @@
 				<configuration>
 					<finalName>${projectArtifactId}</finalName>
 					<outputDirectory>${packagingDirectory}</outputDirectory>
-					<!--
-					<includes>
-						<include>**/*.properties</include>
-					</includes>
-					-->
+					<!-- <includes> <include>**/*.properties</include> </includes> -->
 					<archive>
 						<index>false</index>
-						<!--
-							packaging bug if both "index" and "addClasspath" are true
-						-->
+						<!-- packaging bug if both "index" and "addClasspath" are true -->
 						<manifest>
 							<addClasspath>true</addClasspath>
 							<addDefaultSpecificationEntries>false</addDefaultSpecificationEntries>
@@ -302,303 +333,280 @@
 				<artifactId>maven-antrun-plugin</artifactId>
 				<executions>
 					<execution>
-						<id>clean_trace</id>
-						<phase>clean</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>###CLEAN###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>compile_trace</id>
-						<phase>compile</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>###COMPILE###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>deploy_trace</id>
-						<phase>deploy</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####DEPLOY###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>generate-resources_trace</id>
-						<phase>generate-resources</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####GENERATE_RESOURCES###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>generate-sources_trace</id>
-						<phase>generate-sources</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####GENERATE-SOURCES###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>install_trace</id>
-						<phase>install</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####INSTALL###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>integration-test_trace</id>
-						<phase>integration-test</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####INTEGRATION-TEST###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>package_trace</id>
-						<phase>package</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####PACKAGE###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>post-clean_trace</id>
-						<phase>post-clean</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####POST-CLEAN###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>post-integration-test_trace</id>
-						<phase>post-integration-test</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####POST-INTEGRATION-TEST###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>post-site_trace</id>
-						<phase>post-site</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####POST-SITE###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>pre-clean_trace</id>
-						<phase>pre-clean</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####PRE-CLEAN###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>pre-integration-test_trace</id>
-						<phase>pre-integration-test</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####PRE-INTEGRATION-TEST###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>pre-site_trace</id>
-						<phase>pre-site</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####PRE-SITE###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>prepare-package_trace</id>
-						<phase>prepare-package</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####PREPARE-PACKAGE###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>process-classes_trace</id>
-						<phase>process-classes</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####PROCESS-CLASSES###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>process-resources_trace</id>
-						<phase>process-resources</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####PROCESS-RESOURCES###</echo>
-								<echo>fixTestResources.sh</echo>								
-								<exec executable="sh" dir="${basedir}">
-									<arg value="fixTestResources.sh" />									
-								</exec>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>process-sources_trace</id>
-						<phase>process-sources</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####PROCESS-SOURCES###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>site_trace</id>
-						<phase>site</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####SITE###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>site-deploy_trace</id>
-						<phase>site-deploy</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<inherited>false</inherited>
-						<configuration>
-							<tasks>
-								<echo>####SITE-DEPLOY###</echo>
-							</tasks>
-						</configuration>
-					</execution>
-					<execution>
-						<id>validate_trace</id>
+						<id>trace validate phase</id>
 						<phase>validate</phase>
 						<goals>
 							<goal>run</goal>
 						</goals>
-						<inherited>false</inherited>
 						<configuration>
 							<tasks>
-								<echo>####VALIDATE###</echo>
+								<echo>### VALIDATE ###</echo>
 							</tasks>
 						</configuration>
 					</execution>
 					<execution>
-						<id>verify_trace</id>
+						<id>trace initialize phase</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### INITIALIZE ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace generate-sources phase</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### GENERATE-SOURCES ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace process-sources phase</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### PROCESS-SOURCES ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace generate-resources phase</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### GENERATE-RESOURCES ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace process-resources phase</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### PROCESS-RESOURCES ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace compile phase</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### COMPILE ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace process-classes phase</id>
+						<phase>process-classes</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### PROCESS-CLASSES ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace generate-test-sources phase</id>
+						<phase>generate-test-sources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### GENERATE-TEST-SOURCES ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace process-test-sources phase</id>
+						<phase>process-test-sources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### PROCESS-TEST-SOURCES ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace test-compile phase</id>
+						<phase>test-compile</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### TEST-COMPILE ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace process-test-classes phase</id>
+						<phase>process-test-classes</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### PROCESS-TEST-CLASSES ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace test phase</id>
+						<phase>test</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### TEST ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace prepare-package phase</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### PREPARE-PACKAGE ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace package phase</id>
+						<phase>package</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### PACKAGE ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace pre-integration-test phase</id>
+						<phase>pre-integration-test</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### PRE-INTEGRATION-TEST ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace integration-test phase</id>
+						<phase>integration-test</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### INTEGRATION-TEST ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace post-integration-test phase</id>
+						<phase>post-integration-test</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### POST-INTEGRATION-TEST ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace verify phase</id>
 						<phase>verify</phase>
 						<goals>
 							<goal>run</goal>
 						</goals>
-						<inherited>false</inherited>
 						<configuration>
 							<tasks>
-								<echo>####VERIFY###</echo>
+								<echo>### VERIFY ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace install phase</id>
+						<phase>install</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### INSTALL ###</echo>
+							</tasks>
+						</configuration>
+					</execution>
+					<execution>
+						<id>trace deploy phase</id>
+						<phase>deploy</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<echo>### DEPLOY ###</echo>
 							</tasks>
 						</configuration>
 					</execution>
 					
 					<execution>
-						<id>movefiles</id>
+						<id>fix test resources</id>
+						<phase>process-test-resources</phase>
 						<goals>
 							<goal>run</goal>
 						</goals>
+						<configuration>
+							<tasks>
+								<echo>sh ${basedir}/fixTestResources.sh</echo>
+								<exec executable="sh" dir="${basedir}">
+									<arg value="fixTestResources.sh" />
+								</exec>
+							</tasks>
+						</configuration>
+					</execution>
+					
+					<execution>
+						<id>resources processing</id>
 						<phase>process-resources</phase>
-						<inherited>false</inherited>
+						<goals>
+							<goal>run</goal>
+						</goals>
 						<configuration>
 							<tasks>
 								<!-- On s'assure que les répertoires existent -->
@@ -606,7 +614,9 @@
 								<mkdir dir="${processedFilteredReleaseResourcesDirectory}" />
 								<mkdir dir="${processedFilteredResourcesDirectory}" />
 
-								<echo>Deplacement des resources release ${processedReleaseResourcesDirectory} vers le répertoire ${finalReleaseResourcesDirectory}</echo>
+								<echo>Deplacement des resources release
+									${processedReleaseResourcesDirectory} vers le répertoire
+									${finalReleaseResourcesDirectory}</echo>
 								<move todir="${finalReleaseResourcesDirectory}">
 									<fileset dir="${processedReleaseResourcesDirectory}">
 										<exclude name="**/CVS" />
@@ -614,7 +624,9 @@
 									</fileset>
 								</move>
 
-								<echo>Deplacement des resources release ${processedFilteredReleaseResourcesDirectory} vers le répertoire ${finalReleaseResourcesDirectory}</echo>
+								<echo>Deplacement des resources release
+									${processedFilteredReleaseResourcesDirectory} vers le
+									répertoire ${finalReleaseResourcesDirectory}</echo>
 								<move todir="${finalReleaseResourcesDirectory}">
 									<fileset dir="${processedFilteredReleaseResourcesDirectory}">
 										<exclude name="**/CVS" />
@@ -622,7 +634,9 @@
 									</fileset>
 								</move>
 
-								<echo>Deplacement des resources ${processedFilteredResourcesDirectory} vers ${processedFilesBaseDirectory}</echo>
+								<echo>Deplacement des resources
+									${processedFilteredResourcesDirectory} vers
+									${processedFilesBaseDirectory}</echo>
 								<move todir="${processedFilesBaseDirectory}">
 									<fileset dir="${processedFilteredResourcesDirectory}">
 										<exclude name="**/CVS" />
@@ -632,19 +646,20 @@
 							</tasks>
 						</configuration>
 					</execution>
+					
 					<execution>
-						<id>izpack</id>
+						<id>Generate IzPack installer</id>
+						<phase>package</phase>
 						<goals>
 							<goal>run</goal>
-						</goals>
-						<phase>package</phase>
-						<inherited>false</inherited>
+						</goals>						
 						<configuration>
 							<tasks>
-								<!-- On génère l'installeur JAR-->
+								<!-- On génère l'installeur JAR -->
 								<property name="filenameBase" value="${projectName}-${projectVersion}" />
 								<property name="izpackInput" value="${packagingDirectory}/install.xml" />
-								<property name="izpackOutput" value="${installersDirectory}/${filenameBase}-installer.jar" />
+								<property name="izpackOutput"
+									value="${installersDirectory}/${filenameBase}-installer.jar" />
 
 								<echo>Creation du dossier ${installersDirectory}</echo>
 								<mkdir dir="${installersDirectory}" />
@@ -652,18 +667,23 @@
 								<echo>Execution de izpack: ${izpackInput} =>
 									${izpackOutput}</echo>
 								<taskdef name="izpack" classname="com.izforge.izpack.ant.IzPackTask" />
-								<izpack input="${izpackInput}" output="${izpackOutput}" basedir="${packagingDirectory}" />
-								
+								<izpack input="${izpackInput}" output="${izpackOutput}"
+									basedir="${packagingDirectory}" />
+
 								<!-- On génère l'installeur EXE -->
-								<property name="izpack2exeInput" value="${installersDirectory}/${filenameBase}-installer.jar" />
+								<property name="izpack2exeInput"
+									value="${installersDirectory}/${filenameBase}-installer.jar" />
 								<property name="izpack2appInput" value="${izpack2exeInput}" />
-								<property name="izpack2exeOutput" value="${installersDirectory}/${filenameBase}-installer.exe" />
-								<property name="izpack2appOutput" value="${installersDirectory}/${filenameBase}-installer.app" />
+								<property name="izpack2exeOutput"
+									value="${installersDirectory}/${filenameBase}-installer.exe" />
+								<property name="izpack2appOutput"
+									value="${installersDirectory}/${filenameBase}-installer.app" />
 
 								<echo>Execution de izpack2exe : ${izpack2exeInput} =>
 									${izpack2exeOutput}</echo>
 
-								<exec executable="python" dir="${izpack2exeDirectory}" output="${tmp}/izpack2exe.std" error="${tmp}/izpack2exe.err">
+								<exec executable="python" dir="${izpack2exeDirectory}"
+									output="${tmp}/izpack2exe.std" error="${tmp}/izpack2exe.err">
 									<arg value="${izpack2exeDirectory}/izpack2exe.py" />
 									<arg value="--file" />
 									<arg value="${izpack2exeInput}" />
@@ -674,97 +694,78 @@
 									<arg value="7z" />
 								</exec>
 
-								<echo>Execution de izpack2app : ${izpack2appInput} => ${izpack2appOutput}</echo>
-								<exec executable="python" dir="${izpack2appDirectory}" output="${tmp}/izpack2app.std" error="${tmp}/izpack2app.err">
+								<!--
+								<echo>Execution de izpack2app : ${izpack2appInput} =>
+									${izpack2appOutput}</echo>
+								<exec executable="python" dir="${izpack2appDirectory}"
+									output="${tmp}/izpack2app.std" error="${tmp}/izpack2app.err">
 									<arg value="${izpack2appDirectory}/izpack2app.py" />
 									<arg value="${izpack2appInput}" />
 									<arg value="${izpack2appOutput}" />
 								</exec>
-
+								-->
+								 
 								<echo>Save buildNumber ${buildNumber}</echo>
 								<echo file="${project.build.directory}/buildNumber">${buildNumber}</echo>
 							</tasks>
 						</configuration>
 					</execution>
-					<!--
-						<execution> <id>googlecodeUpdate</id> <goals> <goal>run</goal> </goals> <phase>verify</phase> <inherited>false</inherited> <configuration> <tasks>
-					-->
-					<!--
-						Ne fonctionne pas, le password n'est pas passable en paramètre, et antrun ne donne pas la saisie clavier. Runs the fullrelease task and uploads the
-						nightly release on google code. <exec executable="python" dir="${project.build.directory}"> <arg value="/media/data/Download/Code/googlecode_upload.py"/>
-						<arg value='
-					-->
-					<!--
-						config-dir=none' /> <arg value='-p jneutron' /> <arg value='-s Uploaded from Maven Ant Task Runner.' /> <arg value='-u p.escallier@laposte.net' /> <arg
-						value='-l Test,Type-Archive,OpSys-All' /> <arg value='${project.build.directory}/test.txt' /> </exec>
-					-->
-					<!--
-						Ne fonctionne pas, erreur de lib non fournies.. <taskdef classpath="${env.HOME}/.m2/repository/google/ant-googlecode/0.0.1/ant-googlecode-0.0.1.jar"
-						classname="net.bluecow.googlecode.ant.GoogleCodeUploadTask" name="gcupload" /> <gcupload username="googleuser" password="secretpassword"
-						projectname="myproject" filename="${project.build.directory}/test.txt" targetfilename="test.txt" summary="upload test" labels="test, upload, ant,
-						googlecode" />
-					-->
-					<!--
-						</tasks> </configuration> </execution>
-					-->
+					
 					<execution>
-						<id>protectsite</id>
+						<id>Generate site resources</id>
+						<phase>pre-site</phase>
 						<goals>
 							<goal>run</goal>
-						</goals>
-						<phase>pre-site</phase>
-						<inherited>false</inherited>
+						</goals>						
 						<configuration>
 							<tasks>
 								<property name="htaccessmodel" value="${siteDirectory}/model.htaccess" />
-								<!--
-									Copie du fichier modèle .htaccess dans tous les dossiers à
-									protéger
-								-->
+								<!-- Copie du fichier modèle .htaccess dans tous les dossiers à protéger -->
 								<echo>Protection des zones privés du site</echo>
 								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/apidocs/.htaccess" />
 								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/cobertura/.htaccess" />
-								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/testapidocs/.htaccess" />
+								<copy file="${htaccessmodel}"
+									tofile="${siteDirectory}/resources/testapidocs/.htaccess" />
 								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/usage/.htaccess" />
 								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/xref/.htaccess" />
 								<copy file="${htaccessmodel}" tofile="${siteDirectory}/resources/xref-test/.htaccess" />
-
 							</tasks>
 						</configuration>
 					</execution>
 					<execution>
-						<id>sed_site</id>
+						<id>Editing site buildNumber (sed)</id>
+						<phase>site</phase>
 						<goals>
 							<goal>run</goal>
 						</goals>
-						<phase>site</phase>
-						<inherited>false</inherited>
 						<configuration>
 							<tasks>
-								<!-- TODO : Buggé, le numéro de build est en retard par rapport au réel car build est à nouveau lancé lorsqu'on fait un site:deploy -->
-								<!-- find . -name '*.html' | xargs sed -i s/\$\{buildNumber\}/`cat ${project.build.directory}/buildNumber`/ -->
-								<echo>find . -name '*.html' | xargs sed -i s/\$\{buildNumber\}/`cat ${project.build.directory}/buildNumber`/</echo>
+								<!-- TODO : Buggé, le numéro de build est en retard par rapport au 
+									réel car build est à nouveau lancé lorsqu'on fait un site:deploy -->
+								<!-- find . -name '*.html' | xargs sed -i s/\$\{buildNumber\}/`cat 
+									${project.build.directory}/buildNumber`/ -->
+								<echo>find . -name '*.html' | xargs sed -i
+									s/\$\{buildNumber\}/`cat
+									${project.build.directory}/buildNumber`/</echo>
 								<exec executable="sh" dir="${project.build.directory}/site">
 									<arg value="-c" />
-									<!-- <arg line="'find . -name *.html | xargs sed -i s/\$\{buildNumber\}/`cat ${project.build.directory}/buildNumber`/'" /> -->
-									<arg line="&quot;find . -name '*.html' | xargs sed -i s/\$\{buildNumber\}/`cat ${project.build.directory}/buildNumber`/&quot;" />
+									<!-- <arg line="'find . -name *.html | xargs sed -i s/\$\{buildNumber\}/`cat 
+										${project.build.directory}/buildNumber`/'" /> -->
+									<arg
+										line="&quot;find . -name '*.html' | xargs sed -i s/\$\{buildNumber\}/`cat ${project.build.directory}/buildNumber`/&quot;" />
 								</exec>
 							</tasks>
 						</configuration>
 					</execution>
+
 					<execution>
-						<id>site-site</id>
+						<id>Fix deployed site</id>
+						<phase>site-deploy</phase>
 						<goals>
 							<goal>run</goal>
-						</goals>
-						<phase>verify</phase>
-						<inherited>false</inherited>
+						</goals>						
 						<configuration>
 							<tasks>
-								<echo>On lance mvn site:deploy</echo>
-								<exec executable="mvn" dir="${basedir}">
-									<arg value="site:deploy" />
-								</exec>
 								<echo>On chmod u=rwX,go=rX le répertoire</echo>
 								<exec executable="ssh" dir="${basedir}">
 									<arg value="wwwaxan@axan.org" />
@@ -776,6 +777,7 @@
 							</tasks>
 						</configuration>
 					</execution>
+
 				</executions>
 				<dependencies>
 					<dependency>
@@ -784,23 +786,8 @@
 						</artifactId>
 						<version>4.0.1</version>
 					</dependency>
-					<!--
-						<dependency> <groupId>ant</groupId>
-						<artifactId>ant-utils</artifactId> </dependency>
-					-->
-					<!--
-						<dependency> <groupId>google</groupId>
-						<artifactId>ant-googlecode</artifactId> <version>0.0.1</version>
-
-						</dependency>
-					-->
 				</dependencies>
 			</plugin>
-			<!--
-				<plugin> <groupId>org.codehaus.izpack</groupId> <artifactId>izpack-maven-plugin</artifactId> <configuration> <izpackBasedir>${finalReleaseDirectory}
-				</izpackBasedir> </configuration> <executions> <execution> <id>standard-installer</id> <phase>package</phase> <goals> <goal>izpack</goal> </goals>
-				</execution> </executions> </plugin>
-			-->
 		</plugins>
 	</build>
 	<reporting>
@@ -824,16 +811,9 @@
 							<report>license</report>
 							<report>issue-tracking</report>
 							<report>scm</report>
-							<!--
-								<report>summary</report>
-								<report>index</report>
-								<report>cim</report>
-								<report>dependencies</report>
-								<report>dependency-convergence</report>
-								<report>issue-tracking</report>
-								<report>mailing-list</report> 
-								<report>scm</report>
-							-->
+							<!-- <report>summary</report> <report>index</report> <report>cim</report> 
+								<report>dependencies</report> <report>dependency-convergence</report> <report>issue-tracking</report> 
+								<report>mailing-list</report> <report>scm</report> -->
 						</reports>
 					</reportSet>
 				</reportSets>
@@ -841,6 +821,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-site-plugin</artifactId>
+				<!-- <version>2.0-beta-7</version>  -->
 				<version>2.0-beta-7</version>
 				<configuration>
 					<locales>fr</locales>
@@ -875,33 +856,25 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<systemProperties>
-            			<property>
-              				<name>sqlite4java.library.path</name>
-              				<value>${packagingLibDirectory}</value>
-            			</property>
-          			</systemProperties>					
+						<property>
+							<name>sqlite4java.library.path</name>
+							<value>${packagingLibDirectory}</value>
+						</property>
+					</systemProperties>
 				</configuration>
 			</plugin>
 		</plugins>
-		<!--
-			Usefull mais pas séparés <plugin>
-			<groupId>org.codehaus.mojo</groupId>
-			<artifactId>jdepend-maven-plugin</artifactId> </plugin> +/- Useless &
-			pas séparés <plugin> <groupId>org.codehaus.mojo</groupId>
-			<artifactId>surefire-report-maven-plugin</artifactId> </plugin>
-			<plugin> <groupId>org.apache.maven.plugins</groupId>
-			<artifactId>maven-pmd-plugin</artifactId> <configuration>
-			<format>xml</format> <linkXref>true</linkXref>
-			<sourceEncoding>utf-8</sourceEncoding>
-			<minimumTokens>100</minimumTokens> <targetJdk>1.5</targetJdk>
-			<rulesets> <ruleset>/rulesets/basic.xml</ruleset>
-			<ruleset>/rulesets/controversial.xml</ruleset> </rulesets>
-			</configuration> </plugin> Useless & pas dans un répertoire séparé
-			<plugin> <groupId>org.codehaus.mojo</groupId>
-			<artifactId>taglist-maven-plugin</artifactId> </plugin> <plugin>
-			<groupId>org.apache.maven.plugins</groupId>
-			<artifactId>maven-checkstyle-plugin</artifactId> </plugin>
-		-->
+		<!-- Usefull mais pas séparés <plugin> <groupId>org.codehaus.mojo</groupId> 
+			<artifactId>jdepend-maven-plugin</artifactId> </plugin> +/- Useless & pas 
+			séparés <plugin> <groupId>org.codehaus.mojo</groupId> <artifactId>surefire-report-maven-plugin</artifactId> 
+			</plugin> <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-pmd-plugin</artifactId> 
+			<configuration> <format>xml</format> <linkXref>true</linkXref> <sourceEncoding>utf-8</sourceEncoding> 
+			<minimumTokens>100</minimumTokens> <targetJdk>1.5</targetJdk> <rulesets> 
+			<ruleset>/rulesets/basic.xml</ruleset> <ruleset>/rulesets/controversial.xml</ruleset> 
+			</rulesets> </configuration> </plugin> Useless & pas dans un répertoire séparé 
+			<plugin> <groupId>org.codehaus.mojo</groupId> <artifactId>taglist-maven-plugin</artifactId> 
+			</plugin> <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-checkstyle-plugin</artifactId> 
+			</plugin> -->
 	</reporting>
 	<!-- More Project Information -->
 	<name>${projectName}</name>
@@ -937,7 +910,7 @@
 			<properties>
 				<picUrl>http://cv.axan.org/id.jpg</picUrl>
 			</properties>
-		</developer>		
+		</developer>
 	</developers>
 	<!-- <contributors></contributors> -->
 
@@ -955,14 +928,9 @@
 	</scm>
 	<!-- <prerequisites></prerequisites> -->
 	<repositories>
-		<!-- For BerkeleyDB
-		<repository>
-      		<id>oracleReleases</id>
-      		<name>Oracle Released Java Packages</name>
-      		<url>http://download.oracle.com/maven</url>
-      		<layout>default</layout>
-    	</repository>
-    	-->
+		<!-- For BerkeleyDB <repository> <id>oracleReleases</id> <name>Oracle Released 
+			Java Packages</name> <url>http://download.oracle.com/maven</url> <layout>default</layout> 
+			</repository> -->
 		<repository>
 			<id>codehaus-repository</id>
 			<name>Codehaus Repository</name>
@@ -977,9 +945,11 @@
 			<id>java.net</id>
 			<url>http://download.java.net/maven/2</url>
 		</repository>
+		<!-- <repository> <id>sep-svn-repo</id> <url>http://space-empire-pulsar.googlecode.com/svn/m2_repo</url> 
+			</repository> -->
 		<repository>
-			<id>sep-svn-repo</id>
-			<url>http://space-empire-pulsar.googlecode.com/svn/m2_repo</url>
+			<id>javabuilders</id>
+			<url>http://javabuilders.googlecode.com/svn/repo</url>
 		</repository>
 	</repositories>
 	<!-- <pluginRepositories></pluginRepositories> -->
@@ -987,7 +957,7 @@
 	<distributionManagement>
 		<downloadUrl>${downloadUrl}</downloadUrl>
 		<site>
-			<id>axan.org</id>			
+			<id>axan.org</id>
 			<name>${projectName} Maven Site</name>
 			<url>scpexe://wwwaxan@axan.org:/home/wwwaxan/public_html/${projectArtifactId}</url>
 		</site>
