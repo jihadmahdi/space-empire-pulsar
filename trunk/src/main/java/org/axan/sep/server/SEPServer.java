@@ -831,9 +831,7 @@ public class SEPServer implements IServer
 	}*/
 	
 	private void runGame() throws GameBoardException
-	{
-		
-		
+	{				
 		synchronized(this)
 		{
 			if (game.isGameInCreation())

@@ -100,6 +100,12 @@ public class SEPClient
 		 * @param msg
 		 */
 		void receivePausedGameMessage(Player fromPlayer, String msg);
+		
+		/**
+		 * Return true if current client is supposed to be game admin (i.e. server host).
+		 * @return
+		 */
+		boolean isAdmin();
 	}
 	
 	private static class SEPClientProtocol implements Protocol.Client
@@ -273,6 +279,11 @@ public class SEPClient
 	public String getPassword()
 	{
 		return client.getPassword();
+	}
+	
+	public boolean isAdmin()
+	{
+		return ui.isAdmin();
 	}
 	
 	public String getServer()

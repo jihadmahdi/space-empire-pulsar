@@ -40,7 +40,7 @@ public class SwingJavaBuilderMyUtils
 			}
 			catch(DuplicateAliasException e)
 			{
-				log.log(Level.INFO, "DuplicateAliasException: "+e.getMessage());
+				log.log(Level.FINE, "DuplicateAliasException: "+e.getMessage());
 			}
 		}
 	}
