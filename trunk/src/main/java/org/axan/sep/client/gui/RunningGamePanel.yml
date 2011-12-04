@@ -1,0 +1,35 @@
+JPanel(name=runningGamePanel):
+  # Dock Left
+  - JPanel(name=dockedLeftPanel):
+    - AUniverseRendererPanel(name=universePanel, background=red)
+    - JPanel(name=tabsPanel, background=green)
+    - MigLayout: |
+        [[insets 0]]
+        [grow]
+        universePanel   [grow, center]
+        tabsPanel       [200px, bottom]
+
+  # Dock Right
+  - JPanel(name=dockedRightPanel):    
+    - JPanel(name=celestialBodyPanel, background=blue)
+    - JPanel(name=unitPanel, background=yellow)
+    - MigLayout: |
+        [[insets 0]]
+        [grow]
+        celestialBodyPanel   [grow, center]
+        unitPanel            [pref, bottom]
+        
+  # Dock Bottom
+  - JPanel(name=dockedBottomPanel):
+    - JPanel(name=btnsPanel, background=pink)
+    - MigLayout: |
+        [[insets 0]]
+        [grow]
+        btnsPanel   [grow]
+
+  #gameCreationPanel layout      
+  - MigLayout: |
+      [[insets 0]]
+      [grow]             [200px]
+      <dockedLeftPanel   >dockedRightPanel  [grow]
+      dockedBottomPanel+*                   [bottom]
