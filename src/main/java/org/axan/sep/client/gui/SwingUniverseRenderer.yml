@@ -1,0 +1,10 @@
+JPanel(name=universePanel):
+  - JLabel(name=lblZValue)
+  - JSlider(name=zSlider, value=-1)
+  - JPanel(name=universeViewPanel, opaque=false, border=white, background=yellow)  
+  - MigLayout: |
+      [grow]
+      universeViewPanel    [grow, center]
+      lblZValue,zSlider   [pref, bottom]
+bind:
+  - lblZValue.text: "Z: ${zSlider.value}"
