@@ -228,6 +228,7 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 	@Override
 	public boolean validateForm()
 	{
+		//if (!playerConfigDialog.validateForm()) return false;
 		return build.validate();
 	}
 	

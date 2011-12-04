@@ -98,7 +98,6 @@ public class GameChatPanel extends JPanel implements IModalComponent
 		SEPClient old = this.sepClient;
 		this.sepClient = sepClient;
 		setEnabled(sepClient != null);
-		System.out.println("setSepClient from '"+old+"' to '"+sepClient+"'");
 		firePropertyChange("sepClient", old, sepClient);
 	}
 	

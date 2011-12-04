@@ -9,10 +9,11 @@ JFrame(name=mainFrame, title=title, size=packed, preferredSize=1024x768, default
   - HostGamePanel(name=hostGamePanel)
   - JoinGamePanel(name=joinGamePanel)
   - GameCreationPanel(name=gameCreationPanel)
+  - RunningGamePanel(name=runningGamePanel)
   - MigLayout: |
                [[insets 0]]
                [grow]
                logoPanel [grow]
 bind:
   - gameCreationPanel.sepClient: this.sepClient
-#  - quitGameMenuItem.enable: ${this.isGameRunning}
+  - runningGamePanel.sepClient: this.sepClient

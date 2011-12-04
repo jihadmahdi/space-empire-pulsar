@@ -71,7 +71,10 @@ class ServerGame implements Serializable
 
 	public ServerGame()
 	{
-		
+		//TODO: Testing config, to remove later.
+		gameConfig.setDimX(15);
+		gameConfig.setDimY(15);
+		gameConfig.setDimZ(3);
 	}
 	
 	public void addPlayer(String playerLogin) throws GameBoardException

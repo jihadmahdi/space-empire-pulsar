@@ -1,6 +1,7 @@
 package org.axan.sep.client.gui;
 
 import java.awt.Container;
+import java.io.File;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Arrays;
@@ -11,10 +12,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
+import javax.swing.filechooser.FileFilter;
 
 import org.axan.eplib.utils.Reflect;
 import org.axan.sep.client.SEPClient;
@@ -70,12 +73,11 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 	 * Launch the application.
 	 */
 	public static void main(String[] args)
-	{
+	{		
 		SwingUtilities.invokeLater(new Runnable()
 		{
 			public void run()
-			{
-				SwingJavaBuilderMyUtils.addType(JImagePanel.class, HostGamePanel.class, JoinGamePanel.class, SpinnerNumberModel.class);
+			{				
 				SwingJavaBuilder.getConfig().addResourceBundle(SpaceEmpirePulsarGUI.class.getName());
 				try
 				{
@@ -214,6 +216,7 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 	private HostGamePanel hostGamePanel;
 	private JoinGamePanel joinGamePanel;
 	private GameCreationPanel gameCreationPanel;
+	private RunningGamePanel runningGamePanel;
 	
 	////////// bean fields
 	private SEPServer sepServer;
@@ -223,6 +226,8 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 	public SpaceEmpirePulsarGUI()
 	{
 		setInstance(this);
+		
+		SwingJavaBuilderMyUtils.addType(JImagePanel.class, HostGamePanel.class, JoinGamePanel.class, SpinnerNumberModel.class, RunningGamePanel.class);
 		
 		build = SwingJavaBuilder.build(this);		
 		refresh();
@@ -252,6 +257,12 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 		this.sepServer = sepServer;
 	}
 	
+	@Override
+	public boolean isAdmin()
+	{
+		return isAdmin;
+	}
+	
 	////////// ui events
 	
 	/**
@@ -259,7 +270,7 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 	 */
 	private void close()
 	{		
-		// TODO: ask for confirmation (if connected, are you sure to quit the game..)
+		quitGame();
 		dispose();
 	}
 	
@@ -302,7 +313,23 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 	 */
 	private void quitGame()
 	{
-		// TODO: Ask confirmation and quit current game if any.		
+		if (getSepClient() != null && getSepClient().isConnected())
+		{
+			if (JOptionPane.showConfirmDialog(null, build.getResource("msg.quit.game"), build.getResource("msg.quit.game.title"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.YES_OPTION)
+			{
+				return;
+			}
+			
+			getSepClient().disconnect();
+			setSepClient(null);			
+		}
+		
+		if (getSepServer() != null)
+		{
+			getSepServer().terminate();
+			setSepServer(null);
+		}
+		
 		showLogoPanel();
 	}
 	
@@ -330,6 +357,28 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 	public void onGameRan()
 	{
 		log.log(Level.INFO, "onGameRan");
+		
+		new Thread(new Runnable()
+		{			
+			@Override
+			public void run()
+			{
+				if (getSepClient().getGameBoard() == null)
+				{
+					try
+					{
+						getSepClient().setGameBoard(getSepClient().getRunningGameInterface().getPlayerGameBoard());
+					}
+					catch(Exception e)
+					{
+						log.log(Level.SEVERE, "Cannot retreive initial player gameboard", e);
+					}
+				}
+				
+				gameCreationPanel.setVisible(false);
+				SwingJavaBuilderMyUtils.callBackgroundMethod(build, "showRunningGamePanel", SpaceEmpirePulsarGUI.this);
+			}
+		}).start();
 	}
 
 	@Override
@@ -469,6 +518,19 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 		if (showBlokingPanel(gameCreationPanel, evt)) return;
 		
 		if (gameCreationPanel.isCanceled())
+		{
+			evt.setCancelStatus(CancelStatus.COMPLETED);
+			showLogoPanel();
+			return;
+		}
+	}
+	
+	@DoInBackground(blocking=false, cancelable=true, indeterminateProgress=true)
+	public void showRunningGamePanel(BackgroundEvent evt)
+	{
+		if (showBlokingPanel(runningGamePanel, evt)) return;
+		
+		if (runningGamePanel.isCanceled())
 		{
 			evt.setCancelStatus(CancelStatus.COMPLETED);
 			showLogoPanel();

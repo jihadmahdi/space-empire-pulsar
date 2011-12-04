@@ -25,10 +25,14 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.*;
 import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class JImagePanel extends JPanel
 {
 	private static final long	serialVersionUID	= 2724980460740151616L;
+	
+	private static final Logger log = Logger.getLogger(JImagePanel.class.getName());
 	
 	static
 	{
@@ -322,12 +326,12 @@ public class JImagePanel extends JPanel
 			URL urlImg = ClassLoader.getSystemResource(sFile);
 			if (urlImg == null)
 			{
-				System.out.println("Img '"+sFile+"' => '"+sFile.replace(File.separatorChar, '/')+"'");
+				log.log(Level.INFO, "Img '"+sFile+"' => '"+sFile.replace(File.separatorChar, '/')+"'"); 
 				urlImg = ClassLoader.getSystemResource(sFile.replace(File.separatorChar, '/'));
 			}
 			if (urlImg == null)
 			{
-				System.out.println("Can't find resource, trying as external file..");
+				log.log(Level.INFO, "Can't find resource, trying as external file..");
 				setImage(new File(sFile));
 			}
 			else
