@@ -3,8 +3,8 @@ package org.axan.sep.client;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -16,13 +16,13 @@ import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.eplib.gameserver.common.IServerUser.ServerSavingGameException;
 import org.axan.eplib.orm.SQLDataBaseException;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
-import org.axan.eplib.utils.Operations.INotParameterisedOperationWithReturn;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.Protocol;
+import org.axan.sep.common.db.IGameEvent;
+import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
 import org.axan.sep.common.db.SEPCommonDB;
-import org.axan.sep.common.db.orm.Player;
 import org.axan.sep.common.db.orm.PlayerConfig;
 
 /**
@@ -63,7 +63,7 @@ public class SEPClient
 		 * Must return fast (let's spawn a new thread to make the job).
 		 * @param playerList new player list.
 		 */
-		void refreshPlayerList(Map<Player, PlayerConfig> playerList);
+		void refreshPlayerList(Map<IPlayer, IPlayerConfig> playerList);
 
 		/**
 		 * New GameCreation message received from another player.
@@ -71,7 +71,7 @@ public class SEPClient
 		 * @param fromPlayer
 		 * @param msg
 		 */
-		void receiveGameCreationMessage(Player fromPlayer, String msg);
+		void receiveGameCreationMessage(IPlayer fromPlayer, String msg);
 
 		/**
 		 * Refresh game config display.
@@ -85,7 +85,7 @@ public class SEPClient
 		 * @param fromPlayer
 		 * @param msg
 		 */
-		void receiveRunningGameMessage(Player fromPlayer, String msg);
+		void receiveRunningGameMessage(IPlayer fromPlayer, String msg);
 
 		/**
 		 * New turn has been sent from the server. Client must refresh the gameboard.
@@ -99,7 +99,7 @@ public class SEPClient
 		 * @param fromPlayer
 		 * @param msg
 		 */
-		void receivePausedGameMessage(Player fromPlayer, String msg);
+		void receivePausedGameMessage(IPlayer fromPlayer, String msg);
 		
 		/**
 		 * Return true if current client is supposed to be game admin (i.e. server host).
@@ -125,7 +125,7 @@ public class SEPClient
 		 * @see common.Protocol.Client#refreshPlayerList(java.util.Set)
 		 */
 		@Override
-		public void refreshPlayerList(Map<Player, PlayerConfig> playerList) throws RpcException
+		public void refreshPlayerList(Map<IPlayer, IPlayerConfig> playerList) throws RpcException
 		{
 			client.refreshPlayerList(playerList);
 			client.ui.refreshPlayerList(playerList);
@@ -135,7 +135,7 @@ public class SEPClient
 		 * @see common.Protocol.Client#receiveGameCreationMessage(common.Player, java.lang.String)
 		 */
 		@Override
-		public void receiveGameCreationMessage(Player fromPlayer, String msg)
+		public void receiveGameCreationMessage(IPlayer fromPlayer, String msg)
 		{
 			client.ui.receiveGameCreationMessage(fromPlayer, msg);
 		}
@@ -153,20 +153,20 @@ public class SEPClient
 		 * @see common.Protocol.Client#receiveRunningGameMessage(common.Player, java.lang.String)
 		 */
 		@Override
-		public void receiveRunningGameMessage(Player fromPlayer, String msg) throws RpcException
+		public void receiveRunningGameMessage(IPlayer fromPlayer, String msg) throws RpcException
 		{
 			client.ui.receiveRunningGameMessage(fromPlayer, msg);
 		}
 
 		@Override
-		public void receiveNewTurnGameBoard(PlayerGameBoard gameBoard) throws RpcException
+		public void receiveNewTurnGameBoard(List<IGameEvent> newTurnEvents) throws RpcException
 		{
 			client.setGameBoard(gameBoard);
 			client.ui.receiveNewTurnGameBoard(gameBoard);
 		}
 
 		@Override
-		public void receivePausedGameMessage(Player fromPlayer, String msg) throws RpcException
+		public void receivePausedGameMessage(IPlayer fromPlayer, String msg) throws RpcException
 		{
 			client.ui.receivePausedGameMessage(fromPlayer, msg);
 		}
@@ -205,7 +205,7 @@ public class SEPClient
 		return getGameBoard() != null;
 	}
 	
-	private synchronized void refreshPlayerList(Map<Player, PlayerConfig> playerList)
+	private synchronized void refreshPlayerList(Map<IPlayer, IPlayerConfig> playerList)
 	{
 		if (!isRunning())
 		{
@@ -360,7 +360,7 @@ public class SEPClient
 		
 		if (runningGameProxy == null)
 		{
-			runningGameProxy = (Protocol.ServerRunningGame) client.getCustomServerInterface(Protocol.ServerRunningGame.class);			
+			runningGameProxy = client.getCustomServerInterface(Protocol.ServerRunningGame.class);			
 		}
 		return runningGameProxy;
 	}

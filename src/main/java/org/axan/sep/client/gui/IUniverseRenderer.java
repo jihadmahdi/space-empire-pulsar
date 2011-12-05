@@ -5,11 +5,8 @@
  */
 package org.axan.sep.client.gui;
 
-import javax.swing.JPanel;
-
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.common.PlayerGameBoard;
-import org.axan.sep.common.SEPUtils.RealLocation;
 
 
 /**

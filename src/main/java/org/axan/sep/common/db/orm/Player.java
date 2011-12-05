@@ -1,20 +1,18 @@
 package org.axan.sep.common.db.orm;
 
 import java.io.Serializable;
-import java.lang.Exception;
-import org.axan.sep.common.db.orm.base.IBasePlayer;
-import org.axan.sep.common.db.orm.base.BasePlayer;
-import org.axan.sep.common.db.IPlayer;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+
 import org.axan.eplib.orm.DataBaseORMGenerator;
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.eplib.orm.ISQLDataBaseStatementJob;
 import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.orm.sqlite.SQLiteDB;
-import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.SEPCommonDB;
+import org.axan.sep.common.db.orm.base.BasePlayer;
+import org.axan.sep.common.db.orm.base.IBasePlayer;
 
 public class Player implements IPlayer, Serializable
 {
@@ -41,9 +39,17 @@ public class Player implements IPlayer, Serializable
 		return getName().compareTo(o.getName());
 	}
 	
+	@Override
 	public String getName()
 	{
 		return basePlayerProxy.getName();
+	}
+
+	public static <T extends IPlayer> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
+	{
+		Set<T> results = select(db, expectedType, from, (where==null?"":where+" ")+"LIMIT 1", params);
+		if (results.isEmpty()) return null;
+		return results.iterator().next();
 	}
 
 	public static <T extends IPlayer> Set<T> select(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException

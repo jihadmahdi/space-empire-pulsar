@@ -1,13 +1,12 @@
 package org.axan.sep.common.db.orm;
 
-import org.axan.sep.common.db.orm.Unit;
-import java.lang.Exception;
-import org.axan.sep.common.db.orm.base.IBaseFleet;
-import org.axan.sep.common.db.orm.base.BaseFleet;
-import org.axan.sep.common.db.IFleet;
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.sep.common.Protocol.eUnitType;
+import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.db.IFleet;
 import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.orm.base.BaseFleet;
+import org.axan.sep.common.db.orm.base.IBaseFleet;
 
 public class Fleet extends Unit implements IFleet
 {
@@ -19,9 +18,9 @@ public class Fleet extends Unit implements IFleet
 		this.baseFleetProxy = baseFleetProxy;
 	}
 
-	public Fleet(String owner, String name, eUnitType type, IGameConfig config)
+	public Fleet(String owner, String name, eUnitType type, Location departure, Double progress, Location destination, IGameConfig config)
 	{
-		this(new BaseFleet(owner, name, type.toString()), config);
+		this(new BaseFleet(owner, name, type.toString(), departure == null ? null : departure.x, departure == null ? null : departure.y, departure == null ? null : departure.z, progress, destination == null ? null : destination.x, destination == null ? null : destination.y, destination == null ? null : destination.z), config);
 	}
 
 	public Fleet(ISQLDataBaseStatement stmnt, IGameConfig config) throws Exception

@@ -1,30 +1,20 @@
 package org.axan.sep.client.gui;
 
-import java.awt.Dimension;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.logging.Logger;
 
-import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
 
 import org.axan.sep.client.SEPClient;
-import org.axan.sep.client.gui.SpaceEmpirePulsarGUI.HostGamePanel;
 import org.axan.sep.common.SEPUtils;
 import org.javabuilders.BuildResult;
 import org.javabuilders.annotations.DoInBackground;
 import org.javabuilders.event.BackgroundEvent;
 import org.javabuilders.event.CancelStatus;
 import org.javabuilders.swing.SwingJavaBuilder;
-import org.javabuilders.swing.SwingJavaBuilderUtils;
 
 import ca.odell.glazedlists.BasicEventList;
 import ca.odell.glazedlists.EventList;

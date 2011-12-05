@@ -13,7 +13,6 @@ import org.javabuilders.event.BackgroundEvent;
 import org.javabuilders.event.ObjectMethod;
 import org.javabuilders.swing.SwingJavaBuilder;
 import org.javabuilders.swing.SwingJavaBuilderConfig;
-import org.javabuilders.swing.SwingJavaBuilderUtils;
 import org.javabuilders.util.BuilderUtils;
 
 public class SwingJavaBuilderMyUtils

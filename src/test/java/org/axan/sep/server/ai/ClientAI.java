@@ -1,32 +1,16 @@
 package org.axan.sep.server.ai;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
 import org.axan.eplib.orm.SQLDataBaseException;
 import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.sep.client.SEPClient;
-import org.axan.sep.common.GameCommand;
-import org.axan.sep.common.IGame;
-import org.axan.sep.common.IGameBoard;
-import org.axan.sep.common.LocalGame;
 import org.axan.sep.common.PlayerGameBoard;
-import org.axan.sep.common.SEPUtils;
-import org.axan.sep.common.SEPUtils.RealLocation;
-import org.axan.sep.common.db.IPlanet;
-import org.axan.sep.common.db.IVersionedPlanet;
 import org.axan.sep.common.db.orm.ProductiveCelestialBody;
 
-import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteJob;
 
 public class ClientAI implements IGame.Client
 {

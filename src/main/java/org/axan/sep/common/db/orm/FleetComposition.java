@@ -1,19 +1,17 @@
 package org.axan.sep.common.db.orm;
 
-import java.lang.Exception;
-import org.axan.sep.common.db.orm.base.IBaseFleetComposition;
-import org.axan.sep.common.db.orm.base.BaseFleetComposition;
-import org.axan.sep.common.db.IFleetComposition;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+
 import org.axan.eplib.orm.DataBaseORMGenerator;
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.eplib.orm.ISQLDataBaseStatementJob;
 import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.orm.sqlite.SQLiteDB;
-import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.IFleetComposition;
 import org.axan.sep.common.db.SEPCommonDB;
+import org.axan.sep.common.db.orm.base.BaseFleetComposition;
+import org.axan.sep.common.db.orm.base.IBaseFleetComposition;
 
 public class FleetComposition implements IFleetComposition
 {
@@ -24,9 +22,9 @@ public class FleetComposition implements IFleetComposition
 		this.baseFleetCompositionProxy = baseFleetCompositionProxy;
 	}
 
-	public FleetComposition(String fleetOwner, String fleetName, Integer fleetTurn, String starshipTemplate, Integer quantity)
+	public FleetComposition(String fleetOwner, String fleetName, String starshipTemplate, Integer quantity)
 	{
-		this(new BaseFleetComposition(fleetOwner, fleetName, fleetTurn, starshipTemplate, quantity));
+		this(new BaseFleetComposition(fleetOwner, fleetName, starshipTemplate, quantity));
 	}
 
 	public FleetComposition(ISQLDataBaseStatement stmnt) throws Exception
@@ -34,29 +32,35 @@ public class FleetComposition implements IFleetComposition
 		this(new BaseFleetComposition(stmnt));
 	}
 
+	@Override
 	public String getFleetOwner()
 	{
 		return baseFleetCompositionProxy.getFleetOwner();
 	}
 
+	@Override
 	public String getFleetName()
 	{
 		return baseFleetCompositionProxy.getFleetName();
 	}
 
-	public Integer getFleetTurn()
-	{
-		return baseFleetCompositionProxy.getFleetTurn();
-	}
-
+	@Override
 	public String getStarshipTemplate()
 	{
 		return baseFleetCompositionProxy.getStarshipTemplate();
 	}
 
+	@Override
 	public Integer getQuantity()
 	{
 		return baseFleetCompositionProxy.getQuantity();
+	}
+
+	public static <T extends IFleetComposition> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
+	{
+		Set<T> results = select(db, expectedType, from, (where==null?"":where+" ")+"LIMIT 1", params);
+		if (results.isEmpty()) return null;
+		return results.iterator().next();
 	}
 
 	public static <T extends IFleetComposition> Set<T> select(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
@@ -127,14 +131,14 @@ public class FleetComposition implements IFleetComposition
 	{
 		try
 		{
-			boolean exist = exist(db, fleetComposition.getClass(), null, " FleetComposition.fleetOwner = %s AND FleetComposition.fleetName = %s AND FleetComposition.fleetTurn = %s AND FleetComposition.starshipTemplate = %s", "'"+fleetComposition.getFleetOwner()+"'", "'"+fleetComposition.getFleetName()+"'", "'"+fleetComposition.getFleetTurn()+"'", "'"+fleetComposition.getStarshipTemplate()+"'");
+			boolean exist = exist(db, fleetComposition.getClass(), null, " FleetComposition.fleetOwner = %s AND FleetComposition.fleetName = %s AND FleetComposition.starshipTemplate = %s", "'"+fleetComposition.getFleetOwner()+"'", "'"+fleetComposition.getFleetName()+"'", "'"+fleetComposition.getStarshipTemplate()+"'");
 			if (exist)
 			{
-				db.getDB().exec(String.format("UPDATE FleetComposition SET quantity = %s WHERE  FleetComposition.fleetOwner = %s AND FleetComposition.fleetName = %s AND FleetComposition.fleetTurn = %s AND FleetComposition.starshipTemplate = %s ;", "'"+fleetComposition.getQuantity()+"'", "'"+fleetComposition.getFleetOwner()+"'", "'"+fleetComposition.getFleetName()+"'", "'"+fleetComposition.getFleetTurn()+"'", "'"+fleetComposition.getStarshipTemplate()+"'").replaceAll("'null'", "NULL"));
+				db.getDB().exec(String.format("UPDATE FleetComposition SET quantity = %s WHERE  FleetComposition.fleetOwner = %s AND FleetComposition.fleetName = %s AND FleetComposition.starshipTemplate = %s ;", "'"+fleetComposition.getQuantity()+"'", "'"+fleetComposition.getFleetOwner()+"'", "'"+fleetComposition.getFleetName()+"'", "'"+fleetComposition.getStarshipTemplate()+"'").replaceAll("'null'", "NULL"));
 			}
 			else
 			{
-				if (!exist) db.getDB().exec(String.format("INSERT INTO FleetComposition (fleetOwner, fleetName, fleetTurn, starshipTemplate, quantity) VALUES (%s, %s, %s, %s, %s);", "'"+fleetComposition.getFleetOwner()+"'", "'"+fleetComposition.getFleetName()+"'", "'"+fleetComposition.getFleetTurn()+"'", "'"+fleetComposition.getStarshipTemplate()+"'", "'"+fleetComposition.getQuantity()+"'").replaceAll("'null'", "NULL"));
+				if (!exist) db.getDB().exec(String.format("INSERT INTO FleetComposition (fleetOwner, fleetName, starshipTemplate, quantity) VALUES (%s, %s, %s, %s);", "'"+fleetComposition.getFleetOwner()+"'", "'"+fleetComposition.getFleetName()+"'", "'"+fleetComposition.getStarshipTemplate()+"'", "'"+fleetComposition.getQuantity()+"'").replaceAll("'null'", "NULL"));
 			}
 		}
 		catch(Exception e)

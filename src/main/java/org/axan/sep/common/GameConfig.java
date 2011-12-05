@@ -251,6 +251,7 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * @return the dimX
 	 */
+	@Override
 	public int getDimX()
 	{
 		return dimX;
@@ -260,6 +261,7 @@ public class GameConfig implements IGameConfig, Serializable
 	 * @param dimX
 	 *            the dimX to set
 	 */
+	@Override
 	public void setDimX(int dimX)
 	{
 		if (dimX <= 0) throw new IllegalArgumentException("dimX must be greater than 0.");
@@ -307,6 +309,7 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * @return the dimY
 	 */
+	@Override
 	public int getDimY()
 	{
 		return dimY;
@@ -316,6 +319,7 @@ public class GameConfig implements IGameConfig, Serializable
 	 * @param dimY
 	 *            the dimY to set
 	 */
+	@Override
 	public void setDimY(int dimY)
 	{
 		if (dimY <= 0) throw new IllegalArgumentException("dimY must be greater than 0.");
@@ -326,6 +330,7 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * @return the dimZ
 	 */
+	@Override
 	public int getDimZ()
 	{
 		return dimZ;
@@ -335,6 +340,7 @@ public class GameConfig implements IGameConfig, Serializable
 	 * @param dimZ
 	 *            the dimZ to set
 	 */
+	@Override
 	public void setDimZ(int dimZ)
 	{
 		if (dimZ <= 0) throw new IllegalArgumentException("dimZ must be greater than 0.");
@@ -345,6 +351,7 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * @return the neutralCelestialBodiesCount
 	 */
+	@Override
 	public int getNeutralCelestialBodiesCount()
 	{
 		return neutralCelestialBodiesCount;
@@ -354,6 +361,7 @@ public class GameConfig implements IGameConfig, Serializable
 	 * @param neutralCelestialBodiesCount
 	 *            the neutralCelestialBodiesCount to set
 	 */
+	@Override
 	public void setNeutralCelestialBodiesCount(int neutralCelestialBodiesCount)
 	{
 		if (neutralCelestialBodiesCount < 0) throw new IllegalArgumentException("neutralCelestialBodiesCount cannot must be greater or equal to 0.");
@@ -361,11 +369,13 @@ public class GameConfig implements IGameConfig, Serializable
 		this.neutralCelestialBodiesCount = neutralCelestialBodiesCount;
 	}
 
+	@Override
 	public int getPlayersPlanetsStartingCarbonResources()
 	{
 		return playersPlanetsStartingCarbonResources;
 	}
 
+	@Override
 	public void setPlayersPlanetsStartingCarbonResources(int playersPlanetsStartingCarbonResources)
 	{
 		if (playersPlanetsStartingCarbonResources < 0) throw new IllegalArgumentException("Players starting carbon amount cannot be negative.");
@@ -374,11 +384,13 @@ public class GameConfig implements IGameConfig, Serializable
 		this.playersPlanetsStartingCarbonResources = playersPlanetsStartingCarbonResources;
 	}
 
+	@Override
 	public int getPlayersPlanetsStartingPopulation()
 	{
 		return playersPlanetsStartingPopulation;
 	}
 
+	@Override
 	public void setPlayersPlanetsStartingPopulation(int playersPlanetsStartingPopulation)
 	{
 		if (playersPlanetsStartingPopulation < 0) throw new IllegalArgumentException("Players starting population cannot be negative.");
@@ -393,6 +405,7 @@ public class GameConfig implements IGameConfig, Serializable
 	 * @param populationPerTurnMax
 	 *            Maximum value for population generation on a planet.
 	 */
+	@Override
 	public void setPopulationPerTurn(int populationPerTurnMin, int populationPerTurnMax)
 	{
 		if (populationPerTurnMin < 0) throw new IllegalArgumentException("populationPerTurnMin　must be positive or null.");
@@ -404,6 +417,7 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * @return the populationPerTurn range ([0] min; [1] max).
 	 */
+	@Override
 	public int[] getPopulationPerTurn()
 	{
 		return populationPerTurn;
@@ -415,6 +429,7 @@ public class GameConfig implements IGameConfig, Serializable
 	 * @param populationLimitMax
 	 *            Maximum value for population limit on a planet.
 	 */
+	@Override
 	public void setPopulationLimit(int populationLimitMin, int populationLimitMax)
 	{
 		if (populationLimitMin < 0) throw new IllegalArgumentException("populationLimitMin　must be positive or null.");
@@ -427,6 +442,7 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * @return the populationLimit range ([0] min; [1] max).
 	 */
+	@Override
 	public int[] getPopulationLimit()
 	{
 		return populationLimit;
@@ -455,6 +471,7 @@ public class GameConfig implements IGameConfig, Serializable
 	 * @param celestialBodiesStartingCarbonAmount
 	 *            the celestialBodiesStartingCarbonAmount to set
 	 */
+	@Override
 	public void setCelestialBodiesStartingCarbonAmount(eCelestialBodyType celestialBodyType, int min, int max)
 	{
 		if (min <= 0) throw new IllegalArgumentException("minimum carbon amount must be positive or null.");
@@ -471,17 +488,13 @@ public class GameConfig implements IGameConfig, Serializable
 	 * @param celestialBodiesSlotsAmount
 	 *            the qtSlotsCorpsCelestes to set
 	 */
+	@Override
 	public void setCelestialBodiesSlotsAmount(eCelestialBodyType celestialBodyType, int min, int max)
 	{
 		if (min <= 0) throw new IllegalArgumentException("minimum slots amount must be positive or null.");
 		if (max <= 0) throw new IllegalArgumentException("minimum slots amount must be positive or null.");
 		if (max < min) throw new IllegalArgumentException("minimum slots amount must be lesser than maximum.");
 		this.celestialBodiesSlotsAmount.put(celestialBodyType, new int[] { min, max });
-	}
-
-	public Map<eCelestialBodyType, Float> getNeutralCelestialBodiesGenerationTable()
-	{
-		return neutralCelestialBodiesGenerationTable;
 	}
 	
 	@Override
@@ -516,6 +529,7 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * @return the allianceVictory
 	 */
+	@Override
 	public boolean isAllianceVictory()
 	{
 		return allianceVictory;
@@ -525,6 +539,7 @@ public class GameConfig implements IGameConfig, Serializable
 	 * @param allianceVictory
 	 *            the allianceVictory to set
 	 */
+	@Override
 	public void setAllianceVictory(boolean allianceVictory)
 	{
 		this.allianceVictory = allianceVictory;
@@ -533,6 +548,7 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * @return the regimicide
 	 */
+	@Override
 	public boolean isRegimicide()
 	{
 		return regimicide;
@@ -542,6 +558,7 @@ public class GameConfig implements IGameConfig, Serializable
 	 * @param regimicide
 	 *            the regimicide to set
 	 */
+	@Override
 	public void setRegimicide(boolean regimicide)
 	{
 		this.regimicide = regimicide;
@@ -550,6 +567,7 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * @return the assimilerPeuplesNeutralises
 	 */
+	@Override
 	public boolean isAssimilateNeutralisedPeoples()
 	{
 		return assimilateNeutralisedPeoples;
@@ -559,6 +577,7 @@ public class GameConfig implements IGameConfig, Serializable
 	 * @param assimilateNeutralisedPeoples
 	 *            the assimilateNeutralisedPeoples to set
 	 */
+	@Override
 	public void setAssimilateNeutralisedPeoples(boolean assimilateNeutralisedPeoples)
 	{
 		this.assimilateNeutralisedPeoples = assimilateNeutralisedPeoples;
@@ -567,6 +586,7 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * @return the conqueteTotale
 	 */
+	@Override
 	public boolean isTotalConquest()
 	{
 		return totalConquest;
@@ -576,6 +596,7 @@ public class GameConfig implements IGameConfig, Serializable
 	 * @param totalConquest
 	 *            the totalConquest to set
 	 */
+	@Override
 	public void setTotalConquest(boolean totalConquest)
 	{
 		this.totalConquest = totalConquest;
@@ -584,6 +605,7 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * @return the economicVictory
 	 */
+	@Override
 	public int[] getEconomicVictory()
 	{
 		return economicVictory;
@@ -593,6 +615,7 @@ public class GameConfig implements IGameConfig, Serializable
 	 * @param economicVictory
 	 *            the economicVictory to set
 	 */
+	@Override
 	public void setEconomicVictory(int populationGoal, int carbonResourceGoal)
 	{
 		if (populationGoal < 0) throw new IllegalArgumentException("populationGoal　must be positive or null.");
@@ -603,6 +626,7 @@ public class GameConfig implements IGameConfig, Serializable
 	/**
 	 * @return the timeLimitVictory
 	 */
+	@Override
 	public int getTimeLimitVictory()
 	{
 		return timeLimitVictory;
@@ -612,28 +636,33 @@ public class GameConfig implements IGameConfig, Serializable
 	 * @param timeLimitVictory
 	 *            the timeLimitVictory to set
 	 */
+	@Override
 	public void setTimeLimitVictory(int timeLimitVictory)
 	{
 		if (timeLimitVictory < 0) throw new IllegalArgumentException("timeLimitVictory　must be positive or null.");
 		this.timeLimitVictory = timeLimitVictory;
 	}
 
+	@Override
 	public int getProbeScope()
 	{
 		return probeScope;
 	}
 
+	@Override
 	public void setProbeScope(int probeScope)
 	{
 		if (probeScope < 0) throw new IllegalArgumentException("Probe scope cannot be negative.");
 		this.probeScope = probeScope;
 	}
 
+	@Override
 	public int getSunRadius()
 	{
 		return sunRadius;
 	}
 
+	@Override
 	public void setSunRadius(int sunRadius)
 	{
 		if (sunRadius < 0) throw new IllegalArgumentException("Sun radius cannot be negative.");
@@ -673,6 +702,7 @@ public class GameConfig implements IGameConfig, Serializable
 
 	int naturalCarbonPerTurn = 2000;
 	
+	@Override
 	public int getNaturalCarbonPerTurn()
 	{
 		// TODO : Add to CTOR
@@ -687,6 +717,7 @@ public class GameConfig implements IGameConfig, Serializable
 	
 	private int maxNaturalCarbon = 2000;
 	
+	@Override
 	public int getMaxNaturalCarbon()
 	{
 		// TODO : Add to CTOR
@@ -700,6 +731,7 @@ public class GameConfig implements IGameConfig, Serializable
 	}
 
 	private int governmentStarshipCarbonPrice = 200;
+	@Override
 	public int getGovernmentStarshipCarbonPrice()
 	{
 		// TODO : Add to CTOR
@@ -713,6 +745,7 @@ public class GameConfig implements IGameConfig, Serializable
 	}
 	
 	private int governmentStarshipPopulationPrice = 200;
+	@Override
 	public int getGovernmentStarshipPopulationPrice()
 	{
 		// TODO : Add to CTOR
@@ -725,6 +758,7 @@ public class GameConfig implements IGameConfig, Serializable
 	}
 
 	private double spaceRoadPricePerArea = 200;
+	@Override
 	public double getSpaceRoadPricePerArea()
 	{
 		// TODO : Add to CTOR
@@ -738,6 +772,7 @@ public class GameConfig implements IGameConfig, Serializable
 	}
 
 	private int spaceRoadsSpeed = 5;
+	@Override
 	public int getSpaceRoadsSpeed()
 	{
 		// TODO : Add to CTOR
@@ -751,6 +786,7 @@ public class GameConfig implements IGameConfig, Serializable
 	}
 	
 	private int carbonMinimalFreight = 1000;
+	@Override
 	public int getCarbonMinimalFreight()
 	{
 		// TODO : Add to CTOR

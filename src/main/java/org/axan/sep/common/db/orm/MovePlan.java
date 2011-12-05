@@ -1,19 +1,17 @@
 package org.axan.sep.common.db.orm;
 
-import java.lang.Exception;
-import org.axan.sep.common.db.orm.base.IBaseMovePlan;
-import org.axan.sep.common.db.orm.base.BaseMovePlan;
-import org.axan.sep.common.db.IMovePlan;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+
 import org.axan.eplib.orm.DataBaseORMGenerator;
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.eplib.orm.ISQLDataBaseStatementJob;
 import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.orm.sqlite.SQLiteDB;
-import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.IMovePlan;
 import org.axan.sep.common.db.SEPCommonDB;
+import org.axan.sep.common.db.orm.base.BaseMovePlan;
+import org.axan.sep.common.db.orm.base.IBaseMovePlan;
 
 public class MovePlan implements IMovePlan
 {
@@ -24,9 +22,9 @@ public class MovePlan implements IMovePlan
 		this.baseMovePlanProxy = baseMovePlanProxy;
 	}
 
-	public MovePlan(String owner, String name, Integer turn, Integer priority, Integer delay, Boolean attack, String destination)
+	public MovePlan(String owner, String name, Integer priority, Integer delay, Boolean attack, String destination)
 	{
-		this(new BaseMovePlan(owner, name, turn, priority, delay, attack, destination));
+		this(new BaseMovePlan(owner, name, priority, delay, attack, destination));
 	}
 
 	public MovePlan(ISQLDataBaseStatement stmnt) throws Exception
@@ -34,39 +32,47 @@ public class MovePlan implements IMovePlan
 		this(new BaseMovePlan(stmnt));
 	}
 
+	@Override
 	public String getOwner()
 	{
 		return baseMovePlanProxy.getOwner();
 	}
 
+	@Override
 	public String getName()
 	{
 		return baseMovePlanProxy.getName();
 	}
 
-	public Integer getTurn()
-	{
-		return baseMovePlanProxy.getTurn();
-	}
-
+	@Override
 	public Integer getPriority()
 	{
 		return baseMovePlanProxy.getPriority();
 	}
 
+	@Override
 	public Integer getDelay()
 	{
 		return baseMovePlanProxy.getDelay();
 	}
 
+	@Override
 	public Boolean getAttack()
 	{
 		return baseMovePlanProxy.getAttack();
 	}
 
+	@Override
 	public String getDestination()
 	{
 		return baseMovePlanProxy.getDestination();
+	}
+
+	public static <T extends IMovePlan> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
+	{
+		Set<T> results = select(db, expectedType, from, (where==null?"":where+" ")+"LIMIT 1", params);
+		if (results.isEmpty()) return null;
+		return results.iterator().next();
 	}
 
 	public static <T extends IMovePlan> Set<T> select(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
@@ -137,14 +143,14 @@ public class MovePlan implements IMovePlan
 	{
 		try
 		{
-			boolean exist = exist(db, movePlan.getClass(), null, " MovePlan.owner = %s AND MovePlan.name = %s AND MovePlan.turn = %s AND MovePlan.priority = %s", "'"+movePlan.getOwner()+"'", "'"+movePlan.getName()+"'", "'"+movePlan.getTurn()+"'", "'"+movePlan.getPriority()+"'");
+			boolean exist = exist(db, movePlan.getClass(), null, " MovePlan.owner = %s AND MovePlan.name = %s AND MovePlan.priority = %s", "'"+movePlan.getOwner()+"'", "'"+movePlan.getName()+"'", "'"+movePlan.getPriority()+"'");
 			if (exist)
 			{
-				db.getDB().exec(String.format("UPDATE MovePlan SET delay = %s,  attack = %s,  destination = %s WHERE  MovePlan.owner = %s AND MovePlan.name = %s AND MovePlan.turn = %s AND MovePlan.priority = %s ;", "'"+movePlan.getDelay()+"'", "'"+movePlan.getAttack()+"'", "'"+movePlan.getDestination()+"'", "'"+movePlan.getOwner()+"'", "'"+movePlan.getName()+"'", "'"+movePlan.getTurn()+"'", "'"+movePlan.getPriority()+"'").replaceAll("'null'", "NULL"));
+				db.getDB().exec(String.format("UPDATE MovePlan SET delay = %s,  attack = %s,  destination = %s WHERE  MovePlan.owner = %s AND MovePlan.name = %s AND MovePlan.priority = %s ;", "'"+movePlan.getDelay()+"'", "'"+movePlan.getAttack()+"'", "'"+movePlan.getDestination()+"'", "'"+movePlan.getOwner()+"'", "'"+movePlan.getName()+"'", "'"+movePlan.getPriority()+"'").replaceAll("'null'", "NULL"));
 			}
 			else
 			{
-				if (!exist) db.getDB().exec(String.format("INSERT INTO MovePlan (owner, name, turn, priority, delay, attack, destination) VALUES (%s, %s, %s, %s, %s, %s, %s);", "'"+movePlan.getOwner()+"'", "'"+movePlan.getName()+"'", "'"+movePlan.getTurn()+"'", "'"+movePlan.getPriority()+"'", "'"+movePlan.getDelay()+"'", "'"+movePlan.getAttack()+"'", "'"+movePlan.getDestination()+"'").replaceAll("'null'", "NULL"));
+				if (!exist) db.getDB().exec(String.format("INSERT INTO MovePlan (owner, name, priority, delay, attack, destination) VALUES (%s, %s, %s, %s, %s, %s);", "'"+movePlan.getOwner()+"'", "'"+movePlan.getName()+"'", "'"+movePlan.getPriority()+"'", "'"+movePlan.getDelay()+"'", "'"+movePlan.getAttack()+"'", "'"+movePlan.getDestination()+"'").replaceAll("'null'", "NULL"));
 			}
 		}
 		catch(Exception e)

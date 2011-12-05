@@ -1,26 +1,19 @@
 package org.axan.sep.common.db.orm;
 
-import org.axan.sep.common.db.orm.CelestialBody;
-import java.lang.Exception;
-import org.axan.sep.common.db.orm.base.IBaseVortex;
-import org.axan.sep.common.db.orm.base.BaseVortex;
-import org.axan.sep.common.db.IVortex;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+
 import org.axan.eplib.orm.DataBaseORMGenerator;
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.eplib.orm.ISQLDataBaseStatementJob;
 import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.SEPUtils.Location;
-import org.axan.sep.common.db.IAsteroidField;
-import org.axan.sep.common.db.IGameConfig;
-import org.axan.sep.common.db.INebula;
-import org.axan.sep.common.db.IPlanet;
 import org.axan.sep.common.db.IVortex;
 import org.axan.sep.common.db.SEPCommonDB;
+import org.axan.sep.common.db.orm.base.BaseVortex;
+import org.axan.sep.common.db.orm.base.IBaseVortex;
 
 public class Vortex extends CelestialBody implements IVortex
 {
@@ -42,19 +35,29 @@ public class Vortex extends CelestialBody implements IVortex
 		this(new BaseVortex(stmnt));
 	}
 
+	@Override
 	public Integer getOnsetDate()
 	{
 		return baseVortexProxy.getOnsetDate();
 	}
 
+	@Override
 	public Integer getEndDate()
 	{
 		return baseVortexProxy.getEndDate();
 	}
 
+	@Override
 	public String getDestination()
 	{
 		return baseVortexProxy.getDestination();
+	}
+
+	public static <T extends IVortex> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
+	{
+		Set<T> results = select(db, expectedType, from, (where==null?"":where+" ")+"LIMIT 1", params);
+		if (results.isEmpty()) return null;
+		return results.iterator().next();
 	}
 
 	public static <T extends IVortex> Set<T> select(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
@@ -125,7 +128,7 @@ public class Vortex extends CelestialBody implements IVortex
 			typeFilter = String.format("%s.type IS NOT NULL", type);
 		}
 		if (typeFilter != null && !typeFilter.isEmpty()) where = (where == null) ? typeFilter : String.format("%s AND %s", where, typeFilter);
-		return String.format("SELECT CelestialBody.*, VersionedProductiveCelestialBody.*, AsteroidField.*, VersionedAsteroidField.*, Nebula.*, VersionedNebula.*, Planet.*, VersionedPlanet.*, ProductiveCelestialBody.*, Vortex.* FROM Vortex%s LEFT JOIN CelestialBody USING (name, type) LEFT JOIN VersionedProductiveCelestialBody USING (name, type) LEFT JOIN AsteroidField USING (name, type) LEFT JOIN VersionedAsteroidField USING (name, turn, type) LEFT JOIN Nebula USING (name, type) LEFT JOIN VersionedNebula USING (name, turn, type) LEFT JOIN Planet USING (name, type) LEFT JOIN VersionedPlanet USING (name, turn, type) LEFT JOIN ProductiveCelestialBody USING (name, type)%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
+		return String.format("SELECT CelestialBody.*, ProductiveCelestialBody.*, AsteroidField.*, Nebula.*, Planet.*, Vortex.* FROM Vortex%s LEFT JOIN CelestialBody USING (name, type) LEFT JOIN ProductiveCelestialBody USING (name, type) LEFT JOIN AsteroidField USING (name, type) LEFT JOIN Nebula USING (name, type) LEFT JOIN Planet USING (name, type)%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
 	}
 
 	public static <T extends IVortex> void insertOrUpdate(SEPCommonDB db, T vortex) throws SQLDataBaseException

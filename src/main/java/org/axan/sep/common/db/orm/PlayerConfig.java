@@ -1,20 +1,18 @@
 package org.axan.sep.common.db.orm;
 
 import java.io.Serializable;
-import java.lang.Exception;
-import org.axan.sep.common.db.orm.base.IBasePlayerConfig;
-import org.axan.sep.common.db.orm.base.BasePlayerConfig;
-import org.axan.sep.common.db.IPlayerConfig;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+
 import org.axan.eplib.orm.DataBaseORMGenerator;
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.eplib.orm.ISQLDataBaseStatementJob;
 import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.orm.sqlite.SQLiteDB;
-import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.IPlayerConfig;
 import org.axan.sep.common.db.SEPCommonDB;
+import org.axan.sep.common.db.orm.base.BasePlayerConfig;
+import org.axan.sep.common.db.orm.base.IBasePlayerConfig;
 
 public class PlayerConfig implements IPlayerConfig, Serializable
 {
@@ -35,30 +33,35 @@ public class PlayerConfig implements IPlayerConfig, Serializable
 		this(new BasePlayerConfig(stmnt));
 	}
 
+	@Override
 	public String getName()
 	{
 		return basePlayerConfigProxy.getName();
 	}
 
+	@Override
 	public String getColor()
 	{
 		return basePlayerConfigProxy.getColor();
 	}
 
+	@Override
 	public String getSymbol()
 	{
 		return basePlayerConfigProxy.getSymbol();
 	}
 
+	@Override
 	public String getPortrait()
 	{
 		return basePlayerConfigProxy.getPortrait();
 	}
-	
+
 	public static <T extends IPlayerConfig> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
 	{
-		Set<T> result = select(db, expectedType, from, (where==null?"":where+" ")+"LIMIT 1", params);
-		return result==null?null:result.isEmpty()?null:result.iterator().next();
+		Set<T> results = select(db, expectedType, from, (where==null?"":where+" ")+"LIMIT 1", params);
+		if (results.isEmpty()) return null;
+		return results.iterator().next();
 	}
 
 	public static <T extends IPlayerConfig> Set<T> select(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
@@ -136,14 +139,7 @@ public class PlayerConfig implements IPlayerConfig, Serializable
 			}
 			else
 			{
-				try
-				{
-					if (!exist) db.getDB().exec(String.format("INSERT INTO PlayerConfig (name, color, symbol, portrait) VALUES (%s, %s, %s, %s);", "'"+playerConfig.getName()+"'", "'"+playerConfig.getColor()+"'", "'"+playerConfig.getSymbol()+"'", "'"+playerConfig.getPortrait()+"'").replaceAll("'null'", "NULL"));
-				}
-				catch(Throwable t)
-				{
-					throw new Error(t);
-				}
+				if (!exist) db.getDB().exec(String.format("INSERT INTO PlayerConfig (name, color, symbol, portrait) VALUES (%s, %s, %s, %s);", "'"+playerConfig.getName()+"'", "'"+playerConfig.getColor()+"'", "'"+playerConfig.getSymbol()+"'", "'"+playerConfig.getPortrait()+"'").replaceAll("'null'", "NULL"));
 			}
 		}
 		catch(Exception e)

@@ -7,10 +7,12 @@ package org.axan.sep.common;
 
 import java.io.File;
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Stack;
-import java.util.TreeSet;
+
+import org.axan.sep.common.Protocol.eCelestialBodyType;
+import org.axan.sep.common.db.IGameConfig;
 
 
 /**
@@ -166,6 +168,7 @@ public abstract class SEPUtils
 		return result;
 	}
 	
+	/*
 	public static final Set<StarshipTemplate> starshipSizeTemplates;
 	
 	static
@@ -196,6 +199,7 @@ public abstract class SEPUtils
 		
 		starshipTypes = Collections.unmodifiableSet(starshipTypesSet);		
 	}
+	*/
 	
 	public static void main(String[] args)
 	{
@@ -247,5 +251,16 @@ public abstract class SEPUtils
 				System.err.println("Cannot make saves games directory.");
 			}
 		}
+	}
+	
+	public static Map<eCelestialBodyType, Float> getNeutralCelestialBodiesGenerationTable(IGameConfig config)
+	{
+		Map<eCelestialBodyType, Float> result = new HashMap<Protocol.eCelestialBodyType, Float>();
+		for(eCelestialBodyType type : eCelestialBodyType.values())
+		{
+			result.put(type, config.getNeutralCelestialBodiesGenerationRate(type));
+		}
+		
+		return result;
 	}
 }

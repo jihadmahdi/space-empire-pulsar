@@ -5,4 +5,5 @@ public interface IPlanet extends IProductiveCelestialBody
 {
 	public Integer getPopulationPerTurn();
 	public Integer getMaxPopulation();
+	public Integer getCurrentPopulation();
 }

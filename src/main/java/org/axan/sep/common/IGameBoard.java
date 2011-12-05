@@ -1,11 +1,9 @@
 package org.axan.sep.common;
 
 import java.util.Map;
-import java.util.Set;
 
-import org.axan.sep.common.Protocol.eBuildingType;
-import org.axan.sep.common.db.orm.Player;
-import org.axan.sep.common.db.orm.PlayerConfig;
+import org.axan.sep.common.db.IPlayer;
+import org.axan.sep.common.db.IPlayerConfig;
 
 public interface IGameBoard
 {
@@ -30,10 +28,10 @@ public interface IGameBoard
 		}
 	}
 	
-	Map<Player, PlayerConfig> getPlayerList() throws GameBoardException;
+	Map<IPlayer, IPlayerConfig> getPlayerList() throws GameBoardException;
 	
 	///////////////////// Commands
 	
-	IGameBoard build(String playerLogin, String celestialBodyName, eBuildingType buildingType) throws GameBoardException;
+	//IGameBoard build(String playerLogin, String celestialBodyName, eBuildingType buildingType) throws GameBoardException;
 	
 }

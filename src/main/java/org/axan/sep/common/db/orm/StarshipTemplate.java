@@ -1,19 +1,17 @@
 package org.axan.sep.common.db.orm;
 
-import java.lang.Exception;
-import org.axan.sep.common.db.orm.base.IBaseStarshipTemplate;
-import org.axan.sep.common.db.orm.base.BaseStarshipTemplate;
-import org.axan.sep.common.db.IStarshipTemplate;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+
 import org.axan.eplib.orm.DataBaseORMGenerator;
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.eplib.orm.ISQLDataBaseStatementJob;
 import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.orm.sqlite.SQLiteDB;
-import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.IStarshipTemplate;
 import org.axan.sep.common.db.SEPCommonDB;
+import org.axan.sep.common.db.orm.base.BaseStarshipTemplate;
+import org.axan.sep.common.db.orm.base.IBaseStarshipTemplate;
 
 public class StarshipTemplate implements IStarshipTemplate
 {
@@ -34,14 +32,23 @@ public class StarshipTemplate implements IStarshipTemplate
 		this(new BaseStarshipTemplate(stmnt));
 	}
 
+	@Override
 	public String getName()
 	{
 		return baseStarshipTemplateProxy.getName();
 	}
 
+	@Override
 	public String getSpecializedClass()
 	{
 		return baseStarshipTemplateProxy.getSpecializedClass();
+	}
+
+	public static <T extends IStarshipTemplate> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
+	{
+		Set<T> results = select(db, expectedType, from, (where==null?"":where+" ")+"LIMIT 1", params);
+		if (results.isEmpty()) return null;
+		return results.iterator().next();
 	}
 
 	public static <T extends IStarshipTemplate> Set<T> select(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException

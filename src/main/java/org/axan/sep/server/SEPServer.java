@@ -5,7 +5,6 @@
  */
 package org.axan.sep.server;
 
-import java.awt.Color;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -18,15 +17,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor.AbortPolicy;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.axan.eplib.clientserver.ConnectionAbortedError;
 import org.axan.eplib.clientserver.IServer;
 import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
@@ -35,28 +31,23 @@ import org.axan.eplib.gameserver.server.GameServer.ExecutorFactory;
 import org.axan.eplib.gameserver.server.GameServer.GameServerListener;
 import org.axan.eplib.gameserver.server.GameServer.ServerUser;
 import org.axan.eplib.orm.ISQLDataBase;
-import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.orm.hsqldb.HSQLDB;
+import org.axan.eplib.orm.ISQLDataBaseFactory;
 import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
-import org.axan.eplib.utils.Basic;
-import org.axan.sep.common.CommandCheckResult;
 import org.axan.sep.common.GameConfig;
-import org.axan.sep.common.GameConfigCopier;
-import org.axan.sep.common.PlayerGameBoard;
-import org.axan.sep.common.Protocol;
-import org.axan.sep.common.SEPUtils;
-import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
 import org.axan.sep.common.IGameBoard.GameBoardException;
-import org.axan.sep.common.GameCommand;
+import org.axan.sep.common.Protocol;
+import org.axan.sep.common.Protocol.SEPImplementationError;
 import org.axan.sep.common.Protocol.ServerGameCreation;
 import org.axan.sep.common.Protocol.ServerPausedGame;
 import org.axan.sep.common.Protocol.ServerRunningGame;
-import org.axan.sep.common.Protocol.ServerRunningGame.RunningGameCommandException;
-import org.axan.sep.common.Protocol.SEPImplementationException;
+import org.axan.sep.common.SEPUtils;
+import org.axan.sep.common.db.ICommand;
+import org.axan.sep.common.db.ICommand.GameCommandException;
 import org.axan.sep.common.db.IGameConfig;
-import org.axan.sep.common.db.orm.Player;
-import org.axan.sep.common.db.orm.PlayerConfig;
+import org.axan.sep.common.db.IGameEvent;
+import org.axan.sep.common.db.IPlayer;
+import org.axan.sep.common.db.IPlayerConfig;
 
 // TODO: add synchronized to SEPServer and ServerGame methods that need it.
 
@@ -64,7 +55,7 @@ import org.axan.sep.common.db.orm.PlayerConfig;
  * SEPServer
  * server package main class.
  */
-public class SEPServer implements IServer
+public class SEPServer implements IServer, ISQLDataBaseFactory
 {
 
 	public static Logger		log	= Logger.getLogger(SEPServer.class.getCanonicalName());
@@ -111,9 +102,16 @@ public class SEPServer implements IServer
 		 * @see common.Protocol.ServerCommon#getPlayerList()
 		 */
 		@Override
-		public Map<Player, PlayerConfig> getPlayerList() throws GameBoardException
+		public Map<IPlayer, IPlayerConfig> getPlayerList()
 		{
-			return sepServer.getGameInCreation().getPlayerList();
+			try
+			{
+				return sepServer.getGameInCreation().getPlayerList();
+			}
+			catch(GameBoardException e)
+			{
+				throw new ConnectionAbortedError(e);
+			}
 		}
 
 		/*
@@ -164,7 +162,7 @@ public class SEPServer implements IServer
 				{
 					try
 					{
-						final Player p = sepServer.getGameInCreation().getPlayer(user.getLogin());
+						final IPlayer p = sepServer.getGameInCreation().getPlayer(user.getLogin());
 						
 						sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
 						{
@@ -198,7 +196,7 @@ public class SEPServer implements IServer
 		 * @see common.Protocol.ServerGameCreation#updateGameConfig(common.GameConfig)
 		 */
 		@Override
-		public void updateGameConfig(GameConfig gameCfg) throws ServerPrivilegeException, GameBoardException
+		public void updateGameConfig(GameConfig gameCfg) throws ServerPrivilegeException
 		{
 			if (!user.isAdmin())
 			{
@@ -208,7 +206,15 @@ public class SEPServer implements IServer
 
 			synchronized(sepServer)
 			{
-				sepServer.getGameInCreation().updateGameConfig(gameCfg);			
+				try
+				{
+					sepServer.getGameInCreation().updateGameConfig(gameCfg);
+				}
+				catch(GameBoardException e)
+				{
+					throw new ConnectionAbortedError(e);
+				}
+				
 				sepServer.threadPool.execute(new Runnable()
 				{
 
@@ -227,17 +233,24 @@ public class SEPServer implements IServer
 		 * @see common.Protocol.ServerGameCreation#updatePlayerConfig(common.PlayerConfig)
 		 */
 		@Override
-		public void updatePlayerConfig(final PlayerConfig playerCfg) throws GameBoardException
+		public void updatePlayerConfig(final IPlayerConfig playerCfg)
 		{
 			if (getLogin().compareTo(playerCfg.getName()) != 0)
 			{
-				Error e = new Error("Cannot update "+playerCfg.getName()+" config.");
+				ConnectionAbortedError e = new ConnectionAbortedError("Cannot update "+playerCfg.getName()+" config.");
 				log.log(Level.WARNING, user.getLogin()+" tried to update "+playerCfg.getName()+" config.");
-				this.getServerPlayer().abort(e);
 				throw e;			
 			}
 			
-			sepServer.getGameInCreation().updatePlayerConfig(playerCfg);			
+			try
+			{
+				sepServer.getGameInCreation().updatePlayerConfig(playerCfg);
+			}
+			catch(GameBoardException e)
+			{
+				throw new ConnectionAbortedError(e);
+			}
+			
 			sepServer.threadPool.execute(new Runnable()
 			{
 
@@ -270,30 +283,20 @@ public class SEPServer implements IServer
 		/*
 		 * (non-Javadoc)
 		 * 
-		 * @see common.Protocol.ServerRunningGame#getPlayerGameBoard()
+		 * @see common.Protocol.ServerRunningGame#getEntireGameLog()
 		 */
 		@Override
-		public PlayerGameBoard getPlayerGameBoard() throws RpcException, StateMachineNotExpectedEventException
+		public List<IGameEvent> getEntireGameLog() throws RpcException ,StateMachineNotExpectedEventException
 		{
 			try
 			{
-				// TODO: Be able to compute a full player game board (including previous turn) from the current server game board.
-				return sepServer.getRunningGame().getPlayerGameBoard(createNewDB(), user.getLogin());
+				return sepServer.getRunningGame().getEntireGameLog(user.getLogin());
 			}
 			catch(GameBoardException e)
 			{
-				e.printStackTrace();
-				this.getServerPlayer().abort(e);
-				log.log(Level.SEVERE, "Player game board transformation error.", e);
-				return null;
+				// StateMachineNotExcpectedEventException should have been thrown before to reach that code. Or it means that it is a server-side call.
+				throw new SEPImplementationError("Could not get entire game log for player '"+user.getLogin()+"'", e);
 			}
-		}
-
-		@Override
-		public CommandCheckResult canSendMessage(String msg) throws RpcException, StateMachineNotExpectedEventException
-		{
-			// TODO
-			throw new SEPImplementationException("Not Implemented");
 		}
 
 		/* (non-Javadoc)
@@ -311,7 +314,7 @@ public class SEPServer implements IServer
 					// TODO : Filter running game message according to pulsar effect.
 					try
 					{
-						final Player p = sepServer.getRunningGame().getPlayer(user.getLogin());
+						final IPlayer p = sepServer.getRunningGame().getPlayer(user.getLogin());
 						
 						sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
 						{
@@ -598,30 +601,38 @@ public class SEPServer implements IServer
 		*/
 
 		@Override
-		public void endTurn(List<GameCommand<?>> commands) throws RpcException, StateMachineNotExpectedEventException, SEPImplementationException, RunningGameCommandException
+		public void endTurn(List<ICommand> commands) throws RpcException, StateMachineNotExpectedEventException, GameCommandException
 		{
-			sepServer.getRunningGame().endTurn(getLogin(), commands);
-			
-			sepServer.threadPool.execute(new Runnable()
+			try
 			{
-
-				@Override
-				public void run()
+				if (sepServer.getRunningGame().endTurn(getLogin(), commands))
 				{
-					try
-					{
-						sepServer.getRunningGame().checkForNextTurn();
-					}
-					catch(RunningGameCommandException e)
-					{
-						log.log(Level.SEVERE, "Fatal error while resolving next turn", e);
-						sepServer.terminate();
-						return;
-					}
+					// All players are ready for next turn.
 					
-					sepServer.refreshPlayerGameBoards();
+					sepServer.threadPool.execute(new Runnable()
+					{
+						
+						@Override
+						public void run()
+						{
+							try
+							{
+								sepServer.getRunningGame().resolveNextTurn();
+								sepServer.announceNewTurn();
+							}
+							catch(GameBoardException e)
+							{
+								log.log(Level.SEVERE, "Error on game start", e);
+								sepServer.terminate();
+							}
+						}
+					});
 				}
-			});
+			}
+			catch(GameBoardException e)
+			{
+				throw new ConnectionAbortedError(e);
+			}
 		}				
 
 	}
@@ -642,7 +653,7 @@ public class SEPServer implements IServer
 		}
 
 		@Override
-		public Map<Player, Boolean> getPlayerStateList() throws RpcException, StateMachineNotExpectedEventException
+		public Map<IPlayer, Boolean> getPlayerStateList() throws RpcException, StateMachineNotExpectedEventException
 		{
 			return sepServer.getPlayerStateList();
 		}
@@ -658,7 +669,7 @@ public class SEPServer implements IServer
 				{
 					try
 					{
-						final Player p = sepServer.getRunningGame().getPlayer(user.getLogin());
+						final IPlayer p = sepServer.getRunningGame().getPlayer(user.getLogin());
 						
 						sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
 						{
@@ -690,14 +701,16 @@ public class SEPServer implements IServer
 	private final GameServer				gameServer;
 	private final Map<String, ServerPlayer>	players		= new HashMap<String, ServerPlayer>();
 
-	private ServerGame						game		= new ServerGame();
+	private GameBoard game;
 
 	public SEPServer(int port, long timeOut)
-	{
+	{		
 		gameServer = new GameServer(gameServerListener, port, timeOut);		
 		
 		try
 		{
+			game = new GameBoard(this);
+			
 			gameServer.enableFTPServer("./game", port+1);
 			
 			gameServer.registerGameCreationCommandExecutorFactory(Protocol.ServerGameCreation.class, new ExecutorFactory<Protocol.ServerGameCreation>()
@@ -738,7 +751,8 @@ public class SEPServer implements IServer
 		threadPool = Executors.newCachedThreadPool();
 	}
 	
-	private static ISQLDataBase createNewDB() throws GameBoardException
+	@Override
+	public ISQLDataBase createSQLDataBase()
 	{
 		try
 		{
@@ -750,13 +764,13 @@ public class SEPServer implements IServer
 		{
 			t.printStackTrace();
 			log.log(Level.SEVERE, t.getMessage(), t);
-			throw new GameBoardException(t);
+			throw new RuntimeException(t);
 		}
-	}
+	}		
 
-	private Map<Player, Boolean> getPlayerStateList()
+	private Map<IPlayer, Boolean> getPlayerStateList()
 	{
-		Map<Player, Boolean> result = new HashMap<Player, Boolean>();
+		Map<IPlayer, Boolean> result = new HashMap<IPlayer, Boolean>();
 
 		synchronized(players)
 		{
@@ -784,69 +798,50 @@ public class SEPServer implements IServer
 		return result;
 	}	
 
-	private void refreshPlayerGameBoards()
+	private synchronized void announceNewTurn()
 	{
 		synchronized(players)
 		{
-			for(String name : players.keySet())
-			{
-				try
+			doForEachConnectedPlayer(new DoItToOnePlayer()
+			{				
+				@Override
+				public void doIt(ServerPlayer player)
 				{
-					players.get(name).getClientInterface().receiveNewTurnGameBoard(getRunningGame().getPlayerGameBoard(createNewDB(), name));
+					try
+					{
+						player.getClientInterface().receiveNewTurnGameBoard(getRunningGame().getLastTurnEvents(player.getName()));
+					}
+					catch(RpcException e)
+					{
+						log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
+					}
+					catch(GameBoardException e)
+					{
+						log.log(Level.SEVERE, "Player game board error.", e);
+						terminate();
+					}
 				}
-				catch(RpcException e)
-				{
-					log.log(Level.WARNING, "RpcException(" + name + ") : " + e.getMessage());
-				}
-				catch(GameBoardException e)
-				{
-					log.log(Level.SEVERE, "Player game board error.", e);
-					terminate();
-				}
-			}
+			});
 		}
-	}
-
-	/**
-	 * @return
-	 *//*
-	public Map<Player, PlayerConfig> getPlayerList()
-	{
-		Map<Player, PlayerConfig> result = new TreeMap<Player, PlayerConfig>();		
-
-		synchronized(players)
-		{
-			for(String name : players.keySet())
-			{
-				ServerPlayer player = players.get(name);
-
-				if (player != null && player.isConnected())
-				{
-					result.put(player.getPlayer(), player.getConfig());
-				}
-			}
-		}
-
-		return result;
-	}*/
+	}		
 	
-	private void runGame() throws GameBoardException
-	{				
-		synchronized(this)
+	private synchronized void runGame() throws GameBoardException
+	{
+		synchronized(game)
 		{
 			if (game.isGameInCreation())
 			{
-				game.run(createNewDB());
+				game.createUniverse();
 			}
 		}
 	}
 
-	private ServerGame getGameInCreation()
+	private GameBoard getGameInCreation()
 	{
 		return game;
 	}
 	
-	private ServerGame getRunningGame()
+	private GameBoard getRunningGame()
 	{
 		while(game.isGameInCreation())
 		{
@@ -1071,7 +1066,7 @@ public class SEPServer implements IServer
 		{
 			synchronized(server)
 			{
-				server.game = ServerGame.load(ois);
+				server.game = GameBoard.load(ois);
 			}
 		}
 
@@ -1111,7 +1106,7 @@ public class SEPServer implements IServer
 	{		
 		try
 		{
-			final Map<Player, PlayerConfig> playerList = getGameInCreation().getPlayerList();
+			final Map<IPlayer, IPlayerConfig> playerList = getGameInCreation().getPlayerList();
 			
 			doForEachConnectedPlayer(new DoItToOnePlayer()
 			{

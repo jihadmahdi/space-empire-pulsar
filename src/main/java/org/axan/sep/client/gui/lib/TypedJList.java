@@ -37,6 +37,7 @@ public class TypedJList<E> extends JList
 	{
 		protected final JLabel label = new JLabel();
 		
+		@Override
 		public Component getListCellRendererComponent(org.axan.sep.client.gui.lib.TypedJList<E> list, E value, int index, boolean isSelected, boolean cellHasFocus)
 		{
 			label.setText(value.toString());
@@ -59,6 +60,7 @@ public class TypedJList<E> extends JList
 			return label;
 		}
 		
+		@Override
 		public String getListCellToolTipText(org.axan.sep.client.gui.lib.TypedJList<E> list, E value, int index, boolean isSelected)
 		{
 			return value.toString();
@@ -253,41 +255,48 @@ public class TypedJList<E> extends JList
 	
 	//////////////////////
 
+	@Override
 	public E getPrototypeCellValue()
 	{
 		if (super.getPrototypeCellValue() == null) return null;
 		return type.cast(super.getPrototypeCellValue());
 	}
 
+	@Override
 	public E getSelectedValue()
 	{
 		if (super.getSelectedValue() == null) return null;
 		return type.cast(super.getSelectedValue());
 	}
 
+	@Override
 	public E[] getSelectedValues()
 	{
 		return (E[]) super.getSelectedValues();
 	}
 
+	@Override
 	@Deprecated
 	public void setListData(Object[] listData)
 	{
 		throw new NotImplementedException();
 	}
 
+	@Override
 	@Deprecated
 	public void setListData(Vector listData)
 	{
 		throw new NotImplementedException();
 	}
 
+	@Override
 	@Deprecated
 	public void setPrototypeCellValue(Object prototypeCellValue)
 	{
 		throw new NotImplementedException();
 	}
 
+	@Override
 	@Deprecated
 	public void setSelectedValue(Object anObject, boolean shouldScroll)
 	{

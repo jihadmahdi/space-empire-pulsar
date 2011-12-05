@@ -38,6 +38,7 @@ public class TypedListWrapper<ComponentType extends JComponent, ElementType> imp
 	{
 		protected final JLabel label = new JLabel();
 		
+		@Override
 		public Component getListCellRendererComponent(JList list, ElementType value, int index, boolean isSelected, boolean cellHasFocus)
 		{
 			label.setText(value.toString());
@@ -60,6 +61,7 @@ public class TypedListWrapper<ComponentType extends JComponent, ElementType> imp
 			return label;
 		}
 		
+		@Override
 		public <ComponentType extends JComponent> String getListCellToolTipText(TypedListWrapper<ComponentType, ElementType> list, ElementType value, int index, boolean isSelected)
 		{
 			return value.toString();
@@ -297,126 +299,151 @@ public class TypedListWrapper<ComponentType extends JComponent, ElementType> imp
 		return wrappedComponent;
 	}
 
+	@Override
 	public void clear()
 	{
 		model.clear();
 	}
 
+	@Override
 	public boolean contains(Object o)
 	{
 		return model.contains(o);
 	}
 
+	@Override
 	public boolean containsAll(Collection<?> c)
 	{
 		return model.containsAll(c);
 	}
 
+	@Override
 	public boolean equals(Object o)
 	{
 		return model.equals(o);
 	}
 
+	@Override
 	public int hashCode()
 	{
 		return model.hashCode();
 	}
 
+	@Override
 	public int indexOf(Object o)
 	{
 		return model.indexOf(o);
 	}
 
+	@Override
 	public boolean isEmpty()
 	{
 		return model.isEmpty();
 	}
 
+	@Override
 	public int lastIndexOf(Object o)
 	{
 		return model.lastIndexOf(o);
 	}
 
+	@Override
 	public boolean remove(Object o)
 	{
 		return model.remove(o);
 	}
 
+	@Override
 	public boolean removeAll(Collection<?> c)
 	{
 		return model.removeAll(c);
 	}
 
+	@Override
 	public boolean retainAll(Collection<?> c)
 	{
 		return model.retainAll(c);
 	}
 
+	@Override
 	public int size()
 	{
 		return model.size();
 	}
 
+	@Override
 	public Object[] toArray()
 	{
 		return model.toArray();
 	}
 
+	@Override
 	public <T> T[] toArray(T[] a)
 	{
 		return model.toArray(a);
 	}
 
+	@Override
 	public boolean add(ElementType e)
 	{
 		return model.add(e);
 	}
 
+	@Override
 	public void add(int index, ElementType element)
 	{
 		model.add(index, element);
 	}
 
+	@Override
 	public boolean addAll(Collection<? extends ElementType> c)
 	{
 		return model.addAll(c);
 	}
 
+	@Override
 	public boolean addAll(int index, Collection<? extends ElementType> c)
 	{
 		return model.addAll(index, c);
 	}
 
+	@Override
 	public ElementType get(int index)
 	{
 		return model.get(index);
 	}
 
+	@Override
 	public Iterator<ElementType> iterator()
 	{
 		return model.iterator();
 	}
 
+	@Override
 	public ListIterator<ElementType> listIterator()
 	{
 		return model.listIterator();
 	}
 
+	@Override
 	public ListIterator<ElementType> listIterator(int index)
 	{
 		return model.listIterator(index);
 	}
 
+	@Override
 	public ElementType remove(int index)
 	{
 		return model.remove(index);
 	}
 
+	@Override
 	public ElementType set(int index, ElementType element)
 	{
 		return model.set(index, element);
 	}
 
+	@Override
 	public List<ElementType> subList(int fromIndex, int toIndex)
 	{
 		return model.subList(fromIndex, toIndex);

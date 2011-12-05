@@ -5,8 +5,8 @@ public interface IUnitArrivalLog
 {
 	public String getOwner();
 	public String getUnitName();
-	public Integer getTurn();
 	public String getUnitType();
+	public Integer getLogTurn();
 	public Integer getInstantTime();
 	public String getDestination();
 	public String getVortex();

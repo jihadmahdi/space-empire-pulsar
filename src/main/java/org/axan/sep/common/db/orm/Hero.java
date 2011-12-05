@@ -1,13 +1,10 @@
 package org.axan.sep.common.db.orm;
 
-import org.axan.sep.common.db.orm.SpecialUnit;
-import java.lang.Exception;
-import org.axan.sep.common.db.orm.base.IBaseHero;
-import org.axan.sep.common.db.orm.base.BaseHero;
-import org.axan.sep.common.db.IHero;
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.sep.common.Protocol.eSpecialUnitType;
-import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.IHero;
+import org.axan.sep.common.db.orm.base.BaseHero;
+import org.axan.sep.common.db.orm.base.IBaseHero;
 
 public class Hero extends SpecialUnit implements IHero
 {
@@ -19,9 +16,9 @@ public class Hero extends SpecialUnit implements IHero
 		this.baseHeroProxy = baseHeroProxy;
 	}
 
-	public Hero(String owner, String name, eSpecialUnitType type, Integer experience)
+	public Hero(String owner, String name, eSpecialUnitType type, String fleetName, Integer experience)
 	{
-		this(new BaseHero(owner, name, type.toString(), experience));
+		this(new BaseHero(owner, name, type.toString(), fleetName, experience));
 	}
 
 	public Hero(ISQLDataBaseStatement stmnt) throws Exception
@@ -29,6 +26,7 @@ public class Hero extends SpecialUnit implements IHero
 		this(new BaseHero(stmnt));
 	}
 
+	@Override
 	public Integer getExperience()
 	{
 		return baseHeroProxy.getExperience();

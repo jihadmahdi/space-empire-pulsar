@@ -1,15 +1,11 @@
 package org.axan.sep.common;
 
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
 import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.utils.Basic;
-import org.axan.sep.common.IGameBoard.GameBoardException;
-import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
@@ -61,18 +57,18 @@ public class PlayerGameBoard implements Serializable, IGameBoard
 	}
 	
 	@Override
-	public Map<Player, PlayerConfig> getPlayerList() throws GameBoardException
+	public Map<IPlayer, IPlayerConfig> getPlayerList() throws GameBoardException
 	{		
 		try
 		{
-			Set<Player> players = Player.select(commonDB, Player.class, null, null);
-			Set<PlayerConfig> playerConfigs = PlayerConfig.select(commonDB, PlayerConfig.class, null, null);
+			Set<IPlayer> players = Player.select(commonDB, IPlayer.class, null, null);
+			Set<IPlayerConfig> playerConfigs = PlayerConfig.select(commonDB, IPlayerConfig.class, null, null);
 			
-			Map<Player, PlayerConfig> result = new TreeMap<Player, PlayerConfig>();						
+			Map<IPlayer, IPlayerConfig> result = new TreeMap<IPlayer, IPlayerConfig>();						
 						
-			for(Player p : players)
+			for(IPlayer p : players)
 			{
-				for(PlayerConfig pc : playerConfigs)
+				for(IPlayerConfig pc : playerConfigs)
 				{
 					if (p.getName().matches(pc.getName()))
 					{
@@ -90,36 +86,4 @@ public class PlayerGameBoard implements Serializable, IGameBoard
 			throw new GameBoardException(e);
 		}
 	}
-	
-	public void undo() throws GameBoardException
-	{
-		// TODO: PlayerGameBoard.undo (IGameBoard.undo ?)
-		throw new GameBoardException("Not implemented yet");
-	}
-	
-	public void redo() throws GameBoardException
-	{
-		// TODO: PlayerGameBoard.redo (IGameBoard.redo ?)
-		throw new GameBoardException("Not implemented yet");
-	}
-	
-	public void resetTurn() throws GameBoardException
-	{
-		// TODO: PlayerGameBoard.resetTurn (IGameBoard.resetTurn ?)
-		throw new GameBoardException("Not implemented yet");
-	}
-	
-	public void endTurn() throws GameBoardException
-	{
-		// TODO: PlayerGameBoard.endTurn (IGameBoard.endTurn ?)
-		throw new GameBoardException("Not implemented yet");
-	}
-	
-	@Override
-	public PlayerGameBoard build(String playerLogin, String celestialBodyName, eBuildingType buildingType) throws GameBoardException
-	{
-		// TODO Auto-generated method stub
-		return this;
-	}
-
 }

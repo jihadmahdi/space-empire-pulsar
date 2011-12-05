@@ -1,19 +1,17 @@
 package org.axan.sep.common.db.orm;
 
-import java.lang.Exception;
-import org.axan.sep.common.db.orm.base.IBaseSpaceRoad;
-import org.axan.sep.common.db.orm.base.BaseSpaceRoad;
-import org.axan.sep.common.db.ISpaceRoad;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+
 import org.axan.eplib.orm.DataBaseORMGenerator;
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.eplib.orm.ISQLDataBaseStatementJob;
 import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.orm.sqlite.SQLiteDB;
-import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.ISpaceRoad;
 import org.axan.sep.common.db.SEPCommonDB;
+import org.axan.sep.common.db.orm.base.BaseSpaceRoad;
+import org.axan.sep.common.db.orm.base.IBaseSpaceRoad;
 
 public class SpaceRoad implements ISpaceRoad
 {
@@ -34,44 +32,59 @@ public class SpaceRoad implements ISpaceRoad
 		this(new BaseSpaceRoad(stmnt));
 	}
 
+	@Override
 	public String getName()
 	{
 		return baseSpaceRoadProxy.getName();
 	}
 
+	@Override
 	public String getBuilder()
 	{
 		return baseSpaceRoadProxy.getBuilder();
 	}
 
+	@Override
 	public String getSpaceCounterAType()
 	{
 		return baseSpaceRoadProxy.getSpaceCounterAType();
 	}
 
+	@Override
 	public String getSpaceCounterACelestialBodyName()
 	{
 		return baseSpaceRoadProxy.getSpaceCounterACelestialBodyName();
 	}
 
+	@Override
 	public Integer getSpaceCounterATurn()
 	{
 		return baseSpaceRoadProxy.getSpaceCounterATurn();
 	}
 
+	@Override
 	public String getSpaceCounterBType()
 	{
 		return baseSpaceRoadProxy.getSpaceCounterBType();
 	}
 
+	@Override
 	public String getSpaceCounterBCelestialBodyName()
 	{
 		return baseSpaceRoadProxy.getSpaceCounterBCelestialBodyName();
 	}
 
+	@Override
 	public Integer getSpaceCounterBTurn()
 	{
 		return baseSpaceRoadProxy.getSpaceCounterBTurn();
+	}
+
+	public static <T extends ISpaceRoad> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
+	{
+		Set<T> results = select(db, expectedType, from, (where==null?"":where+" ")+"LIMIT 1", params);
+		if (results.isEmpty()) return null;
+		return results.iterator().next();
 	}
 
 	public static <T extends ISpaceRoad> Set<T> select(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
