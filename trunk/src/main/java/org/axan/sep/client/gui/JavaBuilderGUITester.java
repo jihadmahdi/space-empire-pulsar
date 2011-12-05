@@ -46,6 +46,7 @@ class JavaBuilderGUITester
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				SwingJavaBuilderMyUtils.addType(requiredTypes);

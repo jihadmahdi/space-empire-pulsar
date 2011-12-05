@@ -1,19 +1,17 @@
 package org.axan.sep.common.db.orm;
 
-import java.lang.Exception;
-import org.axan.sep.common.db.orm.base.IBaseAssignedFleet;
-import org.axan.sep.common.db.orm.base.BaseAssignedFleet;
-import org.axan.sep.common.db.IAssignedFleet;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+
 import org.axan.eplib.orm.DataBaseORMGenerator;
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.eplib.orm.ISQLDataBaseStatementJob;
 import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.orm.sqlite.SQLiteDB;
-import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.IAssignedFleet;
 import org.axan.sep.common.db.SEPCommonDB;
+import org.axan.sep.common.db.orm.base.BaseAssignedFleet;
+import org.axan.sep.common.db.orm.base.IBaseAssignedFleet;
 
 public class AssignedFleet implements IAssignedFleet
 {
@@ -34,19 +32,29 @@ public class AssignedFleet implements IAssignedFleet
 		this(new BaseAssignedFleet(stmnt));
 	}
 
+	@Override
 	public String getCelestialBody()
 	{
 		return baseAssignedFleetProxy.getCelestialBody();
 	}
 
+	@Override
 	public String getOwner()
 	{
 		return baseAssignedFleetProxy.getOwner();
 	}
 
+	@Override
 	public String getFleetName()
 	{
 		return baseAssignedFleetProxy.getFleetName();
+	}
+
+	public static <T extends IAssignedFleet> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
+	{
+		Set<T> results = select(db, expectedType, from, (where==null?"":where+" ")+"LIMIT 1", params);
+		if (results.isEmpty()) return null;
+		return results.iterator().next();
 	}
 
 	public static <T extends IAssignedFleet> Set<T> select(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException

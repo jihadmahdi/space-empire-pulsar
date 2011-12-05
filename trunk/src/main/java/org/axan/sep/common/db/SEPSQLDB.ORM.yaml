@@ -8,11 +8,7 @@ inheritances:
   Nebula: [ProductiveCelestialBody]
   AsteroidField: [ProductiveCelestialBody]
   Planet: [ProductiveCelestialBody]
-  VersionedProductiveCelestialBody: [ProductiveCelestialBody]
-  VersionedNebula: [VersionedProductiveCelestialBody, Nebula]
-  VersionedAsteroidField: [VersionedProductiveCelestialBody, AsteroidField]
-  VersionedPlanet: [VersionedProductiveCelestialBody, Planet]
-
+  
 # Buildings
   
   SpaceCounter: [Building]
@@ -25,20 +21,13 @@ inheritances:
 # Special units
 
   Hero: [SpecialUnit]
-  VersionedSpecialUnit: [SpecialUnit]
 
 # Units
 
-  VersionedUnit: [Unit]
   PulsarMissile: [Unit]
   Probe: [Unit]
   CarbonCarrier: [Unit]
   AntiProbeMissile: [Unit]
   Fleet: [Unit]
   SpaceRoadDeliverer: [Unit]
-  VersionedSpaceRoadDeliverer: [SpaceRoadDeliverer, VersionedUnit]
-  VersionedFleet: [Fleet, VersionedUnit]
-  VersionedProbe: [Probe, VersionedUnit]
-  VersionedCarbonCarrier: [CarbonCarrier, VersionedUnit]
-  VersionedAntiProbeMissile: [AntiProbeMissile, VersionedUnit]
-  VersionedPulsarMissile: [PulsarMissile, VersionedUnit]
+  

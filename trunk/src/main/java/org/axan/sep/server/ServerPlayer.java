@@ -5,17 +5,12 @@
  */
 package org.axan.sep.server;
 
-import java.awt.Color;
 import java.util.Random;
 import java.util.logging.Level;
 
-import org.apache.commons.lang.math.RandomUtils;
 import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.gameserver.server.GameServer.ServerUser;
-import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.Protocol;
-import org.axan.sep.common.db.orm.Player;
-import org.axan.sep.common.db.orm.PlayerConfig;
 
 
 /**

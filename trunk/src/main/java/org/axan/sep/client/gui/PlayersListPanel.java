@@ -4,43 +4,28 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.Frame;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.geom.AffineTransform;
 import java.net.URL;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
 import javax.swing.ListCellRenderer;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import javax.swing.plaf.basic.BasicTreeUI.SelectionModelPropertyChangeHandler;
 
-import org.axan.eplib.orm.SQLDataBaseException;
 import org.axan.eplib.utils.Basic;
 import org.axan.eplib.utils.Reflect;
 import org.axan.sep.client.SEPClient;
-import org.axan.sep.client.gui.lib.FTPRemoteFileSystemView;
-import org.axan.sep.client.gui.lib.GUIUtils;
 import org.axan.sep.client.gui.lib.JImagePanel;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
-import org.axan.sep.common.db.orm.PlayerConfig;
 import org.javabuilders.BuildResult;
 import org.javabuilders.swing.SwingJavaBuilder;
 
@@ -175,7 +160,7 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 				portrait.setMinimumSize(portrait.getPreferredSize());
 				playerPanel.add(portrait, BorderLayout.WEST);				
 				
-				JLabel name = new JLabel(player.getName(), JLabel.CENTER);
+				JLabel name = new JLabel(player.getName(), SwingConstants.CENTER);
 				playerPanel.setBackground(Basic.stringToColor(config.getColor()));
 				if (cellHasFocus)
 				{

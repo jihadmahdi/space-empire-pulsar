@@ -1,13 +1,10 @@
 package org.axan.sep.common.db.orm;
 
-import org.axan.sep.common.db.orm.Building;
-import java.lang.Exception;
-import org.axan.sep.common.db.orm.base.IBaseStarshipPlant;
-import org.axan.sep.common.db.orm.base.BaseStarshipPlant;
-import org.axan.sep.common.db.IStarshipPlant;
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.sep.common.Protocol.eBuildingType;
-import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.IStarshipPlant;
+import org.axan.sep.common.db.orm.base.BaseStarshipPlant;
+import org.axan.sep.common.db.orm.base.IBaseStarshipPlant;
 
 public class StarshipPlant extends Building implements IStarshipPlant
 {

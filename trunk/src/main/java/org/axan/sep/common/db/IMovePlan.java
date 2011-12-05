@@ -5,7 +5,6 @@ public interface IMovePlan
 {
 	public String getOwner();
 	public String getName();
-	public Integer getTurn();
 	public Integer getPriority();
 	public Integer getDelay();
 	public Boolean getAttack();

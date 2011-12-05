@@ -9,8 +9,8 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.axan.sep.common.SEPUtils;
-import org.axan.sep.common.StarshipTemplate;
-import org.axan.sep.common.eStarshipSpecializationClass;
+import org.axan.sep.common.db.orm.Fleet;
+import org.axan.sep.common.db.orm.StarshipTemplate;
 
 public class BattleReporter
 {

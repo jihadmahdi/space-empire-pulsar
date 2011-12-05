@@ -3,11 +3,8 @@ package org.axan.sep.server.ai;
 import java.util.List;
 import java.util.Vector;
 
-import org.axan.sep.common.AbstractGameCommandCheck;
-import org.axan.sep.common.GameCommand;
-import org.axan.sep.common.IGame;
-import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.IGameBoard.GameBoardException;
+import org.axan.sep.common.PlayerGameBoard;
 
 public class UncheckedLocalGame implements IGame
 {

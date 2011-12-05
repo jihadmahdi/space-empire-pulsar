@@ -3,12 +3,9 @@
  */
 package org.axan.sep.client.gui.lib;
 
-import javax.imageio.*;
-import javax.swing.*;
-import javax.swing.event.AncestorEvent;
-import javax.swing.event.AncestorListener;
-
-import java.awt.*;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.ContainerEvent;
@@ -18,15 +15,19 @@ import java.awt.event.FocusListener;
 import java.awt.event.HierarchyBoundsListener;
 import java.awt.event.HierarchyEvent;
 import java.awt.event.HierarchyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionAdapter;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.imageio.ImageIO;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
 
 public class JImagePanel extends JPanel
 {
@@ -390,6 +391,7 @@ public class JImagePanel extends JPanel
 		firePropertyChange("rang", old, rang);
 	}
 
+	@Override
 	public void paintComponent(Graphics g)
 	{
 		super.paintComponent(g);

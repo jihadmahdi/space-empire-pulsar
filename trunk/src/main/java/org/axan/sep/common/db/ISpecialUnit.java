@@ -7,4 +7,5 @@ public interface ISpecialUnit
 	public String getOwner();
 	public String getName();
 	public eSpecialUnitType getType();
+	public String getFleetName();
 }

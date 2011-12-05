@@ -7,24 +7,19 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.swing.JEditorPane;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.html.HTMLDocument;
-import javax.swing.text.html.HTMLEditorKit;
 
-import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.eplib.utils.Basic;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.client.gui.lib.GUIUtils;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
-import org.axan.sep.common.db.orm.PlayerConfig;
 import org.javabuilders.BuildResult;
 import org.javabuilders.swing.SwingJavaBuilder;
 

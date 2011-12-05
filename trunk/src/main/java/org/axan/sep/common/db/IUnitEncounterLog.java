@@ -5,8 +5,8 @@ public interface IUnitEncounterLog
 {
 	public String getOwner();
 	public String getUnitName();
-	public Integer getTurn();
 	public String getUnitType();
+	public Integer getLogTurn();
 	public Integer getInstantTime();
 	public String getSeenOwner();
 	public String getSeenName();

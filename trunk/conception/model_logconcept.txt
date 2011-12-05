@@ -1,16 +1,16 @@
 Rebuilt des modèles, nouveau concept:
-Tout en gardant un SQL embarquée, s'arranger pour ne pas avoir besoin de méthode du genre Area.isVisible().
+Tout en gardant un SQL embarquée, s'arranger pour ne pas avoir besoin de méthode du genre Area.isVisible(player).
 Pour celà c'est au moment de la mise à jour de la base de données globale qu'on maintient en permanance une liste d'évènements pour la vue de chaque joueur.
 La vue de chaque joueur est une sorte de LOG d'évènements ordonnés et datés qui peuvent être parcourus pour reconstruire le PlayerGameBoard.
 Celà permet à chaque résolution de tour de n'envoyer que les nouveaux évènements concernant chaque joueurs.
 Celà permet de ne pas avoir besoin de méthodes ou structure de données élaborées pour tester l'état d'un objet à telle date du jeu. Il suffit au contraire de recharger le log jusqu'à la date voulue.
 Le concept est basé sur un prérequis: le chargement du log de 0 jusqu'à une date donnée doit être TRES rapide.
-Néanmoins comparé au temps que prend une "compilation de la vue joueur" à partir de la BDD globale, il y a matière bon espoir de faire mieux.
+Néanmoins comparé au temps que prend une "compilation de la vue joueur" à partir de la BDD globale, il y a bon espoir de faire mieux.
 
 --- 
 Une inteface IGameEvent représente tout évènement du jeu.
 On implémente autant de classe dérivées de IGameEvent que d'évènement de nature différente nécéssaire pour le jeu.
-Le client, lors des actions de l'utilisateur génère lui-même des IGameEvent ("commandes") qui sont traité par le moteur local du jeu.
+Le client, lors des actions de l'utilisateur génère lui-même des IGameEvent ("commandes") qui sont traités par le moteur local du jeu.
 A la validation du tour, il envoi la liste des IGameEvent qu'il a généré pour le tour.
 A la résolution du tour, le serveur vérifie et traite les IGameEvent de chaque joueur (celà à pour effet de générer des requetes dans la base de chaque joueur. Ainsi que dans la base globale.
 Note: Le serveur maintient quand même une vue pour chaque joueur car nous ne souhaitons pas (et ne pouvons pas) calculer de vue à partir de la base globale.
@@ -19,3 +19,11 @@ A la fin de la résolution du tour, le serveur envoi à chaque joueur les IGameE
 En début de partie, en cas de chargement de partie, comme à tout moment en cas d'erreur sur une base locale, le client peut demander à rapatrier une nouvelle copie (entière) de sa vue (sous forme de liste de tout les IGameEvent).
 
 En plus des avantages précédement cité, cette conception permet de garder une indépendance de l'implémentation du modèle de donnée du client vis à vis du serveur (on peut envisager d'utiliser un SGBD différent sur le client) dans la mesure ou l'on échange que des IGameEvent.
+
+---
+Une interface IGameEvent représente tout évènement du jeu.
+L'interface dérivée ICommand représente un évènement "commande" généré par l'utilisateur client.
+L'utilisateur client ne peut générer que des ICommand. Et il les applique tout de suite à la vue locale du jeu.
+
+Le problème est que les commandes utilisateur doivent pouvoir s'appliquer en local sans compter un traitement du serveur (ex: tirage d'un dé, ...).
+

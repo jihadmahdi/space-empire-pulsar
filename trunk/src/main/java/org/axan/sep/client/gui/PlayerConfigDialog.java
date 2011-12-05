@@ -1,35 +1,20 @@
 package org.axan.sep.client.gui;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.Frame;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.activation.MimeType;
-import javax.activation.MimetypesFileTypeMap;
-import javax.swing.JButton;
 import javax.swing.JColorChooser;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.filechooser.FileFilter;
-import javax.swing.plaf.FileChooserUI;
 
-import org.axan.eplib.clientserver.rpc.RpcException;
-import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.eplib.utils.Basic;
-import org.axan.eplib.utils.Reflect;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.client.gui.lib.FTPRemoteFileSystemView;
 import org.axan.sep.client.gui.lib.GUIUtils;
@@ -41,9 +26,6 @@ import org.javabuilders.annotations.DoInBackground;
 import org.javabuilders.event.BackgroundEvent;
 import org.javabuilders.event.CancelStatus;
 import org.javabuilders.swing.SwingJavaBuilder;
-
-import ca.odell.glazedlists.BasicEventList;
-import ca.odell.glazedlists.swing.EventListModel;
 
 public class PlayerConfigDialog extends JDialog implements IModalComponent
 {

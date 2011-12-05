@@ -14,7 +14,6 @@ import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.text.ParseException;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
@@ -163,6 +162,7 @@ public abstract class GUIUtils
 			}
 		}
 
+		@Override
 		public void propertyChange(PropertyChangeEvent e)
 		{
 			boolean update = false;
@@ -195,6 +195,7 @@ public abstract class GUIUtils
 			}
 		}
 
+		@Override
 		protected void paintComponent(Graphics g)
 		{
 			if (thumbnail == null)

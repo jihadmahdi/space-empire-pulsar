@@ -1,13 +1,12 @@
 package org.axan.sep.common.db.orm;
 
-import org.axan.sep.common.db.orm.Unit;
-import java.lang.Exception;
-import org.axan.sep.common.db.orm.base.IBaseSpaceRoadDeliverer;
-import org.axan.sep.common.db.orm.base.BaseSpaceRoadDeliverer;
-import org.axan.sep.common.db.ISpaceRoadDeliverer;
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.sep.common.Protocol.eUnitType;
+import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.ISpaceRoadDeliverer;
+import org.axan.sep.common.db.orm.base.BaseSpaceRoadDeliverer;
+import org.axan.sep.common.db.orm.base.IBaseSpaceRoadDeliverer;
 
 public class SpaceRoadDeliverer extends Unit implements ISpaceRoadDeliverer
 {
@@ -19,9 +18,9 @@ public class SpaceRoadDeliverer extends Unit implements ISpaceRoadDeliverer
 		this.baseSpaceRoadDelivererProxy = baseSpaceRoadDelivererProxy;
 	}
 
-	public SpaceRoadDeliverer(String owner, String name, eUnitType type, String sourceType, String sourceCelestialBodyName, Integer sourceTurn, String destinationType, String destinationCelestialBodyName, Integer destinationTurn, IGameConfig config)
+	public SpaceRoadDeliverer(String owner, String name, eUnitType type, Location departure, Double progress, Location destination, String sourceType, String sourceCelestialBodyName, Integer sourceTurn, String destinationType, String destinationCelestialBodyName, Integer destinationTurn, IGameConfig config)
 	{
-		this(new BaseSpaceRoadDeliverer(owner, name, type.toString(), sourceType, sourceCelestialBodyName, sourceTurn, destinationType, destinationCelestialBodyName, destinationTurn), config);
+		this(new BaseSpaceRoadDeliverer(owner, name, type.toString(), departure == null ? null : departure.x, departure == null ? null : departure.y, departure == null ? null : departure.z, progress, destination == null ? null : destination.x, destination == null ? null : destination.y, destination == null ? null : destination.z, sourceType, sourceCelestialBodyName, sourceTurn, destinationType, destinationCelestialBodyName, destinationTurn), config);
 	}
 
 	public SpaceRoadDeliverer(ISQLDataBaseStatement stmnt, IGameConfig config) throws Exception
@@ -29,31 +28,37 @@ public class SpaceRoadDeliverer extends Unit implements ISpaceRoadDeliverer
 		this(new BaseSpaceRoadDeliverer(stmnt), config);
 	}
 
+	@Override
 	public String getSourceType()
 	{
 		return baseSpaceRoadDelivererProxy.getSourceType();
 	}
 
+	@Override
 	public String getSourceCelestialBodyName()
 	{
 		return baseSpaceRoadDelivererProxy.getSourceCelestialBodyName();
 	}
 
+	@Override
 	public Integer getSourceTurn()
 	{
 		return baseSpaceRoadDelivererProxy.getSourceTurn();
 	}
 
+	@Override
 	public String getDestinationType()
 	{
 		return baseSpaceRoadDelivererProxy.getDestinationType();
 	}
 
+	@Override
 	public String getDestinationCelestialBodyName()
 	{
 		return baseSpaceRoadDelivererProxy.getDestinationCelestialBodyName();
 	}
 
+	@Override
 	public Integer getDestinationTurn()
 	{
 		return baseSpaceRoadDelivererProxy.getDestinationTurn();

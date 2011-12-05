@@ -14,14 +14,14 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.axan.eplib.orm.Class;
+import org.axan.eplib.orm.Class.Field;
 import org.axan.eplib.orm.ClassGeneratorListener;
 import org.axan.eplib.orm.DataBaseORMGenerator;
+import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.eplib.orm.ISQLDataBaseStatementJob;
 import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.orm.Class.Field;
 import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.eplib.orm.sqlite.SQLiteORMGenerator;
-import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.eplib.utils.Basic;
 import org.axan.eplib.utils.Reflect;
 import org.axan.eplib.yaml.YamlConfigFile;
@@ -45,9 +45,7 @@ class ORMGenerator
 	{
 		SQLiteORMGenerator gen;
 		try
-		{
-			SQLiteDB.checkSQLiteLib("target/izpack/lib/");
-			
+		{		
 			File ormTemp = File.createTempFile("SEP_ORM", ".db");
 			ormTemp.deleteOnExit();
 			
@@ -68,7 +66,7 @@ class ORMGenerator
 			
 			Map<String, Collection<String>> inheritances;
 			
-			inheritances = (Map<String, Collection<String>>) cfg.get("inheritances", Map.class);
+			inheritances = cfg.get("inheritances", Map.class);
 			
 			/*
 			for(Map.Entry<String, ArrayList<String>> e : inheritances.entrySet())
@@ -385,11 +383,13 @@ class ORMGenerator
 				{
 					if (unprefixedVersionedTypes.isEmpty())
 					{
+						/*
 						unprefixedVersionedTypes.put("Building", true);
 						unprefixedVersionedTypes.put("Government", true);
 						unprefixedVersionedTypes.put("Diplomacy", true);
 						unprefixedVersionedTypes.put("UnitArrivalLog", true);
 						unprefixedVersionedTypes.put("UnitEncounterLog", true);
+						*/
 					}
 					
 					return unprefixedVersionedTypes;
@@ -540,6 +540,13 @@ class ORMGenerator
 					}
 					else
 					{
+						psuc.format("\tpublic static <T extends I%s> T selectOne(%s db, Class<T> expectedType, String from, String where, Object ... params) throws %s\n", c.getUpperName(), SEPCommonDB.class.getSimpleName(), SQLDataBaseException.class.getSimpleName());
+						psuc.println("\t{");
+						psuc.println("\t\tSet<T> results = select(db, expectedType, from, (where==null?\"\":where+\" \")+\"LIMIT 1\", params);");
+						psuc.println("\t\tif (results.isEmpty()) return null;");
+						psuc.println("\t\treturn results.iterator().next();");
+						psuc.println("\t}");
+						psuc.println();						
 						psuc.format("\tpublic static <T extends I%s> Set<T> select(%s db, Class<T> expectedType, String from, String where, Object ... params) throws %s\n", c.getUpperName(), SEPCommonDB.class.getSimpleName(), SQLDataBaseException.class.getSimpleName());
 					}
 					psuc.println("\t{");

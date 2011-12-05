@@ -11,8 +11,8 @@ import java.util.Map;
 import java.util.Stack;
 
 import org.axan.sep.common.SEPUtils;
-import org.axan.sep.common.StarshipTemplate;
-import org.axan.sep.common.eStarshipSpecializationClass;
+import org.axan.sep.common.db.orm.Fleet;
+import org.axan.sep.common.db.orm.StarshipTemplate;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

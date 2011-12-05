@@ -7,16 +7,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStreamReader;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
@@ -27,16 +20,13 @@ import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.client.SEPClient.IUserInterface;
-import org.axan.sep.common.GameCommand;
 import org.axan.sep.common.GameConfig;
-import org.axan.sep.common.IGame;
-import org.axan.sep.common.Player;
-import org.axan.sep.common.PlayerGameBoard;
-import org.axan.sep.common.StarshipTemplate;
 import org.axan.sep.common.IGameBoard.GameBoardException;
+import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.Protocol.ServerGameCreation;
 import org.axan.sep.common.Protocol.ServerRunningGame;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
+import org.axan.sep.common.db.orm.Player;
 import org.axan.sep.server.ai.ClientAI;
 import org.axan.sep.server.ai.UncheckedLocalGame;
 import org.junit.After;
@@ -44,12 +34,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import com.almworks.sqlite4java.SQLite;
-import com.almworks.sqlite4java.SQLiteConnection;
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteJob;
-import com.almworks.sqlite4java.SQLiteQueue;
 
 public class TestSEP
 {

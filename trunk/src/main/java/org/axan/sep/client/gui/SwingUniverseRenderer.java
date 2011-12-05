@@ -25,8 +25,10 @@ import org.axan.sep.client.gui.lib.JImagePanel;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.IArea;
+import org.axan.sep.common.db.ICelestialBody;
 import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.db.orm.Area;
+import org.axan.sep.common.db.orm.ProductiveCelestialBody;
 import org.javabuilders.BuildResult;
 import org.javabuilders.swing.SwingJavaBuilder;
 
@@ -353,7 +355,7 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 				{
 					int z = zSlider.getValue();
 
-					if (e.getClickCount() == 1 && e.getButton() == e.BUTTON1)
+					if (e.getClickCount() == 1 && e.getButton() == MouseEvent.BUTTON1)
 					{
 						System.out.println("Location [" + x + ";" + y + ";" + z + "] clicked");
 						selectLocation(x, y, z);

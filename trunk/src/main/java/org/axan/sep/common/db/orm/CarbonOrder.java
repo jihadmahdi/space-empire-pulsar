@@ -1,19 +1,17 @@
 package org.axan.sep.common.db.orm;
 
-import java.lang.Exception;
-import org.axan.sep.common.db.orm.base.IBaseCarbonOrder;
-import org.axan.sep.common.db.orm.base.BaseCarbonOrder;
-import org.axan.sep.common.db.ICarbonOrder;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+
 import org.axan.eplib.orm.DataBaseORMGenerator;
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.eplib.orm.ISQLDataBaseStatementJob;
 import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.orm.sqlite.SQLiteDB;
-import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.ICarbonOrder;
 import org.axan.sep.common.db.SEPCommonDB;
+import org.axan.sep.common.db.orm.base.BaseCarbonOrder;
+import org.axan.sep.common.db.orm.base.IBaseCarbonOrder;
 
 public class CarbonOrder implements ICarbonOrder
 {
@@ -34,29 +32,41 @@ public class CarbonOrder implements ICarbonOrder
 		this(new BaseCarbonOrder(stmnt));
 	}
 
+	@Override
 	public String getOwner()
 	{
 		return baseCarbonOrderProxy.getOwner();
 	}
 
+	@Override
 	public String getSource()
 	{
 		return baseCarbonOrderProxy.getSource();
 	}
 
+	@Override
 	public Integer getPriority()
 	{
 		return baseCarbonOrderProxy.getPriority();
 	}
 
+	@Override
 	public Integer getAmount()
 	{
 		return baseCarbonOrderProxy.getAmount();
 	}
 
+	@Override
 	public String getDestination()
 	{
 		return baseCarbonOrderProxy.getDestination();
+	}
+
+	public static <T extends ICarbonOrder> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
+	{
+		Set<T> results = select(db, expectedType, from, (where==null?"":where+" ")+"LIMIT 1", params);
+		if (results.isEmpty()) return null;
+		return results.iterator().next();
 	}
 
 	public static <T extends ICarbonOrder> Set<T> select(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException

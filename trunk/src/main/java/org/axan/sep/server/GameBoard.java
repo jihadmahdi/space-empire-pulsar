@@ -1,101 +1,87 @@
 package org.axan.sep.server;
 
+import java.awt.Color;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.axan.eplib.clientserver.rpc.RpcException;
-import org.axan.eplib.orm.ISQLDataBase;
-import org.axan.eplib.orm.ISQLDataBaseStatement;
-import org.axan.eplib.orm.ISQLDataBaseStatementJob;
+import org.axan.eplib.orm.ISQLDataBaseFactory;
 import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.orm.sqlite.SQLiteDB;
-import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.eplib.utils.Basic;
-import org.axan.sep.common.IGameBoard;
-import org.axan.sep.common.PlayerGameBoard;
-import org.axan.sep.common.Protocol;
-import org.axan.sep.common.Rules;
-import org.axan.sep.common.SEPUtils;
+import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
-import org.axan.sep.common.IGameBoard.GameBoardException;
-import org.axan.sep.common.Protocol.eBuildingType;
+import org.axan.sep.common.IGameBoard;
+import org.axan.sep.common.Protocol;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
-import org.axan.sep.common.Protocol.eUnitType;
+import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
-import org.axan.sep.common.db.IArea;
-import org.axan.sep.common.db.IAssignedFleet;
-import org.axan.sep.common.db.IBuilding;
-import org.axan.sep.common.db.ICarbonOrder;
+import org.axan.sep.common.db.EvCreateUniverse;
 import org.axan.sep.common.db.ICelestialBody;
-import org.axan.sep.common.db.IDiplomacy;
-import org.axan.sep.common.db.IFleetComposition;
+import org.axan.sep.common.db.ICommand;
+import org.axan.sep.common.db.ICommand.GameCommandException;
 import org.axan.sep.common.db.IGameConfig;
-import org.axan.sep.common.db.IGovernment;
-import org.axan.sep.common.db.IGovernmentModule;
-import org.axan.sep.common.db.IMovePlan;
+import org.axan.sep.common.db.IGameEvent;
+import org.axan.sep.common.db.IGameEvent.GameEventException;
+import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
+import org.axan.sep.common.db.IPlanet;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
-import org.axan.sep.common.db.IProductiveCelestialBody;
-import org.axan.sep.common.db.ISpaceRoad;
-import org.axan.sep.common.db.IStarshipTemplate;
-import org.axan.sep.common.db.IUnitArrivalLog;
-import org.axan.sep.common.db.IUnitEncounterLog;
-import org.axan.sep.common.db.IVersionedFleet;
-import org.axan.sep.common.db.IVersionedPlanet;
-import org.axan.sep.common.db.IVersionedProbe;
-import org.axan.sep.common.db.IVersionedProductiveCelestialBody;
-import org.axan.sep.common.db.IVersionedSpecialUnit;
-import org.axan.sep.common.db.IVersionedUnit;
-import org.axan.sep.common.db.IVortex;
 import org.axan.sep.common.db.SEPCommonDB;
-import org.axan.sep.common.db.orm.Area;
-import org.axan.sep.common.db.orm.AssignedFleet;
-import org.axan.sep.common.db.orm.Building;
-import org.axan.sep.common.db.orm.CarbonOrder;
-import org.axan.sep.common.db.orm.Diplomacy;
-import org.axan.sep.common.db.orm.FleetComposition;
-import org.axan.sep.common.db.orm.Government;
-import org.axan.sep.common.db.orm.GovernmentModule;
-import org.axan.sep.common.db.orm.MovePlan;
+import org.axan.sep.common.db.orm.AsteroidField;
+import org.axan.sep.common.db.orm.Nebula;
+import org.axan.sep.common.db.orm.Planet;
 import org.axan.sep.common.db.orm.Player;
 import org.axan.sep.common.db.orm.PlayerConfig;
-import org.axan.sep.common.db.orm.ProductiveCelestialBody;
-import org.axan.sep.common.db.orm.SpaceRoad;
-import org.axan.sep.common.db.orm.SpecialUnit;
-import org.axan.sep.common.db.orm.StarshipTemplate;
-import org.axan.sep.common.db.orm.Unit;
-import org.axan.sep.common.db.orm.UnitArrivalLog;
-import org.axan.sep.common.db.orm.UnitEncounterLog;
-import org.axan.sep.common.db.orm.VersionedAsteroidField;
-import org.axan.sep.common.db.orm.VersionedNebula;
-import org.axan.sep.common.db.orm.VersionedPlanet;
-import org.axan.sep.common.db.orm.Vortex;
 
 /**
- * Server IGameBoard class.
- * Represents the game board on server side (all players).
- * Must be implemented by db. 
+ * Server IGameBoard class. Represents the game board on server side (all
+ * players). Must be implemented by db.
  */
 class GameBoard implements Serializable, IGameBoard
 {
+	////////// static attributes
 	private static final long serialVersionUID = 1L;
+	private static final Logger log = Logger.getLogger(GameBoard.class.getName());
+	private static final Random rnd = new Random();
+	private static String nextCelestialBodyName = "A";
+
+	////////// static methods
 	
-	/// UPDATE
+	public static GameBoard load(ObjectInputStream ois) throws IOException, ClassNotFoundException
+	{	
+		return GameBoard.class.cast(ois.readObject());
+	}
 
-	///
+	private static String generateCelestialBodyName()
+	{
+		String result = nextCelestialBodyName;
+		if (nextCelestialBodyName.toLowerCase().charAt(nextCelestialBodyName.length() - 1) == 'z')
+		{
+			nextCelestialBodyName += "a";
+		}
+		else
+		{
+			nextCelestialBodyName = nextCelestialBodyName.substring(0, nextCelestialBodyName.length() - 1) + (char) (nextCelestialBodyName.charAt(nextCelestialBodyName.length() - 1) + 1);
+		}
+		return result;
+	}
 
+	////////// static classes
+
+	/*
 	static abstract class ATurnResolvingEvent implements Comparable<ATurnResolvingEvent>
 	{
 		private final Integer priority;
@@ -114,7 +100,7 @@ class GameBoard implements Serializable, IGameBoard
 		}
 
 		/**
-		 * This method must test is the current event is actually fired in the
+		 * This method must test if the current event is actually fired in the
 		 * current DB state. And proceed if and only if it is. It can add new
 		 * event to the eventQueue.
 		 * 
@@ -122,10 +108,389 @@ class GameBoard implements Serializable, IGameBoard
 		 *            Current event queue.
 		 * @param db
 		 *            Current DB.
-		 */
+		 *//*
 		public abstract void run(SortedSet<ATurnResolvingEvent> eventsQueue, GameBoard sepDB) throws GameBoardException;
+		}
+		*/
+
+	////////// attributes
+
+	/**
+	 * Game views. null key is reserved to the global view. Other keys must
+	 * match player names.
+	 */
+	private transient Map<String, PlayerGameboardView> playerViews = new HashMap<String, PlayerGameboardView>();;
+
+	/** List players during game creation, must not be used whence game is ran. */
+	private transient Map<IPlayer, IPlayerConfig> players = new TreeMap<IPlayer, IPlayerConfig>();
+
+	/** During game creation, temporary game config. */
+	private transient GameConfig gameConfig = new GameConfig();
+
+	/** DB factory. */
+	private final ISQLDataBaseFactory dbFactory;
+
+	//////////constructor
+
+	public GameBoard(ISQLDataBaseFactory dbFactory) throws IOException, GameConfigCopierException, SQLDataBaseException
+	{
+		this.dbFactory = dbFactory;
+		//TODO: Testing config, to remove later.
+		gameConfig.setDimX(15);
+		gameConfig.setDimY(15);
+		gameConfig.setDimZ(3);
 	}
- 
+
+	////////// public methods
+
+	public synchronized boolean isGameInCreation()
+	{
+		return getGlobalDB() == null;
+	}
+	
+	public synchronized void save(ObjectOutputStream oos) throws IOException
+	{
+		oos.writeObject(this);
+	}
+
+	/////////////// GameInCreation methods
+
+	public void addPlayer(String playerLogin) throws GameBoardException
+	{
+		if (!isGameInCreation())
+		{
+			throw new GameBoardException("Cannot update game config when game is already running.");
+		}
+
+		for(IPlayer p: players.keySet())
+		{
+			if (p.getName().compareTo(playerLogin) == 0)
+			{
+				throw new GameBoardException("Player " + playerLogin + " already exists.");
+			}
+		}
+
+		//TODO: Portrait & Symbol
+		players.put(new Player(playerLogin), new PlayerConfig(playerLogin, Basic.colorToString(new Color(rnd.nextInt(0xFFFFFF))), null, null));
+	}
+
+	public void removePlayer(String playerLogin) throws GameBoardException
+	{
+		if (!isGameInCreation())
+		{
+			throw new GameBoardException("Cannot update game config when game is already running.");
+		}
+
+		for(IPlayer p: players.keySet())
+		{
+			if (p.getName().compareTo(playerLogin) == 0)
+			{
+				players.remove(p);
+				return;
+			}
+		}
+
+		throw new GameBoardException("Player " + playerLogin + " is unknown.");
+	}
+
+	public IPlayer getPlayer(String playerLogin) throws GameBoardException
+	{
+		if (isGameInCreation()) // Game in creation
+		{
+			for(IPlayer p: players.keySet())
+			{
+				if (p.getName().compareTo(playerLogin) == 0)
+					return p;
+			}
+
+			return null;
+		}
+		else
+		{
+			return getDBPlayer(playerLogin);
+		}
+	}
+	
+	@Override
+	public Map<IPlayer, IPlayerConfig> getPlayerList() throws GameBoardException
+	{
+		if (isGameInCreation()) // Game in creation
+		{
+			return players;
+		}
+		else
+		{
+			return getDBPlayerList();			
+		}
+	}
+	
+	public IGameConfig getConfig()
+	{
+		if (isGameInCreation())
+		{
+			return gameConfig;
+		}
+		else
+		{
+			return getDBConfig();
+		}
+	}
+
+	public void updateGameConfig(GameConfig gameCfg) throws GameBoardException
+	{
+		if (!isGameInCreation())
+		{
+			throw new GameBoardException("Cannot update game config when game is already running.");
+		}
+		this.gameConfig = gameCfg;
+	}
+	
+	public void updatePlayerConfig(IPlayerConfig playerCfg) throws GameBoardException
+	{
+		if (!isGameInCreation())
+		{
+			throw new GameBoardException("Cannot update game config when game is already running.");
+		}
+		
+		for(IPlayer p : players.keySet())
+		{
+			if (p.getName().compareTo(playerCfg.getName()) == 0)
+			{
+				players.put(p, playerCfg);
+				return;
+			}
+		}
+		
+		throw new GameBoardException("Player "+playerCfg.getName()+" unknown.");		
+	}
+
+	/////////////// Universe creation
+
+	/**
+	 * Generate universe creation event. After this method call game is considered to be running.
+	 * @param players
+	 * @throws GameBoardException
+	 */
+	public synchronized void createUniverse() throws GameBoardException
+	{
+		if (!isGameInCreation())
+		{
+			throw new GameBoardException("Cannot create universe when game is already running.");
+		}
+
+		try
+		{
+			SEPCommonDB globalDB = new SEPCommonDB(dbFactory.createSQLDataBase(), gameConfig);
+			playerViews.put(null, new PlayerGameboardView(globalDB, new IGameEventExecutor()
+			{
+				// Unfiltered executor
+				@Override
+				public void onGameEvent(IGameEvent event, Set<String> observers)
+				{
+					GameBoard.this.onGameEvent(event, observers);
+				}
+			}));
+	
+			// Generating CreateUniverse event.
+	
+			// Sun location: center of the universe.
+			Location sunLocation = new Location(getConfig().getDimX() / 2, getConfig().getDimY() / 2, getConfig().getDimZ() / 2);
+	
+			// Celestialbodies
+			Set<ICelestialBody> celestialBodies = new HashSet<ICelestialBody>();
+	
+			// Add the players starting planets.
+			Set<Location> playersPlanetLocations = new HashSet<Location>();
+	
+			for(IPlayer player: players.keySet())
+			{
+				final String playerName = player.getName(); 
+				SEPCommonDB playerDB = new SEPCommonDB(dbFactory.createSQLDataBase(), getConfig());
+				playerViews.put(playerName, new PlayerGameboardView(player.getName(), playerDB, new IGameEventExecutor()
+				{					
+					@Override
+					public void onGameEvent(IGameEvent event, Set<String> observers)
+					{
+						// executor filtered on current player view player.
+						if (!observers.contains(playerName)) return;
+						GameBoard.this.onGameEvent(event, playerName);
+					}
+				}));
+	
+				// Found a location to pop the planet.
+				Location planetLocation;
+				boolean locationOk = false;
+				do
+				{
+					planetLocation = new Location(rnd.nextInt(getConfig().getDimX()), rnd.nextInt(getConfig().getDimY()), rnd.nextInt(getConfig().getDimZ()));
+	
+					// Cannot be in the sun
+					if (SEPUtils.getDistance(planetLocation, sunLocation) <= getConfig().getSunRadius())
+					{
+						continue;
+					}
+	
+					for(Location l: playersPlanetLocations)
+					{
+						// Cannot be another player planet location
+						if (SEPUtils.getDistance(planetLocation, l) <= 0)
+						{
+							continue;
+						}
+	
+						// Must be in direct line from all other player starting planets
+						if (isTravellingTheSun(sunLocation, planetLocation.asRealLocation(), l.asRealLocation()))
+						{
+							continue;
+						}
+					}
+	
+					locationOk = true;
+				} while (!locationOk);
+	
+				IPlanet planet = createPlayerStartingPlanet(generateCelestialBodyName(), planetLocation, player.getName());
+				celestialBodies.add(planet);
+				playersPlanetLocations.add(planetLocation);
+			}
+	
+			// Add neutral celestial bodies
+			Set<Location> neutralCelestialBodiesLocations = new HashSet<Location>();
+			for(int i = 0; i < getConfig().getNeutralCelestialBodiesCount(); ++i)
+			{
+				// Found a location to pop the celestial body
+				Location celestialBodyLocation;
+				boolean locationOk = false;
+				do
+				{
+					celestialBodyLocation = new Location(rnd.nextInt(getConfig().getDimX()), rnd.nextInt(getConfig().getDimY()), rnd.nextInt(getConfig().getDimZ()));
+	
+					// Cannot be in the sun
+					if (SEPUtils.getDistance(celestialBodyLocation, sunLocation) <= getConfig().getSunRadius())
+					{
+						continue;
+					}
+	
+					for(Location l: playersPlanetLocations)
+					{
+						// Cannot be already populated (player starting planet) location
+						if (SEPUtils.getDistance(celestialBodyLocation, l) <= 0)
+						{
+							continue;
+						}
+	
+						// Must be in direct line from all other player starting planets
+						if (isTravellingTheSun(sunLocation, celestialBodyLocation.asRealLocation(), l.asRealLocation()))
+						{
+							continue;
+						}
+					}
+	
+					for(Location l: neutralCelestialBodiesLocations)
+					{
+						// Cannot be already populated (neutral celestial body) location
+						if (SEPUtils.getDistance(celestialBodyLocation, l) <= 0)
+						{
+							continue;
+						}
+					}
+	
+					locationOk = true;
+				} while (!locationOk);
+	
+				eCelestialBodyType celestialBodyType = Basic.getKeyFromRandomTable(SEPUtils.getNeutralCelestialBodiesGenerationTable(getConfig()));
+				String nextName = generateCelestialBodyName();
+	
+				ICelestialBody neutralCelestialBody = createNeutralCelestialBody(celestialBodyType, nextName, celestialBodyLocation);
+	
+				celestialBodies.add(neutralCelestialBody);
+			}
+	
+			EvCreateUniverse createUniverseEvent = new EvCreateUniverse(sunLocation, players, celestialBodies);
+			onGameEvent(createUniverseEvent, playerViews.keySet());
+		}
+		catch(Throwable t)
+		{
+			throw new GameBoardException(t);
+		}
+	}
+	
+	/////////////// Running game
+	
+	public List<IGameEvent> getEntireGameLog(String playerName) throws GameBoardException
+	{
+		if (isGameInCreation())
+		{
+			throw new GameBoardException("Cannot retreive player game log because game is not running.");
+		}
+		
+		return playerViews.get(playerName).getLoggedEvents();
+	}
+	
+	public List<IGameEvent> getLastTurnEvents(String playerName) throws GameBoardException
+	{
+		if (isGameInCreation())
+		{
+			throw new GameBoardException("Cannot retreive player game log because game is not running.");
+		}
+		
+		return playerViews.get(playerName).getLastTurnEvents();
+	}
+	
+	public synchronized boolean hasEndedTurn(String playerName)
+	{
+		return playerViews.get(playerName).hasEndedTurn();		
+	}
+	
+	/**
+	 * Ends turn for given player and check game is ready for next turn.
+	 * @param playerName Player to end the turn.
+	 * @param commands Player commands.
+	 * @return true if all players ended their turn.
+	 * @throws GameBoardException
+	 * @throws GameCommandException
+	 */
+	public synchronized boolean endTurn(String playerName, List<ICommand> commands) throws GameBoardException, GameCommandException
+	{
+		if (hasEndedTurn(playerName))
+		{
+			throw new GameBoardException("Player '"+playerName+"' already ended his/her turn.");
+		}
+		
+		for(ICommand command : commands)
+		{
+			command.check(getGlobalDB());			
+		}
+		
+		onGameEvents(commands, playerName);
+		
+		for(String p : playerViews.keySet())
+		{
+			if (!hasEndedTurn(p)) return false;
+		}
+		
+		return true;
+	}
+
+	public void resolveNextTurn() throws GameBoardException
+	{		
+		try
+		{
+			PlayerGameboardView globalView = playerViews.get(null);
+			globalView.resolveCurrentTurn();
+			
+			for(PlayerGameboardView view : playerViews.values())
+			{
+				if (view.getName() == null) continue;
+				view.resolveCurrentTurn();
+			}
+		}
+		catch(GameEventException e)
+		{
+			throw new GameBoardException(e);
+		}
+	}
+	
+	/*
 	public void resolveCurrentTurn()
 	{
 		SortedSet<ATurnResolvingEvent> resolvingEvents = new TreeSet<ATurnResolvingEvent>(getResolvingEvents());
@@ -145,109 +510,9 @@ class GameBoard implements Serializable, IGameBoard
 			}
 		}
 	}
-		
-	private static final Logger log = Logger.getLogger(GameBoard.class.getName());
-	
-	private static final Random rnd = new Random();
-	
-	private SEPCommonDB commonDB;
-	private transient ISQLDataBase db;
+	*/
 
-	// Game
-	private String	nextCelestialBodyName	= "A";
-
-	private String generateCelestialBodyName()
-	{
-		String result = nextCelestialBodyName;
-		if (nextCelestialBodyName.toLowerCase().charAt(nextCelestialBodyName.length() - 1) == 'z')
-		{
-			nextCelestialBodyName += "a";
-		}
-		else
-		{
-			nextCelestialBodyName = nextCelestialBodyName.substring(0, nextCelestialBodyName.length() - 1) + (char) (nextCelestialBodyName.charAt(nextCelestialBodyName.length() - 1) + 1);
-		}
-		return result;
-	}
-	
-	// Game DataBase
-	
-	public GameBoard(ISQLDataBase db, Map<Player, PlayerConfig> players, org.axan.sep.common.GameConfig config) throws IOException, GameConfigCopierException, SQLDataBaseException
-	{
-		this.commonDB = new SEPCommonDB(db, config);
-		this.db = commonDB.getDB();
-		
-		// Generate Universe	
-		// Make the sun
-		Location sunLocation = new Location(config.getDimX() / 2, config.getDimY() / 2, config.getDimZ() / 2);
-
-		for(int x = -Math.min(config.getSunRadius(), sunLocation.x); x <= Math.min(config.getSunRadius(), sunLocation.x); ++x)
-			for(int y = -Math.min(config.getSunRadius(), sunLocation.y); y <= Math.min(config.getSunRadius(), sunLocation.y); ++y)
-				for(int z = -Math.min(config.getSunRadius(), sunLocation.z); z <= Math.min(config.getSunRadius(), sunLocation.z); ++z)
-				{
-					Location parsedLoc = new Location(sunLocation.x + x, sunLocation.y + y, sunLocation.z + z);
-					if (SEPUtils.getDistance(parsedLoc, sunLocation) <= config.getSunRadius())
-					{
-						insertArea(parsedLoc, true);
-					}
-				}
-
-		// Add the players starting planets.
-		Set<Location> playersPlanetLocations = new HashSet<Location>();
-		
-		for(Player player : players.keySet())
-		{
-			insertPlayer(player, players.get(player));								
-			
-			// Found a location to pop the planet.
-			Location planetLocation;
-			boolean locationOk;
-			do
-			{
-				locationOk = false;
-				planetLocation = new Location(rnd.nextInt(config.getDimX()), rnd.nextInt(config.getDimY()), rnd.nextInt(config.getDimZ()));
-
-				if (areaExists(planetLocation)) continue;
-
-				locationOk = true;
-				for(Location l : playersPlanetLocations)
-				{
-					if (isTravellingTheSun(planetLocation.asRealLocation(), l.asRealLocation()))
-					{
-						locationOk = false;
-						break;
-					}										
-
-					if (!locationOk) break;
-				}
-			} while(!locationOk);
-
-			insertArea(planetLocation, false);
-			insertStartingPlanet(generateCelestialBodyName(), planetLocation, player.getName());
-			playersPlanetLocations.add(planetLocation);									
-		}
-
-		// Add neutral celestial bodies
-		for(int i = 0; i < config.getNeutralCelestialBodiesCount(); ++i)
-		{
-			// Found a location to pop the celestial body
-			Location celestialBodyLocation;
-			do
-			{
-				celestialBodyLocation = new Location(rnd.nextInt(config.getDimX()), rnd.nextInt(config.getDimY()), rnd.nextInt(config.getDimZ()));
-			} while(areaExists(celestialBodyLocation) && areaHasCelestialBody(celestialBodyLocation));
-
-			eCelestialBodyType celestialBodyType = Basic.getKeyFromRandomTable(config.getNeutralCelestialBodiesGenerationTable());
-
-			String nextName = generateCelestialBodyName();
-			
-			if (!areaExists(celestialBodyLocation)) insertArea(celestialBodyLocation, false);
-			insertCelestialBody(celestialBodyType, nextName, celestialBodyLocation);
-		}
-		
-		getConfig().setTurn(1);
-	}
-	
+	/*
 	public SEPCommonDB getSEPDB()
 	{
 		return commonDB;
@@ -256,376 +521,10 @@ class GameBoard implements Serializable, IGameBoard
 	public IGameConfig getConfig()
 	{
 		return commonDB.getConfig();
-	}
-	
-	private void compilePlayerView(String playerLogin, SEPCommonDB currentView, int maxTurn) throws SQLDataBaseException
-	{
-		// GameConfig, already copied during DB creation.
-		
-		Set<IArea> areas = new HashSet<IArea>();
-		Set<IPlayer> players = new HashSet<IPlayer>();
-		Set<IPlayerConfig> playerConfigs = new HashSet<IPlayerConfig>();
-		Set<ICelestialBody> celestialBodies = new HashSet<ICelestialBody>();
-		Set<IStarshipTemplate> starshipTemplates = new HashSet<IStarshipTemplate>();
-		Set<ICarbonOrder> carbonOrders = new HashSet<ICarbonOrder>();
-		
-		// Update areas
-		areas.addAll(Area.select(commonDB, IArea.class, null, null));
-		
-		// Update players
-		players.addAll(Player.select(commonDB, IPlayer.class, null, null));
-		
-		// Update player configs
-		playerConfigs.addAll(PlayerConfig.select(commonDB, IPlayerConfig.class, null, null));
-		
-		// Update celestial bodies
-		celestialBodies.addAll(ProductiveCelestialBody.selectUnversioned(commonDB, IProductiveCelestialBody.class, null, null));
-		celestialBodies.addAll(Vortex.select(commonDB, IVortex.class, null, null));
-		
-		// Update starship templates
-		starshipTemplates.addAll(StarshipTemplate.select(commonDB, IStarshipTemplate.class, null, null));
-		
-		// Update player carbon orders (live table, assume initial player view carbon order table is empty)
-		carbonOrders.addAll(CarbonOrder.select(commonDB, ICarbonOrder.class, null, "owner = '%s'", playerLogin));		
-		
-		for(IArea a : areas)
-		{
-			Area.insertOrUpdate(currentView, a);
-		}
-		
-		for(IPlayer p : players)
-		{
-			Player.insertOrUpdate(currentView, p);
-		}
-		
-		for(IPlayerConfig pc : playerConfigs)
-		{
-			PlayerConfig.insertOrUpdate(currentView, pc);
-		}
-		
-		for(ICelestialBody cb : celestialBodies)
-		{
-			if (IVortex.class.isInstance(cb))
-			{
-				Vortex.insertOrUpdate(currentView, IVortex.class.cast(cb));
-			}
-			else if (IProductiveCelestialBody.class.isInstance(cb))
-			{
-				ProductiveCelestialBody.insertOrUpdate(currentView, IProductiveCelestialBody.class.cast(cb));
-			}
-		}
-		
-		for(IStarshipTemplate st : starshipTemplates)
-		{
-			StarshipTemplate.insertOrUpdate(currentView, st);
-		}
-		
-		for(ICarbonOrder co : carbonOrders)
-		{
-			CarbonOrder.insertOrUpdate(currentView, co);
-		}
-		
-		// TODO:
-		//X	GameConfig, already copied during DB creation.
-		//X	Update turn.
-		//X	Area
-		//X	Player
-		//X		PlayerConfig (on assume que la config joueur est une info publique).
-		//X	CelestialBody
-		//X	StarshipTemplate
-		//X	CarbonOrder (current player, live table create/delete, simple copy)
-		//NOT REQUIRED, automated when updating versioned one:	Unit (only units with the first version <= currentTurn)
-		//NOT REQUIRED, idem:	SpecialUnit (first version <= currentTurn)		
-		//	AssignedFleet
-		
-		for(int i = 0; i <= maxTurn; ++i)
-		{
-			int currentTurn = i;
-			
-			Map<String, IGovernment> currentTurnGovernmentsView = new HashMap<String, IGovernment>();
-			Map<String, Set<IDiplomacy>> currentTurnDiplomaciesView = new HashMap<String, Set<IDiplomacy>>();
-			Map<String, IGovernment> currentTurnGovernments = new HashMap<String, IGovernment>();
-			Map<String, Set<IDiplomacy>> currentTurnDiplomacies = new HashMap<String, Set<IDiplomacy>>();
-			Set<IVersionedProbe> vprobes = new HashSet<IVersionedProbe>();
-			Set<IVersionedProductiveCelestialBody> visiblesPcbs = new HashSet<IVersionedProductiveCelestialBody>();
-			Set<IUnitArrivalLog> arrivalLogs =  new HashSet<IUnitArrivalLog>();
-			
-			// Select db governments for currentTurn
-			Set<IGovernment> governments = Government.selectMaxVersion(commonDB, IGovernment.class, currentTurn, null, null);
-			for(IGovernment g : governments)
-			{
-				currentTurnGovernments.put(g.getOwner(), g);
-			}
-			
-			// Select db diplomacies for currentTurn
-			Set<IDiplomacy> diplomacies = Diplomacy.selectMaxVersion(commonDB, IDiplomacy.class, currentTurn, null, null);
-			for(IDiplomacy d : diplomacies)
-			{
-				if (!currentTurnDiplomacies.containsKey(d.getOwner())) currentTurnDiplomacies.put(d.getOwner(), new HashSet<IDiplomacy>());
-				currentTurnDiplomacies.get(d.getOwner()).add(d);
-			}
-			
-			// Update deployed player probes
-			vprobes.addAll(Unit.selectMaxVersion(commonDB, IVersionedProbe.class, currentTurn, null, "VersionedUnit.type = '%s' AND VersionedUnit.owner = '%s' AND VersionedUnit.progress = 100.0", eUnitType.Probe, playerLogin));
-			
-			// Update visibles celestial bodies.
-			// CelestialBody visible if owned by the player
-			visiblesPcbs.addAll(ProductiveCelestialBody.selectMaxVersion(commonDB, IVersionedProductiveCelestialBody.class, currentTurn, null, "owner = '%s'", playerLogin));					
-			// CelestialBody visible if a player unit is stopped on it with currentTurn version.
-			visiblesPcbs.addAll(ProductiveCelestialBody.selectVersion(commonDB, IVersionedProductiveCelestialBody.class, currentTurn, "VersionedUnit VU", "(VU.owner = '%s') AND ((VU.progress = 0.0 AND VU.departure_x = CelestialBody.location_x AND VU.departure_y = CelestialBody.location_y AND VU.departure_z = CelestialBody.location_z) OR (VU.progress = 100.0 AND VU.destination_x = CelestialBody.location_x AND VU.destination_y = CelestialBody.location_y AND VU.destination_z = CelestialBody.location_z))", playerLogin));					
-			// CelestialBody visible if under a deployed probe scope.
-			visiblesPcbs.addAll(ProductiveCelestialBody.selectMaxVersion(commonDB, IVersionedProductiveCelestialBody.class, currentTurn, "VersionedUnit VU", "(VU.owner = '%s' AND VU.type = '%s' AND VU.turn <= VersionedProductiveCelestialBody.turn AND VU.progress = 100.0 AND ((VU.destination_x - CelestialBody.location_x) * (VU.destination_x - CelestialBody.location_x) + (VU.destination_y - CelestialBody.location_y) * (VU.destination_y - CelestialBody.location_y) + (VU.destination_z - CelestialBody.location_z) * (VU.destination_z - CelestialBody.location_z)) <= (%f * %f))", playerLogin, eUnitType.Probe, getConfig().getUnitTypeSight(eUnitType.Probe), getConfig().getUnitTypeSight(eUnitType.Probe)));
-			
-			// Update player UnitArrivalLog (visibles units stopped on pcb, arrival log are inserted in db only when they are published, so no filter needed here, simple copŷ).
-			arrivalLogs.addAll(UnitArrivalLog.selectMaxVersion(commonDB, IUnitArrivalLog.class, currentTurn, null, "owner = '%s'", playerLogin));
-			
-			for(IVersionedProductiveCelestialBody vpcb : visiblesPcbs)
-			{
-				ProductiveCelestialBody.insertOrUpdate(currentView, vpcb);
-			}
-			
-			for(IVersionedProbe vprobe : vprobes)
-			{
-				Unit.insertOrUpdate(currentView, vprobe);
-			}
-			
-			for( IUnitArrivalLog ual : arrivalLogs)
-			{
-				UnitArrivalLog.insertOrUpdate(currentView, ual);
-			}
-			
-			Set<IAssignedFleet> assignedFleets = new HashSet<IAssignedFleet>();
-			Set<IBuilding> buildings = new HashSet<IBuilding>();
-			Set<ISpaceRoad> roads = new HashSet<ISpaceRoad>();
-			Set<IFleetComposition> comps = new HashSet<IFleetComposition>();
-			Set<IMovePlan> moves = new HashSet<IMovePlan>();
-			Set<IVersionedSpecialUnit> specialsUnits = new HashSet<IVersionedSpecialUnit>();
-			Set<IVersionedUnit> seenUnits = new HashSet<IVersionedUnit>();
-			Set<IUnitEncounterLog> encounterLogs = new HashSet<IUnitEncounterLog>();			
-			Set<IVersionedUnit> vunits = new HashSet<IVersionedUnit>();
-			
-			for(IVersionedProductiveCelestialBody vpcb : visiblesPcbs)
-			{
-				Set<IVersionedUnit> currentPCBUnits = new HashSet<IVersionedUnit>();				
-				
-				// Update buildings (visibles pcbs)
-				buildings.addAll(Building.selectMaxVersion(commonDB, IBuilding.class, currentTurn, null, "Building.celestialBodyName = '%s'", vpcb.getName()));
-				
-				// Update space roads (visibles pcbs)
-				roads.addAll(SpaceRoad.select(commonDB, ISpaceRoad.class, null, "(SpaceRoad.spaceCounterACelestialBodyName = '%s' OR SpaceRoad.spaceCounterBCelestialBodyName = '%s') AND (MAX(SpaceRoad.spaceCounterATurn, SpaceRoad.spaceCounterBTurn) <= %d)", vpcb.getName(), vpcb.getName(), currentTurn));
-				
-				// Update units on visibles pcbs
-				currentPCBUnits.addAll(Unit.selectMaxVersion(commonDB, IVersionedUnit.class, currentTurn, "CelestialBody CB", "CB.name = '%s' AND VersionedUnit.progress = 0.0 AND CB.location_x = VersionedUnit.departure_x AND CB.location_y AND VersionedUnit.departure_y AND CB.location_z = VersionedUnit.departure_z", vpcb.getName()));
-				
-				// Update assigned fleets
-				assignedFleets.addAll(AssignedFleet.select(commonDB, IAssignedFleet.class, null, "celestialBody = '%s'", vpcb.getName()));
-								
-				vunits.addAll(currentPCBUnits);
-								
-				for(IVersionedUnit vunit : currentPCBUnits)
-				{
-					Set<IUnitEncounterLog> result = UnitEncounterLog.selectMaxVersion(commonDB, IUnitEncounterLog.class, currentTurn, null, "owner = '%s' AND unitName = '%s' AND turn = %d", vunit.getOwner(), vunit.getName(), vunit.getTurn());
-					encounterLogs.addAll(result);
-					for(IUnitEncounterLog uel : result)
-					{
-						Set<IVersionedUnit> currentUnitEncounteredUnits = Unit.selectVersion(commonDB, IVersionedUnit.class, uel.getSeenTurn(), null, "owner = '%s' AND name = '%s' AND type = '%s'", uel.getSeenOwner(), uel.getSeenName(), uel.getSeenType());
-						for(IVersionedUnit encounteredUnit : currentUnitEncounteredUnits)
-						{									
-							if (IVersionedFleet.class.isInstance(encounteredUnit))
-							{
-								// (Fleet) Update encountered unit FleetComposition
-								comps.addAll(FleetComposition.select(commonDB, IFleetComposition.class, null, "fleetOwner = '%s' AND fleetName = '%s' AND fleetTurn = %d", encounteredUnit.getOwner(), encounteredUnit.getName(), encounteredUnit.getTurn()));
-								// (Fleet) Update encountered unit special units
-								specialsUnits.addAll(SpecialUnit.selectVersion(commonDB, IVersionedSpecialUnit.class, currentTurn, null, "fleetOwner = '%s' AND fleetName = '%s' AND fleetTurn = '%s'", encounteredUnit.getOwner(), encounteredUnit.getName(), encounteredUnit.getTurn()));
-							}																		
-						}
-						
-						if (IVersionedFleet.class.isInstance(vunit))
-						{
-							// (Fleet) Update MovePlan, FleetComposition
-							moves.addAll(MovePlan.select(commonDB, IMovePlan.class, null, "owner = '%s' AND name = '%s' AND turn = %d", vunit.getOwner(), vunit.getName(), vunit.getTurn()));
-							comps.addAll(FleetComposition.select(commonDB, IFleetComposition.class, null, "fleetOwner = '%s' AND fleetName = '%s' AND fleetTurn = %d", vunit.getOwner(), vunit.getName(), vunit.getTurn()));
-							// (Fleet) Update special units
-							specialsUnits.addAll(SpecialUnit.selectVersion(commonDB, IVersionedSpecialUnit.class, currentTurn, null, "fleetOwner = '%s' AND fleetName = '%s' AND fleetTurn = '%s'", vunit.getOwner(), vunit.getName(), vunit.getTurn()));
-						}
-					}
-					
-					if (IVersionedFleet.class.isInstance(vunit))
-					{						
-						// Update governments (units)
-						IGovernment g = currentTurnGovernments.get(vunit.getOwner());
-						if (g != null && vunit.getName().matches(g.getFleetName()) && vunit.getTurn() == g.getTurn())
-						{
-							currentTurnGovernmentsView.put(g.getOwner(), g);
-						}
-					}
-				}
-				
-				// Update governments (visibles pcbs)
-				// 	Update diplomacies (visibles governments)
-				IGovernment g = currentTurnGovernments.get(vpcb.getOwner());
-				if (g != null && eCelestialBodyType.Planet.equals(vpcb.getType()) && vpcb.getName().matches(g.getPlanetName()) && vpcb.getTurn() == g.getPlanetTurn())
-				{
-					currentTurnGovernmentsView.put(g.getOwner(), g);
-					currentTurnDiplomaciesView.put(g.getOwner(), currentTurnDiplomacies.get(g.getOwner()));
-				}
-			}
-			
-			for(IBuilding b : buildings)
-			{
-				Building.insertOrUpdate(currentView, b);
-			}
-			
-			for(ISpaceRoad road : roads)
-			{
-				SpaceRoad.insertOrUpdate(currentView, road);
-			}
-			
-			for(IVersionedUnit vu : vunits)
-			{
-				Unit.insertOrUpdate(currentView, vu);
-			}
-			
-			for(IMovePlan m : moves)
-			{
-				MovePlan.insertOrUpdate(currentView, m);
-			}
-			
-			for(IFleetComposition c : comps)
-			{
-				FleetComposition.insertOrUpdate(currentView, c);
-			}
-			
-			for(IVersionedSpecialUnit vsu : specialsUnits)
-			{
-				SpecialUnit.insertOrUpdate(currentView, vsu);
-			}
-			
-			for(IVersionedUnit vu : seenUnits)
-			{
-				Unit.insertOrUpdate(currentView, vu);
-			}
-			
-			for(IUnitEncounterLog uel : encounterLogs)
-			{
-				UnitEncounterLog.insertOrUpdate(currentView, uel);
-			}
-			
-			for(String player : currentTurnGovernmentsView.keySet())
-			{
-				IGovernment g = currentTurnGovernmentsView.get(player);
-				if (g == null) continue;
-				
-				Government.insertOrUpdate(currentView, g);								
-			}
-			
-			for(String player : currentTurnDiplomaciesView.keySet())
-			{
-				diplomacies = currentTurnDiplomaciesView.get(player);
-				if (diplomacies == null || diplomacies.isEmpty()) continue;
-				
-				for(IDiplomacy d : diplomacies)
-				{
-					Diplomacy.insertOrUpdate(currentView, d);
-				}							
-			}
-			
-			//X Update visibles celestial bodies.
-			//X		Update buildings (visibles pcbs)
-			//X		Update space roads (visibles pcbs)
-			//X		Update units (deployed probes)
-			//X		Update units (visibles pcbs)
-			//X			(Fleet)	MovePlan, FleetComposition
-			//X			(Fleet) Update special units (visibles units)
-			//X		Update governments (visibles pcbs)
-			//X		Update governments (units)
-			//X			Update diplomacies (visibles governments)
-			//X	Update ArrivalLog (visibles units stopped on pcb)			
-			//X	Update EncounterLog (visibles units stopped on pcb)
-			//X	Update units (encounter logged)
-			//X		(Fleet)	FleetComposition
-			//X		(Fleet) Update special units		
-		}
-		
-		// Update turn.
-		currentView.getConfig().setTurn(maxTurn);
-	}
-	
-	public Player getPlayer(String playerLogin) throws GameBoardException
-	{		
-		Set<Player> rs;
-		
-		try
-		{
-			rs = Player.select(commonDB, Player.class, null, "name = %s", playerLogin);			
-		}
-		catch(SQLDataBaseException e)
-		{
-			throw new GameBoardException("SQLDataBaseException", e);
-		}
-		
-		if (rs == null || rs.isEmpty()) throw new GameBoardException("Player "+playerLogin+" is unkown");
-		
-		return rs.iterator().next();
-	}
-	
-	@Override
-	public Map<Player, PlayerConfig> getPlayerList() throws GameBoardException
-	{
-		Map<Player, PlayerConfig> result = new TreeMap<Player, PlayerConfig>();
-		
-		try
-		{
-			Set<Player> ps = Player.select(commonDB, Player.class, null, null);
-			Set<PlayerConfig> pcs = PlayerConfig.select(commonDB, PlayerConfig.class, null, null);
-			
-			for(Player p : ps)
-			{
-				for(PlayerConfig pc : pcs)
-				{
-					if (p.getName().compareTo(pc.getName()) == 0)
-					{
-						result.put(p, pc);
-						pcs.remove(pc);
-						break;
-					}
-				}
-			}
-			
-			return result;
-		}
-		catch(SQLDataBaseException e)
-		{
-			throw new GameBoardException(e);
-		}
-	}
-	
-	/**
-	 * Must return a FULL (including previous turn) player game board. 
-	 * @param playerLogin
-	 * @throws SEPServerDataBaseException 
-	 */
-	public PlayerGameBoard getPlayerGameBoard(ISQLDataBase db, String playerLogin) throws GameBoardException
-	{
-		SEPServer.log.log(Level.INFO, "getGameBoard(" + playerLogin + ")");
-		
-		/*
-		 * PlayerGameBoard basé sur la même DB que le serveur.
-		 * Une méthode est capable d'insérer dans la DB toutes les entrées entre le tour précédent et le tour courrant visibles par le joueur.
-		 * Pour compiler un playerGameBoard complet on empile à partir du tour 0, ainsi il n'y a qu'une seule méthode primitive.
-		 */
-		try
-		{
-			SEPCommonDB clientDB = new SEPCommonDB(db, getConfig());
-			compilePlayerView(playerLogin, clientDB, getConfig().getTurn());
-			return new PlayerGameBoard(clientDB);
-		}
-		catch(Exception e)
-		{
-			throw new GameBoardException(e);
-		}
-	}
-	
+	}		
+	*/
+
+	/*
 	private static final SortedSet<ATurnResolvingEvent> resolvingEvents = new TreeSet<ATurnResolvingEvent>(); 
 	
 	public SortedSet<ATurnResolvingEvent> getResolvingEvents()
@@ -662,285 +561,286 @@ class GameBoard implements Serializable, IGameBoard
 										     name TEXT NOT NULL,
 										     turn INTEGER NOT NULL,
 										     type TEXT NOT NULL,
-										 */
-									}
-									return null;
-								}
-							});
-							
-							/*								 									 
-							
-							flottes <- db.selectionner flottes immobiles avec feuille de route
-							POUR CHAQUE flotte FAIRE
-								db.inserer nouvelle version flotte (destination, progress)
-							FPOUR
-							
-							//les unités se déplacent
-							unites_mobiles <- db.selectionner unités en déplacement (dernière version de chaque unité)
-							TANTQUE le temps s'ecoule FAIRE
-								POUR CHAQUE unité FAIRE
-									
-									//les unités se rencontrent en mouvement
-									SI l'unité rencontre une autre unité ALORS
-										pour chaque unité: unité.loggerRencontre(step, autre unité)
-									FSI
-									
-									// les unités sont attirés par des vortex (elles arrivent à destination imprévue)
-									SI l'unité rencontre un vortex ALORS
-										unité.loggerArrival(step, vortex)
-										unité.changer position sur vortex.destination
-										unité.immobiliser
-									FSI
-									SI l'unité arrive à destination ALORS
-										SWITCH(unité.type)
-											CASE (apm):
-												// les apm détruisent les probes (qui communiquent leur destruction imminante)
-												SI apm.cible visible ALORS
-													cible.owner.communiquer destruction imminante
-													détruire cible
-													détruire apm
-												FSI
-												BREAK;
-											CASE (probe):
-												// les probes se déploient et communiquent aussitot leur log
-												déployer probe
-												unité.loggerArrival(step)
-												communiquer log
-												BREAK;
-											CASE (spaceRoadDeliverer):
-												// les spaceRoadDeliverer livre une space road
-												spaceRoadDeliverer.livre la space road
-												unité.loggerArrival(step)
-												BREAK;
-											CASE (carbonCarrier):
-												// les carbonCarrier livrent leur carbone
-												carbonCarrier.livre le carbone
-												unité.loggerArrival(step)
-												BREAK;
-											CASE (Fleet):
-												// les flottes déclenchent des conflits
-												SI (flotte.attaque) ALORS
-													flotte.déclarer conflit(corps céleste)
-												FSI
-												// les corps célestes peuvent engager un conflit quand une flotte indésirable arrive
-												corpsCelestes.reagirArriveFlotte(flotte)
-										FSWITCH
-									FSI
-									
-								FPOUR
-							FTANTQUE
-							
-							POUR CHAQUE productiveCelestialBody FAIRE
-								SI un joueur à déclaré un conflit FAIRE
-									noter le conflit
-								FSI
-							FPOUR
-							
-							POUR CHAQUE productiveCelestialBody FAIRE
-								SI celestialBody en conflit ALORS
-									// ResoudreConflit
-									resoudre attitudes diplomatiques
-									POUR CHAQUE round de combat FAIRE
-										jouer le round
-										mettre à jour le log du combat
-									FPOUR
-									mettre à jour l'état des flottes (endommagées, détruites)
-									mettre à jour les logs de combat des joueurs dont une unité au moins à survécue
-									// revérifier attitudes diplomatiques et relancer un conflit au besoin ?
-									publier les logs de combat
-								FSI
-							FPOUR
-							
-							POUR CHAQUE unité immobile non posée
-								unité.poser
-								unité.publier log
-							FPOUR
-							
-							? les unités immobiles loggent les départs/arrivées des autres unités
-							génération du carbone et de la population sur les corps célestes
-							incrémentation de la date
-							 */
-						}
-						catch(SQLDataBaseException e)
-						{
-							throw new GameBoardException(e);
-						}
-					}
+										 *//*
+				}
+				return null;
+				}
 				});
 				
-				/*
-				resolvingEvents.add(new ATurnResolvingEvent(0, "OnTimeTick")
-				{					
+				/*								 									 
+				
+				flottes <- db.selectionner flottes immobiles avec feuille de route
+				POUR CHAQUE flotte FAIRE
+				db.inserer nouvelle version flotte (destination, progress)
+				FPOUR
+				
+				//les unités se déplacent
+				unites_mobiles <- db.selectionner unités en déplacement (dernière version de chaque unité)
+				TANTQUE le temps s'ecoule FAIRE
+				POUR CHAQUE unité FAIRE
+				
+				//les unités se rencontrent en mouvement
+				SI l'unité rencontre une autre unité ALORS
+				pour chaque unité: unité.loggerRencontre(step, autre unité)
+				FSI
+				
+				// les unités sont attirés par des vortex (elles arrivent à destination imprévue)
+				SI l'unité rencontre un vortex ALORS
+				unité.loggerArrival(step, vortex)
+				unité.changer position sur vortex.destination
+				unité.immobiliser
+				FSI
+				SI l'unité arrive à destination ALORS
+				SWITCH(unité.type)
+				CASE (apm):
+				// les apm détruisent les probes (qui communiquent leur destruction imminante)
+				SI apm.cible visible ALORS
+				cible.owner.communiquer destruction imminante
+				détruire cible
+				détruire apm
+				FSI
+				BREAK;
+				CASE (probe):
+				// les probes se déploient et communiquent aussitot leur log
+				déployer probe
+				unité.loggerArrival(step)
+				communiquer log
+				BREAK;
+				CASE (spaceRoadDeliverer):
+				// les spaceRoadDeliverer livre une space road
+				spaceRoadDeliverer.livre la space road
+				unité.loggerArrival(step)
+				BREAK;
+				CASE (carbonCarrier):
+				// les carbonCarrier livrent leur carbone
+				carbonCarrier.livre le carbone
+				unité.loggerArrival(step)
+				BREAK;
+				CASE (Fleet):
+				// les flottes déclenchent des conflits
+				SI (flotte.attaque) ALORS
+				flotte.déclarer conflit(corps céleste)
+				FSI
+				// les corps célestes peuvent engager un conflit quand une flotte indésirable arrive
+				corpsCelestes.reagirArriveFlotte(flotte)
+				FSWITCH
+				FSI
+				
+				FPOUR
+				FTANTQUE
+				
+				POUR CHAQUE productiveCelestialBody FAIRE
+				SI un joueur à déclaré un conflit FAIRE
+				noter le conflit
+				FSI
+				FPOUR
+				
+				POUR CHAQUE productiveCelestialBody FAIRE
+				SI celestialBody en conflit ALORS
+				// ResoudreConflit
+				resoudre attitudes diplomatiques
+				POUR CHAQUE round de combat FAIRE
+				jouer le round
+				mettre à jour le log du combat
+				FPOUR
+				mettre à jour l'état des flottes (endommagées, détruites)
+				mettre à jour les logs de combat des joueurs dont une unité au moins à survécue
+				// revérifier attitudes diplomatiques et relancer un conflit au besoin ?
+				publier les logs de combat
+				FSI
+				FPOUR
+				
+				POUR CHAQUE unité immobile non posée
+				unité.poser
+				unité.publier log
+				FPOUR
+				
+				? les unités immobiles loggent les départs/arrivées des autres unités
+				génération du carbone et de la population sur les corps célestes
+				incrémentation de la date
+				*//*
+					}
+					catch(SQLDataBaseException e)
+					{
+					throw new GameBoardException(e);
+					}
+					}
+					});
+					
+					/*
+					resolvingEvents.add(new ATurnResolvingEvent(0, "OnTimeTick")
+					{					
 					@Override
 					public void run(SortedSet<ATurnResolvingEvent> eventsQueue, ISEPServerDataBase sepDB) throws SEPServerDataBaseException
 					{
-						try
+					try
+					{
+					SQLiteDB db = ((SEPSQLiteDB) sepDB).getDB();							
+					
+					db.exec(new SQLiteJob<Void>()
+					{
+					@Override
+					protected Void job(SQLiteConnection conn) throws Throwable
+					{
+						SQLiteDBStatement stmnt = conn.prepare(String.format("SELECT U.type, * FROM Unit U LEFT JOIN	VersionedUnit VU USING (name, owner, type) LEFT JOIN	PulsarMissile PM USING (name, owner, type) LEFT JOIN	Probe P USING (name, owner, type) LEFT JOIN	AntiProbeMissile APM USING (name, owner, type) LEFT JOIN	CarbonCarrier CC USING (name, owner, type) LEFT JOIN	SpaceRoadDeliverer SRD USING (name, owner, type) LEFT JOIN	Fleet F USING (name, owner, type) LEFT JOIN	VersionedPulsarMissile VPM USING (name, owner, turn) LEFT JOIN	VersionedProbe VP USING (name, owner, turn) LEFT JOIN	VersionedAntiProbeMissile VAPM USING (name, owner, turn) LEFT JOIN	VersionedCarbonCarrier VCC USING (name, owner, turn) LEFT JOIN	VersionedFleet VF USING (name, owner, turn) WHERE VU.turn = %d AND VU.destination_x IS NOT NULL;", getConfig().getTurn()));
+						Vector<VersionedUnit> movingUnits = new Vector<VersionedUnit>();
+						while(stmnt.step())
 						{
-							SQLiteDB db = ((SEPSQLiteDB) sepDB).getDB();							
-							
-							db.exec(new SQLiteJob<Void>()
+							Class<? extends org.axan.sep.common.db.sqlite.orm.IVersionedUnit> vuClazz = SEPSQLiteDB.getVersionedUnitClass(stmnt.columnString(0));
+							movingUnits.add(new VersionedUnit(SQLiteORMGenerator.mapTo(vuClazz, stmnt), getConfig()));
+						}
+															
+						// Commencer par prédire la collision avec les vortex
+						stmnt = conn.prepare(String.format("SELECT type,* FROM Vortex WHERE onsetDate <= %d AND %d < endDate", getConfig().getTurn(), getConfig().getTurn()));
+						Vector<Vortex> vortex = new Vector<Vortex>();
+						while(stmnt.step())
+						{
+							vortex.add(new Vortex(SQLiteORMGenerator.mapTo(org.axan.sep.common.db.sqlite.orm.Vortex.class, stmnt)));
+						}																		
+						
+						Map<VersionedUnit, Vortex> vortexEncounters = new HashMap<VersionedUnit, Vortex>();
+						
+						double step = 0;
+						VersionedUnit fasterUnit = null;
+						double minDistance = Double.POSITIVE_INFINITY;
+						VersionedUnit u, v;
+						while(step < 1)
+						{
+							for(int i=0; i < movingUnits.size(); ++i)
 							{
-								@Override
-								protected Void job(SQLiteConnection conn) throws Throwable
+								u = movingUnits.elementAt(i);
+								
+								if (vortexEncounters.containsKey(u)) continue;
+								
+								double uStep = u.getProgress() + u.getSpeed()*step;
+								RealLocation uLocation = SEPUtils.getMobileLocation(u.getDeparture(), u.getDestination(), uStep, true);
+								
+								double nearestVortexDistance = Double.POSITIVE_INFINITY;
+								
+								for(Vortex vor : vortex)
 								{
-									SQLiteDBStatement stmnt = conn.prepare(String.format("SELECT U.type, * FROM Unit U LEFT JOIN	VersionedUnit VU USING (name, owner, type) LEFT JOIN	PulsarMissile PM USING (name, owner, type) LEFT JOIN	Probe P USING (name, owner, type) LEFT JOIN	AntiProbeMissile APM USING (name, owner, type) LEFT JOIN	CarbonCarrier CC USING (name, owner, type) LEFT JOIN	SpaceRoadDeliverer SRD USING (name, owner, type) LEFT JOIN	Fleet F USING (name, owner, type) LEFT JOIN	VersionedPulsarMissile VPM USING (name, owner, turn) LEFT JOIN	VersionedProbe VP USING (name, owner, turn) LEFT JOIN	VersionedAntiProbeMissile VAPM USING (name, owner, turn) LEFT JOIN	VersionedCarbonCarrier VCC USING (name, owner, turn) LEFT JOIN	VersionedFleet VF USING (name, owner, turn) WHERE VU.turn = %d AND VU.destination_x IS NOT NULL;", getConfig().getTurn()));
-									Vector<VersionedUnit> movingUnits = new Vector<VersionedUnit>();
-									while(stmnt.step())
+									double distanceUvortex = SEPUtils.getDistance(uLocation, vor.getLocation().asRealLocation());												
+									
+									if (distanceUvortex <= getConfig().getVortexScope() && distanceUvortex < nearestVortexDistance)
 									{
-										Class<? extends org.axan.sep.common.db.sqlite.orm.IVersionedUnit> vuClazz = SEPSQLiteDB.getVersionedUnitClass(stmnt.columnString(0));
-										movingUnits.add(new VersionedUnit(SQLiteORMGenerator.mapTo(vuClazz, stmnt), getConfig()));
+										nearestVortexDistance = distanceUvortex;
+										vortexEncounters.put(u, vor);
 									}
-																		
-									// Commencer par prédire la collision avec les vortex
-									stmnt = conn.prepare(String.format("SELECT type,* FROM Vortex WHERE onsetDate <= %d AND %d < endDate", getConfig().getTurn(), getConfig().getTurn()));
-									Vector<Vortex> vortex = new Vector<Vortex>();
-									while(stmnt.step())
-									{
-										vortex.add(new Vortex(SQLiteORMGenerator.mapTo(org.axan.sep.common.db.sqlite.orm.Vortex.class, stmnt)));
-									}																		
-									
-									Map<VersionedUnit, Vortex> vortexEncounters = new HashMap<VersionedUnit, Vortex>();
-									
-									double step = 0;
-									VersionedUnit fasterUnit = null;
-									double minDistance = Double.POSITIVE_INFINITY;
-									VersionedUnit u, v;
-									while(step < 1)
-									{
-										for(int i=0; i < movingUnits.size(); ++i)
-										{
-											u = movingUnits.elementAt(i);
-											
-											if (vortexEncounters.containsKey(u)) continue;
-											
-											double uStep = u.getProgress() + u.getSpeed()*step;
-											RealLocation uLocation = SEPUtils.getMobileLocation(u.getDeparture(), u.getDestination(), uStep, true);
-											
-											double nearestVortexDistance = Double.POSITIVE_INFINITY;
-											
-											for(Vortex vor : vortex)
-											{
-												double distanceUvortex = SEPUtils.getDistance(uLocation, vor.getLocation().asRealLocation());												
-												
-												if (distanceUvortex <= getConfig().getVortexScope() && distanceUvortex < nearestVortexDistance)
-												{
-													nearestVortexDistance = distanceUvortex;
-													vortexEncounters.put(u, vor);
-												}
-											}
-											
-											if (vortexEncounters.containsKey(u))
-											{
-												// TODO: u.loggerRencontre(vor, step);
-											}
-											
-											if (fasterUnit == null || u.getSpeed() > fasterUnit.getSpeed())
-											{
-												fasterUnit = u;
-											}
-											
-											for(int j=i+1; j < movingUnits.size(); ++j)
-											{
-												v = movingUnits.elementAt(j);
-												
-												if (vortexEncounters.containsKey(v)) continue;
-												
-												double vStep = v.getProgress() + v.getSpeed()*step;
-												RealLocation vLocation = SEPUtils.getMobileLocation(v.getDeparture(), v.getDestination(), vStep, true);
-												
-												double distanceUV = SEPUtils.getDistance(uLocation, vLocation);
-												boolean spotted = false;
-												
-												if (u.getSight() >= distanceUV)
-												{
-													// TODO: u.loggerRencontre(v, step);
-													spotted = true;
-												}
-												if (v.getSight() >= distanceUV)
-												{
-													// TODO: v.loggerRencontre(u, step);
-													spotted = true;
-												}
-												
-												if (!spotted && minDistance < distanceUV) minDistance = distanceUV;
-											}
-										}
-										
-										step += minDistance / fasterUnit.getSpeed();
-									}
-									
-									/*
-									distance = f(unit1, unit2, t) // avec t écoulement du temps pour 1 tour.
-									
-									
-									Déplacer les unités mobiles
-									Ecrire leur journal de bord (rencontres, vortex, ...)
-									
-									---
-									
-									movingUnits <- getMovingUnits(turn);									
-									step <- 0
-									TANTQUE(step < 1)		
-										// A chaque step garder trace de la collision survenant le plus tôt, et faire le step suivant directement à cette date (si elle survient dans le tour courant)
-										fasterUnit <- null
-										minDistance <- INFINI
-										
-										POUR CHAQUE movingUnits u FAIRE
-											SI u.speed > fasterUnit.speed ALORS fasterUnit <- u;
-											POUR CHAQUE movingUnits v FAIRE
-												SI u = v ALORS continue;
-												d <- Distance(u, v, step);
-												
-												SI u.sight >= d ALORS u.loggerRencontre(v, step);
-												SI v.sight >= d ALORS v.loggerRencontre(u, step);
-												
-												SI (d > u.sight OU d > v.sight) ALORS minDistance <- Min(minDistance, d);												
-											FPOUR
-										FPOUR
-										
-										// Le plus petit incrément susceptible d'etre utile (mais peut etre pas vu que minDistance et fasterUnit ne sont pas vraiment liés).
-										step += minDistance / fasterUnit.speed;
-										 
-									FPOUR
-									
-									
-									*//*
-									return null;
 								}
-							});
+								
+								if (vortexEncounters.containsKey(u))
+								{
+									// TODO: u.loggerRencontre(vor, step);
+								}
+								
+								if (fasterUnit == null || u.getSpeed() > fasterUnit.getSpeed())
+								{
+									fasterUnit = u;
+								}
+								
+								for(int j=i+1; j < movingUnits.size(); ++j)
+								{
+									v = movingUnits.elementAt(j);
+									
+									if (vortexEncounters.containsKey(v)) continue;
+									
+									double vStep = v.getProgress() + v.getSpeed()*step;
+									RealLocation vLocation = SEPUtils.getMobileLocation(v.getDeparture(), v.getDestination(), vStep, true);
+									
+									double distanceUV = SEPUtils.getDistance(uLocation, vLocation);
+									boolean spotted = false;
+									
+									if (u.getSight() >= distanceUV)
+									{
+										// TODO: u.loggerRencontre(v, step);
+										spotted = true;
+									}
+									if (v.getSight() >= distanceUV)
+									{
+										// TODO: v.loggerRencontre(u, step);
+										spotted = true;
+									}
+									
+									if (!spotted && minDistance < distanceUV) minDistance = distanceUV;
+								}
+							}
+							
+							step += minDistance / fasterUnit.getSpeed();
+						}
+						
+						/*
+						distance = f(unit1, unit2, t) // avec t écoulement du temps pour 1 tour.
+						
+						
+						Déplacer les unités mobiles
+						Ecrire leur journal de bord (rencontres, vortex, ...)
+						
+						---
+						
+						movingUnits <- getMovingUnits(turn);									
+						step <- 0
+						TANTQUE(step < 1)		
+							// A chaque step garder trace de la collision survenant le plus tôt, et faire le step suivant directement à cette date (si elle survient dans le tour courant)
+							fasterUnit <- null
+							minDistance <- INFINI
+							
+							POUR CHAQUE movingUnits u FAIRE
+								SI u.speed > fasterUnit.speed ALORS fasterUnit <- u;
+								POUR CHAQUE movingUnits v FAIRE
+									SI u = v ALORS continue;
+									d <- Distance(u, v, step);
+									
+									SI u.sight >= d ALORS u.loggerRencontre(v, step);
+									SI v.sight >= d ALORS v.loggerRencontre(u, step);
+									
+									SI (d > u.sight OU d > v.sight) ALORS minDistance <- Min(minDistance, d);												
+								FPOUR
+							FPOUR
+							
+							// Le plus petit incrément susceptible d'etre utile (mais peut etre pas vu que minDistance et fasterUnit ne sont pas vraiment liés).
+							step += minDistance / fasterUnit.speed;
+							 
+						FPOUR
+						
+						
+						*//*
+						return null;
+						}
+						});
 						}
 						catch(SQLiteException e)
 						{
-							throw new SEPServerDataBaseException(e);
+						throw new SEPServerDataBaseException(e);
 						}
-					}
-				});
-				
-				/*
-				
-	 *
-	 * OnUnitArrival		Une unité spéciale arrive à destination.
-	 * 	Les missiles pulsar engendrent un pulsar,
-	 * 	les probes se déploient,
-	 * 	les missiles anti-probes explosent en détruisant éventuellement une probe,
-	 * 	les flottes déclenchent un conflit, se posent, repartent, et peuvent communiquer leur journal de bord.
-	 * 	les spaceRoadDeliverer spawnent une spaceRoad, et peuvent communiquer leur journal de bord.
-	 * 	les carbonCarrier spawn du carbone, éventuellement repartent, et peuvent communiquer leur journal de bord.
-	 * 
-	 * OnConflict			Un conflit est déclaré sur un cors céleste.
-	 * 	On résoud le conflit concerné, en mettant à jour les journals de bords des flottes concernées (+ log du corps céleste champs de bataille communiqué en direct au joueur).
-	 * 
-	 * OnTimeTickEnd		Le temps à fini de s'écouler.
-	 * 	On génère le carbone et la population pour le tour écoulé, on incrémente la date.
-				 */
-			}
-		}
-		
-		return resolvingEvents;
-	}
-	
+						}
+						});
+						
+						/*
+						
+						*
+						* OnUnitArrival		Une unité spéciale arrive à destination.
+						* 	Les missiles pulsar engendrent un pulsar,
+						* 	les probes se déploient,
+						* 	les missiles anti-probes explosent en détruisant éventuellement une probe,
+						* 	les flottes déclenchent un conflit, se posent, repartent, et peuvent communiquer leur journal de bord.
+						* 	les spaceRoadDeliverer spawnent une spaceRoad, et peuvent communiquer leur journal de bord.
+						* 	les carbonCarrier spawn du carbone, éventuellement repartent, et peuvent communiquer leur journal de bord.
+						* 
+						* OnConflict			Un conflit est déclaré sur un cors céleste.
+						* 	On résoud le conflit concerné, en mettant à jour les journals de bords des flottes concernées (+ log du corps céleste champs de bataille communiqué en direct au joueur).
+						* 
+						* OnTimeTickEnd		Le temps à fini de s'écouler.
+						* 	On génère le carbone et la population pour le tour écoulé, on incrémente la date.
+						*//*
+							}
+							}
+							
+							return resolvingEvents;
+							}
+							*/
+
 	// Game commands
-	
+	/*
 	//TODO: Factoriser une interface pour server.GameBoard et common.PlayerGameBoard afin de pouvoir utiliser les meme IGameCommand depuis le moteur serveur et le moteur client.
 	public GameBoard build(String playerLogin, String celestialBodyName, eBuildingType buildingType) throws GameBoardException
 	{
@@ -972,17 +872,17 @@ class GameBoard implements Serializable, IGameBoard
 			{
 				throw new GameBoardException("Celestial body '" + celestialBodyName + "' already in work for this turn.");
 			}
-			*/
-			// Select number of buildings
-			stmnt = null; // TODO
-			/*
-			stmnt.step();
-			// celestialBody has free slots
-			if (stmnt.columnInt(0) >= pcb.getMaxSlots())
-			{
-				throw new GameBoardException("No more free slots on celestial body '" + celestialBodyName + "'");
-			}
-			*/
+			*//*
+		// Select number of buildings
+		stmnt = null; // TODO
+		/*
+		stmnt.step();
+		// celestialBody has free slots
+		if (stmnt.columnInt(0) >= pcb.getMaxSlots())
+		{
+		throw new GameBoardException("No more free slots on celestial body '" + celestialBodyName + "'");
+		}
+		*//*
 			int carbonCost = 0, populationCost = 0, nbBuilt = 0;
 			
 			// Select current building for the given type
@@ -991,18 +891,18 @@ class GameBoard implements Serializable, IGameBoard
 			IBuilding b = null;
 			if (!bs.isEmpty())
 			{
-				b = bs.iterator().next();
-				
-				if (!Rules.getBuildingCanBeUpgraded(b.getType()))
-				{
-					throw new GameBoardException(buildingType + " cannot be upgraded.");							
-				}										
-				
-				nbBuilt = b.getNbSlots();
+			b = bs.iterator().next();
+			
+			if (!Rules.getBuildingCanBeUpgraded(b.getType()))
+			{
+				throw new GameBoardException(buildingType + " cannot be upgraded.");							
+			}										
+			
+			nbBuilt = b.getNbSlots();
 			}
 			else
 			{
-				nbBuilt = 0;												
+			nbBuilt = 0;												
 			}
 
 			carbonCost = Rules.getBuildingUpgradeCarbonCost(buildingType, nbBuilt+1); 
@@ -1011,12 +911,12 @@ class GameBoard implements Serializable, IGameBoard
 			// build/upgrade can be afforded
 			if (populationCost > 0 && p == null)
 			{
-				throw new GameBoardException("Celestial body '" + celestialBodyName + "' is not a planet and '"+buildingType+"' cost population.");
+			throw new GameBoardException("Celestial body '" + celestialBodyName + "' is not a planet and '"+buildingType+"' cost population.");
 			}
 			
 			if (pcb.getCurrentCarbon() < carbonCost)
 			{
-				throw new GameBoardException("Celestial body '" + celestialBodyName + "' is not a planet and '"+buildingType+"' cost population.");
+			throw new GameBoardException("Celestial body '" + celestialBodyName + "' is not a planet and '"+buildingType+"' cost population.");
 			}
 			
 			// update new building
@@ -1029,71 +929,162 @@ class GameBoard implements Serializable, IGameBoard
 			//conn.exec(insertUpdateBuildingSQL(buildingType, celestialBodyName, nbBuilt+1));
 			
 			return this;
+			}
+			catch(SQLDataBaseException e)
+			{
+			throw new GameBoardException(e);
+			}
+			}
+			*/
+
+	////////// private methods
+
+	private SEPCommonDB getGlobalDB()
+	{
+		return playerViews.get(null) == null ? null : playerViews.get(null).getDB();
+	}
+
+	private void onGameEvent(IGameEvent event, String observer)
+	{
+		onGameEvents(Arrays.asList(event), new HashSet<String>(Arrays.asList(observer)));
+	}
+	
+	private void onGameEvent(IGameEvent event, Set<String> observers)
+	{
+		onGameEvents(Arrays.asList(event), observers);
+	}
+	
+	private void onGameEvents(Collection<? extends IGameEvent> events, String observer)
+	{
+		onGameEvents(events, new HashSet<String>(Arrays.asList(observer)));
+	}
+	
+	private void onGameEvents(Collection<? extends IGameEvent> events, Set<String> observers)
+	{
+		PlayerGameboardView globalView = playerViews.get(null);
+		globalView.onGameEvents(events);
+
+		for(String playerName: observers)
+		{
+			playerViews.get(playerName).onGameEvents(events);
+		}
+	}
+
+	/////////// Running game getters
+
+	private IGameConfig getDBConfig()
+	{
+		return getGlobalDB().getConfig();
+	}
+
+	private Map<IPlayer, IPlayerConfig> getDBPlayerList() throws GameBoardException
+	{
+		Map<IPlayer, IPlayerConfig> result = new TreeMap<IPlayer, IPlayerConfig>();
+
+		try
+		{
+			Set<IPlayer> ps = Player.select(getGlobalDB(), IPlayer.class, null, null);
+			Set<IPlayerConfig> pcs = PlayerConfig.select(getGlobalDB(), IPlayerConfig.class, null, null);
+
+			for(IPlayer p: ps)
+			{
+				for(IPlayerConfig pc: pcs)
+				{
+					if (p.getName().compareTo(pc.getName()) == 0)
+					{
+						result.put(p, pc);
+						pcs.remove(pc);
+						break;
+					}
+				}
+			}
+
+			return result;
 		}
 		catch(SQLDataBaseException e)
 		{
 			throw new GameBoardException(e);
 		}
 	}
+
+	private IPlayer getDBPlayer(String playerLogin) throws GameBoardException
+	{
+		IPlayer p = null;
+
+		try
+		{
+			p = Player.selectOne(getGlobalDB(), IPlayer.class, null, "name = %s", playerLogin);
+		}
+		catch(SQLDataBaseException e)
+		{
+			throw new GameBoardException("SQLDataBaseException", e);
+		}
+
+		if (p == null)
+			throw new GameBoardException("Player " + playerLogin + " is unkown");
+
+		return p;
+	}
 	
-	// Private
-	
-	void insertCelestialBody(eCelestialBodyType celestialBodyType, String name, Location location) throws SQLDataBaseException
+	////////////// Universe creation
+
+	private ICelestialBody createNeutralCelestialBody(eCelestialBodyType celestialBodyType, String name, Location location)
 	{
 		ICelestialBody cb;
-		
+
 		boolean productiveCelestialBody = (celestialBodyType != eCelestialBodyType.Vortex);
-		
+
 		int[] carbonAmount;
 		int initialCarbon;
 		int[] slotsAmount;
 		int maxSlots;
-		
+
 		if (productiveCelestialBody)
 		{
 			// Fix carbon amount to the mean value.
 			carbonAmount = getConfig().getCelestialBodiesStartingCarbonAmount(celestialBodyType);
 			initialCarbon = rnd.nextInt(carbonAmount[1] - carbonAmount[0]) + carbonAmount[0];
-			
+
 			// Fix slots amount to the mean value.
 			slotsAmount = getConfig().getCelestialBodiesSlotsAmount(celestialBodyType);
 			maxSlots = rnd.nextInt(slotsAmount[1] - slotsAmount[0]) + slotsAmount[0];
-			if (maxSlots <= 0) maxSlots = 1;
-			
-			switch(celestialBodyType)
+			if (maxSlots <= 0)
+				maxSlots = 1;
+
+			switch (celestialBodyType)
 			{
 				case AsteroidField:
 				{
-					cb = new VersionedAsteroidField(name, celestialBodyType, location, initialCarbon, maxSlots, getConfig().getTurn(), null, initialCarbon, 0);
+					cb = new AsteroidField(name, celestialBodyType, location, initialCarbon, maxSlots, null, initialCarbon, 0);
 					break;
 				}
 				case Nebula:
 				{
-					cb = new VersionedNebula(name, celestialBodyType, location, initialCarbon, maxSlots, getConfig().getTurn(), null, initialCarbon, 0);
+					cb = new Nebula(name, celestialBodyType, location, initialCarbon, maxSlots, null, initialCarbon, 0);
 					break;
 				}
-				
+
 				case Planet:
 				{
 					int[] populationPerTurnRange = getConfig().getPopulationPerTurn();
 					int populationPerTurn = rnd.nextInt(populationPerTurnRange[1] - populationPerTurnRange[0]) + populationPerTurnRange[0];
-					
+
 					int[] populationLimitRange = getConfig().getPopulationLimit();
 					int maxPopulation = rnd.nextInt(populationLimitRange[1] - populationLimitRange[0]) + populationLimitRange[0];
-										
-					cb = new VersionedPlanet(name, celestialBodyType, location, initialCarbon, maxSlots, getConfig().getTurn(), null, initialCarbon, 0, populationPerTurn, maxPopulation, 0);
+
+					cb = new Planet(name, celestialBodyType, location, initialCarbon, maxSlots, null, initialCarbon, 0, populationPerTurn, maxPopulation, 0);
 					break;
 				}
-				
+
 				default:
 				{
-					throw new Protocol.SEPImplementationException("'"+celestialBodyType+"' not implemented.");
+					throw new Protocol.SEPImplementationError("'" + celestialBodyType + "' not implemented.");
 				}
 			}
 		}
 		else
 		{
-			switch(celestialBodyType)
+			switch (celestialBodyType)
 			{
 				case Vortex:
 				{
@@ -1105,132 +1096,89 @@ class GameBoard implements Serializable, IGameBoard
 					cb = new Vortex(name, celestialBodyType, location, turn, turn+lifetime, );
 					*/
 					// TODO:
-					throw new Protocol.SEPImplementationException("insertCelestialBody(Vortex, ...) not Implemented");
+					throw new Protocol.SEPImplementationError("insertCelestialBody(Vortex, ...) not Implemented");
 				}
-				
+
 				default:
 				{
-					throw new Protocol.SEPImplementationException("'"+celestialBodyType+"' not implemented.");
+					throw new Protocol.SEPImplementationError("'" + celestialBodyType + "' not implemented.");
 				}
 			}
 		}
-		
-		if (cb != null)
-		{
-			if (productiveCelestialBody)
-			{
-				ProductiveCelestialBody.insertOrUpdate(commonDB, IProductiveCelestialBody.class.cast(cb));
-			}
-			else
-			{
-				Vortex.insertOrUpdate(commonDB, IVortex.class.cast(cb));
-			}
-		}
+
+		return cb;
 	}
 
-	void insertPlayer(Player player, PlayerConfig config) throws SQLDataBaseException
-	{		
-		Player.insertOrUpdate(commonDB, player);
-		// TODO: Symbol & Portrait
-		PlayerConfig.insertOrUpdate(commonDB, config);		
-	}
-	
-	void insertArea(Location location, boolean isSun) throws SQLDataBaseException
-	{
-		Area.insertOrUpdate(commonDB, new Area(location, isSun));
-	}
-
-	boolean areaExists(Location location) throws SQLDataBaseException
-	{
-		return Area.exist(commonDB, IArea.class, null, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
-	}
-	
-	boolean areaHasCelestialBody(Location location) throws SQLDataBaseException
-	{
-		if (ProductiveCelestialBody.existUnversioned(commonDB, IProductiveCelestialBody.class, null, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z)) return true;
-		return Vortex.exist(commonDB, IVortex.class, null, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
-	}
-	
-	boolean areaIsSun(Location location) throws SQLDataBaseException
-	{
-		Set<IArea> areas = Area.select(commonDB, IArea.class, null, "location_x = %d AND location_y = %d AND location_z = %d", location.x, location.y, location.z);
-		return (!areas.isEmpty() && areas.iterator().next().getIsSun());
-	}
-	
-	boolean isTravellingTheSun(RealLocation a, RealLocation b) throws SQLDataBaseException
+	private boolean isTravellingTheSun(Location sunLocation, RealLocation a, RealLocation b)
 	{
 		// TODO: Optimize with a SQL request using "... IN ( ... )" as where clause.
-		for(RealLocation pathStep : SEPUtils.getAllPathLoc(a, b))
+		for(RealLocation pathStep: SEPUtils.getAllPathLoc(a, b))
 		{
-			if (areaExists(pathStep.asLocation()) && areaIsSun(pathStep.asLocation())) return true;
+			if (SEPUtils.getDistance(pathStep.asLocation(), sunLocation) <= getConfig().getSunRadius())
+			{
+				return true;
+			}
 		}
-		
+
 		return false;
 	}
-	
-	void insertStartingPlanet(String planetName, Location planetLocation, String ownerName) throws SQLDataBaseException
-	{			
+
+	private IPlanet createPlayerStartingPlanet(String name, Location location, String ownerName)
+	{
 		// Fix carbon amount to the mean value.
 		int[] carbonAmount = getConfig().getCelestialBodiesStartingCarbonAmount(eCelestialBodyType.Planet);
-		int carbonStock = (carbonAmount[1] - carbonAmount[0]) / 2 + carbonAmount[0];
+		int initialCarbonStock = (carbonAmount[1] - carbonAmount[0]) / 2 + carbonAmount[0];
 
 		// Fix slots amount to the mean value.
 		int[] slotsAmount = getConfig().getCelestialBodiesSlotsAmount(eCelestialBodyType.Planet);
-		int slots = (slotsAmount[1] - slotsAmount[0]) / 2 + slotsAmount[0];
-		if (slots <= 0) slots = 1;
+		int maxSlots = (slotsAmount[1] - slotsAmount[0]) / 2 + slotsAmount[0];
+		if (maxSlots <= 0)
+			maxSlots = 1;
 
 		int[] populationPerTurnRange = getConfig().getPopulationPerTurn();
-		int populationPerTurn = (populationPerTurnRange[1] - populationPerTurnRange[0])/2 + populationPerTurnRange[0];
-		
+		int populationPerTurn = (populationPerTurnRange[1] - populationPerTurnRange[0]) / 2 + populationPerTurnRange[0];
+
 		int[] populationLimitRange = getConfig().getPopulationLimit();
-		int populationLimit = (populationLimitRange[1] - populationLimitRange[0])/2 + populationLimitRange[0];
+		int maxPopulation = (populationLimitRange[1] - populationLimitRange[0]) / 2 + populationLimitRange[0];
 
 		int currentCarbon = getConfig().getPlayersPlanetsStartingCarbonResources();
 		int currentPopulation = getConfig().getPlayersPlanetsStartingPopulation();
-		
-		IVersionedPlanet planet = new VersionedPlanet(planetName, eCelestialBodyType.Planet, planetLocation, carbonStock, slots, getConfig().getTurn(), ownerName, carbonStock, currentCarbon, populationPerTurn, populationLimit, currentPopulation);		
-		IGovernmentModule governmentModule;
-		IGovernment government;
-		
-		// If victory rule "Regimicide" is on, starting planet has a pre-built government module.	    
-	    if (getConfig().isRegimicide())
-		{
-	    	// Buildin, GovernmentModule, Government
-	    	governmentModule = new GovernmentModule(eBuildingType.GovernmentModule, planet.getName(), getConfig().getTurn(), 1);
-	    	government = new Government(ownerName, getConfig().getTurn(), null, null, planetName, getConfig().getTurn());
-		}
-	    else
-	    {
-	    	governmentModule = null;
-	    	government = null;
-	    }
-	    
-	    ProductiveCelestialBody.insertOrUpdate(commonDB, planet);
-		if (governmentModule != null) Building.insertOrUpdate(commonDB, governmentModule);
-		if (government != null) Government.insertOrUpdate(commonDB, government);
+
+		return new Planet(name, eCelestialBodyType.Planet, location, initialCarbonStock, maxSlots, ownerName, initialCarbonStock, currentCarbon, populationPerTurn, maxPopulation, currentPopulation);
 	}
-	
-	/// Tests
-	
-	ISQLDataBase getDB()
-	{
-		return db;
-	}
-	
-	/// Serialization
-	
+
+	////////// serialization
+
 	private void writeObject(java.io.ObjectOutputStream out) throws IOException
 	{
 		out.defaultWriteObject();
+		out.writeObject(playerViews.get(null));
+		out.writeInt(playerViews.size() - 1);
+		for(PlayerGameboardView view: playerViews.values())
+		{
+			if (view.getName() == null)
+			{
+				continue;
+			}
+			out.writeObject(view);
+		}
 	}
 
 	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
-		
-		this.db = this.commonDB.getDB();
+
+		playerViews = new HashMap<String, PlayerGameboardView>();
+		PlayerGameboardView globalView = (PlayerGameboardView) in.readObject();
+		playerViews.put(null, globalView);
+		int size = in.readInt();
+		for(int i = 0; i < size; ++i)
+		{
+			PlayerGameboardView view = (PlayerGameboardView) in.readObject();
+			playerViews.put(view.getName(), view);
+		}
 	}
-	
+
 	private void readObjectNoData() throws ObjectStreamException
 	{
 
@@ -1812,11 +1760,11 @@ class GameBoard implements Serializable, IGameBoard
 				WHILE(!attackPromise.target.isEmpty())					
 				 *//*
 			}
-		} while (!isFinished);
+			} while (!isFinished);
 
-		return survivors;
-	}
-	*/
+			return survivors;
+			}
+			*/
 
 	/*
 	private Map<String, Map<String, Boolean>> resolveConflictDiplomacy(ProductiveCelestialBody productiveCelestialBody)
@@ -1907,7 +1855,7 @@ class GameBoard implements Serializable, IGameBoard
 	////////////
 
 	// TODO: Replace with Map<Class<? extends IClientCommand>, ServerCommandProcessor> commandProcessors = db.getGameCommandProcessors();
-	
+
 	/*
 	public void demolish(String playerLogin, String celestialBodyName, Class<? extends org.axan.sep.common.ABuilding> buildingType) throws RunningGameCommandException
 	{
@@ -2122,8 +2070,8 @@ class GameBoard implements Serializable, IGameBoard
 		GovernmentModule governmentModule = new GovernmentModule(db.getDate());
 		return new SettleGovernmentCheckResult(planet, governmentalFleet, governmentModule);
 	}
-*/
-	
+	*/
+
 	/*
 	{
 		BuildCheckResult buildCheckResult = checkBuild(playerLogin, celestialBodyName, buildingType);
@@ -2232,7 +2180,7 @@ class GameBoard implements Serializable, IGameBoard
 		return new BuildCheckResult(productiveCelestialBody, carbonCost, populationCost, newBuilding);
 	}
 
-/*
+	/*
 	public CommandCheckResult canFireAntiProbeMissile(String playerLogin, FireAntiProbeMissileParams p)
 	{
 		try

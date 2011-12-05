@@ -1,14 +1,11 @@
 package org.axan.sep.common.db.orm;
 
-import org.axan.sep.common.db.orm.ProductiveCelestialBody;
-import java.lang.Exception;
-import org.axan.sep.common.db.orm.base.IBaseAsteroidField;
-import org.axan.sep.common.db.orm.base.BaseAsteroidField;
-import org.axan.sep.common.db.IAsteroidField;
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.SEPUtils.Location;
-import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.IAsteroidField;
+import org.axan.sep.common.db.orm.base.BaseAsteroidField;
+import org.axan.sep.common.db.orm.base.IBaseAsteroidField;
 
 public class AsteroidField extends ProductiveCelestialBody implements IAsteroidField
 {
@@ -20,9 +17,9 @@ public class AsteroidField extends ProductiveCelestialBody implements IAsteroidF
 		this.baseAsteroidFieldProxy = baseAsteroidFieldProxy;
 	}
 
-	public AsteroidField(String name, eCelestialBodyType type, Location location, Integer initialCarbonStock, Integer maxSlots)
+	public AsteroidField(String name, eCelestialBodyType type, Location location, Integer initialCarbonStock, Integer maxSlots, String owner, Integer carbonStock, Integer currentCarbon)
 	{
-		this(new BaseAsteroidField(name, type.toString(), location == null ? null : location.x, location == null ? null : location.y, location == null ? null : location.z, initialCarbonStock, maxSlots));
+		this(new BaseAsteroidField(name, type.toString(), location == null ? null : location.x, location == null ? null : location.y, location == null ? null : location.z, initialCarbonStock, maxSlots, owner, carbonStock, currentCarbon));
 	}
 
 	public AsteroidField(ISQLDataBaseStatement stmnt) throws Exception

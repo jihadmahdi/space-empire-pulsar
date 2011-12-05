@@ -1,10 +1,7 @@
 package org.axan.sep.client.gui;
 
 import java.awt.Container;
-import java.io.File;
-import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -17,7 +14,6 @@ import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
-import javax.swing.filechooser.FileFilter;
 
 import org.axan.eplib.utils.Reflect;
 import org.axan.sep.client.SEPClient;
@@ -25,21 +21,14 @@ import org.axan.sep.client.SEPClient.IUserInterface;
 import org.axan.sep.client.gui.lib.JImagePanel;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.PlayerGameBoard;
-import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.orm.Player;
 import org.axan.sep.common.db.orm.PlayerConfig;
 import org.axan.sep.server.SEPServer;
 import org.javabuilders.BuildResult;
-import org.javabuilders.Builder;
-import org.javabuilders.annotations.Alias;
 import org.javabuilders.annotations.DoInBackground;
 import org.javabuilders.event.BackgroundEvent;
 import org.javabuilders.event.CancelStatus;
-import org.javabuilders.event.ObjectMethod;
-import org.javabuilders.handler.binding.BuilderBindings;
 import org.javabuilders.swing.SwingJavaBuilder;
-import org.javabuilders.swing.handler.event.background.SwingBackgroundProcessingHandler;
-import org.javabuilders.util.BuilderUtils;
 
 public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 {
@@ -76,6 +65,7 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 	{		
 		SwingUtilities.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{				
 				SwingJavaBuilder.getConfig().addResourceBundle(SpaceEmpirePulsarGUI.class.getName());

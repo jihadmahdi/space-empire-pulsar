@@ -35,12 +35,14 @@ public class SingleRowFlowLayout extends FlowLayout
         super(align, hgap, vgap);
     }
 
-    public Dimension minimumLayoutSize(Container target)
+    @Override
+	public Dimension minimumLayoutSize(Container target)
     {
         return computeSize(target, false);
     }
 
-    public Dimension preferredLayoutSize(Container target)
+    @Override
+	public Dimension preferredLayoutSize(Container target)
     {
         return computeSize(target, true);
     }

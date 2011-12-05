@@ -5,7 +5,6 @@ public interface IDiplomacy
 {
 	public String getOwner();
 	public String getTarget();
-	public Integer getTurn();
 	public Boolean getAllowToLand();
 	public String getForeignPolicy();
 }

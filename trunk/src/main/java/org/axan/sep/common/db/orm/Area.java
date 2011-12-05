@@ -1,20 +1,18 @@
 package org.axan.sep.common.db.orm;
 
-import java.lang.Exception;
-import org.axan.sep.common.db.orm.base.IBaseArea;
-import org.axan.sep.common.db.orm.base.BaseArea;
-import org.axan.sep.common.db.IArea;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+
 import org.axan.eplib.orm.DataBaseORMGenerator;
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.eplib.orm.ISQLDataBaseStatementJob;
 import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.sep.common.SEPUtils.Location;
-import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.IArea;
 import org.axan.sep.common.db.SEPCommonDB;
+import org.axan.sep.common.db.orm.base.BaseArea;
+import org.axan.sep.common.db.orm.base.IBaseArea;
 
 public class Area implements IArea
 {
@@ -37,34 +35,25 @@ public class Area implements IArea
 		this(new BaseArea(stmnt));
 	}
 
+	@Override
 	public Location getLocation()
 	{
 		return location;
 	}
 
+	@Override
 	public Boolean getIsSun()
 	{
 		return baseAreaProxy.getIsSun();
 	}
-	
-	/**
-	 * Select the first object of the resultset.
-	 * @param <T>
-	 * @param db
-	 * @param expectedType
-	 * @param from
-	 * @param where
-	 * @param params
-	 * @return
-	 * @throws SQLDataBaseException
-	 */
+
 	public static <T extends IArea> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
 	{
-		Set<T> results = select(db, expectedType, from, where, params);
+		Set<T> results = select(db, expectedType, from, (where==null?"":where+" ")+"LIMIT 1", params);
 		if (results.isEmpty()) return null;
 		return results.iterator().next();
 	}
-	
+
 	public static <T extends IArea> Set<T> select(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
 	{
 		ISQLDataBaseStatement stmnt = null;
@@ -106,13 +95,7 @@ public class Area implements IArea
 				{
 					try
 					{
-						if (stmnt.step())
-						{
-							Object o = stmnt.columnValue(0);
-							return o != null;
-						}
-						
-						return false;
+						return stmnt.step() && stmnt.columnValue(0) != null;
 					}
 					finally
 					{
@@ -126,9 +109,6 @@ public class Area implements IArea
 			throw new SQLDataBaseException(e);
 		}
 	}
-	
-	
-	//////////
 
 
 	private static <T extends IArea> String selectQuery(Class<T> expectedType, String from, String where, Object ... params)
