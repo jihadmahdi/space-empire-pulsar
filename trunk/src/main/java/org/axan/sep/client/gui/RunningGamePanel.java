@@ -1,5 +1,6 @@
 package org.axan.sep.client.gui;
 
+import java.util.List;
 import java.util.logging.Logger;
 
 import javax.swing.JPanel;
@@ -7,6 +8,7 @@ import javax.swing.JPanel;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.client.gui.IUniverseRenderer.IUniverseRendererListener;
 import org.axan.sep.common.SEPUtils.RealLocation;
+import org.axan.sep.common.db.IGameEvent;
 import org.javabuilders.BuildResult;
 import org.javabuilders.swing.SwingJavaBuilder;
 
@@ -70,10 +72,15 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 	////////// ui events
 	
 	@Override
-	public void updateSelectedArea(RealLocation location)
+	public void updateSelectedArea(int x, int y, int z)
 	{
-		// TODO Auto-generated method stub
-		
+		// TODO
+	}
+	
+	//TODO: Should override some common interface to everybody's implementing this method
+	void receiveNewTurnGameBoard(List<IGameEvent> newTurnEvents)
+	{
+		universePanel.receiveNewTurnGameBoard(newTurnEvents);
 	}
 		
 }

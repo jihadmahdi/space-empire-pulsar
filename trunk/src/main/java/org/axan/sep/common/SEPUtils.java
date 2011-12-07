@@ -258,7 +258,8 @@ public abstract class SEPUtils
 		Map<eCelestialBodyType, Float> result = new HashMap<Protocol.eCelestialBodyType, Float>();
 		for(eCelestialBodyType type : eCelestialBodyType.values())
 		{
-			result.put(type, config.getNeutralCelestialBodiesGenerationRate(type));
+			Float rate = config.getNeutralCelestialBodiesGenerationRate(type);
+			result.put(type, rate == null ? 0F : rate);
 		}
 		
 		return result;

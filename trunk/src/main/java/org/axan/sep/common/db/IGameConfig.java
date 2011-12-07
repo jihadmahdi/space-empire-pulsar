@@ -258,6 +258,7 @@ public interface IGameConfig
 	
 	/**
 	 * Unit base sight.
+	 * NOTE: Note actually implemented, only Probe sight value is used.
 	 */
 	public Float getUnitTypeSight(eUnitType unitType);
 	public void setUnitTypeSight(eUnitType unitType, Float sight);

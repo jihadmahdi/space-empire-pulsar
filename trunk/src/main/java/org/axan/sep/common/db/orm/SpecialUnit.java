@@ -62,7 +62,7 @@ public class SpecialUnit implements ISpecialUnit
 
 	public static <T extends ISpecialUnit> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
 	{
-		Set<T> results = select(db, expectedType, from, (where==null?"":where+" ")+"LIMIT 1", params);
+		Set<T> results = select(db, expectedType, from, (where==null?"(1) ":"("+where+") ")+"LIMIT 1", params);
 		if (results.isEmpty()) return null;
 		return results.iterator().next();
 	}
@@ -80,7 +80,7 @@ public class SpecialUnit implements ISpecialUnit
 				{
 					return stmnt;
 				}
-			});
+			}, params);
 			while(stmnt.step())
 			{
 				results.add(DataBaseORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) SpecialUnit.class : expectedType, stmnt));
@@ -115,7 +115,7 @@ public class SpecialUnit implements ISpecialUnit
 						if (stmnt != null) stmnt.dispose();
 					}
 				}
-			});
+			}, params);
 		}
 		catch(Exception e)
 		{
@@ -127,14 +127,14 @@ public class SpecialUnit implements ISpecialUnit
 	private static <T extends ISpecialUnit> String selectQuery(Class<T> expectedType, String from, String where, Object ... params)
 	{
 		where = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);
-		if (where != null) where = String.format("(%s)",where);
+		if (where != null && !where.isEmpty() && where.charAt(0) != '(') where = "("+where+")";
 		String typeFilter = null;
 		if (expectedType != null)
 		{
 			String type = expectedType.isInterface() ? expectedType.getSimpleName().substring(1) : expectedType.getSimpleName();
 			typeFilter = String.format("%s.type IS NOT NULL", type);
 		}
-		if (typeFilter != null && !typeFilter.isEmpty()) where = (where == null) ? typeFilter : String.format("%s AND %s", where, typeFilter);
+		if (typeFilter != null && !typeFilter.isEmpty()) where = (where == null) ? typeFilter : String.format("%s AND %s", typeFilter, where);
 		return String.format("SELECT SpecialUnit.*, Hero.* FROM SpecialUnit%s LEFT JOIN Hero USING (owner, name, type)%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
 	}
 

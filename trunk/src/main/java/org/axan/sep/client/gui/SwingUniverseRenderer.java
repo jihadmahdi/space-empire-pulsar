@@ -1,14 +1,21 @@
 package org.axan.sep.client.gui;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.FilenameFilter;
+import java.net.URL;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
@@ -19,14 +26,24 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.axan.eplib.orm.SQLDataBaseException;
+import org.axan.eplib.utils.Basic;
+import org.axan.eplib.utils.Reflect;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.client.gui.RunningGamePanel.AUniverseRendererPanel;
+import org.axan.sep.client.gui.lib.GUIUtils;
 import org.axan.sep.client.gui.lib.JImagePanel;
 import org.axan.sep.common.PlayerGameBoard;
+import org.axan.sep.common.Protocol.eCelestialBodyType;
+import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.IArea;
 import org.axan.sep.common.db.ICelestialBody;
 import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.IGameEvent;
+import org.axan.sep.common.db.IProductiveCelestialBody;
+import org.axan.sep.common.db.IUnit;
+import org.axan.sep.common.db.SEPCommonDB;
 import org.axan.sep.common.db.orm.Area;
 import org.axan.sep.common.db.orm.ProductiveCelestialBody;
 import org.javabuilders.BuildResult;
@@ -59,6 +76,7 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 	private IUniverseRendererListener listener = null;
 	private boolean ignoreZSlider = false;
 	private final Map<Integer, JImagePanel> images = new Hashtable<Integer, JImagePanel>();
+	private Location selectedLocation = null;
 
 	////////// ui controls
 	private JPanel universeViewPanel;
@@ -73,6 +91,7 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 	{
 		build = SwingJavaBuilder.build(this);
 
+		zSlider.setEnabled(false);
 		zSlider.addChangeListener(new ChangeListener()
 		{
 
@@ -127,15 +146,16 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 	}
 
 	@Override
-	public void refreshGameBoard(PlayerGameBoard gameboard)
+	public void receiveNewTurnGameBoard(List<IGameEvent> newTurnEvents)
 	{
-		if (gameboard != null)
-			setGameboard(gameboard);
-		gameboard = getGameboard();
+		if (getGameboard() == null)
+		{
+			setGameboard(getSepClient().getGameboard());
+		}
+		
+		PlayerGameBoard gameboard = getGameboard();
+		if (gameboard == null) return;
 		IGameConfig config = gameboard.getConfig();
-
-		if (gameboard == null)
-			return;
 
 		GridLayout layout = new GridLayout(config.getDimX(), config.getDimY());
 		layout.setRows(config.getDimX() + 1);
@@ -167,7 +187,7 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 			}
 
 		// Never used zSlider
-		boolean freshSlider = zSlider.getValue() < 0;
+		boolean freshSlider = !zSlider.isEnabled();
 
 		zSlider.setMinimum(0);
 		zSlider.setMaximum(config.getDimZ() - 1);
@@ -175,6 +195,7 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 		if (freshSlider)
 		{
 			zSlider.setValue(config.getDimZ() / 2);
+			zSlider.setEnabled(true);
 		}
 
 		changeZView(zSlider.getValue());
@@ -186,11 +207,13 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 
 	private void changeZView(int z)
 	{
-		if (getGameboard() == null)
+		if (getGameboard() == null || !zSlider.isEnabled())
 			return;
 
 		PlayerGameBoard gameboard = getGameboard();
+		SEPCommonDB db = gameboard.getDB();
 		IGameConfig config = gameboard.getConfig();
+		String playerName = getSepClient().getLogin();
 
 		if (z < 0 || z >= config.getDimZ())
 			return;
@@ -199,141 +222,151 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 
 		zSlider.setValue(z);
 
-		Set<IArea> areas = Area.select(gameboard.getDB(), IArea.class, null, "location_z = ?", z);
-
+		Set<IArea> areas;
+		try
+		{
+			areas = Area.select(db, IArea.class, null, "location_z = ?", z);
+		}
+		catch(SQLDataBaseException e)
+		{
+			log.log(Level.SEVERE, "SQL Error during universe redering", e);
+			return;
+		}
+		
 		for(IArea area: areas)
-		{			
-			JImagePanel image = getImagePanel(area.getLocation().x, area.getLocation().y);
-
-			String toolTipText = "Location [" + area.getLocation().x + ";" + area.getLocation().y + ";" + area.getLocation().z + "]\nTODO: Area description";
-
-			// Default background is black.
-			image.setBackground(Color.black);
-
-			// Default border is null.
-			image.setBorder(null);
-
-			// If visible, background is gray				
-			//image.setBorder((area.isVisible() ? BorderFactory.createLineBorder(Color.green) : null));
-			if (area.isVisible())
-				image.setBackground(Color.gray);
-
-			// If sun, background is red.
-			if (area.isSun())
-				image.setBackground(Color.red);
-
-			// Celestial body
-			boolean ownedCelestialBody = false;
-			ICelestialBody celestialBody = area.getCelestialBody();
-			if (celestialBody != null)
+		{
+			try
 			{
-				String type = celestialBody.getClass().getSimpleName().toLowerCase();
-
-				// TODO : Crappy code to replace later
-				int nbTiles = 1;
-				if (type.compareTo("planet") == 0)
-					nbTiles = PLANET_TILES;
-				else if (type.compareTo("asteroidfield") == 0)
-					nbTiles = ASTEROID_TILES;
-				else if (type.compareTo("nebula") == 0)
-					nbTiles = NEBULA_TILES;
-
-				int tile = getCelestialBodyTile(celestialBody.getName(), nbTiles);
-				image.setImage(OLDSpaceEmpirePulsarGUI.IMG_PATH + type + File.separatorChar + type + tile + ".png");
-
-				if (ProductiveCelestialBody.class.isInstance(celestialBody) && currentGameBoard.getPlayerName().equals(ProductiveCelestialBody.class.cast(celestialBody).getOwnerName()))
+				boolean isVisible = area.isVisible(db, playerName);
+				
+				JImagePanel image = getImagePanel(area.getLocation().x, area.getLocation().y);
+	
+				String toolTipText = "Location [" + area.getLocation().x + ";" + area.getLocation().y + ";" + area.getLocation().z + "]\nTODO: Area description\n";
+	
+				// Default background is black.
+				image.setBackground(Color.black);
+	
+				// Default border is null.
+				image.setBorder(null);
+	
+				// If visible, background is gray				
+				//image.setBorder((area.isVisible() ? BorderFactory.createLineBorder(Color.green) : null));
+				if (isVisible)
 				{
-					ownedCelestialBody = true;
+					image.setBackground(Color.gray);
 				}
-			}
-			else
-			{
-				image.setImage((String) null);
-			}
-
-			Set<UnitMarker> unitMarkers = area.getMarkers(UnitMarker.class);
-			Set<Unit> units = area.getUnits();
-
-			Color borderColor = null;
-
-			if ((units != null && units.size() > 0) || (unitMarkers != null && unitMarkers.size() > 0))
-			{
-				boolean ownedUnit = false;
-				boolean otherUnit = false;
-				boolean ownedMarker = false;
-				boolean otherMarker = false;
-
-				toolTipText += "Units :\n";
-
+	
+				// If sun, background is red.
+				if (area.isSun())
+				{
+					image.setBackground(Color.red);
+				}
+	
+				// Celestial body
+				boolean ownedCelestialBody = false;
+				ICelestialBody celestialBody = area.getCelestialBody(db);
+				if (celestialBody != null)
+				{				
+					image.setImage(getTile(celestialBody.getType().toString(), celestialBody.getName()));
+					
+					if (IProductiveCelestialBody.class.isInstance(celestialBody) && playerName.equals(IProductiveCelestialBody.class.cast(celestialBody).getOwner()))
+					{
+						ownedCelestialBody = true;
+					}
+				}
+				else
+				{
+					image.setImage((String) null);
+				}
+	
+				Set<IUnit> units = area.getUnits(db, IUnit.class);
+				
+				Color borderColor = null;
+	
 				if (units != null && units.size() > 0)
 				{
-					for(Unit u: units)
+					boolean ownedUnit = false;
+					
+					toolTipText += "Units :\n";
+	
+					if (units != null && units.size() > 0)
 					{
-						toolTipText += "\t" + u.toString() + "\n";
-						if (currentGameBoard.getPlayerName().equals(u.getOwnerName()))
+						for(IUnit u: units)
 						{
-							ownedUnit = true;
+							toolTipText += "\t" + u.toString() + "\n";
+							ownedUnit = (playerName.equals(u.getOwner()));
 						}
-						else
-						{
-							otherUnit = true;
-						}
-					}
+					}				
+	
+					borderColor = ownedUnit ? Color.green : Color.red;				
 				}
-
-				if (unitMarkers != null && unitMarkers.size() > 0)
+				
+				// TODO: Previously seen units and traveling units markers
+	
+				if (!ownedCelestialBody || borderColor == null)
 				{
-					for(UnitMarker um: unitMarkers)
-					{
-						toolTipText += "\t" + um.getUnit().toString() + "\n";
-
-						if (currentGameBoard.getPlayerName().equals(um.getUnit().getOwnerName()))
-						{
-							ownedMarker = true;
-						}
-						else
-						{
-							otherMarker = true;
-						}
-					}
+					if (borderColor == null && ownedCelestialBody)
+						borderColor = Color.green.darker();
+					if (borderColor != null)
+						image.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED, borderColor, Color.darkGray));//(borderColor, 2));
 				}
-
-				if (ownedMarker)
-					borderColor = Color.blue;
-				if (ownedUnit)
-					borderColor = Color.green;
-				if (otherMarker)
-					borderColor = Color.red.darker();
-				if (otherUnit)
-					borderColor = Color.red;
+				else
+				{
+					image.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.green.darker(), 2), BorderFactory.createEtchedBorder(EtchedBorder.LOWERED, borderColor, Color.darkGray)));
+				}
+	
+				// Border is yellow if selected
+				if (selectedLocation != null && selectedLocation.equals(area.getLocation()))
+				{
+					image.setBorder(BorderFactory.createLineBorder(Color.yellow));
+				}
+	
+				image.setToolTipText("<html>" + toolTipText.replaceAll("\n", "<br>") + "</html>");
 			}
-
-			if (!ownedCelestialBody || borderColor == null)
+			catch(SQLDataBaseException e)
 			{
-				if (borderColor == null && ownedCelestialBody)
-					borderColor = Color.green.darker();
-				if (borderColor != null)
-					image.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED, borderColor, Color.darkGray));//(borderColor, 2));
+				log.log(Level.SEVERE, "SQL Error on area rendering, area skipped", e);
+				continue;
 			}
-			else
-			{
-				image.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.green.darker(), 2), BorderFactory.createEtchedBorder(EtchedBorder.LOWERED, borderColor, Color.darkGray)));
-			}
-
-			// Border is yellow if selected
-			if (selectedLocation != null && selectedLocation.equals(new RealLocation(x + 0.5, y + 0.5, z + 0.5)))
-			{
-				image.setBorder(BorderFactory.createLineBorder(Color.yellow));
-			}
-
-			image.setToolTipText("<html>" + toolTipText.replaceAll("\n", "<br>") + "</html>");
 		}
-
-		getUniverseViewPanel().updateUI();
-
+		
+		updateUI();
+		
 		ignoreZSlider = false;
 	}
 
+	private final Map<String, Integer> nbTiles = new HashMap<String, Integer>();
+	private int getNbTiles(String rawType)
+	{
+		final String type = rawType.toLowerCase();
+		if (!nbTiles.containsKey(type))
+		{
+			URL pathURL = Reflect.getResource(SpaceEmpirePulsarGUI.class.getPackage().getName()+".img", type);
+			File path = new File(pathURL.getPath());
+			String[] files = path.list(new FilenameFilter()
+			{
+				
+				@Override
+				public boolean accept(File dir, String name)
+				{
+					return name.matches(type+"[0-9]+\\.png");
+				}
+			});
+			int nb = files.length;
+			nbTiles.put(type, nb);
+		}
+		return nbTiles.get(type);
+	}
+	
+	private URL getTile(String type, String id)
+	{
+		type = type.toLowerCase();
+		int nbTiles = getNbTiles(type);
+		int choosenTile = new Random(id.hashCode()).nextInt(nbTiles)+1;
+		
+		return Reflect.getResource(SpaceEmpirePulsarGUI.class.getPackage().getName()+".img."+type, String.format("%s%d.png", type, choosenTile));		
+	}
+	
 	private JImagePanel getImagePanel(final int x, final int y)
 	{
 		int i = x * getGameboard().getConfig().getDimX() + y;
@@ -373,8 +406,11 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 
 	private void selectLocation(int x, int y, int z)
 	{
+		selectedLocation = new Location(x, y, z);
 		changeZView(zSlider.getValue());
 		if (listener != null)
+		{
 			listener.updateSelectedArea(x, y, z);
+		}
 	}
 }

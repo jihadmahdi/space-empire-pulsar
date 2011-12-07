@@ -5,8 +5,11 @@
  */
 package org.axan.sep.client.gui;
 
+import java.util.List;
+
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.common.PlayerGameBoard;
+import org.axan.sep.common.db.IGameEvent;
 
 
 /**
@@ -23,5 +26,5 @@ public interface IUniverseRenderer
 	void setSepClient(SEPClient sepClient);
 	
 	void setUniverseRendererListener(IUniverseRendererListener listener);
-	void refreshGameBoard(PlayerGameBoard gameboard);
+	void receiveNewTurnGameBoard(List<IGameEvent> newTurnEvents);
 }

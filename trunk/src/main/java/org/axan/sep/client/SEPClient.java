@@ -1,5 +1,6 @@
 package org.axan.sep.client;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
@@ -14,12 +15,17 @@ import org.axan.eplib.gameserver.client.GameClient;
 import org.axan.eplib.gameserver.common.IClientUser;
 import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.eplib.gameserver.common.IServerUser.ServerSavingGameException;
+import org.axan.eplib.orm.ISQLDataBase;
+import org.axan.eplib.orm.ISQLDataBaseFactory;
 import org.axan.eplib.orm.SQLDataBaseException;
+import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.sep.common.GameConfig;
+import org.axan.sep.common.IGameBoard.GameBoardException;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.Protocol;
 import org.axan.sep.common.db.IGameEvent;
+import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
 import org.axan.sep.common.db.SEPCommonDB;
@@ -28,7 +34,7 @@ import org.axan.sep.common.db.orm.PlayerConfig;
 /**
  * 
  */
-public class SEPClient
+public class SEPClient implements ISQLDataBaseFactory
 {
 	public static Logger log = Logger.getLogger(SEPClient.class.getCanonicalName());
 	
@@ -91,7 +97,7 @@ public class SEPClient
 		 * New turn has been sent from the server. Client must refresh the gameboard.
 		 * @param gameBoard
 		 */
-		void receiveNewTurnGameBoard(PlayerGameBoard gameBoard);
+		void receiveNewTurnGameBoard(List<IGameEvent> newTurnEvents);
 
 		/**
 		 * New PausedGame message received from another player.
@@ -127,7 +133,7 @@ public class SEPClient
 		@Override
 		public void refreshPlayerList(Map<IPlayer, IPlayerConfig> playerList) throws RpcException
 		{
-			client.refreshPlayerList(playerList);
+			client.getGameboard().refreshPlayerList(playerList);
 			client.ui.refreshPlayerList(playerList);
 		}
 
@@ -146,6 +152,7 @@ public class SEPClient
 		@Override
 		public void refreshGameConfig(GameConfig gameCfg)
 		{
+			client.getGameboard().refreshGameConfig(gameCfg);
 			client.ui.refreshGameConfig(gameCfg);
 		}
 
@@ -161,8 +168,18 @@ public class SEPClient
 		@Override
 		public void receiveNewTurnGameBoard(List<IGameEvent> newTurnEvents) throws RpcException
 		{
-			client.setGameBoard(gameBoard);
-			client.ui.receiveNewTurnGameBoard(gameBoard);
+			try
+			{
+				client.getGameboard().receiveNewTurnGameBoard(newTurnEvents);
+			}
+			catch(GameBoardException e)
+			{
+				log.log(Level.SEVERE, "Error resolving turn, try to re-sync game", e);
+				client.syncGame();
+				return;
+			}
+			
+			client.ui.receiveNewTurnGameBoard(newTurnEvents);
 		}
 
 		@Override
@@ -175,9 +192,7 @@ public class SEPClient
 	
 	private final GameClient client;
 	private final IUserInterface ui;
-	private PlayerGameBoard gameBoard=null;
-	
-	private final Map<String, IPlayerConfig> playerConfigs = new HashMap<String, IPlayerConfig>();
+	private final PlayerGameBoard gameBoard;	
 	
 	public SEPClient(IUserInterface ui, String login, String server, int port, long timeOut)
 	{
@@ -198,58 +213,10 @@ public class SEPClient
 			e.printStackTrace();
 			throw new Error(e);
 		}
-	}
+		
+		gameBoard = new PlayerGameBoard(this);
+	}	
 	
-	public boolean isRunning()
-	{
-		return getGameBoard() != null;
-	}
-	
-	private synchronized void refreshPlayerList(Map<IPlayer, IPlayerConfig> playerList)
-	{
-		if (!isRunning())
-		{
-			playerConfigs.clear();
-			for(IPlayerConfig pc : playerList.values())
-			{
-				playerConfigs.put(pc.getName(), pc);
-			}
-		}
-	}
-	
-	/**
-	 * Get player config no matter the game current state (in creation or running)
-	 * @param playerName
-	 * @return
-	 * @throws SQLDataBaseException 
-	 */
-	public synchronized IPlayerConfig getPlayerConfig(String playerName) throws SQLDataBaseException
-	{
-		if (!isRunning())
-		{
-			return playerConfigs.get(playerName);
-		}
-		else
-		{
-			return PlayerConfig.selectOne(getDB(), PlayerConfig.class, null, "name = %s", playerName);
-		}		
-	}
-	
-	public void setGameBoard(PlayerGameBoard gameBoard)
-	{
-		this.gameBoard = gameBoard;
-	}
-	
-	public PlayerGameBoard getGameBoard()
-	{
-		return gameBoard;
-	}
-	
-	public SEPCommonDB getDB()
-	{
-		return gameBoard==null?null:gameBoard.getDB();
-	}
-
 	public void connect()
 	{
 		client.connect();
@@ -375,5 +342,34 @@ public class SEPClient
 			pausedGameProxy = client.getCustomServerInterface(Protocol.ServerPausedGame.class);
 		}
 		return pausedGameProxy;
+	}
+	
+	@Override
+	public ISQLDataBase createSQLDataBase()
+	{
+		try
+		{
+			File dbFile = File.createTempFile("sepC", ".sep");
+			return new SQLiteDB(dbFile);
+			//return new HSQLDB(dbFile, "sa", "");			
+		}
+		catch(Throwable t)
+		{
+			t.printStackTrace();
+			log.log(Level.SEVERE, t.getMessage(), t);
+			throw new RuntimeException(t);
+		}
+	}
+	
+	public PlayerGameBoard getGameboard()
+	{
+		return gameBoard;
+	}
+	
+	////////// private methods
+	
+	private void syncGame()
+	{
+		throw new RuntimeException("Game re-sync not implemented yet");
 	}
 }

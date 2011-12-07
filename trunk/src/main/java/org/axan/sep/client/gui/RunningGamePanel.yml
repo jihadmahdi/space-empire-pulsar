@@ -33,3 +33,5 @@ JPanel(name=runningGamePanel):
       [grow]             [200px]
       <dockedLeftPanel   >dockedRightPanel  [grow]
       dockedBottomPanel+*                   [bottom]
+bind:
+  - universePanel.sepClient: this.sepClient

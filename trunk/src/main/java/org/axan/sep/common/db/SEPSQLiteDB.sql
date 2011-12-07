@@ -56,8 +56,8 @@ CREATE TABLE Unit (
      CHECK((destination_x is NOT NULL AND destination_y is NOT NULL AND destination_z is NOT NULL)
            OR (destination_x IS NULL AND destination_y IS NULL AND destination_z IS NULL)),
 	 CHECK(progress >= 0 AND progress <= 100),
-     CONSTRAINT FKVersionedUnitDeparture FOREIGN KEY (departure_x, departure_y, departure_z) REFERENCES Area,
-     CONSTRAINT FKVersionedUnitDestination FOREIGN KEY (destination_x, destination_y, destination_z) REFERENCES Area     
+     CONSTRAINT FKUnitDeparture FOREIGN KEY (departure_x, departure_y, departure_z) REFERENCES Area,
+     CONSTRAINT FKUnitDestination FOREIGN KEY (destination_x, destination_y, destination_z) REFERENCES Area     
 );
 
 CREATE TABLE CelestialBody (
@@ -88,7 +88,7 @@ CREATE TABLE ProductiveCelestialBody (
      CONSTRAINT PKProductiveCelestialBody PRIMARY KEY (name),
      UNIQUE (name, type),
      CONSTRAINT FKProductiveCelestialBodyISACelestialBody FOREIGN KEY (name, type) REFERENCES CelestialBody (name, type),
-     CONSTRAINT FKVersionedProductiveCelestialBodyOwner FOREIGN KEY (owner) REFERENCES Player
+     CONSTRAINT FKProductiveCelestialBodyOwner FOREIGN KEY (owner) REFERENCES Player
 );
 
 CREATE TABLE Nebula (
@@ -132,7 +132,7 @@ CREATE TABLE Building (
      nbSlots INTEGER NOT NULL,
      CHECK(type IN ('PulsarLaunchingPad', 'SpaceCounter', 'GovernmentModule', 'DefenseModule', 'StarshipPlant', 'ExtractionModule')),
      CONSTRAINT PKBuilding PRIMARY KEY (type, celestialBodyName, turn),
-     CONSTRAINT FKBuildingLocation FOREIGN KEY (celestialBodyName, turn) REFERENCES VersionedProductiveCelestialBody     
+     CONSTRAINT FKBuildingLocation FOREIGN KEY (celestialBodyName) REFERENCES ProductiveCelestialBody (name)   
 );
 --comment on table Building is 'A building occupy a building slot on a productive celestial body. There are several building types.';
 

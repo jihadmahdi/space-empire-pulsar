@@ -1,8 +1,10 @@
 package org.axan.sep.client.gui;
 
 import java.awt.Container;
+import java.awt.Frame;
 import java.net.URL;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -21,6 +23,9 @@ import org.axan.sep.client.SEPClient.IUserInterface;
 import org.axan.sep.client.gui.lib.JImagePanel;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.PlayerGameBoard;
+import org.axan.sep.common.db.IGameEvent;
+import org.axan.sep.common.db.IPlayer;
+import org.axan.sep.common.db.IPlayerConfig;
 import org.axan.sep.common.db.orm.Player;
 import org.axan.sep.common.db.orm.PlayerConfig;
 import org.axan.sep.server.SEPServer;
@@ -219,7 +224,8 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 		
 		SwingJavaBuilderMyUtils.addType(JImagePanel.class, HostGamePanel.class, JoinGamePanel.class, SpinnerNumberModel.class, RunningGamePanel.class);
 		
-		build = SwingJavaBuilder.build(this);		
+		build = SwingJavaBuilder.build(this);
+		setExtendedState(getExtendedState() | MAXIMIZED_BOTH);
 		refresh();
 	}
 	
@@ -348,6 +354,7 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 	{
 		log.log(Level.INFO, "onGameRan");
 		
+		/*
 		new Thread(new Runnable()
 		{			
 			@Override
@@ -369,6 +376,7 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 				SwingJavaBuilderMyUtils.callBackgroundMethod(build, "showRunningGamePanel", SpaceEmpirePulsarGUI.this);
 			}
 		}).start();
+		*/
 	}
 
 	@Override
@@ -378,14 +386,14 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 	}
 
 	@Override
-	public void refreshPlayerList(Map<Player, PlayerConfig> playerList)
+	public void refreshPlayerList(Map<IPlayer, IPlayerConfig> playerList)
 	{
 		log.log(Level.INFO, "refreshPlayerList");
 		gameCreationPanel.getPlayersListPanel().refreshPlayers(playerList.keySet());
 	}
 	
 	@Override
-	public void receiveGameCreationMessage(Player fromPlayer, String msg)
+	public void receiveGameCreationMessage(IPlayer fromPlayer, String msg)
 	{
 		log.log(Level.INFO, "receiveGameCreationMessage");
 		gameCreationPanel.getChatPanel().receivedMessages(fromPlayer, msg);
@@ -398,19 +406,33 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 	}
 
 	@Override
-	public void receiveRunningGameMessage(Player fromPlayer, String msg)
+	public void receiveRunningGameMessage(IPlayer fromPlayer, String msg)
 	{
 		log.log(Level.INFO, "receiveRunningGameMessage");
 	}
 
 	@Override
-	public void receiveNewTurnGameBoard(PlayerGameBoard gameBoard)
+	public void receiveNewTurnGameBoard(final List<IGameEvent> newTurnEvents)
 	{
 		log.log(Level.INFO, "receiveNewTurnGameBoard");
+		new Thread(new Runnable()
+		{
+			
+			@Override
+			public void run()
+			{
+				if (gameCreationPanel.isVisible())
+				{
+					gameCreationPanel.setVisible(false);
+					SwingJavaBuilderMyUtils.callBackgroundMethod(build, "showRunningGamePanel", SpaceEmpirePulsarGUI.this);
+				}
+				runningGamePanel.receiveNewTurnGameBoard(newTurnEvents);
+			}
+		}).start();
 	}
 
 	@Override
-	public void receivePausedGameMessage(Player fromPlayer, String msg)
+	public void receivePausedGameMessage(IPlayer fromPlayer, String msg)
 	{
 		log.log(Level.INFO, "receivePausedGameMessage");
 	}

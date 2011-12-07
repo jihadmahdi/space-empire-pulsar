@@ -35,6 +35,8 @@ import org.axan.eplib.orm.ISQLDataBaseFactory;
 import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.sep.common.GameConfig;
+import org.axan.sep.common.GameConfigCopier;
+import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
 import org.axan.sep.common.IGameBoard.GameBoardException;
 import org.axan.sep.common.Protocol;
 import org.axan.sep.common.Protocol.SEPImplementationError;
@@ -622,7 +624,7 @@ public class SEPServer implements IServer, ISQLDataBaseFactory
 							}
 							catch(GameBoardException e)
 							{
-								log.log(Level.SEVERE, "Error on game start", e);
+								log.log(Level.SEVERE, "Error on new game turn", e);
 								sepServer.terminate();
 							}
 						}
@@ -756,7 +758,7 @@ public class SEPServer implements IServer, ISQLDataBaseFactory
 	{
 		try
 		{
-			File dbFile = File.createTempFile("SEP_Common_", ".sep");
+			File dbFile = File.createTempFile("sepS", ".sep");
 			return new SQLiteDB(dbFile);
 			//return new HSQLDB(dbFile, "sa", "");			
 		}
@@ -832,6 +834,26 @@ public class SEPServer implements IServer, ISQLDataBaseFactory
 			if (game.isGameInCreation())
 			{
 				game.createUniverse();
+				
+				threadPool.execute(new Runnable()
+				{
+					
+					@Override
+					public void run()
+					{
+						try
+						{
+							refreshGameConfig();
+							getRunningGame().resolveNextTurn();
+							announceNewTurn();
+						}
+						catch(GameBoardException e)
+						{
+							log.log(Level.SEVERE, "Error on game start", e);
+							terminate();
+						}
+					}
+				});
 			}
 		}
 	}
@@ -1084,6 +1106,27 @@ public class SEPServer implements IServer, ISQLDataBaseFactory
 
 	private void refreshGameConfig()
 	{
+		IGameConfig iConfig = getGameInCreation().getConfig();
+		final GameConfig config;
+		
+		if (GameConfig.class.isInstance(iConfig))
+		{
+			config = (GameConfig) iConfig;
+		}
+		else
+		{
+			config = new GameConfig();
+			try
+			{
+				GameConfigCopier.copy(IGameConfig.class, iConfig, config);
+			}
+			catch(GameConfigCopierException e)
+			{
+				log.log(Level.SEVERE, "Cannot copy from DB config to GameConfig object.", e);
+				terminate();
+			}
+		}
+		
 		doForEachConnectedPlayer(new DoItToOnePlayer()
 		{
 
@@ -1091,8 +1134,8 @@ public class SEPServer implements IServer, ISQLDataBaseFactory
 			public void doIt(ServerPlayer player)
 			{
 				try
-				{
-					player.getClientInterface().refreshGameConfig((GameConfig) getGameInCreation().getConfig());
+				{					
+					player.getClientInterface().refreshGameConfig(config);
 				}
 				catch(RpcException e)
 				{

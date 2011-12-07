@@ -1,5 +1,6 @@
 package org.axan.sep.common.db;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -12,8 +13,10 @@ import org.axan.sep.common.db.orm.Building;
 import org.axan.sep.common.db.orm.CelestialBody;
 import org.axan.sep.common.db.orm.Government;
 import org.axan.sep.common.db.orm.GovernmentModule;
+import org.axan.sep.common.db.orm.Player;
+import org.axan.sep.common.db.orm.PlayerConfig;
 
-public class EvCreateUniverse implements IGameEvent
+public class EvCreateUniverse implements IGameEvent, Serializable
 {
 	final private Location sunLocation;
 	final private Map<IPlayer, IPlayerConfig> players;
@@ -36,19 +39,35 @@ public class EvCreateUniverse implements IGameEvent
 	{
 		try
 		{
-			// Generate Universe	
-			// Make the sun
 			IGameConfig config = db.getConfig();
-	
+			
+			// Generate players
+			for(IPlayer player : players.keySet())
+			{
+				Player.insertOrUpdate(db, player);
+				PlayerConfig.insertOrUpdate(db, players.get(player));
+			}
+			
+			// Generate Universe
+			/*
+			for(int x=0; x < config.getDimX(); ++x)
+				for(int y=0; y < config.getDimY(); ++y)
+					for(int z=0; z < config.getDimZ(); ++z)
+					{
+						Area.insertOrUpdate(db, new Area(new Location(x, y, z), false));
+					}
+			*/
+			
+			// Make the sun
 			for(int x = -Math.min(config.getSunRadius(), sunLocation.x); x <= Math.min(config.getSunRadius(), sunLocation.x); ++x)
 				for(int y = -Math.min(config.getSunRadius(), sunLocation.y); y <= Math.min(config.getSunRadius(), sunLocation.y); ++y)
-					for(int z = -Math.min(config.getSunRadius(), sunLocation.z); z <= Math.min(config.getSunRadius(), sunLocation.z); ++z)
+					for(int z = -Math.min(config.getSunRadius(), sunLocation.z); z <= Math.min(config.getSunRadius(), sunLocation.z); ++z)						
 					{
 						Location parsedLoc = new Location(sunLocation.x + x, sunLocation.y + y, sunLocation.z + z);
 						if (SEPUtils.getDistance(parsedLoc, sunLocation) <= config.getSunRadius())
 						{
 							Area.insertOrUpdate(db, new Area(parsedLoc, true));
-						}
+						}						
 					}
 			
 			Map<String, IPlanet> playerStartingPlanets = new HashMap<String, IPlanet>();

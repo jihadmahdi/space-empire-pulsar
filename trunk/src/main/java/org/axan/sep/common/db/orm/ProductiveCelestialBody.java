@@ -1,5 +1,6 @@
 package org.axan.sep.common.db.orm;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -18,7 +19,7 @@ import org.axan.sep.common.db.SEPCommonDB;
 import org.axan.sep.common.db.orm.base.BaseProductiveCelestialBody;
 import org.axan.sep.common.db.orm.base.IBaseProductiveCelestialBody;
 
-public class ProductiveCelestialBody extends CelestialBody implements IProductiveCelestialBody
+public class ProductiveCelestialBody extends CelestialBody implements IProductiveCelestialBody, Serializable
 {
 	private final IBaseProductiveCelestialBody baseProductiveCelestialBodyProxy;
 
@@ -70,7 +71,7 @@ public class ProductiveCelestialBody extends CelestialBody implements IProductiv
 
 	public static <T extends IProductiveCelestialBody> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
 	{
-		Set<T> results = select(db, expectedType, from, (where==null?"":where+" ")+"LIMIT 1", params);
+		Set<T> results = select(db, expectedType, from, (where==null?"(1) ":"("+where+") ")+"LIMIT 1", params);
 		if (results.isEmpty()) return null;
 		return results.iterator().next();
 	}
@@ -88,7 +89,7 @@ public class ProductiveCelestialBody extends CelestialBody implements IProductiv
 				{
 					return stmnt;
 				}
-			});
+			}, params);
 			while(stmnt.step())
 			{
 				results.add(DataBaseORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) ProductiveCelestialBody.class : expectedType, stmnt));
@@ -123,7 +124,7 @@ public class ProductiveCelestialBody extends CelestialBody implements IProductiv
 						if (stmnt != null) stmnt.dispose();
 					}
 				}
-			});
+			}, params);
 		}
 		catch(Exception e)
 		{
@@ -135,14 +136,14 @@ public class ProductiveCelestialBody extends CelestialBody implements IProductiv
 	private static <T extends IProductiveCelestialBody> String selectQuery(Class<T> expectedType, String from, String where, Object ... params)
 	{
 		where = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);
-		if (where != null) where = String.format("(%s)",where);
+		if (where != null && !where.isEmpty() && where.charAt(0) != '(') where = "("+where+")";
 		String typeFilter = null;
 		if (expectedType != null)
 		{
 			String type = expectedType.isInterface() ? expectedType.getSimpleName().substring(1) : expectedType.getSimpleName();
 			typeFilter = String.format("%s.type IS NOT NULL", type);
 		}
-		if (typeFilter != null && !typeFilter.isEmpty()) where = (where == null) ? typeFilter : String.format("%s AND %s", where, typeFilter);
+		if (typeFilter != null && !typeFilter.isEmpty()) where = (where == null) ? typeFilter : String.format("%s AND %s", typeFilter, where);
 		return String.format("SELECT CelestialBody.*, Vortex.*, ProductiveCelestialBody.*, AsteroidField.*, Nebula.*, Planet.* FROM ProductiveCelestialBody%s LEFT JOIN CelestialBody USING (name, type) LEFT JOIN Vortex USING (name, type) LEFT JOIN AsteroidField USING (name, type) LEFT JOIN Nebula USING (name, type) LEFT JOIN Planet USING (name, type)%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
 	}
 

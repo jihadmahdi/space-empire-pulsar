@@ -52,7 +52,7 @@ public class Government implements IGovernment
 
 	public static <T extends IGovernment> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
 	{
-		Set<T> results = select(db, expectedType, from, (where==null?"":where+" ")+"LIMIT 1", params);
+		Set<T> results = select(db, expectedType, from, (where==null?"(1) ":"("+where+") ")+"LIMIT 1", params);
 		if (results.isEmpty()) return null;
 		return results.iterator().next();
 	}
@@ -70,7 +70,7 @@ public class Government implements IGovernment
 				{
 					return stmnt;
 				}
-			});
+			}, params);
 			while(stmnt.step())
 			{
 				results.add(DataBaseORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) Government.class : expectedType, stmnt));
@@ -105,7 +105,7 @@ public class Government implements IGovernment
 						if (stmnt != null) stmnt.dispose();
 					}
 				}
-			});
+			}, params);
 		}
 		catch(Exception e)
 		{
@@ -117,7 +117,7 @@ public class Government implements IGovernment
 	private static <T extends IGovernment> String selectQuery(Class<T> expectedType, String from, String where, Object ... params)
 	{
 		where = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);
-		if (where != null) where = String.format("(%s)",where);
+		if (where != null && !where.isEmpty() && where.charAt(0) != '(') where = "("+where+")";
 		return String.format("SELECT Government.* FROM Government%s%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
 	}
 
