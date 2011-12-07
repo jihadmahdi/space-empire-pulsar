@@ -1,6 +1,6 @@
 JPanel(name=universePanel):
   - JLabel(name=lblZValue)
-  - JSlider(name=zSlider, value=-1)
+  - JSlider(name=zSlider)
   - JPanel(name=universeViewPanel, opaque=false, border=white, background=yellow)  
   - MigLayout: |
       [grow]

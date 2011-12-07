@@ -80,7 +80,7 @@ public class Unit implements IUnit
 	}
 
 	@Override
-	public Double getProgress()
+	public double getProgress()
 	{
 		return baseUnitProxy.getProgress();
 	}
@@ -90,10 +90,31 @@ public class Unit implements IUnit
 	{
 		return destination;
 	}
+	
+	@Override
+	public boolean isMoving()
+	{
+		if (getProgress() < 0 || getDestination() == null || getDeparture() == null) return false;
+		return (getProgress() != 0 && getProgress() != 1);
+	}		
+	
+	/**
+	 * 1$: table.
+	 */
+	private static final String SQL_MOVING_CONDITIONS = "(%1$sprogress > 0) AND (%1$sdestination_x IS NOT NULL) AND (%1$sdeparture_x IS NOT NULL) AND (%1$sprogress != 1)";
+	
+	public static String getSQLMovingConditions()
+	{
+		return getSQLMovingConditions(null);
+	}
+	public static String getSQLMovingConditions(String table)
+	{
+		return String.format(SQL_MOVING_CONDITIONS, table == null || table.isEmpty() ? "" : table+".");
+	}
 
 	public static <T extends IUnit> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
 	{
-		Set<T> results = select(db, expectedType, from, (where==null?"":where+" ")+"LIMIT 1", params);
+		Set<T> results = select(db, expectedType, from, (where==null?"(1) ":"("+where+") ")+"LIMIT 1", params);
 		if (results.isEmpty()) return null;
 		return results.iterator().next();
 	}
@@ -111,7 +132,7 @@ public class Unit implements IUnit
 				{
 					return stmnt;
 				}
-			});
+			}, params);
 			while(stmnt.step())
 			{
 				results.add(DataBaseORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) Unit.class : expectedType, stmnt, db.getConfig()));
@@ -146,7 +167,7 @@ public class Unit implements IUnit
 						if (stmnt != null) stmnt.dispose();
 					}
 				}
-			});
+			}, params);
 		}
 		catch(Exception e)
 		{
@@ -158,14 +179,14 @@ public class Unit implements IUnit
 	private static <T extends IUnit> String selectQuery(Class<T> expectedType, String from, String where, Object ... params)
 	{
 		where = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);
-		if (where != null) where = String.format("(%s)",where);
+		if (where != null && !where.isEmpty() && where.charAt(0) != '(') where = "("+where+")";
 		String typeFilter = null;
 		if (expectedType != null)
 		{
 			String type = expectedType.isInterface() ? expectedType.getSimpleName().substring(1) : expectedType.getSimpleName();
 			typeFilter = String.format("%s.type IS NOT NULL", type);
 		}
-		if (typeFilter != null && !typeFilter.isEmpty()) where = (where == null) ? typeFilter : String.format("%s AND %s", where, typeFilter);
+		if (typeFilter != null && !typeFilter.isEmpty()) where = (where == null) ? typeFilter : String.format("%s AND %s", typeFilter, where);
 		return String.format("SELECT Unit.*, PulsarMissile.*, Probe.*, CarbonCarrier.*, AntiProbeMissile.*, SpaceRoadDeliverer.*, Fleet.* FROM Unit%s LEFT JOIN PulsarMissile USING (owner, name, type) LEFT JOIN Probe USING (owner, name, type) LEFT JOIN CarbonCarrier USING (owner, name, type) LEFT JOIN AntiProbeMissile USING (owner, name, type) LEFT JOIN SpaceRoadDeliverer USING (owner, name, type) LEFT JOIN Fleet USING (owner, name, type)%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
 	}
 

@@ -18,6 +18,7 @@ import org.axan.eplib.orm.SQLDataBaseException;
 import org.axan.eplib.utils.Basic;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.client.gui.lib.GUIUtils;
+import org.axan.sep.common.IGameBoard.GameBoardException;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
 import org.javabuilders.BuildResult;
@@ -120,9 +121,9 @@ public class GameChatPanel extends JPanel implements IModalComponent
 		IPlayerConfig config = null;
 		try
 		{
-			config = getSepClient().getPlayerConfig(sender.getName());
+			config = getSepClient().getGameboard().getPlayerConfig(sender.getName());
 		}
-		catch(SQLDataBaseException e)
+		catch(GameBoardException e)
 		{
 			log.log(Level.WARNING, "Cannot retrieve player's config", e);
 		}

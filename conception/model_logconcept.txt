@@ -1,5 +1,5 @@
 Rebuilt des modèles, nouveau concept:
-Tout en gardant un SQL embarquée, s'arranger pour ne pas avoir besoin de méthode du genre Area.isVisible(player).
+Tout en gardant un SQL embarquée, s'arranger pour ne pas avoir besoin qu'une méthode comme Area.isVisible(player) fasse un calcul absolue sur tout les états antérieurs. // Heu ?
 Pour celà c'est au moment de la mise à jour de la base de données globale qu'on maintient en permanance une liste d'évènements pour la vue de chaque joueur.
 La vue de chaque joueur est une sorte de LOG d'évènements ordonnés et datés qui peuvent être parcourus pour reconstruire le PlayerGameBoard.
 Celà permet à chaque résolution de tour de n'envoyer que les nouveaux évènements concernant chaque joueurs.

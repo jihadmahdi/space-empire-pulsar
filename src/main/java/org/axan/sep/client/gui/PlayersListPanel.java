@@ -117,7 +117,7 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 				IPlayerConfig config = null;
 				try
 				{
-					config = getSepClient().getPlayerConfig(player.getName());
+					config = getSepClient().getGameboard().getPlayerConfig(player.getName());
 				}
 				catch(Throwable t)
 				{

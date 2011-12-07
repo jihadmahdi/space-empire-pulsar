@@ -1,17 +1,16 @@
-package org.axan.sep.server;
+package org.axan.sep.common;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Vector;
 
-import org.axan.sep.common.Protocol.Client;
 import org.axan.sep.common.db.IGameEvent;
 import org.axan.sep.common.db.IGameEvent.GameEventException;
 import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
 import org.axan.sep.common.db.SEPCommonDB;
 
-class PlayerGameboardView
+public class PlayerGameboardView
 {
 	/** Executor used to generate sub events. */
 	private final IGameEventExecutor executor;

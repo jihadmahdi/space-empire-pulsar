@@ -1,5 +1,6 @@
 package org.axan.sep.common.db.orm;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -15,7 +16,7 @@ import org.axan.sep.common.db.SEPCommonDB;
 import org.axan.sep.common.db.orm.base.BaseVortex;
 import org.axan.sep.common.db.orm.base.IBaseVortex;
 
-public class Vortex extends CelestialBody implements IVortex
+public class Vortex extends CelestialBody implements IVortex, Serializable
 {
 	private final IBaseVortex baseVortexProxy;
 
@@ -55,7 +56,7 @@ public class Vortex extends CelestialBody implements IVortex
 
 	public static <T extends IVortex> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
 	{
-		Set<T> results = select(db, expectedType, from, (where==null?"":where+" ")+"LIMIT 1", params);
+		Set<T> results = select(db, expectedType, from, (where==null?"(1) ":"("+where+") ")+"LIMIT 1", params);
 		if (results.isEmpty()) return null;
 		return results.iterator().next();
 	}
@@ -73,7 +74,7 @@ public class Vortex extends CelestialBody implements IVortex
 				{
 					return stmnt;
 				}
-			});
+			}, params);
 			while(stmnt.step())
 			{
 				results.add(DataBaseORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) Vortex.class : expectedType, stmnt));
@@ -108,7 +109,7 @@ public class Vortex extends CelestialBody implements IVortex
 						if (stmnt != null) stmnt.dispose();
 					}
 				}
-			});
+			}, params);
 		}
 		catch(Exception e)
 		{
@@ -120,14 +121,14 @@ public class Vortex extends CelestialBody implements IVortex
 	private static <T extends IVortex> String selectQuery(Class<T> expectedType, String from, String where, Object ... params)
 	{
 		where = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);
-		if (where != null) where = String.format("(%s)",where);
+		if (where != null && !where.isEmpty() && where.charAt(0) != '(') where = "("+where+")";
 		String typeFilter = null;
 		if (expectedType != null)
 		{
 			String type = expectedType.isInterface() ? expectedType.getSimpleName().substring(1) : expectedType.getSimpleName();
 			typeFilter = String.format("%s.type IS NOT NULL", type);
 		}
-		if (typeFilter != null && !typeFilter.isEmpty()) where = (where == null) ? typeFilter : String.format("%s AND %s", where, typeFilter);
+		if (typeFilter != null && !typeFilter.isEmpty()) where = (where == null) ? typeFilter : String.format("%s AND %s", typeFilter, where);
 		return String.format("SELECT CelestialBody.*, ProductiveCelestialBody.*, AsteroidField.*, Nebula.*, Planet.*, Vortex.* FROM Vortex%s LEFT JOIN CelestialBody USING (name, type) LEFT JOIN ProductiveCelestialBody USING (name, type) LEFT JOIN AsteroidField USING (name, type) LEFT JOIN Nebula USING (name, type) LEFT JOIN Planet USING (name, type)%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
 	}
 

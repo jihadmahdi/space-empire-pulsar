@@ -522,6 +522,7 @@ public class GameConfig implements IGameConfig, Serializable
 	@Override
 	public void setNeutralCelestialBodiesGenerationRate(eCelestialBodyType celestialBodyType, Float rate)
 	{
+		if (rate == null) return;
 		if (rate < 0) throw new IllegalArgumentException("rate cannot be negative.");
 		this.neutralCelestialBodiesGenerationTable.put(celestialBodyType, rate);
 	}

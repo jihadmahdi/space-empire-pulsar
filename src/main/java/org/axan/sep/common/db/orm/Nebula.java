@@ -1,5 +1,7 @@
 package org.axan.sep.common.db.orm;
 
+import java.io.Serializable;
+
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.SEPUtils.Location;
@@ -7,7 +9,7 @@ import org.axan.sep.common.db.INebula;
 import org.axan.sep.common.db.orm.base.BaseNebula;
 import org.axan.sep.common.db.orm.base.IBaseNebula;
 
-public class Nebula extends ProductiveCelestialBody implements INebula
+public class Nebula extends ProductiveCelestialBody implements INebula, Serializable
 {
 	private final IBaseNebula baseNebulaProxy;
 

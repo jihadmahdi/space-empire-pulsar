@@ -1,5 +1,7 @@
 package org.axan.sep.common.db.orm;
 
+import java.io.Serializable;
+
 import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.SEPUtils.Location;
@@ -7,7 +9,7 @@ import org.axan.sep.common.db.IAsteroidField;
 import org.axan.sep.common.db.orm.base.BaseAsteroidField;
 import org.axan.sep.common.db.orm.base.IBaseAsteroidField;
 
-public class AsteroidField extends ProductiveCelestialBody implements IAsteroidField
+public class AsteroidField extends ProductiveCelestialBody implements IAsteroidField, Serializable
 {
 	private final IBaseAsteroidField baseAsteroidFieldProxy;
 

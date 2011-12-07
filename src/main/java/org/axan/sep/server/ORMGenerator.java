@@ -542,7 +542,7 @@ class ORMGenerator
 					{
 						psuc.format("\tpublic static <T extends I%s> T selectOne(%s db, Class<T> expectedType, String from, String where, Object ... params) throws %s\n", c.getUpperName(), SEPCommonDB.class.getSimpleName(), SQLDataBaseException.class.getSimpleName());
 						psuc.println("\t{");
-						psuc.println("\t\tSet<T> results = select(db, expectedType, from, (where==null?\"\":where+\" \")+\"LIMIT 1\", params);");
+						psuc.println("\t\tSet<T> results = select(db, expectedType, from, (where==null?\"(1) \":\"(\"+where+\") \")+\"LIMIT 1\", params);");
 						psuc.println("\t\tif (results.isEmpty()) return null;");
 						psuc.println("\t\treturn results.iterator().next();");
 						psuc.println("\t}");
@@ -570,7 +570,7 @@ class ORMGenerator
 					psuc.println("\t\t\t\t{");
 					psuc.println("\t\t\t\t\treturn stmnt;");
 					psuc.println("\t\t\t\t}");
-					psuc.println("\t\t\t});");
+					psuc.println("\t\t\t}, params);");
 							
 					String addParams = staticFactoryAdditionalParams(c);
 					addParams = addParams == null || addParams.isEmpty() ? "" : ", "+addParams;
@@ -671,7 +671,7 @@ class ORMGenerator
 					psuc.println("\t\t\t\t\t}");
 					//psuc.println("\t\t\t\t\treturn stmnt;");
 					psuc.println("\t\t\t\t}");
-					psuc.println("\t\t\t});");
+					psuc.println("\t\t\t}, params);");
 					
 					//psuc.println("\t\t\treturn stmnt.step() && stmnt.columnInt(0) != 0;");
 					psuc.println("\t\t}");
@@ -694,7 +694,8 @@ class ORMGenerator
 					}
 					psuc.println("\t{");
 					psuc.println("\t\twhere = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);");
-					psuc.println("\t\tif (where != null) where = String.format(\"(%s)\",where);");
+					psuc.println("\t\tif (where != null && !where.isEmpty() && where.charAt(0) != '(') where = \"(\"+where+\")\";");
+					//psuc.println("\t\tif (where != null) where = String.format(\"(%s)\",where);");
 					
 					if (c.hasField("type"))
 					{
@@ -704,7 +705,7 @@ class ORMGenerator
 						psuc.println("\t\t\tString type = expectedType.isInterface() ? expectedType.getSimpleName().substring(1) : expectedType.getSimpleName();");
 						psuc.println("\t\t\ttypeFilter = String.format(\"%s.type IS NOT NULL\", type);");
 						psuc.println("\t\t}");
-						psuc.println("\t\tif (typeFilter != null && !typeFilter.isEmpty()) where = (where == null) ? typeFilter : String.format(\"%s AND %s\", where, typeFilter);");
+						psuc.println("\t\tif (typeFilter != null && !typeFilter.isEmpty()) where = (where == null) ? typeFilter : String.format(\"%s AND %s\", typeFilter, where);");
 					}
 					
 					if (versionedClass != null && versionedClass.hasField("turn"))

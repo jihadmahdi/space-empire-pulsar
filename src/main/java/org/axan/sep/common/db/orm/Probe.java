@@ -27,5 +27,33 @@ public class Probe extends Unit implements IProbe
 	{
 		this(new BaseProbe(stmnt), config);
 	}
+	
+	@Override
+	public boolean isDeployed()
+	{
+		return getProgress() == 1;
+	}
 
+	/**
+	 * 1$: table.
+	 */
+	private static final String SQL_DEPLOYED_CONDITIONS = "(%1$sprogress = 0)";
+	
+	/**
+	 * @see org.axan.sep.common.db.orm.Probe#getSQLDeployedConditions(String)
+	 */
+	public static String getSQLDeployedConditions()
+	{
+		return getSQLDeployedConditions(null);
+	}
+	
+	/**
+	 * Return Probe is deployed SQL conditions. No parameters added.
+	 * @param table Table alias to test
+	 * @return
+	 */
+	public static String getSQLDeployedConditions(String table)
+	{
+		return String.format(SQL_DEPLOYED_CONDITIONS, table == null || table.isEmpty() ? "" : table+".");
+	}
 }

@@ -23,6 +23,7 @@ import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
 import org.axan.sep.common.IGameBoard;
+import org.axan.sep.common.PlayerGameboardView;
 import org.axan.sep.common.Protocol;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.SEPUtils;
@@ -171,7 +172,7 @@ class GameBoard implements Serializable, IGameBoard
 		}
 
 		//TODO: Portrait & Symbol
-		players.put(new Player(playerLogin), new PlayerConfig(playerLogin, Basic.colorToString(new Color(rnd.nextInt(0xFFFFFF))), null, null));
+		players.put(new Player(playerLogin), new PlayerConfig(playerLogin, Basic.colorToString(new Color(rnd.nextInt(0xFFFFFF))), "symbol.png", "portrait.png"));
 	}
 
 	public void removePlayer(String playerLogin) throws GameBoardException
@@ -966,6 +967,7 @@ class GameBoard implements Serializable, IGameBoard
 
 		for(String playerName: observers)
 		{
+			if (playerName == null) continue;
 			playerViews.get(playerName).onGameEvents(events);
 		}
 	}

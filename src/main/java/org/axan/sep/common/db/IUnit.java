@@ -9,7 +9,8 @@ public interface IUnit
 	public String getName();
 	public eUnitType getType();
 	public Location getDeparture();
-	public Double getProgress();
+	public double getProgress();
 	public Location getDestination();
 	public float getSight();
+	public boolean isMoving();
 }
