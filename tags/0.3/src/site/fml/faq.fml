@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<faqs
+	xsi:schemaLocation="http://maven.apache.org/maven-1.x/plugins/faq/faq.xsd"
+	title="FAQ Space Empire Pulsar" toplink="true">
+	<part id="partIdInstall">
+		<title>Installation</title>
+		<faq id="faqIdDecompression">
+			<question>
+				Question
+			</question>
+			<answer>
+				Réponse
+			</answer>
+		</faq>
+	</part>
+	<part id="partIdUtilisation">
+		<title>Utilisation</title>
+	</part>
+</faqs>

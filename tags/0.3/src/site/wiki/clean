@@ -1,0 +1,2 @@
+#!/bin/sh
+rm -f ./cache/*.wiki* ./cache/summary/*.wiki* ./cache/summary/summary.js

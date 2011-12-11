@@ -1,0 +1,25 @@
+JDialog(name=playerConfigPanel):
+  - JImagePanel(name=portraitImage, autoSize=true, keepAspect=true, preferredSize=200x200)
+  - JButton(name=btnUploadPortrait, text=btn.upload.portrait, onAction=uploadPortrait)
+  - JButton(name=btnChoosePortrait, text=btn.choose.portrait, onAction=choosePortrait)  
+  - JPanel(name=colorPanel, onMouseClicked=chooseColor):
+    - JLabel(name=lblPlayerName)  
+  - JImagePanel(name=symbolImage, autoSize=true, keepAspect=true, preferredSize=200x200)
+  - JButton(name=btnUploadSymbol, text=btn.upload.symbol, onAction=uploadSymbol)
+  - JButton(name=btnChooseSymbol, text=btn.choose.symbol, onAction=chooseSymbol)  
+  - JButton(name=btnOk, text=btn.ok, onAction=[$validate,ok])
+  - JButton(name=btnCancel, text=btn.cancel, onAction=cancel)
+  - MigLayout: |
+      [[insets 0]]
+      [grow]                                [grow]
+      "lbl.color"+*                                                           [top]                 
+      colorPanel+*                                                            [top]
+      "lbl.portrait"                        "lbl.symbol"                      [top]
+      portraitImage                         symbolImage                       [grow]      
+      btnUploadPortrait,btnChoosePortrait   btnUploadSymbol,btnChooseSymbol   [bottom]
+      >btnOk+*,btnCancel                                                      [bottom]
+
+validate:
+  - portraitFilename: {label: lbl.portrait, mandatory: true}
+  - symbolFilename: {label: lbl.symbol, mandatory: true}
+  - playerColor: {label: lbl.color, mandatory: true}

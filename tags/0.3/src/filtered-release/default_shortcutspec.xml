@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<shortcurts>
+	<skipIfNotSupported/>
+	<programGroup defaultName="${projectName}" location="applications"/>
+	<shortcut
+		name="${projectName}"
+		programGroup="yes"
+		desktop="yes"
+		applications="no"
+		startMenu="no"
+		startup="no"
+		target="java"
+		commandLine="${jvmArgs} -jar &quot;$INSTALL_PATH/${projectArtifactId}.jar&quot;"
+		workingDirectory="$INSTALL_PATH"
+		iconFile="$INSTALL_PATH\ico\icon.ico"
+		initialState="noshow"
+		description="Lancer ${projectName}"/>
+	
+	<shortcut	
+		name="Désinstaller"
+		programGroup="yes"
+		desktop="no"
+		applications="no"
+		startMenu="no"
+		startup="no"
+		target="java"
+		commandLine="-jar &quot;$INSTALL_PATH/Uninstaller/uninstaller.jar&quot;"
+		workingDirectory=""
+		iconFile="%SystemRoot%\system32\shell32.dll"
+		iconIndex="32"
+		initialState="noShow"
+		description="Désinstaller ${projectName}"/>
+</shortcurts>

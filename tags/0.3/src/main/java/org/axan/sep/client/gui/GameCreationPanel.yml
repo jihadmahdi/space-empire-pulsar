@@ -1,0 +1,34 @@
+JPanel(name=gameCreationPanel):
+  # Dock Left
+  - JPanel(name=dockedLeftPanel):
+    - GameConfigPanel(name=configPanel)
+    - GameChatPanel(name=chatPanel)
+    - JPanel(name=btnsPanel, visible=false, enabled=false):
+      - JButton(name=btnStart,text=btn.start,onAction=[$validate, validateForm, start])
+      - JComboBox(name=cbxSavedGames):
+          EventComboBoxModel(name=cbxSavedGamesModel)
+      - JButton(name=btnLoad,text=btn.load,onAction=[$validate, validateForm, load])
+    - MigLayout: |
+        [[insets 0]]
+        [grow]
+        configPanel   [grow, top]
+        chatPanel     [grow, center]
+        btnsPanel     [bottom]
+
+  # Dock Right
+  - JPanel(name=dockedRightPanel):    
+    - PlayersListPanel(name=playersListPanel, configurationEnabled=true)
+    - MigLayout: |
+        [[insets 0]]
+        [grow]
+        playersListPanel    [grow, center]
+
+  #gameCreationPanel layout      
+  - MigLayout: |
+      [[insets 0]]
+      [grow]             [200px]
+      <dockedLeftPanel   >dockedRightPanel  [grow]
+      
+bind:
+  - chatPanel.sepClient: this.sepClient
+  - playersListPanel.sepClient: this.sepClient

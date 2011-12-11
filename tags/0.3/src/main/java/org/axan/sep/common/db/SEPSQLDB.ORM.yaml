@@ -1,0 +1,33 @@
+!!org.axan.eplib.yaml.YamlConfigFile
+inheritances:
+
+# CelestialBodies
+
+  Vortex: [CelestialBody]
+  ProductiveCelestialBody: [CelestialBody]
+  Nebula: [ProductiveCelestialBody]
+  AsteroidField: [ProductiveCelestialBody]
+  Planet: [ProductiveCelestialBody]
+  
+# Buildings
+  
+  SpaceCounter: [Building]
+  DefenseModule: [Building]
+  PulsarLaunchingPad: [Building]
+  ExtractionModule: [Building]
+  GovernmentModule: [Building]
+  StarshipPlant: [Building]
+
+# Special units
+
+  Hero: [SpecialUnit]
+
+# Units
+
+  PulsarMissile: [Unit]
+  Probe: [Unit]
+  CarbonCarrier: [Unit]
+  AntiProbeMissile: [Unit]
+  Fleet: [Unit]
+  SpaceRoadDeliverer: [Unit]
+  

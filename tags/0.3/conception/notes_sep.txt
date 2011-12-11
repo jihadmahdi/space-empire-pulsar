@@ -1,0 +1,196 @@
+NOTES A METTRE A JOUR :
+
+Légende:
+JJ/MM/AA [priorité de 0 à 10]
+Explication du problème
+>Proposition de solution, hypothèse
+X> Refus, infirmation (raisons)
+<Nouvelle proposition
+/>Confirmation, adoption
+
+01/04/11 [7]
+Dans le cas ou une flotte se déplace vers un Vortex qui disparait avant qu'elle n'y arrive. L'idée que la flotte puisse à ce moment là faire demi-tour (dans une zone vide) n'est pas satisfaisante.
+<Faire continuer la flotte en ligne droite jusqu'à rencontrer un autre corps céleste (lucky!) ou sortir de la zone de jeu (et considérée perdue) ?
+
+01/04/11 [0]
+Idée de nouveau type de game, à au moins 3 joueurs avec un joueur largement avantagé par une planète de départ avec une population et une génération de population sur-dimensionées.
+
+01/04/11 [8]
+Dans le CdC (Constructions) il est écrit que seuls les corps célestes disposant d'une usine sont capable de réorganiser les flottes. Est-ce satisfaisant ?
+<Non, tout corps céleste o`u une flotte peut s'arrêter et communiquer devrait lui permettre de se réorganiser.
+
+01/04/11 [7]
+Dans le CdC (Constructions) il est suggéré qu'il n'y a qu'un seul transporteur par comptoir. Hors dans le modèle actuellement implémenté le joueur est libre de faire plusieurs envois simultanés pour une montant de ressource fixée (en fonction du niveau d'upgrade du comptoir).
+<On valide ? 
+<Celà à t'il un sens d'envoyer simultanément 2 livraisons a des destinations différentes ? Oui, on peut être inquiet de ne plus controler la destination et donc préférer splitter. 
+<Le transporteur doit-il faire le chemin retour avant qu'on considère que l'on peut à nouveau allouer le volume qu'il a transporté ? Celà reviens à doubler l'importance de la distance de l'échange, autrement dit, soit à diviser par deux la vitesse du transporteur. On préfèrera jouer sur la vitesse des transporteurs et ne s'occupeur que de leur voyage allé. 
+
+01/04/11 [0]
+Concernant les pactes hard-ally, et les phases de jeu ou un vote ferait perdre 1 tour de jeu à l'ensemble.
+<Un secrétaire général est éli dès la constitution de l'alliance. Celui-ci gère toutes les phases de distribution, et peut etre renversé par la majorité+1 car chaque membre peut à tout instant émettre (ou retirer) une demande de nouvelle élection.
+<Alternative: Chaque membre défini à tout instant une liste ordonnées des autres membres pour lesquels il voterait, ainsi le changement peut lui même se faire sans qu'il y ai de tour "mort".
+
+----------
+
+// Le système diplomatique est-il satisfaisant ? Permet t'il une vrai stratégie diplomatique dans le jeu ?
+
+Une grille diplomatique par corps céleste, avec la liste des joueurs et une checkbox "hostile/neutre", plus des options générales "défendre corps céleste", "takeover corps céleste", 
+Le joueur peut vite fait enregistrer des templates diplomatiques qu'il peut donc recharger et éditer rapidement pour les appliquers a d'autres CC.
+Réalisme: les diplomaties n'ont pas de matérialisation physique sur les corps célestes, elles sont communiquées à chaque flotte à la date de leur départ (et celles-ci ne les mettent à jour qu'au tour suivant leur arrivée).
+
+Espionage diplomatique: Un espionage du gouvernement entraine une vue complète de l'empire.
+Le gouvernement est trop simple à espionner ! => Non, cf. espionage.
+
+Ou alors des templates dynamiques prédéfinis qui définissent toutes les stratégies principales.
+
+Attaque															Défense
+Raser tout le monde												Raser tout le monde
+Prendre le corps céleste (attaquer le strict minimum)			Prendre le corps céleste (attaquer le strict minimum)
+Nettoyer le corps céleste (attaquer le strict minimum)			Défendre le corps céleste (attaquer le strict minimum)
+Se poser pacifiquement											Eviter au maximum les combats
+
+Le seul comportement supplémentaire que permet la grille complète est:
+Attaquer pas tout le monde, mais plus que le strict minimum. Qui est à 80% du temps un choix pas malin.
+
+--
+Grille diplomatique avec checkbox à 3 états: "toujours hostile" / "hostile si owner" / "neutre"
+Le comportement entre deux joueurs j1 et j2 avec l'initiative à j1 se résoud comme suit :
+SI 	(	(j1.hostile(j2) OU (j1.hostileSiOwner(j2) ET estOwner(j2)))
+	OU	(j2.hostile(j1) OU (j2.hostileSiOwner(j1) ET estOwner(j1))))
+ALORS
+	hostiles
+SINON
+	neutres
+FSI
+
+[owner non soft-ally] Raser tout le monde : Se poser pacifiquement
+[owner hostile] Prendre le corps céleste : Se poser pacifiquement
+[owner neutre] Nettoyer le corps céleste : Se poser pacifiquement
+Se poser pacifiquement
+
+--- 21/10/09
+
+Un rapport de combat partiel est envoyé aux propriétaires de corps célestes battus.
+
+On reste sur une diplomatie globale (le but n'étant pas de faire une simulation TACTIQUE mais bien diplomatique).
+La diplomatie est une liste d'attitude à définir à l'égard de chaque joueurs:
+	* Politique Intérieure : Hostile, les corps célestes attaquent à vu les flottes entrantes. Neutre, les corps célestes laissent les flottes pacifiques se poser.
+	* Politique Extérieure : Hostile, les flottes engagées dans un conflit attaques toujours les flottes du joueur. Hostile si propriétaire, les flottes attaques uniquement si le joueur est propriétaire du corps céleste (ou le devient après un vote). Neutre, les flottes n'attaquent que si elles sont elles-même attaquées.   
+
+Lors de l'attribution du corps céleste aux vainqueurs, l'attitude "Hostile si propriétaire" est à nouveau testée et peu engendrer immédiatement un nouveau conflit. Néanmoins, un rapport de combat est envoyé à tout les joueurs en lice au moment du vote.
+
+===
+
+
+/Cas d'exploit/
+soit 2 corps céleste A et B à 10 zones l'un de l'autre.
+soit la vitesse des vaisseaux de 1zone / tour.
+soit un joueur Gogol qui envoi en continu des flottes minuscules (un seul vaisseaux, donc ~gratuites) de A vers B
+Gogol reçoit à chaque tour des informations sur toutes les zones parcourus. Avec un retard de 10 tour pour la zone la plus proche du point de départ des flottes, néanmoins il est en position où il ne peut rater aucune flotte qui croiserait sa trajectoire.
+Si on optimise un peu le bovinage, il peut envoyer à chaqu tour dans les deux sens (A->B, B->A) ainsi c'est la zone au milieu de trajet pour laquelle le retard d'info est le plus grand, mais qui se trouve quand même divisé par deux.
+On peut même imaginer qu'à chaque tour on envoi des vaisseaux de tout ces corps celeste vers tout les autres.. Le prix d'un vaisseaux étant négligeable.
+Celà pose t'il problème ?
+
+// On peut construire plusieurs comptoirs sur un même corps céleste, chaque comptoir autorise la construction d'une nouvelle route spaciale, chaque comptoir autorise une nouvelle route commerciale ?
+=> Idée : Chaque upgrade de comptoir augmente le nombre de route spatiale qu'il est possible de construire (1 comptoir = 1 route spatial), chaque upgrade de comptoir augmente la valeur maximale de carbone qu'il est possible de transporter en même temps (le pool de véhicules de transport de carbone), on peut créer autant de route commerciale que l'on souhaite mais à chaque instant le maximum de carbon qui peut être transporté est défini par le niveau d'upgrade du comptoir d'envoi.
+
+/Codé/ On peut démolir une usine de constructio de vaisseaux, qu'advient t'il des vaisseaux posés dans l'usine ?
+	& Ils ont détruits (impossible si l'usine contient un vaisseau gouvernemental) ? Ils forment automatiquemet une flotte ?
+	& Celà signifie que la flotte formée de tous les vaisseaux ne peux pas être ré-organisée tant qu'elle ne trouve pas une nouvelle usine sur laquelle se poser, c'est bof..
+=> Idée : On devrait pouvoir réorganiser ses flottes sur n'importe quel corps céleste.
+	On consdère sur chaque corps céleste une "flotte résiduelle" constitué de tous les vaisseaux qui ne sont assignés à aucune autre flotte, les vaisseaux construit dans l'usine sont automatiquement assigné à cette flotte, les flottes démantelés sont automatiquement assimilé par celle-ci, et on pioche dans celle-ci pour former de nouvelles flottes. On peut laisser la formtion des flottes accessible depuis l'usine, en plus d'un panneau action accessible depuis le corps céleste.
+
+// Niveau de carbone des corps céleste (reformuler phrase, c'est les nébuleuses qui ont 60% de plus)
+
+// Creation de partie :
+En option de création de game, les infos visibles basiques sont configurable, on peut jouer sans infos basiques (pour l'interet de l'exploration)
+
+// Génération de l'univers : corps célestes joignables entre eux ?
+Pour éviter que des joueurs soient injoignables entre eux, à la génération de l'univers on fait en sorte que toute les planètes de départ des joueurs soient joignables entre elles.
+
+// Déplacement multi-étapes
+Utilité du choix "s'arrêter sur toutes les étapes / ne pas s'arrêter" ?
+L'option "s'arrêter sur toutes les étapes" devrait être retenu par défaut, sans choix possible (inutile d'aller si loin).
+On considèrerait donc que le voyage en multi-étape fait perdre un peu de temps à chaque arrêt (négligeable), mais le joueur est averti lorsqu'une de ces flottes arrive sur un checkpoint (ou averti de l'absence de communication si celle-ci s'est faite abatre ou est entré sous effet pulsar) et peut la dérouter s'il a la communication (à défault elle repart pour l'étape suivante).
+
+// Espionnage
+Il est possible de connaitre l'attitude diplomatique d'un joueur.
+Pour celà il faut poser sur la planète sur laquelle il a son module gouvernemental une flotte plus importante que la défense de la planète.
+Si le gouvernement est dans un vaisseau, l'espionnage devrait être facilité.
+Reste à voir si en cas de success les 2 politiques (intérieure & de conquète) sont rendues visibles, ou une seule des deux.
+=> Actuellement, il suffit d'avoir la vue sur le gouvernement (même lorsqu'il est en voyage, s'il est repéré par une sonde) pour que la politique globable du joueur soit dévoilée)
+Plusieurs forces étrangères en présence sur la planète gouvernementale :
+Les étrangers dont les forces dépassent les forces locales sont éligibles à l'espionage.
+Parmis les étrangers éligibles à l'espionage, seuls ceux dont la part de force dépasse 30% ont effectivement accès à l'espionage.
+
+// Routes spaciales : Un comptoir octroie 1 lancement de route spatiale, mais peut recevoir une infinitée de route venues d'ailleurs (pour éviter le problème ou un joueur reçoit une route alors qu'il  déjà envoyé la sienne et n'a plus de comptoir libre), par ailleurs la construction prend le temps de déplacement du véhicule de construction.
+
+// Notes visibilités
+Des unités d'un même joueur peuvent être amené à ne pas avoir de visibilité sur les éléments globaux du joueur (ex: sa diplomatie, lorsqu'une flotte est prise dans une pulsar)
+Les unités devraient noter et pouvoir se référer à leur dernière vue de ces éléments.
+	=> Une flotte devrait avoir un instantané de la diplomatie à sa date de départ, et le rafraichir à chaque checkpoint (ce qui peut éventuellement annuler son plan de vol si un attaque prévue n'est plus valide).
+	=> Lors d'un ordre d'attaque, si le owner de la cible change entre temps, et que le nouvau est neutre, par défaut doit on annuler l'attaque ou la poursuivre ?
+		=> Actuellement, priorité à l'ordre d'attaque, qui outrepasse la poltique de conquète de la date de départ comme d'arrivé.
+
+* Afficher le prix des vaisseaux à construire
+* Pouvoir déplacer les sondes avant de les lancer ?
+* Pouvoir déplacer les missiles anti sondes avant de les lancer ?
+* Pouvoir sélectionner la cible d'une sonde en cliquant sur la zone.
+* Dans la liste des unités, pouvoir classer par type d'unité.
+
+
+==== Vieilles ? notes à checker
+
+Envoi de flottes sur cibles non corps-céleste (sondes, vortex, ...) :
+Lors de l'envoi, on a le choix de spécifier ou la flotte est rapatriée, par défaut le corps céleste allié (connu à l'envoi) le plus proche.
+
+Une sonde permet de rediriger une flotte, (niveau interface on donne un nouvel ordre à la flotte, romance: un message est laissé à son attention sur toute les sondes qui diffuse le nouvel ordre qu'elle prendra si elle passe dans la zone de diffusion de l'une d'entres elles).
+Romance: Pour justufier le fait que  au niveau du gameplay on n'interdit le stationnement des flottes autour des sondes, on explique que le mode hyper-space nécéssite la présence d'un corps céleste (masse conséquente) qui lui permet de s'arrêter.
+
+Pour justifier qu'on ne peut pas cuommuniquer avec les flottes en déplacement on explique que 1erement l'équipement servant a caper au sonde est trrop couteux pour être équipé en série sur les vaisseaux, de plus le déplacement hyper-space des vaisseaux empècherait son utilisation.
+
+// Idée gabarit :
+Le gros chasseur est un cuirassé qui a a son bord pleins de petit fighter cheap et qu'il peut reconstituer entre deux batailles (ce qui justifie qu'au niveaux des points de vie )on le considère en une seule unité), et que le gabarit du gros chasseur est comparable aux autres classes de même gabarit.
+
+Légitimité du boost de vitesse apporté par les Fufu quelque soit la composition de la flotte (différents gabarits):
+1) La vitesse des vaiseaux en hyper-space est indexée sur leur vitesse initiale.
+2) Pour justifier le boost des fufu quelque soit la compo, ils tractent les autres vaisseaux avec un rayon d'énergie (un gros rayon par le gros fufu, et un gros rayon commun généré par une horde de petit fufu)
+
+TODO: Es-ce que dans le cône d'un pulsar les perturbations sont dans tout le volume ou seulement sur sa périphérie (chercher sur Wiki). Si ce n'est que la périphérie alors le gouvernement pris dans un pulsar devrait pouvoir comuniquer avec les autres corps dans le cône.
+
+====
+
+
+/OK/ Thèorie Pulsar 27.05.09 :
+L'effet pulsar est produit sur le soleil, par l'envoi d'un missile depuis le corps céleste producteur.
+Le joueur peut consacrer autant de slots qu'il le souhaite (sauf 1, il doit toujours rester 1 slot constructible) a l'installation de la plateforme de tir du missile.
+En effet, l'efficacité du pulsar est directement lié à sa puissance (vitesse) d'impact sur le soleil, ainsi plus la plateforme de tir est étendue, plus le missile est tiré à grande vitesse.
+L'effet pulsar est un cône qui prend pour origine le soleil, et dirigé vers un corps céleste cible. Le nombre de slots sacrifiés défini un couple de valeur Volume;Temps de l'effet pulsar sur lequel le joueur peut influer en positionnant un curseur comme suit :
+[v		|		|		|		t]
+				50%		25%z;62,5%t
+Un slider permet au joueur de paramétrer une balance de bonus/malus entre le volume et le temps. L'optimisation se situe toujours à l'équilibre (100%), tandis que si l'on fait pencher de l'un ou l'autre des côté, on paie le double du bonus que l'on gagne d'un côté en malus de l'autre.
+Ex: Si l'on sacrifie 25% du volume, on gagne un bonus de 12,5% de temps.
+
+NOTES ROMANCE/DESIGN :
+// Idée gabarit :
+Le gros chasseur est un cuirassé qui a a son bord pleins de petit fighter cheap et qu'il peut reconstituer entre deux batailles (ce qui justifie qu'au niveaux des points de vie on le considère en une seule unité), et que le gabarit du gros chasseur est comparable aux autres classes de même gabarit.
+
+// Légitimité du boost de vitesse apporté par les Fufu quelque soit la composition de la flotte (différents gabarits):
+1) La vitesse des vaiseaux en hyper-space est indexée sur leur vitesse initiale.
+2) Pour justifier le boost des fufu quelque soit la compo, ils tractent les autres vaisseaux avec un rayon d'énergie (un gros rayon par le gros fufu, et un gros rayon commun généré par une horde de petit fufu)
+
+// Le Soleil
+On rapelle que ceci répond au besoins "effet kikoo blender" + "besoin d'alimentation des sondes" ~ limites de leur porté d'envoi (limite de l'univers connu)
+
+// Routes de l'espace
+pourquoi les routes sont elles détruite sitôt que l'on détruit l'un ou l'autre des comptoirs ?
+Il faut voir les routes de l'espaces comme sorte de pont suspendus, malgré l'absence de gravité les deux comptoirs sont équipé d'infrastructures déployant d'énormes énergies pour maintenir la route en place.
+
+====
+
+Génèse : Un empire immense a déjà colonisé de nombreuses galaxies.
+Suite à un pĥénomène astral d'une extrème rareté, un effet pulsar naturel d'une amplitude jamais observée à ce jour, plusieurs galaxies au coeur de l'empire se trouvent simultanément coupées du reste de l'empire.
+De nombreuses galaxies colonisées voient ainsi peut à peut s'affaiblir l'influence impériale (les colons ne recevant plus ordres ni ressources). 
+Dans la galaxie X24G2 comme dans de nombreuses autres galaxies colonisés il y a peu, des colonisés reprennent leur indépendance, et des colons proclament leur propres empires, tous prêts à partir en guerre pour conquérir la galaxie sinon l'univers.
+
+Idée Intro : communiqués de presses locales (heure par heure, minute par minute) suite à ce l'on apelle [nommer la catastrophe].

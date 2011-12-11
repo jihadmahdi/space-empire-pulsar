@@ -1,0 +1,57 @@
+	-----
+	Space Empire Pulsar
+	-----
+	Auriol Arnaud <aaa-auriol@club-internet.fr>
+	Bezille Yoann <yohann.bezille@club-internet.fr>
+	Cabanes Romain <romain.cabanes@laposte.net>	
+	Escallier Pierre <p.escallier@laposte.net>
+	-----					
+	03/04/2009
+
+TODO List
+	
+* Work flow en cours.	
+	
+** Interface
+
+	* Implémenter un UniverseRenderer en 3d.
+	
+	* Refaire une interface adapté au renderer 3d (plein écran).
+	
+	* Vider les valeurs des formulaires après l'execution des commandes.
+	
+	* Faire défiler automatiquement le chat.
+	
+					
+** Permanent, récurent
+	
+** Améliorations
+	
+	* Rendre importable la configuration de partie depuis un fichier type *.properties. Lister de façon exhaustive tout les paramètres possibles.
+	
+	* Ajouter un ping à coté des pseudo.	
+	
+** Nouvelles fonctionnalités
+
+** Bugs
+	
+** Gestion projet
+		
+** Notes (brouillon)  
+	
+	* Implémenter la résolution des conflits.
+		* Ajouter les logs de combat (nb de vaisseaux/unités perdues)
+		
+	* Perte de contrôle/visibilité lorsque le gouvernement est en voyage.
+	
+	* Tester/Coder Pulsar Launching Pad.
+	
+	* Implémenter les pouvoirs spéciaux de classes de vaisseaux.
+	
+	* Implémeter les héros.
+	
+	* Valider le nouveau gameplay des échanges de carbones.
+		
+	* DataBase, vérifier à chaque fois les paramètres d'entrée, retourner null si un paramètre est null.
+
+	* Régler quelques faiblesses du protocole (possibilité de l'envoi d'un message en création de partie alors que la partie est en cours de lancement, ce qui peut déconnecter le client); Ajouter un checkbox manuel "prêt" ?

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="ASCII"?>
+<sni:SNI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:sni="http://sni" UID="57B503C4-5FF1-7BD1-2293-FFF83B1CEBA5" name="Planche" date="25/09/2007 11:22:36" backColor="0" titre="D&#xe9;tails Corps C&#xe9;leste">
+  <lstObjets xsi:type="sni:Commentaire" UID="B5BDEDB3-CB17-87EF-EC91-7617AEA0D8AA" name="Ref" date="25/02/2008 22:15:31" X="5.0" Y="25.0" width="149.0" height="66.0" comment="R&#xe9;f&#xe9;rences :&#xA;  AffichagePrincipal&#xA;  DetailsCorpsCeleste"/>
+  <lstObjets xsi:type="sni:UDC" UID="BF58C813-2A8D-8368-C8B6-73A4A83942CD" name="Groupe-2" date="25/09/2007 11:22:39" X="358.0" Y="92.0" width="1217.0" height="184.0" backColor="0" groupBox="D&#xe9;tails corps c&#xe9;leste">
+    <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.3/@outputPorts.0"/>
+    <outputPorts name="out1" X="0.5" Y="0.9945652" linkPort="//@lstObjets.5/@inputPorts.0"/>
+    <lstNodes xsi:type="sni:AffObjet" UID="EC1A27AB-54DB-22D8-B87F-9E4F77EBE51A" name="Groupe-5.Aff-1" date="25/09/2007 11:14:24" X="7.0" Y="26.0" width="274.0" height="128.0" dispObjet="CorpsC&#xe9;leste" dispAttrib="(position, couleur propri&#xe9;taire,&#xD;&#xA;caract&#xe9;ristiques de bases,&#xD;&#xA;g&#xe9;n&#xe9;ration pop/tour, production carbone/tour,&#xD;&#xA;pop actuelle, carbone actuel, nb slots)">
+      <inputPorts name="in1" X="0.5" conditions="[EstAllie OU PresenceFlotteAlliee]"/>
+      <outputPorts name="out1" X="0.5" Y="0.9921875"/>
+    </lstNodes>
+    <lstNodes xsi:type="sni:AffListe" UID="1D84A9D0-6940-BDFB-8AFD-EB051B0DF201" name="Groupe-5.Coll-2" date="25/09/2007 11:18:21" X="300.0" Y="26.0" width="219.0" height="128.0" dispListe="Construction" dispAttrib="(type, quantit&#xe9;)">
+      <inputPorts name="in1" X="0.5" conditions="[EstAllie OU PresenceFlotteAlliee]"/>
+      <outputPorts name="out1" X="0.5" Y="0.9921875"/>
+    </lstNodes>
+    <lstNodes xsi:type="sni:AffListe" UID="F629187C-ED2D-FFD5-1425-E23D7A29FC03" name="Groupe-2.Coll-3" date="25/09/2007 11:24:35" X="538.0" Y="26.0" width="231.0" height="128.0" dispListe="Flotte" dispAttrib="(nom, caract&#xe9;ristiques &#xe9;quivalents)">
+      <inputPorts name="in1" X="0.5" conditions="[EstAllie OU PresenceFlotteAlliee]"/>
+      <outputPorts name="out1" X="0.5" Y="0.9921875"/>
+    </lstNodes>
+    <lstNodes xsi:type="sni:AffListe" UID="8D8694F5-BA5B-4DCF-015C-2C8445121E8B" name="Groupe-2.Coll-4" date="25/02/2008 17:11:09" X="778.0" Y="26.0" width="191.0" height="128.0" dispListe="Comptoir" dispAttrib="(commande en cours, voyage en cours)">
+      <inputPorts name="in1" X="0.5" conditions="[EstAlliee OU PresenceFlotteAlliee]"/>
+      <outputPorts name="out1" X="0.5" Y="0.9921875"/>
+    </lstNodes>
+    <lstNodes xsi:type="sni:AffListe" UID="0C326351-0302-29B6-4159-B5039FBD972D" name="Groupe-2.Coll-5" date="25/02/2008 21:50:38" X="977.0" Y="25.0" width="226.0" height="130.0" dispListe="Sonde" dispAttrib="(nom, propri&#xe9;taire)">
+      <inputPorts name="in1" X="0.5" conditions="[EstAlliee OU PresenceFlotteAlliee]"/>
+      <outputPorts name="out1" X="0.5" Y="0.99230766"/>
+    </lstNodes>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Debut" UID="0C004FC9-80FF-91D5-9D79-8939746A9028" name="Debut-3" date="25/09/2007 11:23:08" X="744.0" Y="64.0" width="204.0" height="30.0" label="DetailsCorpsCeleste">
+    <outputPorts name="out1" X="0.5" Y="0.96666664" linkPort="//@lstObjets.3/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Lien" UID="4A5DA0C7-77D8-CB81-D4A6-7220502FEDE6" name="Lien-3" date="25/09/2007 11:23:10">
+    <inputPorts name="source" linkPort="//@lstObjets.2/@outputPorts.0"/>
+    <outputPorts name="target" linkPort="//@lstObjets.1/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Menu" UID="8A5BA686-A292-E4B7-6FE7-EFE72AE11F15" name="Menu-5" date="25/09/2007 15:30:13" X="10.0" Y="274.0" width="1719.0" height="30.0">
+    <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.5/@outputPorts.0"/>
+    <outputPorts X="0.049447354" Y="2.4333334" conditions="[EstAuJoueur ET UsineFabrication]" linkPort="//@lstObjets.11/@inputPorts.0"/>
+    <outputPorts X="0.1489238" Y="3.3" conditions="[EstAuJoueur&#xA;ET CanonAPulsar > 0&#xA;ET (!SousEffetPulsar OU !ADesAllies)]"/>
+    <outputPorts X="0.24840023" Y="2.8666666" conditions="[EstAuJoueur&#xA;ET FlottesEtrangeresPresentes]"/>
+    <outputPorts X="0.34787667" Y="2.4333334" conditions="[EstAuJoueur ET ConstructionPossible]" linkPort="//@lstObjets.7/@inputPorts.0"/>
+    <outputPorts X="0.44735312" Y="2.8666666" conditions="[EstAuJoueur&#xD;&#xA;ET ConstructionChoisie.qt > 0]" linkPort="//@lstObjets.9/@inputPorts.0"/>
+    <outputPorts X="0.5468296" Y="2.8666666" conditions="[Flotte et CorpsC&#xe9;leste appartiennent au joueur&#xD;&#xA;ET usine construite]"/>
+    <outputPorts X="0.646306" Y="2.4333334" conditions="[EstAuJoueur]"/>
+    <outputPorts X="0.74578243" Y="2.8666666" conditions="[EstAuJoueur&#xA;ET !Route]"/>
+    <outputPorts X="0.8452589" Y="2.8666666" conditions="[EstAuJoueur&#xA;ET Route]"/>
+    <outputPorts X="0.9447353" Y="2.8666666" conditions="[EstAuJoueur&#xA;ET !EstDeployee]"/>
+    <lstGroupes condLabel="----">
+      <lstOptions name="Usine de vaisseaux"/>
+      <lstOptions name="Lancer Pulsar"/>
+      <lstOptions name="AttaquerFlottesEtrangeres"/>
+    </lstGroupes>
+    <lstGroupes condLabel="1: Construction">
+      <lstOptions name="Nouvelle construction"/>
+      <lstOptions name="D&#xe9;truire"/>
+    </lstGroupes>
+    <lstGroupes condLabel="1: Flotte">
+      <lstOptions name="R&#xe9;organiser flotte"/>
+    </lstGroupes>
+    <lstGroupes condLabel="1 : Comptoir">
+      <lstOptions name="Construire Route"/>
+      <lstOptions name="Detruire Route"/>
+      <lstOptions name="Modifier commande"/>
+    </lstGroupes>
+    <lstGroupes condLabel="1 : Sonde">
+      <lstOptions name="Lancer Sonde"/>
+    </lstGroupes>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Lien" UID="8A2F86D3-D15F-1D55-3942-B9898DB2CEF7" name="Lien-5" date="25/09/2007 15:30:14">
+    <inputPorts name="source" linkPort="//@lstObjets.1/@outputPorts.0"/>
+    <outputPorts name="target" linkPort="//@lstObjets.4/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:AffMessage" UID="FE0622EF-ADA8-8FAC-62EF-C708294E205B" name="Mess-9" date="02/10/2007 17:56:35" X="603.0" Y="347.0" width="109.0" height="40.0" message="Confirmation">
+    <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.7/@outputPorts.0"/>
+    <outputPorts name="out1" X="0.5" Y="0.975"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Lien" UID="4687EB22-E3C8-C466-555B-E56F06CCE555" name="Lien-7" date="02/10/2007 17:56:58">
+    <inputPorts name="source" linkPort="//@lstObjets.4/@outputPorts.3"/>
+    <outputPorts name="target" linkPort="//@lstObjets.6/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:AffMessage" UID="A08F5808-57A9-2CAF-9D4E-8DB0700D5CF8" name="Mess-11" date="02/10/2007 17:57:01" X="794.0" Y="359.0" width="99.0" height="40.0" message="Confirmation">
+    <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.9/@outputPorts.0"/>
+    <outputPorts name="out1" X="0.5" Y="0.975"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Lien" UID="624DFE76-6FA6-8BC9-4E65-7A04E8E1F2E4" name="Lien-9" date="02/10/2007 17:57:02">
+    <inputPorts name="source" linkPort="//@lstObjets.4/@outputPorts.4"/>
+    <outputPorts name="target" linkPort="//@lstObjets.8/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Invocation" UID="CF3B9B0D-CDCE-FB7F-6E3A-D00E82035BD8" name="Invoc-11" date="25/02/2008 21:54:32" X="20.0" Y="347.0" width="150.0" height="50.0" label="UsineVaisseaux" planche="UsineVaisseaux">
+    <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.11/@outputPorts.0"/>
+    <outputPorts name="out1" X="0.5" Y="0.98"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Lien" UID="1D683B5E-6BF8-A9A5-A03F-CEA9BF1B6C1A" name="Lien-12" date="25/02/2008 21:54:37">
+    <inputPorts name="source" linkPort="//@lstObjets.4/@outputPorts.0"/>
+    <outputPorts name="target" linkPort="//@lstObjets.10/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:UDC" UID="47B5B04B-0ED9-52B7-51E5-E30C60E96D2A" name="Groupe-13" date="25/02/2008 21:56:09" X="60.0" Y="515.0" width="649.0" height="218.0" backColor="0" groupBox="Usine de Fabrication des Vaisseaux">
+    <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.14/@outputPorts.0"/>
+    <outputPorts name="out1" X="0.5" Y="0.9954128" linkPort="//@lstObjets.16/@inputPorts.0"/>
+    <lstNodes xsi:type="sni:AffListe" UID="9F04472C-BD5D-FE8F-2A80-89E26A807E85" name="Groupe-13.Coll-1" date="25/02/2008 22:02:02" X="10.0" Y="31.0" width="190.0" height="97.0" dispListe="Mod&#xe8;lesVaisseaux" dispAttrib="(prix, attributs...)">
+      <inputPorts name="in1" X="0.5"/>
+      <outputPorts name="out1" X="0.5" Y="0.9896907"/>
+    </lstNodes>
+    <lstNodes xsi:type="sni:AffListe" UID="7DADED8F-2748-F4E3-FAA1-3D0EBAA8B735" name="Groupe-13.Coll-2" date="25/02/2008 22:05:39" X="396.0" Y="26.0" width="200.0" height="99.0" dispListe="Vaisseaux" dispAttrib="(type, quantite)">
+      <inputPorts name="in1" X="0.5"/>
+      <outputPorts name="out1" X="0.5" Y="0.989899"/>
+    </lstNodes>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Debut" UID="F0940AC9-8206-4CB5-3224-7EB8EF08963B" name="Debut-14" date="25/02/2008 21:57:02" X="303.0" Y="461.0" width="163.0" height="55.0" label="UsineVaisseaux">
+    <outputPorts name="out1" X="0.5" Y="0.9818182" linkPort="//@lstObjets.14/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Lien" UID="D4126605-9D28-B20C-717F-2163A1C8B371" name="Lien-14" date="25/02/2008 21:57:38">
+    <inputPorts name="source" linkPort="//@lstObjets.13/@outputPorts.0"/>
+    <outputPorts name="target" linkPort="//@lstObjets.12/@inputPorts.0"/>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Menu" UID="71AEC1B6-4D6B-63A3-88D2-24D5AF4F4215" name="Menu-16" date="25/02/2008 22:03:54" X="151.0" Y="731.0" width="467.0" height="30.0">
+    <inputPorts name="in1" X="0.5" linkPort="//@lstObjets.16/@outputPorts.0"/>
+    <outputPorts X="0.16488223" Y="2.4333334" conditions="[PeutPayer]"/>
+    <outputPorts X="0.496788" Y="2.4333334" conditions="[....]"/>
+    <outputPorts X="0.8286938" Y="2.4333334" conditions="[Flotte Selectionn&#xe9;e]"/>
+    <lstGroupes condLabel="N : Mod&#xe8;lesVaisseaux">
+      <lstOptions name="Fabriquer"/>
+    </lstGroupes>
+    <lstGroupes condLabel="N : Vaisseaux">
+      <lstOptions name="Cr&#xe9;er Flotte"/>
+      <lstOptions name="Joindre Flotte"/>
+    </lstGroupes>
+  </lstObjets>
+  <lstObjets xsi:type="sni:Lien" UID="97CCAD4B-85ED-ECA8-3936-FC03EAD23224" name="Lien-17" date="25/02/2008 22:05:26">
+    <inputPorts name="source" linkPort="//@lstObjets.12/@outputPorts.0"/>
+    <outputPorts name="target" linkPort="//@lstObjets.15/@inputPorts.0"/>
+  </lstObjets>
+</sni:SNI>

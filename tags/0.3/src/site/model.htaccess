@@ -1,0 +1,4 @@
+AuthName "Restricted Area"
+AuthType Basic
+AuthUserFile "/home/wwwaxan/.htpasswds/public_html/sep/passwd"
+Require valid-user

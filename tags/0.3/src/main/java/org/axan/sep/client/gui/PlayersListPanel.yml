@@ -1,0 +1,12 @@
+JPanel(name=playersListPanel):
+  - PlayerConfigDialog(name=playerConfigDialog)
+  - JScrollPane(name=scrollPane, vScrollBar=asNeeded, hScrollBar=never):
+      JList(name=playersList, onMouseClicked=click):
+        EventListModel(name=playersListModel)
+  - MigLayout: |
+      [[insets 0]]
+      [grow]
+      scrollPane   [grow]
+
+bind:
+  - playerConfigDialog.sepClient: this.sepClient
