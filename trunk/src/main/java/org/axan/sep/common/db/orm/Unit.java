@@ -135,7 +135,7 @@ public class Unit implements IUnit
 			}, params);
 			while(stmnt.step())
 			{
-				results.add(DataBaseORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) Unit.class : expectedType, stmnt, db.getConfig()));
+				results.add(DataBaseORMGenerator.mapTo(expectedType, stmnt, db.getConfig()));
 			}
 			return results;
 		}

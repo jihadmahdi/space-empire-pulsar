@@ -17,7 +17,7 @@ JPanel(name=gameCreationPanel):
 
   # Dock Right
   - JPanel(name=dockedRightPanel):    
-    - PlayersListPanel(name=playersListPanel)
+    - PlayersListPanel(name=playersListPanel, configurationEnabled=true)
     - MigLayout: |
         [[insets 0]]
         [grow]

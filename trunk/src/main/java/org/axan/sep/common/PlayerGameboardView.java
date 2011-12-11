@@ -32,7 +32,7 @@ public class PlayerGameboardView
 	 */
 	private final List<IGameEvent> currentTurnEvents = new Vector<IGameEvent>();
 
-	private final SEPCommonDB db;
+	private SEPCommonDB db;
 
 	public PlayerGameboardView(SEPCommonDB newDB, IGameEventExecutor executor)
 	{
@@ -50,8 +50,11 @@ public class PlayerGameboardView
 	{
 		return playerName;
 	}
-	
-	
+		
+	/**
+	 * Should be used read-only, all update queries must be done within event processing.
+	 * @return
+	 */
 	public SEPCommonDB getDB()
 	{
 		return db;
@@ -87,11 +90,18 @@ public class PlayerGameboardView
 			currentTurnEvents.remove(0);
 			evt.process(executor, db);
 			resolvedEvents.add(evt);
+			
+			// If event change db turn, ensure to work with the most recent db.
+			while(db.hasNext()) db = db.next();
 		}
 
 		loggedEvents.addAll(lastTurnEvents);
 		lastTurnEvents.clear();
 		lastTurnEvents.addAll(resolvedEvents);
+		
+		// Increment turn
+		db.getConfig().setTurn(db.getConfig().getTurn()+1);
+		while(db.hasNext()) db = db.next();
 	}
 
 	public boolean hasEndedTurn()

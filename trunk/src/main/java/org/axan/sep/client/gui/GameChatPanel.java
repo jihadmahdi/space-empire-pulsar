@@ -105,7 +105,7 @@ public class GameChatPanel extends JPanel implements IModalComponent
 		String txt = txtMessage.getText();
 		try
 		{
-			getSepClient().getGameCreationInterface().sendMessage(txt);
+			getSepClient().sendMessage(txt);			
 		}
 		catch(Exception e)
 		{

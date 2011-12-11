@@ -29,9 +29,11 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 	
 	////////// ui controls
 	private AUniverseRendererPanel universePanel = new SwingUniverseRenderer();
-
+	private GameChatPanel chatPanel;
+	private PlayersListPanel playersListPanel;
+	
 	////////// bean fields
-	SEPClient sepClient;
+	private SEPClient sepClient;	
 
 	////////// no arguments constructor
 	public RunningGamePanel()
@@ -69,6 +71,16 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 		firePropertyChange("sepClient", old, sepClient);
 	}
 
+	public GameChatPanel getChatPanel()
+	{
+		return chatPanel;
+	}
+	
+	public PlayersListPanel getPlayersListPanel()
+	{
+		return playersListPanel;
+	}
+	
 	////////// ui events
 	
 	@Override
@@ -81,6 +93,7 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 	void receiveNewTurnGameBoard(List<IGameEvent> newTurnEvents)
 	{
 		universePanel.receiveNewTurnGameBoard(newTurnEvents);
+		playersListPanel.setEnabled(true);
 	}
 		
 }

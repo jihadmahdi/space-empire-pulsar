@@ -3,9 +3,11 @@ package org.axan.sep.common.db.orm;
 import java.io.Serializable;
 
 import org.axan.eplib.orm.ISQLDataBaseStatement;
+import org.axan.eplib.orm.SQLDataBaseException;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.IPlanet;
+import org.axan.sep.common.db.SEPCommonDB;
 import org.axan.sep.common.db.orm.base.BasePlanet;
 import org.axan.sep.common.db.orm.base.IBasePlanet;
 
@@ -47,4 +49,14 @@ public class Planet extends ProductiveCelestialBody implements IPlanet, Serializ
 		return basePlanetProxy.getCurrentPopulation();
 	}
 
+	/**
+	 * Return the starting planet on first turn. Actually return the first planet owned by given player.
+	 * @param playerName
+	 * @return
+	 * @throws SQLDataBaseException 
+	 */
+	public static IPlanet getStartingPlanet(SEPCommonDB db, String playerName) throws SQLDataBaseException
+	{
+		return ProductiveCelestialBody.selectOne(db, IPlanet.class, null, "owner = ?", playerName);
+	}
 }
