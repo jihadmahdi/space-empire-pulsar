@@ -9,6 +9,9 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Stack;
 
 import org.axan.eplib.orm.ISQLDataBase;
@@ -16,21 +19,25 @@ import org.axan.eplib.orm.ISQLDataBaseStatement;
 import org.axan.eplib.orm.ISQLDataBaseStatementJob;
 import org.axan.eplib.orm.SQLDataBaseException;
 import org.axan.eplib.orm.sqlite.SQLiteDB;
+import org.axan.eplib.utils.Basic;
 import org.axan.eplib.utils.Reflect;
 import org.axan.sep.common.GameConfigCopier;
 import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
 import org.axan.sep.common.Protocol;
+import org.axan.sep.server.SEPServer;
 
-public class SEPCommonDB implements Serializable
+public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 {
 	private static final long serialVersionUID = 1L;
 
 	private static class GameConfigInvocationHandler implements InvocationHandler
 	{
+		private final SEPCommonDB sepDB;
 		private final ISQLDataBase db;
 		
 		public GameConfigInvocationHandler(SEPCommonDB sepDB)
 		{
+			this.sepDB = sepDB;
 			this.db = sepDB.getConfigDB();
 		}
 		
@@ -47,6 +54,60 @@ public class SEPCommonDB implements Serializable
 			}
 			else
 			{
+				// Special case: setTurn
+				if(method.getName().equals("setTurn"))
+				{										
+					if (args == null || args.length != 1 || !Integer.class.isInstance(args[0]))
+					{
+						throw new RuntimeException(method.getName()+" invalid call.");
+					}
+					
+					int value = (Integer) args[0];
+					
+					if (value < 0)
+					{
+						throw new RuntimeException(method.getName()+" invalid call, turn cannot be negative.");
+					}
+					
+					if (sepDB.nextVersion != null)
+					{
+						throw new RuntimeException(method.getName()+" invalid call, next version already exists.");
+					}
+					
+					if (value > 0)
+					{
+						int currentTurn = sepDB.getConfig().getTurn();
+						
+						if (currentTurn == value) // No change
+						{
+							return null;
+						}
+						
+						if (value != currentTurn+1)
+						{
+							throw new RuntimeException(method.getName()+" invalid call, must increment turn by 1 every time you call this method.");
+						}
+						
+						synchronized(sepDB)
+						{						
+							sepDB.nextVersion = Basic.clone(sepDB);
+							sepDB.nextVersion.previousVersion = sepDB;
+							sepDB.nextVersion.getConfigDB().exec("UPDATE GameConfig SET value = '%s' WHERE key = '%s';", value, "Turn");
+						}
+						
+						return null;
+					}
+					else // value == 0						
+					{
+						if (sepDB.previousVersion != null)
+						{
+							throw new RuntimeException("Cannot set game turn to 0 because SEPCommonDB already has previous version");
+						}
+						
+						// setTurn as classic setter, do not generates next version
+					}										
+				}
+				
 				/*
 				 * Setters must start with "set", have arguments and return void.
 				 */
@@ -179,7 +240,7 @@ public class SEPCommonDB implements Serializable
 			}
 		}
 		
-		private void set(String key, String value) throws SQLDataBaseException
+		private void set(String key, String value) throws SQLDataBaseException, InterruptedException
 		{
 			boolean exist = db.prepare("SELECT key FROM GameConfig WHERE key = '%s'", new ISQLDataBaseStatementJob<Boolean>()
 			{
@@ -261,7 +322,10 @@ public class SEPCommonDB implements Serializable
 	private transient ISQLDataBase configDB;
 	private transient IGameConfig config;
 	
-	public SEPCommonDB(ISQLDataBase db, IGameConfig config) throws IOException, SQLDataBaseException, GameConfigCopierException
+	private SEPCommonDB previousVersion = null;
+	private SEPCommonDB nextVersion = null;
+	
+	public SEPCommonDB(ISQLDataBase db, IGameConfig config) throws IOException, SQLDataBaseException, GameConfigCopierException, InterruptedException
 	{
 		this.db = db;
 		this.configDB = this.db;
@@ -295,6 +359,63 @@ public class SEPCommonDB implements Serializable
 	public ISQLDataBase getDB()
 	{
 		return db;
+	}
+	
+	//////////////// ListIterator implementation
+	
+	@Override
+	public boolean hasNext()
+	{
+		return nextVersion != null;
+	}
+	
+	@Override
+	public boolean hasPrevious()
+	{
+		return previousVersion != null;
+	}						
+	
+	@Override
+	public SEPCommonDB next()
+	{
+		return nextVersion;
+	}
+	
+	@Override
+	public SEPCommonDB previous()
+	{
+		return previousVersion;
+	}
+	
+	// Assume that DB are saved for each turn, and no saves are made in between.
+	@Override
+	public int nextIndex()
+	{
+		return getConfig().getTurn() + 1;
+	}
+	
+	@Override
+	public int previousIndex()
+	{
+		return getConfig().getTurn() - 1;
+	}
+	
+	@Override
+	public void add(SEPCommonDB e)
+	{
+		throw new UnsupportedOperationException(SEPCommonDB.class.getName()+" iterator cannot be used to add elements.");
+	}
+	
+	@Override
+	public void remove()
+	{
+		throw new UnsupportedOperationException(SEPCommonDB.class.getName()+" iterator cannot be used to remove elements.");
+	}
+	
+	@Override
+	public void set(SEPCommonDB e)
+	{
+		throw new UnsupportedOperationException(SEPCommonDB.class.getName()+" iterator cannot be used to set elements.");
 	}
 	
 	//////////////// Serialization

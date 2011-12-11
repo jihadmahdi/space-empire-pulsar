@@ -6,5 +6,7 @@ JPanel(name=universePanel):
       [grow]
       universeViewPanel    [grow, center]
       lblZValue,zSlider   [pref, bottom]
-bind:
-  - lblZValue.text: "Z: ${zSlider.value}"
+bind:  
+  - lblZValue.text: "Z: ${this.zSelection}"
+  - zSelection: zSlider.value
+  

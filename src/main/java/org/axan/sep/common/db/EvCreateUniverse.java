@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.axan.eplib.orm.SQLDataBaseException;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.SEPUtils.Location;
@@ -34,12 +35,26 @@ public class EvCreateUniverse implements IGameEvent, Serializable
 		return sunLocation;
 	}
 	
+	/**
+	 * Check if current event need to be processed or already has been (for optimization concerns).
+	 * @param db
+	 * @return
+	 * @throws SQLDataBaseException 
+	 */
+	private boolean skipCondition(SEPCommonDB db) throws SQLDataBaseException
+	{
+		// We cannot rely on GameConfig to check if universe has already been created, so we just check if there already is any Area instered.
+		return Area.exist(db, IArea.class, null, null);
+	}
+	
 	@Override
 	public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameEventException
 	{
 		try
 		{
 			IGameConfig config = db.getConfig();
+			
+			if (skipCondition(db)) return;
 			
 			// Generate players
 			for(IPlayer player : players.keySet())
@@ -103,7 +118,7 @@ public class EvCreateUniverse implements IGameEvent, Serializable
 				}
 			}
 			
-			config.setTurn(1);
+			config.setTurn(0);
 		}
 		catch(Throwable t)
 		{

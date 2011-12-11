@@ -14,6 +14,7 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
+import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 
@@ -97,6 +98,7 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 		////////// ui controls
 		private JSpinner spnPort;
 		private JSpinner spnTimeout;
+		private JTextField txtLogin;
 		
 		////////// bean fields
 		private String login;
@@ -107,6 +109,7 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 		public HostGamePanel()
 		{
 			result = SwingJavaBuilder.build(this);
+			txtLogin.setText("Axan"); // TODO: remove when GUI tests ok.
 			spnPort.setModel(new SpinnerNumberModel(8082, 1, 65000, 1));
 			spnTimeout.setModel(new SpinnerNumberModel(5, 1, 10, 1));
 		}
@@ -266,8 +269,10 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 	 */
 	private void close()
 	{		
-		quitGame();
-		dispose();
+		if (quitGame())
+		{
+			dispose();
+		}
 	}
 	
 	/**
@@ -307,13 +312,13 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 	/**
 	 * Quit current game if any (not the program).
 	 */
-	private void quitGame()
+	private boolean quitGame()
 	{
 		if (getSepClient() != null && getSepClient().isConnected())
 		{
 			if (JOptionPane.showConfirmDialog(null, build.getResource("msg.quit.game"), build.getResource("msg.quit.game.title"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.YES_OPTION)
 			{
-				return;
+				return false;
 			}
 			
 			getSepClient().disconnect();
@@ -327,6 +332,7 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 		}
 		
 		showLogoPanel();
+		return true;
 	}
 	
 	private void showLogoPanel()
@@ -389,7 +395,9 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 	public void refreshPlayerList(Map<IPlayer, IPlayerConfig> playerList)
 	{
 		log.log(Level.INFO, "refreshPlayerList");
+		
 		gameCreationPanel.getPlayersListPanel().refreshPlayers(playerList.keySet());
+		runningGamePanel.getPlayersListPanel().refreshPlayers(playerList.keySet());
 	}
 	
 	@Override
@@ -409,6 +417,7 @@ public class SpaceEmpirePulsarGUI extends JFrame implements IUserInterface
 	public void receiveRunningGameMessage(IPlayer fromPlayer, String msg)
 	{
 		log.log(Level.INFO, "receiveRunningGameMessage");
+		runningGamePanel.getChatPanel().receivedMessages(fromPlayer, msg);
 	}
 
 	@Override

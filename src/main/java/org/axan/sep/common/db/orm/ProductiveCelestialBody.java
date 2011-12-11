@@ -92,7 +92,7 @@ public class ProductiveCelestialBody extends CelestialBody implements IProductiv
 			}, params);
 			while(stmnt.step())
 			{
-				results.add(DataBaseORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) ProductiveCelestialBody.class : expectedType, stmnt));
+				results.add(DataBaseORMGenerator.mapTo(expectedType, stmnt));
 			}
 			return results;
 		}

@@ -282,7 +282,7 @@ class GameBoard implements Serializable, IGameBoard
 		try
 		{
 			SEPCommonDB globalDB = new SEPCommonDB(dbFactory.createSQLDataBase(), gameConfig);
-			playerViews.put(null, new PlayerGameboardView(globalDB, new IGameEventExecutor()
+			IGameEventExecutor globalExecutor = new IGameEventExecutor()
 			{
 				// Unfiltered executor
 				@Override
@@ -290,7 +290,8 @@ class GameBoard implements Serializable, IGameBoard
 				{
 					GameBoard.this.onGameEvent(event, observers);
 				}
-			}));
+			};
+			playerViews.put(null, new PlayerGameboardView(globalDB, globalExecutor));
 	
 			// Generating CreateUniverse event.
 	
@@ -305,8 +306,8 @@ class GameBoard implements Serializable, IGameBoard
 	
 			for(IPlayer player: players.keySet())
 			{
-				final String playerName = player.getName(); 
-				SEPCommonDB playerDB = new SEPCommonDB(dbFactory.createSQLDataBase(), getConfig());
+				/*
+				SEPCommonDB playerDB = new SEPCommonDB(dbFactory.createSQLDataBase(), getConfig());				
 				playerViews.put(playerName, new PlayerGameboardView(player.getName(), playerDB, new IGameEventExecutor()
 				{					
 					@Override
@@ -317,6 +318,7 @@ class GameBoard implements Serializable, IGameBoard
 						GameBoard.this.onGameEvent(event, playerName);
 					}
 				}));
+				*/
 	
 				// Found a location to pop the planet.
 				Location planetLocation;
@@ -334,7 +336,7 @@ class GameBoard implements Serializable, IGameBoard
 					for(Location l: playersPlanetLocations)
 					{
 						// Cannot be another player planet location
-						if (SEPUtils.getDistance(planetLocation, l) <= 0)
+						if (SEPUtils.getDistance(planetLocation, l) <= 0.9)
 						{
 							continue;
 						}
@@ -374,7 +376,7 @@ class GameBoard implements Serializable, IGameBoard
 					for(Location l: playersPlanetLocations)
 					{
 						// Cannot be already populated (player starting planet) location
-						if (SEPUtils.getDistance(celestialBodyLocation, l) <= 0)
+						if (SEPUtils.getDistance(celestialBodyLocation, l) <= 0.9)
 						{
 							continue;
 						}
@@ -389,7 +391,7 @@ class GameBoard implements Serializable, IGameBoard
 					for(Location l: neutralCelestialBodiesLocations)
 					{
 						// Cannot be already populated (neutral celestial body) location
-						if (SEPUtils.getDistance(celestialBodyLocation, l) <= 0)
+						if (SEPUtils.getDistance(celestialBodyLocation, l) <= 0.9)
 						{
 							continue;
 						}
@@ -406,7 +408,33 @@ class GameBoard implements Serializable, IGameBoard
 				celestialBodies.add(neutralCelestialBody);
 			}
 	
-			EvCreateUniverse createUniverseEvent = new EvCreateUniverse(sunLocation, players, celestialBodies);
+			EvCreateUniverse createUniverseEvent = new EvCreateUniverse(sunLocation, players, celestialBodies);			
+			
+			PlayerGameboardView globalDBView = playerViews.get(null);
+			// Process event on globalDB. It's not resolveTurn method, so we will fire CreateUniverse event anyway, but it will be ignored server-side on next resolvingTurn (@see EvCreateUniverse#skipCondition()).
+			createUniverseEvent.process(globalExecutor, globalDB);
+			
+			SEPCommonDB[] copies = Basic.clone(globalDB, players.size());
+			
+			int i=0;
+			for(IPlayer player: players.keySet())
+			{
+				final String playerName = player.getName();
+				SEPCommonDB playerDB = copies[i];
+				playerViews.put(playerName, new PlayerGameboardView(playerName, playerDB, new IGameEventExecutor()
+				{					
+					@Override
+					public void onGameEvent(IGameEvent event, Set<String> observers)
+					{
+						// executor filtered on current player view player.
+						if (!observers.contains(playerName)) return;
+						GameBoard.this.onGameEvent(event, playerName);
+					}
+				}));
+				
+				++i;
+			}
+			
 			onGameEvent(createUniverseEvent, playerViews.keySet());
 		}
 		catch(Throwable t)
@@ -477,7 +505,7 @@ class GameBoard implements Serializable, IGameBoard
 		try
 		{
 			PlayerGameboardView globalView = playerViews.get(null);
-			globalView.resolveCurrentTurn();
+			globalView.resolveCurrentTurn();						
 			
 			for(PlayerGameboardView view : playerViews.values())
 			{
@@ -683,7 +711,7 @@ class GameBoard implements Serializable, IGameBoard
 					@Override
 					protected Void job(SQLiteConnection conn) throws Throwable
 					{
-						SQLiteDBStatement stmnt = conn.prepare(String.format("SELECT U.type, * FROM Unit U LEFT JOIN	VersionedUnit VU USING (name, owner, type) LEFT JOIN	PulsarMissile PM USING (name, owner, type) LEFT JOIN	Probe P USING (name, owner, type) LEFT JOIN	AntiProbeMissile APM USING (name, owner, type) LEFT JOIN	CarbonCarrier CC USING (name, owner, type) LEFT JOIN	SpaceRoadDeliverer SRD USING (name, owner, type) LEFT JOIN	Fleet F USING (name, owner, type) LEFT JOIN	VersionedPulsarMissile VPM USING (name, owner, turn) LEFT JOIN	VersionedProbe VP USING (name, owner, turn) LEFT JOIN	VersionedAntiProbeMissile VAPM USING (name, owner, turn) LEFT JOIN	VersionedCarbonCarrier VCC USING (name, owner, turn) LEFT JOIN	VersionedFleet VF USING (name, owner, turn) WHERE VU.turn = %d AND VU.destination_x IS NOT NULL;", getConfig().getTurn()));
+						SQLiteDBStatement stmnt = conn.prepare(String.format("SELECT U.type, * FROM Unit U LEFT JOIN	VersionedUnit VU USING (name, owner, type) LEFT JOIN	PulsarMissile PM USING (name, owner, type) LEFT JOIN	Probe P USING (name, owner, type) LEFT JOIN	AntiProbeMissile APM USING (name, owner, type) LEFT JOIN	CarbonCarrier CC USING (name, owner, type) LEFT JOIN	SpaceRoadDeliverer SRD USING (name, owner, type) LEFT JOIN	Fleet F USING (name, owner, type) LEFT JOIN	VersionedPulsarMissile VPM USING (name, owner, turn) LEFT JOIN	VersionedProbe VP USING (name, owner, turn) LEFT JOIN	VersionedAntiProbeMissile VAPM USING (name, owner, turn) LEFT JOIN	VersionedCarbonCarrier VCC USING (name, owner, turn) LEFT JOIN	VersionedFleet VF USING (name, owner, turn) WHERE VU.turn = ? AND VU.destination_x IS NOT NULL;", getConfig().getTurn()));
 						Vector<VersionedUnit> movingUnits = new Vector<VersionedUnit>();
 						while(stmnt.step())
 						{
@@ -692,7 +720,7 @@ class GameBoard implements Serializable, IGameBoard
 						}
 															
 						// Commencer par prédire la collision avec les vortex
-						stmnt = conn.prepare(String.format("SELECT type,* FROM Vortex WHERE onsetDate <= %d AND %d < endDate", getConfig().getTurn(), getConfig().getTurn()));
+						stmnt = conn.prepare(String.format("SELECT type,* FROM Vortex WHERE onsetDate <= ? AND ? < endDate", getConfig().getTurn(), getConfig().getTurn()));
 						Vector<Vortex> vortex = new Vector<Vortex>();
 						while(stmnt.step())
 						{
@@ -848,7 +876,7 @@ class GameBoard implements Serializable, IGameBoard
 		try
 		{
 			// Select productive celestial body by name, last version
-			Set<IVersionedProductiveCelestialBody> pcbs = ProductiveCelestialBody.selectMaxVersion(commonDB, IVersionedProductiveCelestialBody.class, null, "name = '%s'", celestialBodyName);
+			Set<IVersionedProductiveCelestialBody> pcbs = ProductiveCelestialBody.selectMaxVersion(commonDB, IVersionedProductiveCelestialBody.class, null, "name = ?", celestialBodyName);
 			
 			// celestialBodyName IS A ProductiveCelestialBody
 			if (!pcbs.isEmpty())
@@ -1015,7 +1043,7 @@ class GameBoard implements Serializable, IGameBoard
 
 		try
 		{
-			p = Player.selectOne(getGlobalDB(), IPlayer.class, null, "name = %s", playerLogin);
+			p = Player.selectOne(getGlobalDB(), IPlayer.class, null, "name = ?", playerLogin);
 		}
 		catch(SQLDataBaseException e)
 		{

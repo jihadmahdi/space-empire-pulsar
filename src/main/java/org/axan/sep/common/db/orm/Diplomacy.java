@@ -79,7 +79,7 @@ public class Diplomacy implements IDiplomacy
 			}, params);
 			while(stmnt.step())
 			{
-				results.add(DataBaseORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) Diplomacy.class : expectedType, stmnt));
+				results.add(DataBaseORMGenerator.mapTo(expectedType, stmnt));
 			}
 			return results;
 		}
@@ -123,6 +123,7 @@ public class Diplomacy implements IDiplomacy
 	private static <T extends IDiplomacy> String selectQuery(Class<T> expectedType, String from, String where, Object ... params)
 	{
 		where = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);
+		if (where != null && !where.isEmpty() && where.charAt(0) != '(') where = "("+where+")";
 		return String.format("SELECT Diplomacy.* FROM Diplomacy%s%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
 	}
 

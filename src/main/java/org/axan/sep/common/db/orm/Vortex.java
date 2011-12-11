@@ -77,7 +77,7 @@ public class Vortex extends CelestialBody implements IVortex, Serializable
 			}, params);
 			while(stmnt.step())
 			{
-				results.add(DataBaseORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) Vortex.class : expectedType, stmnt));
+				results.add(DataBaseORMGenerator.mapTo(expectedType, stmnt));
 			}
 			return results;
 		}

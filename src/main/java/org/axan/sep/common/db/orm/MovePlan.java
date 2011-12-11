@@ -91,7 +91,7 @@ public class MovePlan implements IMovePlan
 			}, params);
 			while(stmnt.step())
 			{
-				results.add(DataBaseORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) MovePlan.class : expectedType, stmnt));
+				results.add(DataBaseORMGenerator.mapTo(expectedType, stmnt));
 			}
 			return results;
 		}

@@ -103,7 +103,7 @@ public class SpaceRoad implements ISpaceRoad
 			}, params);
 			while(stmnt.step())
 			{
-				results.add(DataBaseORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) SpaceRoad.class : expectedType, stmnt));
+				results.add(DataBaseORMGenerator.mapTo(expectedType, stmnt));
 			}
 			return results;
 		}

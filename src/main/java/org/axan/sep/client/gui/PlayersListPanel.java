@@ -47,6 +47,7 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 	////////// bean fields		
 	private SEPClient sepClient;
 	private final EventList<IPlayer> players = GlazedLists.threadSafeList(new BasicEventList<IPlayer>());
+	private boolean configurationEnabled = true;
 	
 	////////// ui controls
 	private EventListModel<IPlayer> playersListModel = new EventListModel<IPlayer>(players);
@@ -78,7 +79,7 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 			@Override
 			public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus)
 			{
-				if (PlayersListPanel.this.getSepClient() == null)
+				if (PlayersListPanel.this.getSepClient() == null || !PlayersListPanel.this.isEnabled())
 				{
 					SwingUtilities.invokeLater(new Runnable()
 					{
@@ -237,6 +238,18 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 		setEnabled(sepClient != null);
 		firePropertyChange("sepClient", old, sepClient);
 	}
+	
+	public boolean isConfigurationEnabled()
+	{
+		return configurationEnabled;
+	}
+	
+	public void setConfigurationEnabled(boolean configurationEnabled)
+	{
+		Object old = this.configurationEnabled;
+		this.configurationEnabled = configurationEnabled;
+		firePropertyChange("configurationEnabled", old, configurationEnabled);
+	}
 		
 	////////// ui events
 	
@@ -249,6 +262,10 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 		
 	public void click()
 	{
+		// TODO: Player selection as chat target
+		
+		if (!isConfigurationEnabled()) return;
+		
 		IPlayer player = (IPlayer) playersList.getSelectedValue();
 		
 		if (player == null || !getSepClient().getLogin().equals(player.getName())) return;

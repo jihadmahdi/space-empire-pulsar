@@ -5,7 +5,7 @@ La vue de chaque joueur est une sorte de LOG d'évènements ordonnés et datés 
 Celà permet à chaque résolution de tour de n'envoyer que les nouveaux évènements concernant chaque joueurs.
 Celà permet de ne pas avoir besoin de méthodes ou structure de données élaborées pour tester l'état d'un objet à telle date du jeu. Il suffit au contraire de recharger le log jusqu'à la date voulue.
 Le concept est basé sur un prérequis: le chargement du log de 0 jusqu'à une date donnée doit être TRES rapide.
-Néanmoins comparé au temps que prend une "compilation de la vue joueur" à partir de la BDD globale, il y a bon espoir de faire mieux.
+Néanmoins comparé au temps que prend une "compilation de la vue joueur" à partir de la BDD globale, il y a bon espoir de faire mieux. // Heu.. ou pas
 
 --- 
 Une inteface IGameEvent représente tout évènement du jeu.
@@ -25,5 +25,5 @@ Une interface IGameEvent représente tout évènement du jeu.
 L'interface dérivée ICommand représente un évènement "commande" généré par l'utilisateur client.
 L'utilisateur client ne peut générer que des ICommand. Et il les applique tout de suite à la vue locale du jeu.
 
-Le problème est que les commandes utilisateur doivent pouvoir s'appliquer en local sans compter un traitement du serveur (ex: tirage d'un dé, ...).
+Un problème est que les commandes utilisateur doivent pouvoir s'appliquer en local sans compter sur un traitement du serveur (ex: tirage d'un dé, ...).
 

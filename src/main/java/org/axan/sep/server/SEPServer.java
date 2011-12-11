@@ -758,6 +758,7 @@ public class SEPServer implements IServer, ISQLDataBaseFactory
 	{
 		try
 		{
+			//TODO: When DB debug is finished, use memory DB (no arg constructor).
 			File dbFile = File.createTempFile("sepS", ".sep");
 			return new SQLiteDB(dbFile);
 			//return new HSQLDB(dbFile, "sa", "");			

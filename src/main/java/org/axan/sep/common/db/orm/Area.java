@@ -82,6 +82,72 @@ public class Area implements IArea
 		return Unit.select(db, expectedType, null, "departure_x = ? AND departure_y = ? AND departure_z = ?", getLocation().x, getLocation().y, getLocation().z);
 	}
 
+	public String toString(SEPCommonDB db, String playerName)
+	{
+		StringBuffer sb = new StringBuffer();
+		
+		if (isVisible(db, playerName))
+		{
+			sb.append("currently observed");
+		}
+		else
+		{
+			int lastObservation = -1;
+			SEPCommonDB pDB = db;
+			while(pDB.hasPrevious())
+			{
+				pDB = pDB.previous();
+				if (isVisible(pDB, playerName))
+				{
+					lastObservation = pDB.getConfig().getTurn();
+					break;
+				}
+			}
+			
+			sb.append((lastObservation < 0)?"never been observed":"last observation on turn "+lastObservation);
+		}
+		sb.append("\n");
+		
+		if (isSun())
+		{
+			sb.append("Sun\n");
+		}
+		else
+		{
+			ICelestialBody cb = getCelestialBody(db);
+			if (cb != null)
+			{
+				// SUIS LA
+				sb.append(cb.toString(db, playerName)+"\n");
+			}
+		}
+		
+		Set<IUnit> units = getUnits(db, IUnit.class);
+		if (units != null && !units.isEmpty())
+		{
+			sb.append("Units :\n");
+			for(IUnit u : units)
+			{
+				sb.append("   ["+u.getOwner()+"] "+u.getName()+"\n");
+			}
+		}
+		
+		/*
+		if (markers != null && !markers.isEmpty())
+		{
+			sb.append("Markers :\n");
+			for(IMarker m : markers)
+			{
+				sb.append(m);
+			}
+		}
+		*/
+		
+		return sb.toString();
+	}
+	
+	////////// Static methods
+	
 	public static <T extends IArea> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
 	{
 		Set<T> results = select(db, expectedType, from, (where==null?"(1) ":"("+where+") ")+"LIMIT 1", params);
@@ -105,7 +171,7 @@ public class Area implements IArea
 			}, params);
 			while(stmnt.step())
 			{
-				results.add(DataBaseORMGenerator.mapTo(expectedType.isInterface() ? (Class<T>) Area.class : expectedType, stmnt));
+				results.add(DataBaseORMGenerator.mapTo(expectedType, stmnt));
 			}
 			return results;
 		}

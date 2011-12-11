@@ -349,6 +349,7 @@ public class SEPClient implements ISQLDataBaseFactory
 	{
 		try
 		{
+			//TODO: When DB debug is finished, use memory DB (no arg constructor).
 			File dbFile = File.createTempFile("sepC", ".sep");
 			return new SQLiteDB(dbFile);
 			//return new HSQLDB(dbFile, "sa", "");			
@@ -364,6 +365,19 @@ public class SEPClient implements ISQLDataBaseFactory
 	public PlayerGameBoard getGameboard()
 	{
 		return gameBoard;
+	}
+	
+	public void sendMessage(String msg) throws StateMachineNotExpectedEventException, RpcException
+	{
+		if (getGameboard().isGameInCreation())
+		{
+			getGameCreationInterface().sendMessage(msg);
+		}
+		else
+		{
+			// TODO: Check for paused game
+			getRunningGameInterface().sendMessage(msg);
+		}
 	}
 	
 	////////// private methods

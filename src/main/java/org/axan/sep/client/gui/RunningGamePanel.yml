@@ -1,8 +1,17 @@
 JPanel(name=runningGamePanel):
   # Dock Left
   - JPanel(name=dockedLeftPanel):
-    - AUniverseRendererPanel(name=universePanel, background=red)
-    - JPanel(name=tabsPanel, background=green)
+    - AUniverseRendererPanel(name=universePanel)
+    - JTabbedPane(name=tabsPanel):
+        - JPanel(tabTitle="Chat", name=chatTab):
+           - GameChatPanel(name=chatPanel)
+           - PlayersListPanel(name=playersListPanel, enabled=false, configurationEnabled=false)
+           - MigLayout: |
+               [[insets 0]]
+               [grow]      [200px]
+               chatPanel   >playersListPanel   [grow]
+        - JPanel(tabTitle="Logs", name=logsTab, background=yellow)
+        - JPanel(tabTitle="Action", name=actionTab, background=olive)
     - MigLayout: |
         [[insets 0]]
         [grow]
@@ -35,3 +44,5 @@ JPanel(name=runningGamePanel):
       dockedBottomPanel+*                   [bottom]
 bind:
   - universePanel.sepClient: this.sepClient
+  - chatPanel.sepClient: this.sepClient
+  - playersListPanel.sepClient: this.sepClient

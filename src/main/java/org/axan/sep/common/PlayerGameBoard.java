@@ -215,7 +215,7 @@ public class PlayerGameBoard implements IGameBoard
 	{
 		try
 		{
-			return PlayerConfig.selectOne(getDB(), PlayerConfig.class, null, "name = %s", playerName);
+			return PlayerConfig.selectOne(getDB(), PlayerConfig.class, null, "name = ?", playerName);
 		}
 		catch(SQLDataBaseException e)
 		{

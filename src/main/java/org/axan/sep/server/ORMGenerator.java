@@ -1,6 +1,7 @@
 package org.axan.sep.server;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URL;
 import java.util.Collection;
@@ -597,7 +598,7 @@ class ORMGenerator
 					}
 					else
 					{
-						psuc.format("\t\t\t\tresults.add(%s.mapTo(expectedType.isInterface() ? (Class<T>) %s.class : expectedType, stmnt%s));\n", DataBaseORMGenerator.class.getSimpleName(), c.getUpperName(), addParams);
+						psuc.format("\t\t\t\tresults.add(%s.mapTo(expectedType, stmnt%s));\n", DataBaseORMGenerator.class.getSimpleName(), addParams);
 					}
 					psuc.println("\t\t\t}");
 					psuc.println("\t\t\treturn results;");
@@ -1112,5 +1113,11 @@ class ORMGenerator
 			e.printStackTrace();
 			return;
 		}
+	}
+	
+	private static void generateDBSkeleton() throws IOException
+	{
+		File dbFile = File.createTempFile("sepSKDB", ".sep");
+		// TODO: Create a skeleton DB file for turn 0 which can be loaded instead of empty DB so EvCreateUniverse can be optimized (areas aleady inserted, just delete out of config range areas, ...).
 	}
 }
