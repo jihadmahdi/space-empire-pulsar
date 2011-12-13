@@ -4,6 +4,7 @@ import java.util.Set;
 
 import org.axan.eplib.orm.SQLDataBaseException;
 import org.axan.sep.common.SEPUtils.Location;
+import java.util.Map;
 
 public interface IArea
 {
@@ -12,4 +13,5 @@ public interface IArea
 	boolean isVisible(SEPCommonDB db, String playerName) throws SQLDataBaseException;
 	ICelestialBody getCelestialBody(SEPCommonDB db) throws SQLDataBaseException;
 	<T extends IUnit> Set<T> getUnits(SEPCommonDB db, Class<T> expectedType) throws SQLDataBaseException;
+	Map<String, Object> getNode();
 }

@@ -17,6 +17,7 @@ import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.db.IGameEvent;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
+import org.neo4j.graphdb.RelationshipType;
 
 /**
  * Define the game protocol (RPC services interfaces).
@@ -27,17 +28,17 @@ public interface Protocol
 	/**
 	 * Celestial body types.
 	 */
-	public static enum eCelestialBodyType {Vortex, Planet, AsteroidField, Nebula};
+	public static enum eCelestialBodyType implements RelationshipType {Vortex, Planet, AsteroidField, Nebula};
 	
 	/**
 	 * Building types.
 	 */
-	public static enum eBuildingType {PulsarLaunchingPad, SpaceCounter, GovernmentModule, DefenseModule, StarshipPlant, ExtractionModule};
+	public static enum eBuildingType implements RelationshipType {PulsarLaunchingPad, SpaceCounter, GovernmentModule, DefenseModule, StarshipPlant, ExtractionModule};
 	
 	/**
 	 * Unit types.
 	 */
-	public static enum eUnitType {PulsarMissile, Probe, AntiProbeMissile, Fleet, CarbonCarrier, SpaceRoadDeliverer};
+	public static enum eUnitType implements RelationshipType {PulsarMissile, Probe, AntiProbeMissile, Fleet, CarbonCarrier, SpaceRoadDeliverer};
 	
 	/**
 	 * Special unit types.

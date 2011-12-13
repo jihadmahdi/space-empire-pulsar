@@ -1,12 +1,16 @@
 package org.axan.sep.common.db.orm;
 
-import org.axan.eplib.orm.ISQLDataBaseStatement;
+import org.axan.sep.common.db.orm.Unit;
+import java.lang.Exception;
+import org.axan.sep.common.db.orm.base.IBaseProbe;
+import org.axan.sep.common.db.orm.base.BaseProbe;
+import org.axan.sep.common.db.IProbe;
+import java.util.HashMap;
+import java.util.Map;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.IGameConfig;
-import org.axan.sep.common.db.IProbe;
-import org.axan.sep.common.db.orm.base.BaseProbe;
-import org.axan.sep.common.db.orm.base.IBaseProbe;
+import org.neo4j.graphdb.Node;
 
 public class Probe extends Unit implements IProbe
 {
@@ -23,9 +27,15 @@ public class Probe extends Unit implements IProbe
 		this(new BaseProbe(owner, name, type.toString(), departure == null ? null : departure.x, departure == null ? null : departure.y, departure == null ? null : departure.z, progress, destination == null ? null : destination.x, destination == null ? null : destination.y, destination == null ? null : destination.z), config);
 	}
 
-	public Probe(ISQLDataBaseStatement stmnt, IGameConfig config) throws Exception
+	public Probe(Node stmnt, IGameConfig config) throws Exception
 	{
 		this(new BaseProbe(stmnt), config);
+	}
+
+	@Override
+	public Map<String, Object> getNode()
+	{
+		return baseProbeProxy.getNode();
 	}
 	
 	@Override

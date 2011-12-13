@@ -1,5 +1,6 @@
 package org.axan.sep.common.db;
 
+import java.util.Map;
 
 public interface IDiplomacy
 {
@@ -7,4 +8,5 @@ public interface IDiplomacy
 	public String getTarget();
 	public Boolean getAllowToLand();
 	public String getForeignPolicy();
+	public Map<String, Object> getNode();
 }

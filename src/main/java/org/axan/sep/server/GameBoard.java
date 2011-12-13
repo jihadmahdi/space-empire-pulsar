@@ -17,8 +17,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Logger;
 
-import org.axan.eplib.orm.ISQLDataBaseFactory;
-import org.axan.eplib.orm.SQLDataBaseException;
 import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
@@ -37,6 +35,7 @@ import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.db.IGameEvent;
 import org.axan.sep.common.db.IGameEvent.GameEventException;
 import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
+import org.axan.sep.common.db.IDBFactory;
 import org.axan.sep.common.db.IPlanet;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
@@ -129,11 +128,11 @@ class GameBoard implements Serializable, IGameBoard
 	private transient GameConfig gameConfig = new GameConfig();
 
 	/** DB factory. */
-	private final ISQLDataBaseFactory dbFactory;
+	private final IDBFactory dbFactory;
 
 	//////////constructor
 
-	public GameBoard(ISQLDataBaseFactory dbFactory) throws IOException, GameConfigCopierException, SQLDataBaseException
+	public GameBoard(IDBFactory dbFactory) throws IOException, GameConfigCopierException
 	{
 		this.dbFactory = dbFactory;
 		//TODO: Testing config, to remove later.
@@ -281,9 +280,9 @@ class GameBoard implements Serializable, IGameBoard
 
 		try
 		{
-			SEPCommonDB globalDB = new SEPCommonDB(dbFactory.createSQLDataBase(), gameConfig);
+			SEPCommonDB globalDB = new SEPCommonDB(dbFactory.createDB(), gameConfig);
 			IGameEventExecutor globalExecutor = new IGameEventExecutor()
-			{
+			{				
 				// Unfiltered executor
 				@Override
 				public void onGameEvent(IGameEvent event, Set<String> observers)
@@ -336,7 +335,7 @@ class GameBoard implements Serializable, IGameBoard
 					for(Location l: playersPlanetLocations)
 					{
 						// Cannot be another player planet location
-						if (SEPUtils.getDistance(planetLocation, l) <= 0.9)
+						if (SEPUtils.getDistance(planetLocation, l) < 1)
 						{
 							continue;
 						}
@@ -348,12 +347,12 @@ class GameBoard implements Serializable, IGameBoard
 						}
 					}
 	
+					playersPlanetLocations.add(planetLocation);
 					locationOk = true;
-				} while (!locationOk);
+				} while (!locationOk);				
 	
 				IPlanet planet = createPlayerStartingPlanet(generateCelestialBodyName(), planetLocation, player.getName());
-				celestialBodies.add(planet);
-				playersPlanetLocations.add(planetLocation);
+				celestialBodies.add(planet);				
 			}
 	
 			// Add neutral celestial bodies
@@ -376,7 +375,7 @@ class GameBoard implements Serializable, IGameBoard
 					for(Location l: playersPlanetLocations)
 					{
 						// Cannot be already populated (player starting planet) location
-						if (SEPUtils.getDistance(celestialBodyLocation, l) <= 0.9)
+						if (SEPUtils.getDistance(celestialBodyLocation, l) < 1)
 						{
 							continue;
 						}
@@ -391,21 +390,22 @@ class GameBoard implements Serializable, IGameBoard
 					for(Location l: neutralCelestialBodiesLocations)
 					{
 						// Cannot be already populated (neutral celestial body) location
-						if (SEPUtils.getDistance(celestialBodyLocation, l) <= 0.9)
+						if (SEPUtils.getDistance(celestialBodyLocation, l) < 1)
 						{
 							continue;
 						}
 					}
 	
+					neutralCelestialBodiesLocations.add(celestialBodyLocation);
 					locationOk = true;
-				} while (!locationOk);
-	
+				} while (!locationOk);				
+				
 				eCelestialBodyType celestialBodyType = Basic.getKeyFromRandomTable(SEPUtils.getNeutralCelestialBodiesGenerationTable(getConfig()));
 				String nextName = generateCelestialBodyName();
 	
 				ICelestialBody neutralCelestialBody = createNeutralCelestialBody(celestialBodyType, nextName, celestialBodyLocation);
 	
-				celestialBodies.add(neutralCelestialBody);
+				celestialBodies.add(neutralCelestialBody);				
 			}
 	
 			EvCreateUniverse createUniverseEvent = new EvCreateUniverse(sunLocation, players, celestialBodies);			
@@ -1007,53 +1007,23 @@ class GameBoard implements Serializable, IGameBoard
 		return getGlobalDB().getConfig();
 	}
 
-	private Map<IPlayer, IPlayerConfig> getDBPlayerList() throws GameBoardException
+	private Map<IPlayer, IPlayerConfig> getDBPlayerList()
 	{
 		Map<IPlayer, IPlayerConfig> result = new TreeMap<IPlayer, IPlayerConfig>();
 
-		try
+		Set<IPlayer> ps = getGlobalDB().getPlayers();
+		for(IPlayer p : ps)
 		{
-			Set<IPlayer> ps = Player.select(getGlobalDB(), IPlayer.class, null, null);
-			Set<IPlayerConfig> pcs = PlayerConfig.select(getGlobalDB(), IPlayerConfig.class, null, null);
+			IPlayerConfig pc = p.getConfig(getGlobalDB());
+			result.put(p, pc);
+		}			
 
-			for(IPlayer p: ps)
-			{
-				for(IPlayerConfig pc: pcs)
-				{
-					if (p.getName().compareTo(pc.getName()) == 0)
-					{
-						result.put(p, pc);
-						pcs.remove(pc);
-						break;
-					}
-				}
-			}
-
-			return result;
-		}
-		catch(SQLDataBaseException e)
-		{
-			throw new GameBoardException(e);
-		}
+		return result;		
 	}
 
-	private IPlayer getDBPlayer(String playerLogin) throws GameBoardException
+	private IPlayer getDBPlayer(String playerLogin)
 	{
-		IPlayer p = null;
-
-		try
-		{
-			p = Player.selectOne(getGlobalDB(), IPlayer.class, null, "name = ?", playerLogin);
-		}
-		catch(SQLDataBaseException e)
-		{
-			throw new GameBoardException("SQLDataBaseException", e);
-		}
-
-		if (p == null)
-			throw new GameBoardException("Player " + playerLogin + " is unkown");
-
-		return p;
+		return getGlobalDB().getPlayer(playerLogin);		
 	}
 	
 	////////////// Universe creation

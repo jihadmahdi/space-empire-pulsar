@@ -44,7 +44,7 @@ public class EvCreateUniverse implements IGameEvent, Serializable
 	private boolean skipCondition(SEPCommonDB db) throws SQLDataBaseException
 	{
 		// We cannot rely on GameConfig to check if universe has already been created, so we just check if there already is any Area instered.
-		return Area.exist(db, IArea.class, null, null);
+		return db.isUniverseCreated();
 	}
 	
 	@Override
@@ -59,8 +59,7 @@ public class EvCreateUniverse implements IGameEvent, Serializable
 			// Generate players
 			for(IPlayer player : players.keySet())
 			{
-				Player.insertOrUpdate(db, player);
-				PlayerConfig.insertOrUpdate(db, players.get(player));
+				db.createPlayer(player, players.get(player));
 			}
 			
 			// Generate Universe
@@ -81,15 +80,14 @@ public class EvCreateUniverse implements IGameEvent, Serializable
 						Location parsedLoc = new Location(sunLocation.x + x, sunLocation.y + y, sunLocation.z + z);
 						if (SEPUtils.getDistance(parsedLoc, sunLocation) <= config.getSunRadius())
 						{
-							Area.insertOrUpdate(db, new Area(parsedLoc, true));
+							db.createArea(new Area(parsedLoc, true));
 						}						
 					}
 			
 			Map<String, IPlanet> playerStartingPlanets = new HashMap<String, IPlanet>();
 			for(ICelestialBody celestialBody : celestialBodies)
-			{
-				Area.insertOrUpdate(db, new Area(celestialBody.getLocation(), false));
-				CelestialBody.insertOrUpdate(db, celestialBody);
+			{				
+				db.createCelestialBody(celestialBody);
 				
 				if (IPlanet.class.isInstance(celestialBody))
 				{
@@ -109,8 +107,8 @@ public class EvCreateUniverse implements IGameEvent, Serializable
 									IGovernmentModule governmentModule = new GovernmentModule(eBuildingType.GovernmentModule, planet.getName(), config.getTurn(), 1);
 									IGovernment government = new Government(player.getName(), null, planet.getName());
 									
-									Building.insertOrUpdate(db, governmentModule);
-									Government.insertOrUpdate(db, government);
+									db.createBuilding(governmentModule);
+									db.updateGovernment(government);
 								}
 							}
 						}

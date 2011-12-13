@@ -1,5 +1,6 @@
 package org.axan.sep.common.db;
 
+import java.util.Map;
 
 public interface ICarbonCarrier extends IUnit
 {
@@ -9,4 +10,5 @@ public interface ICarbonCarrier extends IUnit
 	public String getOrderOwner();
 	public String getOrderSource();
 	public Integer getOrderPriority();
+	public Map<String, Object> getNode();
 }

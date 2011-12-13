@@ -1,10 +1,15 @@
 package org.axan.sep.common.db.orm;
 
-import org.axan.eplib.orm.ISQLDataBaseStatement;
-import org.axan.sep.common.Protocol.eBuildingType;
-import org.axan.sep.common.db.IStarshipPlant;
-import org.axan.sep.common.db.orm.base.BaseStarshipPlant;
+import org.axan.sep.common.db.orm.Building;
+import java.lang.Exception;
 import org.axan.sep.common.db.orm.base.IBaseStarshipPlant;
+import org.axan.sep.common.db.orm.base.BaseStarshipPlant;
+import org.axan.sep.common.db.IStarshipPlant;
+import java.util.HashMap;
+import java.util.Map;
+import org.axan.sep.common.Protocol.eBuildingType;
+import org.axan.sep.common.db.IGameConfig;
+import org.neo4j.graphdb.Node;
 
 public class StarshipPlant extends Building implements IStarshipPlant
 {
@@ -21,9 +26,15 @@ public class StarshipPlant extends Building implements IStarshipPlant
 		this(new BaseStarshipPlant(type.toString(), celestialBodyName, turn, nbSlots));
 	}
 
-	public StarshipPlant(ISQLDataBaseStatement stmnt) throws Exception
+	public StarshipPlant(Node stmnt) throws Exception
 	{
 		this(new BaseStarshipPlant(stmnt));
+	}
+
+	@Override
+	public Map<String, Object> getNode()
+	{
+		return baseStarshipPlantProxy.getNode();
 	}
 
 }

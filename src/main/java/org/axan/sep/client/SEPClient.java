@@ -26,15 +26,18 @@ import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.Protocol;
 import org.axan.sep.common.db.IGameEvent;
 import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
+import org.axan.sep.common.db.IDBFactory;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
 import org.axan.sep.common.db.SEPCommonDB;
 import org.axan.sep.common.db.orm.PlayerConfig;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 /**
  * 
  */
-public class SEPClient implements ISQLDataBaseFactory
+public class SEPClient implements IDBFactory
 {
 	public static Logger log = Logger.getLogger(SEPClient.class.getCanonicalName());
 	
@@ -345,18 +348,27 @@ public class SEPClient implements ISQLDataBaseFactory
 	}
 	
 	@Override
-	public ISQLDataBase createSQLDataBase()
+	public GraphDatabaseService createDB()
 	{
 		try
 		{
-			//TODO: When DB debug is finished, use memory DB (no arg constructor).
-			File dbFile = File.createTempFile("sepC", ".sep");
-			return new SQLiteDB(dbFile);
-			//return new HSQLDB(dbFile, "sa", "");			
+			File dbDirectory = File.createTempFile("sepC", "");
+			dbDirectory.delete();
+			dbDirectory.mkdir();
+			final GraphDatabaseService db = new EmbeddedGraphDatabase(dbDirectory.getAbsolutePath());
+			Runtime.getRuntime().addShutdownHook(new Thread()
+			{
+				@Override
+				public void run()
+				{
+					db.shutdown();
+				}
+			});
+			
+			return db;
 		}
 		catch(Throwable t)
 		{
-			t.printStackTrace();
 			log.log(Level.SEVERE, t.getMessage(), t);
 			throw new RuntimeException(t);
 		}

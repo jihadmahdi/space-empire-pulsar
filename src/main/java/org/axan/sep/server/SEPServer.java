@@ -30,9 +30,6 @@ import org.axan.eplib.gameserver.server.GameServer;
 import org.axan.eplib.gameserver.server.GameServer.ExecutorFactory;
 import org.axan.eplib.gameserver.server.GameServer.GameServerListener;
 import org.axan.eplib.gameserver.server.GameServer.ServerUser;
-import org.axan.eplib.orm.ISQLDataBase;
-import org.axan.eplib.orm.ISQLDataBaseFactory;
-import org.axan.eplib.orm.sqlite.SQLiteDB;
 import org.axan.eplib.statemachine.StateMachine.StateMachineNotExpectedEventException;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.GameConfigCopier;
@@ -46,10 +43,13 @@ import org.axan.sep.common.Protocol.ServerRunningGame;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.db.ICommand;
 import org.axan.sep.common.db.ICommand.GameCommandException;
+import org.axan.sep.common.db.IDBFactory;
 import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.db.IGameEvent;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 // TODO: add synchronized to SEPServer and ServerGame methods that need it.
 
@@ -57,7 +57,7 @@ import org.axan.sep.common.db.IPlayerConfig;
  * SEPServer
  * server package main class.
  */
-public class SEPServer implements IServer, ISQLDataBaseFactory
+public class SEPServer implements IServer, IDBFactory
 {
 
 	public static Logger		log	= Logger.getLogger(SEPServer.class.getCanonicalName());
@@ -754,22 +754,31 @@ public class SEPServer implements IServer, ISQLDataBaseFactory
 	}
 	
 	@Override
-	public ISQLDataBase createSQLDataBase()
+	public GraphDatabaseService createDB()
 	{
 		try
 		{
-			//TODO: When DB debug is finished, use memory DB (no arg constructor).
-			File dbFile = File.createTempFile("sepS", ".sep");
-			return new SQLiteDB(dbFile);
-			//return new HSQLDB(dbFile, "sa", "");			
+			File dbDirectory = File.createTempFile("sepS", "");
+			dbDirectory.delete();
+			dbDirectory.mkdir();
+			final GraphDatabaseService db = new EmbeddedGraphDatabase(dbDirectory.getAbsolutePath());
+			Runtime.getRuntime().addShutdownHook(new Thread()
+			{
+				@Override
+				public void run()
+				{
+					db.shutdown();
+				}
+			});
+			
+			return db;
 		}
 		catch(Throwable t)
 		{
-			t.printStackTrace();
 			log.log(Level.SEVERE, t.getMessage(), t);
 			throw new RuntimeException(t);
 		}
-	}		
+	}	
 
 	private Map<IPlayer, Boolean> getPlayerStateList()
 	{

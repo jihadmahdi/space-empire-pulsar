@@ -2,8 +2,6 @@ package org.axan.sep.common.db;
 
 import java.util.Set;
 
-import org.axan.eplib.orm.SQLDataBaseException;
-
 /**
  * A game event is something fired by user interaction or server.
  * On client side, game events are fired and processed on local gameboard, they are instance of {@link ICommand} interface.

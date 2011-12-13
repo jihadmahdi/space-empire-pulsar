@@ -4,3 +4,6 @@ rm *.sep*
 rmdir *.sep*
 rm *.db*
 rmdir *.db*
+rm db*.zip
+rmdir db*
+rmdir sep*

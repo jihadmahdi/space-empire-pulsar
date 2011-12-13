@@ -1,10 +1,15 @@
 package org.axan.sep.common.db.orm;
 
-import org.axan.eplib.orm.ISQLDataBaseStatement;
-import org.axan.sep.common.Protocol.eSpecialUnitType;
-import org.axan.sep.common.db.IHero;
-import org.axan.sep.common.db.orm.base.BaseHero;
+import org.axan.sep.common.db.orm.SpecialUnit;
+import java.lang.Exception;
 import org.axan.sep.common.db.orm.base.IBaseHero;
+import org.axan.sep.common.db.orm.base.BaseHero;
+import org.axan.sep.common.db.IHero;
+import java.util.HashMap;
+import java.util.Map;
+import org.axan.sep.common.Protocol.eSpecialUnitType;
+import org.axan.sep.common.db.IGameConfig;
+import org.neo4j.graphdb.Node;
 
 public class Hero extends SpecialUnit implements IHero
 {
@@ -21,7 +26,7 @@ public class Hero extends SpecialUnit implements IHero
 		this(new BaseHero(owner, name, type.toString(), fleetName, experience));
 	}
 
-	public Hero(ISQLDataBaseStatement stmnt) throws Exception
+	public Hero(Node stmnt) throws Exception
 	{
 		this(new BaseHero(stmnt));
 	}
@@ -30,6 +35,12 @@ public class Hero extends SpecialUnit implements IHero
 	public Integer getExperience()
 	{
 		return baseHeroProxy.getExperience();
+	}
+
+	@Override
+	public Map<String, Object> getNode()
+	{
+		return baseHeroProxy.getNode();
 	}
 
 }
