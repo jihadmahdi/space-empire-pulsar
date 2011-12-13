@@ -224,20 +224,13 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 
 		if (!zSlider.isEnabled()) // First refresh, force z value to player starting planet z coord.
 		{
-			try
-			{
-				zSlider.setEnabled(true);
-				
-				IPlanet startingPlanet = Planet.getStartingPlanet(gameboard.getDB(), getSepClient().getLogin());
-				
-				// Changing zSlider bound to zSelection that fires changeZView UI refresh.
-				zSlider.setValue(startingPlanet.getLocation().z);
-				return;
-			}
-			catch(SQLDataBaseException e)
-			{
-				log.log(Level.WARNING, "Cannot find player starting planet.", e);
-			}			
+			zSlider.setEnabled(true);
+			
+			IPlanet startingPlanet = Planet.getStartingPlanet(gameboard.getDB(), getSepClient().getLogin());
+			
+			// Changing zSlider bound to zSelection that fires changeZView UI refresh.
+			zSlider.setValue(startingPlanet.getLocation().z);
+			return;			
 		}		
 		
 		// Does not change zSelection, only do UI refresh.
@@ -300,14 +293,14 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 				Set<IArea> areas;
 				try
 				{
-					areas = Area.select(db, IArea.class, null, "location_z = ?", z);
+					areas = db.getAreasByZ(z);
 				}
-				catch(SQLDataBaseException e)
+				catch(Throwable t)
 				{
-					if (InterruptedException.class.isInstance(e.getCause())) return;
+					if (InterruptedException.class.isInstance(t.getCause())) return;
 					if (Thread.interrupted()) return;
 					
-					log.log(Level.SEVERE, "SQL Error during universe redering", e);
+					log.log(Level.SEVERE, "SQL Error during universe redering", t);
 					return;
 				}								
 				

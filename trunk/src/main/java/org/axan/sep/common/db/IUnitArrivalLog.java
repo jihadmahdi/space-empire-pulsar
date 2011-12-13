@@ -1,5 +1,6 @@
 package org.axan.sep.common.db;
 
+import java.util.Map;
 
 public interface IUnitArrivalLog
 {
@@ -10,4 +11,5 @@ public interface IUnitArrivalLog
 	public Integer getInstantTime();
 	public String getDestination();
 	public String getVortex();
+	public Map<String, Object> getNode();
 }

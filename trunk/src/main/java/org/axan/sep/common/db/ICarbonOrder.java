@@ -1,5 +1,6 @@
 package org.axan.sep.common.db;
 
+import java.util.Map;
 
 public interface ICarbonOrder
 {
@@ -8,4 +9,5 @@ public interface ICarbonOrder
 	public Integer getPriority();
 	public Integer getAmount();
 	public String getDestination();
+	public Map<String, Object> getNode();
 }

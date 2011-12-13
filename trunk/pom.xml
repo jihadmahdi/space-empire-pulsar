@@ -14,11 +14,13 @@
 	<packaging>jar</packaging>
 
 	<dependencies>
+		<!-- org.axan.eplib.orm is only used to run ORM generator -->
 		<dependency>
 			<groupId>org.axan.eplib</groupId>
 			<artifactId>orm</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
+		
 		<dependency>
 			<groupId>org.axan.eplib</groupId>
 			<artifactId>game-server</artifactId>
@@ -55,6 +57,12 @@
 			<artifactId>javabuilder-swing-glazedlists</artifactId>
 			<version>1.1.0</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.neo4j</groupId>
+			<artifactId>neo4j</artifactId>
+   			<version>1.5</version>
+ 		</dependency>
 
 		<!-- BerkeleyDB <dependency> <groupId>com.sleepycat</groupId> <artifactId>je</artifactId> 
 			<version>3.3.87</version> </dependency> -->

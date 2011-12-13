@@ -1,12 +1,16 @@
 package org.axan.sep.common.db.orm;
 
-import org.axan.eplib.orm.ISQLDataBaseStatement;
+import org.axan.sep.common.db.orm.Unit;
+import java.lang.Exception;
+import org.axan.sep.common.db.orm.base.IBaseSpaceRoadDeliverer;
+import org.axan.sep.common.db.orm.base.BaseSpaceRoadDeliverer;
+import org.axan.sep.common.db.ISpaceRoadDeliverer;
+import java.util.HashMap;
+import java.util.Map;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.IGameConfig;
-import org.axan.sep.common.db.ISpaceRoadDeliverer;
-import org.axan.sep.common.db.orm.base.BaseSpaceRoadDeliverer;
-import org.axan.sep.common.db.orm.base.IBaseSpaceRoadDeliverer;
+import org.neo4j.graphdb.Node;
 
 public class SpaceRoadDeliverer extends Unit implements ISpaceRoadDeliverer
 {
@@ -23,7 +27,7 @@ public class SpaceRoadDeliverer extends Unit implements ISpaceRoadDeliverer
 		this(new BaseSpaceRoadDeliverer(owner, name, type.toString(), departure == null ? null : departure.x, departure == null ? null : departure.y, departure == null ? null : departure.z, progress, destination == null ? null : destination.x, destination == null ? null : destination.y, destination == null ? null : destination.z, sourceType, sourceCelestialBodyName, sourceTurn, destinationType, destinationCelestialBodyName, destinationTurn), config);
 	}
 
-	public SpaceRoadDeliverer(ISQLDataBaseStatement stmnt, IGameConfig config) throws Exception
+	public SpaceRoadDeliverer(Node stmnt, IGameConfig config) throws Exception
 	{
 		this(new BaseSpaceRoadDeliverer(stmnt), config);
 	}
@@ -62,6 +66,12 @@ public class SpaceRoadDeliverer extends Unit implements ISpaceRoadDeliverer
 	public Integer getDestinationTurn()
 	{
 		return baseSpaceRoadDelivererProxy.getDestinationTurn();
+	}
+
+	@Override
+	public Map<String, Object> getNode()
+	{
+		return baseSpaceRoadDelivererProxy.getNode();
 	}
 
 }

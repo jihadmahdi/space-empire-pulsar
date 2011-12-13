@@ -1,10 +1,15 @@
 package org.axan.sep.common.db.orm;
 
-import org.axan.eplib.orm.ISQLDataBaseStatement;
-import org.axan.sep.common.Protocol.eBuildingType;
-import org.axan.sep.common.db.IPulsarLaunchingPad;
-import org.axan.sep.common.db.orm.base.BasePulsarLaunchingPad;
+import org.axan.sep.common.db.orm.Building;
+import java.lang.Exception;
 import org.axan.sep.common.db.orm.base.IBasePulsarLaunchingPad;
+import org.axan.sep.common.db.orm.base.BasePulsarLaunchingPad;
+import org.axan.sep.common.db.IPulsarLaunchingPad;
+import java.util.HashMap;
+import java.util.Map;
+import org.axan.sep.common.Protocol.eBuildingType;
+import org.axan.sep.common.db.IGameConfig;
+import org.neo4j.graphdb.Node;
 
 public class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 {
@@ -21,7 +26,7 @@ public class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 		this(new BasePulsarLaunchingPad(type.toString(), celestialBodyName, turn, nbSlots, firedDate));
 	}
 
-	public PulsarLaunchingPad(ISQLDataBaseStatement stmnt) throws Exception
+	public PulsarLaunchingPad(Node stmnt) throws Exception
 	{
 		this(new BasePulsarLaunchingPad(stmnt));
 	}
@@ -30,6 +35,12 @@ public class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 	public Integer getFiredDate()
 	{
 		return basePulsarLaunchingPadProxy.getFiredDate();
+	}
+
+	@Override
+	public Map<String, Object> getNode()
+	{
+		return basePulsarLaunchingPadProxy.getNode();
 	}
 
 }

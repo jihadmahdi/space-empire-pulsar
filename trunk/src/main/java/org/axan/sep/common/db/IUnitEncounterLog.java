@@ -1,5 +1,6 @@
 package org.axan.sep.common.db;
 
+import java.util.Map;
 
 public interface IUnitEncounterLog
 {
@@ -12,4 +13,5 @@ public interface IUnitEncounterLog
 	public String getSeenName();
 	public Integer getSeenTurn();
 	public String getSeenType();
+	public Map<String, Object> getNode();
 }

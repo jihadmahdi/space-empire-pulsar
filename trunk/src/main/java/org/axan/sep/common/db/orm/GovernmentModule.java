@@ -1,10 +1,15 @@
 package org.axan.sep.common.db.orm;
 
-import org.axan.eplib.orm.ISQLDataBaseStatement;
-import org.axan.sep.common.Protocol.eBuildingType;
-import org.axan.sep.common.db.IGovernmentModule;
-import org.axan.sep.common.db.orm.base.BaseGovernmentModule;
+import org.axan.sep.common.db.orm.Building;
+import java.lang.Exception;
 import org.axan.sep.common.db.orm.base.IBaseGovernmentModule;
+import org.axan.sep.common.db.orm.base.BaseGovernmentModule;
+import org.axan.sep.common.db.IGovernmentModule;
+import java.util.HashMap;
+import java.util.Map;
+import org.axan.sep.common.Protocol.eBuildingType;
+import org.axan.sep.common.db.IGameConfig;
+import org.neo4j.graphdb.Node;
 
 public class GovernmentModule extends Building implements IGovernmentModule
 {
@@ -21,9 +26,15 @@ public class GovernmentModule extends Building implements IGovernmentModule
 		this(new BaseGovernmentModule(type.toString(), celestialBodyName, turn, nbSlots));
 	}
 
-	public GovernmentModule(ISQLDataBaseStatement stmnt) throws Exception
+	public GovernmentModule(Node stmnt) throws Exception
 	{
 		this(new BaseGovernmentModule(stmnt));
+	}
+
+	@Override
+	public Map<String, Object> getNode()
+	{
+		return baseGovernmentModuleProxy.getNode();
 	}
 
 }

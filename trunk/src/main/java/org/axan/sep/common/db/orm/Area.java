@@ -1,15 +1,10 @@
 package org.axan.sep.common.db.orm;
 
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Set;
+import java.lang.Exception;
 
 import org.axan.eplib.orm.DataBaseORMGenerator;
-import org.axan.eplib.orm.ISQLDataBaseStatement;
-import org.axan.eplib.orm.ISQLDataBaseStatementJob;
-import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.sep.common.Protocol.eUnitType;
-import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.db.orm.base.IBaseArea;
+import org.axan.sep.common.db.orm.base.BaseArea;
 import org.axan.sep.common.db.IArea;
 import org.axan.sep.common.db.IAssignedFleet;
 import org.axan.sep.common.db.ICelestialBody;
@@ -17,8 +12,22 @@ import org.axan.sep.common.db.IProbe;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IUnit;
 import org.axan.sep.common.db.SEPCommonDB;
-import org.axan.sep.common.db.orm.base.BaseArea;
-import org.axan.sep.common.db.orm.base.IBaseArea;
+import org.axan.sep.common.db.eRelationsTypes;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import org.axan.sep.common.Protocol.eUnitType;
+import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.db.IGameConfig;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ReturnableEvaluator;
+import org.neo4j.graphdb.StopEvaluator;
+import org.neo4j.graphdb.TraversalPosition;
+import org.neo4j.graphdb.Traverser.Order;
 
 public class Area implements IArea
 {
@@ -36,7 +45,7 @@ public class Area implements IArea
 		this(new BaseArea(location == null ? null : location.x, location == null ? null : location.y, location == null ? null : location.z, isSun));
 	}
 
-	public Area(ISQLDataBaseStatement stmnt) throws Exception
+	public Area(Node stmnt)
 	{
 		this(new BaseArea(stmnt));
 	}
@@ -54,32 +63,88 @@ public class Area implements IArea
 	}
 	
 	@Override
-	public boolean isVisible(SEPCommonDB db, String playerName) throws SQLDataBaseException
+	public boolean isVisible(SEPCommonDB db, final String playerName)
 	{
 		// TODO: Pulsar effect is not implemented yet
 		
 		// If player own a (productive) celestial body in this area
-		if (ProductiveCelestialBody.selectOne(db, IProductiveCelestialBody.class, null, "owner = ? AND location_x = ? AND location_y = ? AND location_z = ?", playerName, getLocation().x, getLocation().y, getLocation().z) != null) return true;
+		ICelestialBody cb = db.getCelestialBody(getLocation());
+		if (cb != null && IProductiveCelestialBody.class.isInstance(cb) && playerName.equals(IProductiveCelestialBody.class.cast(cb).getOwner())) return true;		
+		
 		// If player has assigned fleet in this area
-		if (AssignedFleet.selectOne(db, IAssignedFleet.class, null, "owner = ?", playerName) != null) return true;
+		if (db.getAreaNode(getLocation()).traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, new ReturnableEvaluator()
+		{
+			
+			@Override
+			public boolean isReturnableNode(TraversalPosition currentPos)
+			{
+				Node n = currentPos.currentNode();
+				return (n.hasRelationship(eRelationsTypes.AssignedFleet, Direction.OUTGOING) && playerName.equals(n.getProperty("owner")));
+			}
+		}, eRelationsTypes.AssignedFleet, Direction.INCOMING).iterator().hasNext()) return true;
+		
 		// If player has stopped fleet in this area
-		if (Unit.selectOne(db, IUnit.class, null, "Unit.owner = ? AND NOT ("+Unit.getSQLMovingConditions()+") AND (departure_x = ? AND departure_y = ? AND departure_z = ?)", playerName, getLocation().x, getLocation().y, getLocation().z) != null) return true;
+		if (db.getAreaNode(getLocation()).traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, new ReturnableEvaluator()
+		{			
+			@Override
+			public boolean isReturnableNode(TraversalPosition currentPos)
+			{
+				Node n = currentPos.currentNode();
+				return (n.hasRelationship(eUnitType.Fleet, Direction.OUTGOING) && playerName.equals(n.getProperty("owner")) && (false == ((((Integer) n.getProperty("progress")) > 0) && (((Integer) n.getProperty("progress")) != 1) && (n.getProperty("destination_x") != null) && (n.getProperty("departure_x") != null))) );
+			}
+		}, eUnitType.Fleet, Direction.INCOMING).iterator().hasNext()) return true;
+		
 		// If player has deployed probe to observe this area
-		if (Probe.selectOne(db, IProbe.class, null, "Probe.owner = ? AND ("+Probe.getSQLDeployedConditions()+") AND ("+SQLHelper.getDistanceCondition(2, "departure", "<=")+")", playerName, getLocation().x, getLocation().y, getLocation().z, db.getConfig().getUnitTypeSight(eUnitType.Probe)) != null) return true;
+		final double probeSight = db.getConfig().getUnitTypeSight(eUnitType.Probe);
+		if (db.getAreaNode(getLocation()).traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, new ReturnableEvaluator()
+		{
+			
+			@Override
+			public boolean isReturnableNode(TraversalPosition currentPos)
+			{
+				if (currentPos.isStartNode()) return false;
+				
+				Node n = currentPos.currentNode();
+				double distance = Math.pow(getLocation().x - (Integer) n.getProperty("departure_x"), 2) + Math.pow(getLocation().y - (Integer) n.getProperty("departure_y"), 2) + Math.pow(getLocation().z - (Integer) n.getProperty("departure_z"), 2);
+				return (n.hasRelationship(eUnitType.Probe, Direction.OUTGOING) && playerName.equals(n.getProperty("owner")) && ((Integer) n.getProperty("progress") == 1) && distance <= probeSight);
+			}
+		}, eUnitType.Probe, Direction.INCOMING).iterator().hasNext()) return true;
 		
 		return false;
 	}
 	
 	@Override
-	public ICelestialBody getCelestialBody(SEPCommonDB db) throws SQLDataBaseException
+	public ICelestialBody getCelestialBody(SEPCommonDB db)
 	{
-		return CelestialBody.selectOne(db, ICelestialBody.class, null, "location_x = ? AND location_y = ? AND location_z = ?", getLocation().x, getLocation().y, getLocation().z);
+		return db.getCelestialBody(getLocation());
 	}
 	
 	@Override
-	public <T extends IUnit> Set<T> getUnits(SEPCommonDB db, Class<T> expectedType) throws SQLDataBaseException
+	public <T extends IUnit> Set<T> getUnits(SEPCommonDB db, final Class<T> expectedType)
 	{
-		return Unit.select(db, expectedType, null, "departure_x = ? AND departure_y = ? AND departure_z = ?", getLocation().x, getLocation().y, getLocation().z);
+		try
+		{
+			Set<T> result = new HashSet<T>();
+			eUnitType type;
+			try
+			{
+				type = eUnitType.valueOf(expectedType.getSimpleName().charAt(0) == 'I' ? expectedType.getSimpleName().substring(1) : expectedType.getSimpleName());
+			}
+			catch(IllegalArgumentException e)
+			{
+				type = null;
+			}
+			
+			for(Node n : db.getAreaNode(getLocation()).traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, type == null ? eRelationsTypes.Unit : type, Direction.INCOMING))
+			{
+				result.add(DataBaseORMGenerator.mapTo(expectedType, n));
+			}
+			return result;
+		}
+		catch(Throwable t)
+		{
+			throw new RuntimeException(t);
+		}
 	}
 
 	public String toString(SEPCommonDB db, String playerName)
@@ -118,7 +183,7 @@ public class Area implements IArea
 			if (cb != null)
 			{
 				// SUIS LA
-				sb.append(cb.toString(db, playerName)+"\n");
+				//sb.append(cb.toString(db, playerName)+"\n");
 			}
 		}
 		
@@ -146,96 +211,9 @@ public class Area implements IArea
 		return sb.toString();
 	}
 	
-	////////// Static methods
-	
-	public static <T extends IArea> T selectOne(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
+	public Map<String, Object> getNode()
 	{
-		Set<T> results = select(db, expectedType, from, (where==null?"(1) ":"("+where+") ")+"LIMIT 1", params);
-		if (results.isEmpty()) return null;
-		return results.iterator().next();
+		return baseAreaProxy.getNode();
 	}
 
-	public static <T extends IArea> Set<T> select(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
-	{
-		ISQLDataBaseStatement stmnt = null;
-		try
-		{
-			Set<T> results = new HashSet<T>();
-			stmnt = db.getDB().prepare(selectQuery(expectedType, from, where, params)+";", new ISQLDataBaseStatementJob<ISQLDataBaseStatement>()
-			{
-				@Override
-				public ISQLDataBaseStatement job(ISQLDataBaseStatement stmnt) throws SQLDataBaseException
-				{
-					return stmnt;
-				}
-			}, params);
-			while(stmnt.step())
-			{
-				results.add(DataBaseORMGenerator.mapTo(expectedType, stmnt));
-			}
-			return results;
-		}
-		catch(Exception e)
-		{
-			throw new SQLDataBaseException(e);
-		}
-		finally
-		{
-			if (stmnt != null) stmnt.dispose();
-		}
-	}
-
-	public static <T extends IArea> boolean exist(SEPCommonDB db, Class<T> expectedType, String from, String where, Object ... params) throws SQLDataBaseException
-	{
-		try
-		{
-			return db.getDB().prepare(selectQuery(expectedType, from, where, params)+" ;", new ISQLDataBaseStatementJob<Boolean>()
-			{
-				@Override
-				public Boolean job(ISQLDataBaseStatement stmnt) throws SQLDataBaseException
-				{
-					try
-					{
-						return stmnt.step() && stmnt.columnValue(0) != null;
-					}
-					finally
-					{
-						if (stmnt != null) stmnt.dispose();
-					}
-				}
-			}, params);
-		}
-		catch(Exception e)
-		{
-			throw new SQLDataBaseException(e);
-		}
-	}
-
-
-	private static <T extends IArea> String selectQuery(Class<T> expectedType, String from, String where, Object ... params)
-	{
-		where = (where == null) ? null : (params == null) ? where : String.format(Locale.UK, where, params);
-		if (where != null && !where.isEmpty() && where.charAt(0) != '(') where = "("+where+")";
-		return String.format("SELECT Area.* FROM Area%s%s", (from != null && !from.isEmpty()) ? ", "+from : "", (where != null && !where.isEmpty()) ? " WHERE "+where : "");
-	}
-
-	public static <T extends IArea> void insertOrUpdate(SEPCommonDB db, T area) throws SQLDataBaseException
-	{
-		try
-		{
-			boolean exist = exist(db, area.getClass(), null, " Area.location_x = %s AND Area.location_y = %s AND Area.location_z = %s", area.getLocation() == null ? "NULL" : "'"+area.getLocation().x+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().y+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().z+"'");
-			if (exist)
-			{
-				db.getDB().exec(String.format("UPDATE Area SET isSun = %s WHERE  Area.location_x = %s AND Area.location_y = %s AND Area.location_z = %s ;", "'"+area.isSun()+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().x+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().y+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().z+"'").replaceAll("'null'", "NULL"));
-			}
-			else
-			{
-				if (!exist) db.getDB().exec(String.format("INSERT INTO Area (location_x, location_y, location_z, isSun) VALUES (%s, %s, %s, %s);", area.getLocation() == null ? "NULL" : "'"+area.getLocation().x+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().y+"'", area.getLocation() == null ? "NULL" : "'"+area.getLocation().z+"'", "'"+area.isSun()+"'").replaceAll("'null'", "NULL"));
-			}
-		}
-		catch(Exception e)
-		{
-			throw new SQLDataBaseException(e);
-		}
-	}
 }

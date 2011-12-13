@@ -12,6 +12,7 @@ import org.axan.eplib.orm.ISQLDataBaseFactory;
 import org.axan.eplib.orm.SQLDataBaseException;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.common.db.EvCreateUniverse;
+import org.axan.sep.common.db.IDBFactory;
 import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.db.IGameEvent;
 import org.axan.sep.common.db.IGameEvent.GameEventException;
@@ -41,7 +42,7 @@ public class PlayerGameBoard implements IGameBoard
 	private transient GameConfig gameConfig = new GameConfig();
 
 	/** DB factory. */
-	private final ISQLDataBaseFactory dbFactory;
+	private final IDBFactory dbFactory;
 	
 	public PlayerGameBoard(SEPClient client)
 	{
@@ -135,7 +136,7 @@ public class PlayerGameBoard implements IGameBoard
 			
 			try
 			{
-				view = new PlayerGameboardView(client.getLogin(), new SEPCommonDB(dbFactory.createSQLDataBase(), getConfig()), new IGameEventExecutor()
+				view = new PlayerGameboardView(client.getLogin(), new SEPCommonDB(dbFactory.createDB(), getConfig()), new IGameEventExecutor()
 				{					
 					@Override
 					public void onGameEvent(IGameEvent event, Set<String> observers)
@@ -181,46 +182,23 @@ public class PlayerGameBoard implements IGameBoard
 		return getDB().getConfig();
 	}
 	
-	private Map<IPlayer, IPlayerConfig> getDBPlayerList() throws GameBoardException
+	private Map<IPlayer, IPlayerConfig> getDBPlayerList()
 	{
 		Map<IPlayer, IPlayerConfig> result = new TreeMap<IPlayer, IPlayerConfig>();
 
-		try
+		Set<IPlayer> ps = getDB().getPlayers();
+		for(IPlayer p : ps)
 		{
-			Set<IPlayer> ps = Player.select(getDB(), IPlayer.class, null, null);
-			Set<IPlayerConfig> pcs = PlayerConfig.select(getDB(), IPlayerConfig.class, null, null);
+			IPlayerConfig pc = p.getConfig(getDB());
+			result.put(p, pc);
+		}			
 
-			for(IPlayer p: ps)
-			{
-				for(IPlayerConfig pc: pcs)
-				{
-					if (p.getName().compareTo(pc.getName()) == 0)
-					{
-						result.put(p, pc);
-						pcs.remove(pc);
-						break;
-					}
-				}
-			}
-
-			return result;
-		}
-		catch(SQLDataBaseException e)
-		{
-			throw new GameBoardException(e);
-		}
+		return result;
 	}
 	
 	private IPlayerConfig getDBPlayerConfig(String playerName) throws GameBoardException
 	{
-		try
-		{
-			return PlayerConfig.selectOne(getDB(), PlayerConfig.class, null, "name = ?", playerName);
-		}
-		catch(SQLDataBaseException e)
-		{
-			throw new GameBoardException(e);
-		}
+		return getDB().getPlayerConfig(playerName);		
 	}
 	
 }

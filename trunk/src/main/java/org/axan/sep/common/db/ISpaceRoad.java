@@ -1,5 +1,6 @@
 package org.axan.sep.common.db;
 
+import java.util.Map;
 
 public interface ISpaceRoad
 {
@@ -11,4 +12,5 @@ public interface ISpaceRoad
 	public String getSpaceCounterBType();
 	public String getSpaceCounterBCelestialBodyName();
 	public Integer getSpaceCounterBTurn();
+	public Map<String, Object> getNode();
 }
