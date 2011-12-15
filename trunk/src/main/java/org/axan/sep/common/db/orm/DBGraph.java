@@ -7,7 +7,16 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.Transaction;
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.neo4j.graphdb.RelationshipType;
+import org.axan.eplib.orm.DataBaseORMGenerator;
+import java.util.NoSuchElementException;
+import java.util.logging.Logger;
 import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.db.IVortex;
+import org.axan.sep.common.db.IPlayer;
+import org.axan.sep.common.db.ICelestialBody;
+import org.axan.sep.common.db.IArea;
+import org.axan.sep.common.db.IProductiveCelestialBody;
+import org.axan.sep.common.db.IPlanet;
 
 public class DBGraph implements IDBGraph
 {
@@ -19,19 +28,24 @@ public class DBGraph implements IDBGraph
 		Diplomacies
 	}
 
+	private static Logger log = Logger.getLogger(DBGraph.class.getName());
 	private GraphDatabaseService db;
 	private Index<Node> vortexIndex;
 	private Index<Node> playerIndex;
+	private Index<Node> celestialBodyIndex;
+	private Index<Node> productiveCelestialBodyIndex;
 	private Index<Node> planetIndex;
 
 	public DBGraph(GraphDatabaseService db)
 	{
 		vortexIndex = db.index().forNodes("VortexIndex");
 		playerIndex = db.index().forNodes("PlayerIndex");
+		celestialBodyIndex = db.index().forNodes("CelestialBodyIndex");
+		productiveCelestialBodyIndex = db.index().forNodes("ProductiveCelestialBodyIndex");
 		planetIndex = db.index().forNodes("PlanetIndex");
 	}
 
-	public Node createVortex(String name, int birth, int death)
+	public IVortex createVortex(String name, int birth, int death)
 	{
 		Transaction tx = db.beginTx();
 		try
@@ -44,8 +58,9 @@ public class DBGraph implements IDBGraph
 			Node vortexNode = db.createNode();
 			Vortex.initializeNode(vortexNode, name, birth, death);
 			vortexIndex.add(vortexNode, "name", name);
+			celestialBodyIndex.add(vortexNode, "name", name);
 			tx.success();
-			return vortexNode;
+			return new Vortex(vortexNode);
 		}
 		finally
 		{
@@ -53,7 +68,7 @@ public class DBGraph implements IDBGraph
 		}
 	}
 
-	public Node createPlayer(String name, String playerConfigColor, String playerConfigSymbol, String playerConfigPortrait)
+	public IPlayer createPlayer(String name, String playerConfigColor, String playerConfigSymbol, String playerConfigPortrait)
 	{
 		Transaction tx = db.beginTx();
 		try
@@ -69,7 +84,7 @@ public class DBGraph implements IDBGraph
 			Node playerConfigNode = createPlayerConfig(playerConfigColor, playerConfigSymbol, playerConfigPortrait);
 			playerNode.createRelationshipTo(playerConfigNode, eRelationTypes.Config);
 			tx.success();
-			return playerNode;
+			return new Player(playerNode);
 		}
 		finally
 		{
@@ -77,7 +92,7 @@ public class DBGraph implements IDBGraph
 		}
 	}
 
-	public Node createArea(Location location)
+	public IArea createArea(Location location)
 	{
 		Transaction tx = db.beginTx();
 		try
@@ -85,7 +100,7 @@ public class DBGraph implements IDBGraph
 			Node areaNode = db.createNode();
 			Area.initializeNode(areaNode, location);
 			tx.success();
-			return areaNode;
+			return new Area(areaNode);
 		}
 		finally
 		{
@@ -109,7 +124,7 @@ public class DBGraph implements IDBGraph
 		}
 	}
 
-	public Node createPlanet(String name, int initialCarbonStock, int maxSlots, int carbonStock, int currentCarbon, int populationPerTurn, int maxPopulation, int currentPopulation)
+	public IPlanet createPlanet(String name, int initialCarbonStock, int maxSlots, int carbonStock, int currentCarbon, int populationPerTurn, int maxPopulation, int currentPopulation)
 	{
 		Transaction tx = db.beginTx();
 		try
@@ -122,13 +137,62 @@ public class DBGraph implements IDBGraph
 			Node planetNode = db.createNode();
 			Planet.initializeNode(planetNode, name, initialCarbonStock, maxSlots, carbonStock, currentCarbon, populationPerTurn, maxPopulation, currentPopulation);
 			planetIndex.add(planetNode, "name", name);
+			celestialBodyIndex.add(planetNode, "name", name);
+			productiveCelestialBodyIndex.add(planetNode, "name", name);
 			tx.success();
-			return planetNode;
+			return new Planet(planetNode);
 		}
 		finally
 		{
 			tx.finish();
 		}
+	}
+
+	public IVortex getVortexByName(String name)
+	{
+		return new Vortex(vortexIndex.get("name", name).getSingle());
+	}
+
+	public IPlayer getPlayerByName(String name)
+	{
+		return new Player(playerIndex.get("name", name).getSingle());
+	}
+
+	public ICelestialBody getCelestialBodyByName(String name)
+	{
+		try
+		{
+			return DataBaseORMGenerator.mapTo(ICelestialBody.class, celestialBodyIndex.get("name", name).getSingle());
+		}
+		catch(Throwable t)
+		{
+			if (!NoSuchElementException.class.isInstance(t))
+			{
+				log.log(Level.WARNING, "ORM Error, assume CelestialBody name '"+name+"' is not found.", t);
+			}
+			return null;
+		}
+	}
+
+	public IProductiveCelestialBody getProductiveCelestialBodyByName(String name)
+	{
+		try
+		{
+			return DataBaseORMGenerator.mapTo(IProductiveCelestialBody.class, productiveCelestialBodyIndex.get("name", name).getSingle());
+		}
+		catch(Throwable t)
+		{
+			if (!NoSuchElementException.class.isInstance(t))
+			{
+				log.log(Level.WARNING, "ORM Error, assume ProductiveCelestialBody name '"+name+"' is not found.", t);
+			}
+			return null;
+		}
+	}
+
+	public IPlanet getPlanetByName(String name)
+	{
+		return new Planet(planetIndex.get("name", name).getSingle());
 	}
 
 }
