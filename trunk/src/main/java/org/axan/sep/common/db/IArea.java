@@ -1,14 +1,14 @@
 package org.axan.sep.common.db;
 
-import java.util.Set;
-
-import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.sep.common.SEPUtils.Location;
+import org.neo4j.graphdb.Node;
+import org.axan.sep.common.db.IGameConfig;
 import java.util.Map;
+import java.util.HashMap;
+import org.axan.sep.common.SEPUtils.Location;
 
 public interface IArea
 {
-	Location getLocation();
+	public Location getLocation();
 	boolean isSun();	
 	boolean isVisible(SEPCommonDB db, String playerName) throws SQLDataBaseException;
 	ICelestialBody getCelestialBody(SEPCommonDB db) throws SQLDataBaseException;

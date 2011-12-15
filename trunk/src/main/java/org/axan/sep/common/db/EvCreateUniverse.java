@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.axan.eplib.orm.SQLDataBaseException;
+import org.axan.eplib.orm.sql.SQLDataBaseException;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.SEPUtils.Location;

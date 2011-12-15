@@ -14,11 +14,11 @@ import java.util.Set;
 import java.util.Vector;
 
 import org.axan.eplib.orm.DataBaseORMGenerator;
-import org.axan.eplib.orm.ISQLDataBase;
-import org.axan.eplib.orm.ISQLDataBaseStatement;
-import org.axan.eplib.orm.ISQLDataBaseStatementJob;
-import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.orm.sqlite.SQLiteDB;
+import org.axan.eplib.orm.sql.ISQLDataBase;
+import org.axan.eplib.orm.sql.ISQLDataBaseStatement;
+import org.axan.eplib.orm.sql.ISQLDataBaseStatementJob;
+import org.axan.eplib.orm.sql.SQLDataBaseException;
+import org.axan.eplib.orm.sql.sqlite.SQLiteDB;
 import org.axan.eplib.utils.Reflect;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;

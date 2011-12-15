@@ -1,33 +1,13 @@
 package org.axan.sep.common.db.orm;
 
-import java.lang.Exception;
-
-import org.axan.eplib.orm.DataBaseORMGenerator;
 import org.axan.sep.common.db.orm.base.IBaseArea;
 import org.axan.sep.common.db.orm.base.BaseArea;
 import org.axan.sep.common.db.IArea;
-import org.axan.sep.common.db.IAssignedFleet;
-import org.axan.sep.common.db.ICelestialBody;
-import org.axan.sep.common.db.IProbe;
-import org.axan.sep.common.db.IProductiveCelestialBody;
-import org.axan.sep.common.db.IUnit;
-import org.axan.sep.common.db.SEPCommonDB;
-import org.axan.sep.common.db.eRelationsTypes;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import org.axan.sep.common.Protocol.eUnitType;
-import org.axan.sep.common.SEPUtils.Location;
-import org.axan.sep.common.db.IGameConfig;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.ReturnableEvaluator;
-import org.neo4j.graphdb.StopEvaluator;
-import org.neo4j.graphdb.TraversalPosition;
-import org.neo4j.graphdb.Traverser.Order;
+import org.axan.sep.common.db.IGameConfig;
+import java.util.Map;
+import java.util.HashMap;
+import org.axan.sep.common.SEPUtils.Location;
 
 public class Area implements IArea
 {
@@ -40,9 +20,9 @@ public class Area implements IArea
 		this.location = (baseAreaProxy.getLocation_x() == null ? null : new Location(baseAreaProxy.getLocation_x(), baseAreaProxy.getLocation_y(), baseAreaProxy.getLocation_z()));
 	}
 
-	public Area(Location location, Boolean isSun)
+	public Area(Location location)
 	{
-		this(new BaseArea(location == null ? null : location.x, location == null ? null : location.y, location == null ? null : location.z, isSun));
+		this(new BaseArea(location == null ? null : location.x, location == null ? null : location.y, location == null ? null : location.z));
 	}
 
 	public Area(Node stmnt)

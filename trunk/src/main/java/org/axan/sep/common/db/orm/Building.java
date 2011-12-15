@@ -1,64 +1,42 @@
 package org.axan.sep.common.db.orm;
 
-import java.lang.Exception;
 import org.axan.sep.common.db.orm.base.IBaseBuilding;
 import org.axan.sep.common.db.orm.base.BaseBuilding;
 import org.axan.sep.common.db.IBuilding;
-import java.util.HashMap;
-import java.util.Map;
-import org.axan.sep.common.Protocol.eBuildingType;
-import org.axan.sep.common.db.IGameConfig;
 import org.neo4j.graphdb.Node;
+import org.axan.sep.common.db.IGameConfig;
+import java.util.Map;
+import java.util.HashMap;
 
 public class Building implements IBuilding
 {
 	private final IBaseBuilding baseBuildingProxy;
-	private final eBuildingType type;
 
 	Building(IBaseBuilding baseBuildingProxy)
 	{
 		this.baseBuildingProxy = baseBuildingProxy;
-		this.type = eBuildingType.valueOf(baseBuildingProxy.getType());
 	}
 
-	public Building(eBuildingType type, String celestialBodyName, Integer turn, Integer nbSlots)
+	public Building(int builtDate, int nbSlots)
 	{
-		this(new BaseBuilding(type.toString(), celestialBodyName, turn, nbSlots));
+		this(new BaseBuilding(builtDate, nbSlots));
 	}
 
-	public Building(Node stmnt) throws Exception
+	public Building(Node stmnt)
 	{
 		this(new BaseBuilding(stmnt));
 	}
 
 	@Override
-	public eBuildingType getType()
+	public int getBuiltDate()
 	{
-		return type;
+		return baseBuildingProxy.getBuiltDate();
 	}
 
 	@Override
-	public String getCelestialBodyName()
-	{
-		return baseBuildingProxy.getCelestialBodyName();
-	}
-
-	@Override
-	public Integer getTurn()
-	{
-		return baseBuildingProxy.getTurn();
-	}
-
-	@Override
-	public Integer getNbSlots()
+	public int getNbSlots()
 	{
 		return baseBuildingProxy.getNbSlots();
-	}
-
-	@Override
-	public Map<String, Object> getNode()
-	{
-		return baseBuildingProxy.getNode();
 	}
 
 }

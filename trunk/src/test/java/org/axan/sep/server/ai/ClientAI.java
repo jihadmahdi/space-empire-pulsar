@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
-import org.axan.eplib.orm.SQLDataBaseException;
-import org.axan.eplib.orm.sqlite.SQLiteDB;
+import org.axan.eplib.orm.sql.SQLDataBaseException;
+import org.axan.eplib.orm.sql.sqlite.SQLiteDB;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.db.orm.ProductiveCelestialBody;

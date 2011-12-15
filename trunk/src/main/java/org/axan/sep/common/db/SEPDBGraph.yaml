@@ -1,0 +1,74 @@
+!!org.axan.eplib.yaml.YamlConfigFile
+
+# Nodes types definition
+nodesTypes:
+
+  Player:
+    name: String    
+    index: [name]
+    relations: # relationship type, relationship class, targetClass, cardinality (min, max), (direction is constant to OUTCOMING from declaring NodeType)
+      config: PlayerConfig # type: config, class: none, targetClass: PlayerConfig, cardinality: 1
+      celestialBodies: ProductiveCelestialBody* # type: celestialBodies, class: none, targetClass: ProductiveCelestialBody, cardinality: *        
+      units: Unit*
+      diplomacies: # type: diplomacies, class: Diplomacies, targetClass: Player, cardinality: *, fields: {allowToLand: boolean}
+        relation: Player*
+        allowToLand: boolean
+        #foreignPolicy: eForeignPolicy   
+
+# enum eRelationshipType { config, celestialBodies, diplomacies }
+    
+  PlayerConfig:
+    color: String
+    symbol: String
+    portrait: String
+    
+  Area:
+    location_x: int
+    location_y: int
+    location_z: int
+    index: [toString]    
+    
+  CelestialBody:
+    class: [abstract]
+    name: String
+    # location: Area
+    index: [name]
+    
+  Vortex:
+    extends: [CelestialBody]
+    birth: int
+    death: int
+    # destination: CelestialBody
+    
+  ProductiveCelestialBody:
+    class: [abstract]
+    extends: [CelestialBody]
+    initialCarbonStock: int
+    maxSlots: int
+    carbonStock: int
+    currentCarbon: int
+    # buildings: Building*
+    
+  Planet:
+    extends: [ProductiveCelestialBody]
+    populationPerTurn: int
+    maxPopulation: int
+    currentPopulation: int
+    
+  Building:
+    class: [abstract]
+    builtDate: int
+    nbSlots: int
+
+  Unit:
+    class: [abstract]
+    name: String
+    # departure: Area
+    # destination: Area
+    progress: double
+    index: [Player & name]
+    
+# Relationship types definition
+relationshipTypes:
+  
+  Unit: [Fleet, SpecialUnit]
