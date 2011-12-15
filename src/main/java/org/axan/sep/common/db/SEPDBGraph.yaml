@@ -11,11 +11,10 @@ nodesTypes:
       celestialBodies: ProductiveCelestialBody* # type: celestialBodies, class: none, targetClass: ProductiveCelestialBody, cardinality: *        
       units: Unit*
       diplomacies: # type: diplomacies, class: Diplomacies, targetClass: Player, cardinality: *, fields: {allowToLand: boolean}
+        className: Diplomacy
         relation: Player*
         allowToLand: boolean
-        #foreignPolicy: eForeignPolicy   
-
-# enum eRelationshipType { config, celestialBodies, diplomacies }
+        #foreignPolicy: eForeignPolicy
     
   PlayerConfig:
     color: String
