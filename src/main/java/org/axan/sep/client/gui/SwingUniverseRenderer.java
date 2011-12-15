@@ -29,7 +29,7 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.axan.eplib.orm.SQLDataBaseException;
+import org.axan.eplib.orm.sql.SQLDataBaseException;
 import org.axan.eplib.utils.Basic;
 import org.axan.eplib.utils.Reflect;
 import org.axan.sep.client.SEPClient;

@@ -8,8 +8,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.axan.eplib.clientserver.ConnectionAbortedError;
-import org.axan.eplib.orm.ISQLDataBaseFactory;
-import org.axan.eplib.orm.SQLDataBaseException;
+import org.axan.eplib.orm.sql.ISQLDataBaseFactory;
+import org.axan.eplib.orm.sql.SQLDataBaseException;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.common.db.EvCreateUniverse;
 import org.axan.sep.common.db.IDBFactory;

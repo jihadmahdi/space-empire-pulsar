@@ -1,14 +1,12 @@
 package org.axan.sep.common.db.orm;
 
-import java.io.Serializable;
-import java.lang.Exception;
 import org.axan.sep.common.db.orm.base.IBasePlayerConfig;
 import org.axan.sep.common.db.orm.base.BasePlayerConfig;
 import org.axan.sep.common.db.IPlayerConfig;
-import java.util.HashMap;
-import java.util.Map;
-import org.axan.sep.common.db.IGameConfig;
 import org.neo4j.graphdb.Node;
+import org.axan.sep.common.db.IGameConfig;
+import java.util.Map;
+import java.util.HashMap;
 
 public class PlayerConfig implements IPlayerConfig, Serializable
 {
@@ -19,20 +17,14 @@ public class PlayerConfig implements IPlayerConfig, Serializable
 		this.basePlayerConfigProxy = basePlayerConfigProxy;
 	}
 
-	public PlayerConfig(String name, String color, String symbol, String portrait)
+	public PlayerConfig(String color, String symbol, String portrait)
 	{
-		this(new BasePlayerConfig(name, color, symbol, portrait));
+		this(new BasePlayerConfig(color, symbol, portrait));
 	}
 
 	public PlayerConfig(Node stmnt)
 	{
 		this(new BasePlayerConfig(stmnt));
-	}
-
-	@Override
-	public String getName()
-	{
-		return basePlayerConfigProxy.getName();
 	}
 
 	@Override
@@ -57,6 +49,13 @@ public class PlayerConfig implements IPlayerConfig, Serializable
 	public Map<String, Object> getNode()
 	{
 		return basePlayerConfigProxy.getNode();
+	}
+
+	public static void initializeNode(Node node, String color, String symbol, String portrait)
+	{
+		node.setProperty("color", color);
+		node.setProperty("symbol", symbol);
+		node.setProperty("portrait", portrait);
 	}
 
 }

@@ -14,7 +14,7 @@ import javax.swing.JTextField;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.html.HTMLDocument;
 
-import org.axan.eplib.orm.SQLDataBaseException;
+import org.axan.eplib.orm.sql.SQLDataBaseException;
 import org.axan.eplib.utils.Basic;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.client.gui.lib.GUIUtils;

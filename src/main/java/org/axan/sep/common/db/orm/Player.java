@@ -1,16 +1,14 @@
 package org.axan.sep.common.db.orm;
 
-import java.io.Serializable;
-import java.lang.Exception;
 import org.axan.sep.common.db.orm.base.IBasePlayer;
 import org.axan.sep.common.db.orm.base.BasePlayer;
 import org.axan.sep.common.db.IPlayer;
-import java.util.HashMap;
-import java.util.Map;
-import org.axan.sep.common.db.IGameConfig;
-import org.axan.sep.common.db.IPlayerConfig;
-import org.axan.sep.common.db.SEPCommonDB;
 import org.neo4j.graphdb.Node;
+import org.axan.sep.common.db.IGameConfig;
+
+import java.io.Serializable;
+import java.util.Map;
+import java.util.HashMap;
 
 public class Player implements IPlayer, Serializable
 {
@@ -44,14 +42,20 @@ public class Player implements IPlayer, Serializable
 	}
 
 	@Override
+	public IPlayerConfig getConfig(SEPCommonDB db)
+	{
+		return db.getPlayerConfig(getName());
+	}
+
+	@Override
 	public Map<String, Object> getNode()
 	{
 		return basePlayerProxy.getNode();
 	}
 
-	@Override
-	public IPlayerConfig getConfig(SEPCommonDB db)
+	public static void initializeNode(Node node, String name)
 	{
-		return db.getPlayerConfig(getName());
+		node.setProperty("name", name);
 	}
+
 }
