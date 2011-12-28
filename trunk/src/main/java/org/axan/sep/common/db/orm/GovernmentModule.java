@@ -1,40 +1,101 @@
 package org.axan.sep.common.db.orm;
 
+import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.db.orm.Building;
-import java.lang.Exception;
 import org.axan.sep.common.db.orm.base.IBaseGovernmentModule;
 import org.axan.sep.common.db.orm.base.BaseGovernmentModule;
 import org.axan.sep.common.db.IGovernmentModule;
-import java.util.HashMap;
-import java.util.Map;
-import org.axan.sep.common.Protocol.eBuildingType;
-import org.axan.sep.common.db.IGameConfig;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.Index;
+import org.axan.sep.common.db.IGameConfig;
+import java.util.Map;
+import java.util.HashMap;
 
-public class GovernmentModule extends Building implements IGovernmentModule
+class GovernmentModule extends Building implements IGovernmentModule
 {
-	private final IBaseGovernmentModule baseGovernmentModuleProxy;
-
-	GovernmentModule(IBaseGovernmentModule baseGovernmentModuleProxy)
+	// PK inherited.
+	
+	/*
+	 * Off-DB: off db fields (none).
+	 */
+	
+	/*
+	 * DB connection
+	 */
+	protected Index<Node> governmentModuleIndex;
+	
+	/**
+	 * Off-DB constructor.
+	 * @param productiveCelestialBodyName
+	 * @param builtDate
+	 * @param nbSlots
+	 */
+	public GovernmentModule(String productiveCelestialBodyName, int builtDate, int nbSlots)
 	{
-		super(baseGovernmentModuleProxy);
-		this.baseGovernmentModuleProxy = baseGovernmentModuleProxy;
+		super(productiveCelestialBodyName, builtDate, nbSlots);
 	}
-
-	public GovernmentModule(eBuildingType type, String celestialBodyName, Integer turn, Integer nbSlots)
+	
+	/**
+	 * On-DB constructor.
+	 * @param sepDB
+	 * @param productiveCelestialBodyName
+	 */
+	public GovernmentModule(SEPCommonDB sepDB, String productiveCelestialBodyName)
 	{
-		this(new BaseGovernmentModule(type.toString(), celestialBodyName, turn, nbSlots));
-	}
-
-	public GovernmentModule(Node stmnt) throws Exception
-	{
-		this(new BaseGovernmentModule(stmnt));
+		super(sepDB, productiveCelestialBodyName);
 	}
 
 	@Override
-	public Map<String, Object> getNode()
+	final protected void checkForDBUpdate()
+	{				
+		if (!isDBOnline()) return;
+		if (isDBOutdated())
+		{
+			super.checkForDBUpdate();			
+			governmentModuleIndex = db.index().forNodes("GovernmentModuleIndex");			
+		}
+	}
+	
+	/**
+	 * Create method final implementation.
+	 * Final implement actually create the db node and initialize it.
+	 */
+	@Override
+	final protected void create(SEPCommonDB sepDB)
 	{
-		return baseGovernmentModuleProxy.getNode();
+		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			this.sepDB = sepDB;
+			checkForDBUpdate();
+			
+			if (governmentModuleIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type)).hasNext())
+			{
+				tx.failure();
+				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, governmentModule[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
+			}
+			node = sepDB.getDB().createNode();
+			GovernmentModule.initializeNode(node, builtDate, nbSlots);
+			governmentModuleIndex.add(node, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			
+			super.create(sepDB);
+			
+			tx.success();			
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+	
+	public static void initializeNode(Node node, int builtDate, int nbSlots)
+	{
+		node.setProperty("builtDate", builtDate);
+		node.setProperty("nbSlots", nbSlots);
 	}
 
 }

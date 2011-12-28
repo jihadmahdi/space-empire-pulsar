@@ -3,9 +3,13 @@
 # Nodes types definition
 nodesTypes:
 
+# Player
+
   Player:
     name: String    
     index: [name]
+    factory: Players
+    api: [make] # API map full params constructor to instantiate off-DB objects.
     relations: # relationship type, relationship class, targetClass, cardinality (min, max), (direction is constant to OUTCOMING from declaring NodeType)
       config: PlayerConfig # type: config, class: none, targetClass: PlayerConfig, cardinality: 1
       celestialBodies: ProductiveCelestialBody* # type: celestialBodies, class: none, targetClass: ProductiveCelestialBody, cardinality: *        
@@ -17,27 +21,36 @@ nodesTypes:
         #foreignPolicy: eForeignPolicy
     
   PlayerConfig:
+    api: [make]
     color: String
     symbol: String
     portrait: String
+
+# Universe
     
   Area:
     location_x: int
     location_y: int
     location_z: int
-    index: [toString]    
+    index: [location.toString()] # index can have syntax: "field.methodCall()", in this case index getter method is named using field name.
+    factory: Areas # generate a factory node linked to reference node and to all Area nodes. 
+    relations:
+      celestialBody: CelestialBody?    
+
+# Celestial bodies
     
   CelestialBody:
     class: [abstract]
     name: String
-    # location: Area
     index: [name]
     
   Vortex:
+    api: [make]
     extends: [CelestialBody]
     birth: int
     death: int
-    # destination: CelestialBody
+    relations:
+      destination: CelestialBody
     
   ProductiveCelestialBody:
     class: [abstract]
@@ -46,18 +59,66 @@ nodesTypes:
     maxSlots: int
     carbonStock: int
     currentCarbon: int
-    # buildings: Building*
+    relations:
+      buildings: Building*
     
   Planet:
+    api: [make]
     extends: [ProductiveCelestialBody]
     populationPerTurn: int
     maxPopulation: int
     currentPopulation: int
+  
+  Nebula:
+    api: [make]
+    extends: [ProductiveCelestialBody]
     
+  AsteroidField:
+    api: [make]
+    extends: [ProductiveCelestialBody]
+    
+# Buildings
+
   Building:
-    class: [abstract]
+    class: [abstract]    
     builtDate: int
     nbSlots: int
+    
+  DefenseModule:
+    api: [make]
+    extends: [Building]
+    relations:
+      type: Building
+    
+  ExtractionModule:
+    api: [make]
+    extends: [Building]
+    relations:
+      type: Building
+    
+  GovernmentModule:
+    api: [make]
+    extends: [Building]
+    relations:
+      type: Building
+    
+  PulsarLaunchingPad:
+    api: [make]
+    extends: [Building]
+    relations:
+      type: Building
+    
+  SpaceCounter:
+    api: [make]
+    extends: [Building]
+    relations:
+      type: Building
+    
+  StarshipPlant:
+    api: [make]
+    extends: [Building]
+    relations:
+      type: Building
 
   Unit:
     class: [abstract]
@@ -65,9 +126,9 @@ nodesTypes:
     # departure: Area
     # destination: Area
     progress: double
-    index: [Player & name]
+    #index: [Player & name]
     
-# Relationship types definition
+# Relationship types definition, not implemented yet
 relationshipTypes:
   
   Unit: [Fleet, SpecialUnit]

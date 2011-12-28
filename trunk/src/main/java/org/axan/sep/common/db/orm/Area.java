@@ -1,70 +1,198 @@
 package org.axan.sep.common.db.orm;
 
-import org.axan.sep.common.db.orm.base.IBaseArea;
-import org.axan.sep.common.db.orm.base.BaseArea;
-import org.axan.sep.common.db.IArea;
-import org.neo4j.graphdb.Node;
-import org.axan.sep.common.db.IGameConfig;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
+import org.axan.eplib.orm.nosql.DBGraphException;
+import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.db.IArea;
+import org.axan.sep.common.db.ICelestialBody;
+import org.axan.sep.common.db.IProductiveCelestialBody;
+import org.axan.sep.common.db.IUnit;
+import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ReturnableEvaluator;
+import org.neo4j.graphdb.StopEvaluator;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TraversalPosition;
+import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
 
-public class Area implements IArea
+class Area extends AGraphObject implements IArea
 {
-	private final IBaseArea baseAreaProxy;
-	private final Location location;
-
-	Area(IBaseArea baseAreaProxy)
+	/*
+	 * PK: first pk field.
+	 */
+	protected final Location location;
+	
+	/*
+	 * Off-DB fields (none)
+	 */
+	protected final boolean isSun;
+	
+	/*
+	 * DB connection: DB connection and useful objects (e.g. indexes and nodes).
+	 * DB connected and permanent value only. i.e. Indexes and Factories only (no value, no node, no relation).
+	 */
+	private Index<Node> areaIndex;
+	private Node areasFactory;
+	private Node sun;
+	
+	/**
+	 * Off-DB constructor.
+	 * @param location
+	 * @param isSun
+	 */
+	public Area(Location location, boolean isSun)
 	{
-		this.baseAreaProxy = baseAreaProxy;
-		this.location = (baseAreaProxy.getLocation_x() == null ? null : new Location(baseAreaProxy.getLocation_x(), baseAreaProxy.getLocation_y(), baseAreaProxy.getLocation_z()));
+		super(location);
+		this.location = location;
+		this.isSun = isSun;
 	}
-
-	public Area(Location location)
+	
+	/**
+	 * On-DB constructor.
+	 * @param sepDB
+	 * @param location
+	 */
+	public Area(SEPCommonDB sepDB, Location location)
 	{
-		this(new BaseArea(location == null ? null : location.x, location == null ? null : location.y, location == null ? null : location.z));
+		super(sepDB, location);
+		this.location = location;
+		
+		// Null values
+		this.isSun = false;
 	}
-
-	public Area(Node stmnt)
+	
+	/**
+	 * If object is DB connected, check for DB update.
+	 */
+	@Override
+	final protected void checkForDBUpdate()
 	{
-		this(new BaseArea(stmnt));
+		if (!isDBOnline()) return;
+		if (isDBOutdated())
+		{
+			db = sepDB.getDB();
+			
+			areaIndex = db.index().forNodes("AreaIndex");
+			areasFactory = db.getReferenceNode().getSingleRelationship(eRelationTypes.Areas, Direction.OUTGOING).getEndNode();
+			sun = db.getReferenceNode().getSingleRelationship(eRelationTypes.Sun, Direction.OUTGOING).getEndNode();
+			IndexHits<Node> hits = areaIndex.get("location", location.toString());
+			node = hits.hasNext() ? hits.getSingle() : null;			
+		}
 	}
+	
+	/**
+	 * Current object must be Off-DB to call create method.
+	 * Create method connect the object to the given DB and create the object node.
+	 * After this call, object is DB connected.
+	 * @param sepDB
+	 */
+	@Override
+	final protected void create(SEPCommonDB sepDB)
+	{
+		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			this.sepDB = sepDB;
+			checkForDBUpdate();
+			
+			if (areaIndex.get("location", location.toString()).hasNext())
+			{
+				tx.failure();
+				throw new DBGraphException("Constraint error: Indexed field 'location' must be unique, area[location='"+location+"'] already exist.");
+			}
+			node = sepDB.getDB().createNode();
+			Area.initializeNode(node, location);			
+			areasFactory.createRelationshipTo(node, eRelationTypes.Areas);
+			if (isSun)
+			{
+				sun.createRelationshipTo(node, eRelationTypes.Sun);
+			}
+			areaIndex.add(node, "location", location.toString());
+						
+			tx.success();			
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}	
 
 	@Override
 	public Location getLocation()
 	{
 		return location;
-	}
+	}	
 
 	@Override
 	public boolean isSun()
 	{
-		return baseAreaProxy.getIsSun();
+		if (isDBOnline())
+		{
+			checkForDBUpdate();
+			return node.hasRelationship(eRelationTypes.Sun, Direction.INCOMING);
+		}
+		else
+		{
+			return isSun;
+		}		
 	}
 	
 	@Override
-	public boolean isVisible(SEPCommonDB db, final String playerName)
+	public ICelestialBody getCelestialBody()
 	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Relationship cb = node.getSingleRelationship(eRelationTypes.CelestialBody, Direction.OUTGOING);
+		String celestialBodyName = cb == null ? null : (String) cb.getEndNode().getProperty("name");
+		
+		return celestialBodyName == null ? null : sepDB.getCelestialBody(celestialBodyName);
+	}
+	
+	@Override
+	public boolean isVisible(String playerName)
+	{
+		assertOnlineStatus(true);
+		return isVisible(sepDB, getLocation(), playerName);
+	}
+	
+	private static boolean isVisible(SEPCommonDB sepDB, final Location location, final String playerName)
+	{
+		Area area = new Area(sepDB, location);
+		
 		// TODO: Pulsar effect is not implemented yet
 		
 		// If player own a (productive) celestial body in this area
-		ICelestialBody cb = db.getCelestialBody(getLocation());
+		ICelestialBody cb = area.getCelestialBody();
+				
 		if (cb != null && IProductiveCelestialBody.class.isInstance(cb) && playerName.equals(IProductiveCelestialBody.class.cast(cb).getOwner())) return true;		
 		
 		// If player has assigned fleet in this area
-		if (db.getAreaNode(getLocation()).traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, new ReturnableEvaluator()
+		if (cb != null && area.node.getSingleRelationship(eRelationTypes.CelestialBody, Direction.OUTGOING).getEndNode().traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, new ReturnableEvaluator()
 		{
 			
 			@Override
 			public boolean isReturnableNode(TraversalPosition currentPos)
 			{
 				Node n = currentPos.currentNode();
-				return (n.hasRelationship(eRelationsTypes.AssignedFleet, Direction.OUTGOING) && playerName.equals(n.getProperty("owner")));
+				return (n.hasRelationship(eRelationTypes.AssignedCelestialBody, Direction.OUTGOING) && playerName.equals(n.getProperty("owner")));
 			}
-		}, eRelationsTypes.AssignedFleet, Direction.INCOMING).iterator().hasNext()) return true;
+		}, eRelationTypes.AssignedCelestialBody, Direction.INCOMING).iterator().hasNext()) return true;
 		
 		// If player has stopped fleet in this area
-		if (db.getAreaNode(getLocation()).traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, new ReturnableEvaluator()
+		if (area.node.traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, new ReturnableEvaluator()
 		{			
 			@Override
 			public boolean isReturnableNode(TraversalPosition currentPos)
@@ -75,8 +203,8 @@ public class Area implements IArea
 		}, eUnitType.Fleet, Direction.INCOMING).iterator().hasNext()) return true;
 		
 		// If player has deployed probe to observe this area
-		final double probeSight = db.getConfig().getUnitTypeSight(eUnitType.Probe);
-		if (db.getAreaNode(getLocation()).traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, new ReturnableEvaluator()
+		final double probeSight = sepDB.getConfig().getUnitTypeSight(eUnitType.Probe);
+		if (area.node.traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, new ReturnableEvaluator()
 		{
 			
 			@Override
@@ -85,7 +213,7 @@ public class Area implements IArea
 				if (currentPos.isStartNode()) return false;
 				
 				Node n = currentPos.currentNode();
-				double distance = Math.pow(getLocation().x - (Integer) n.getProperty("departure_x"), 2) + Math.pow(getLocation().y - (Integer) n.getProperty("departure_y"), 2) + Math.pow(getLocation().z - (Integer) n.getProperty("departure_z"), 2);
+				double distance = Math.pow(location.x - (Integer) n.getProperty("departure_x"), 2) + Math.pow(location.y - (Integer) n.getProperty("departure_y"), 2) + Math.pow(location.z - (Integer) n.getProperty("departure_z"), 2);
 				return (n.hasRelationship(eUnitType.Probe, Direction.OUTGOING) && playerName.equals(n.getProperty("owner")) && ((Integer) n.getProperty("progress") == 1) && distance <= probeSight);
 			}
 		}, eUnitType.Probe, Direction.INCOMING).iterator().hasNext()) return true;
@@ -94,17 +222,14 @@ public class Area implements IArea
 	}
 	
 	@Override
-	public ICelestialBody getCelestialBody(SEPCommonDB db)
-	{
-		return db.getCelestialBody(getLocation());
-	}
-	
-	@Override
-	public <T extends IUnit> Set<T> getUnits(SEPCommonDB db, final Class<T> expectedType)
+	public <T extends IUnit> Set<T> getUnits(final Class<T> expectedType)
 	{
 		try
 		{
 			Set<T> result = new HashSet<T>();
+			
+			/*
+			// TODO
 			eUnitType type;
 			try
 			{
@@ -115,10 +240,11 @@ public class Area implements IArea
 				type = null;
 			}
 			
-			for(Node n : db.getAreaNode(getLocation()).traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, type == null ? eRelationsTypes.Unit : type, Direction.INCOMING))
+			for(Node n : node.traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, type == null ? eRelationsTypes.Unit : type, Direction.INCOMING))
 			{
 				result.add(DataBaseORMGenerator.mapTo(expectedType, n));
 			}
+			*/
 			return result;
 		}
 		catch(Throwable t)
@@ -127,22 +253,30 @@ public class Area implements IArea
 		}
 	}
 
-	public String toString(SEPCommonDB db, String playerName)
+	public String toString(String playerName)
 	{
 		StringBuffer sb = new StringBuffer();
 		
-		if (isVisible(db, playerName))
+		if (!isDBOnline())
+		{
+			// TODO: implement offline version ?
+			sb.append("db offline");
+			return sb.toString();
+		}
+		
+		checkForDBUpdate();
+		if (isVisible(playerName))
 		{
 			sb.append("currently observed");
 		}
 		else
 		{
 			int lastObservation = -1;
-			SEPCommonDB pDB = db;
+			SEPCommonDB pDB = this.sepDB;
 			while(pDB.hasPrevious())
 			{
 				pDB = pDB.previous();
-				if (isVisible(pDB, playerName))
+				if (isVisible(pDB, getLocation(), playerName))
 				{
 					lastObservation = pDB.getConfig().getTurn();
 					break;
@@ -159,15 +293,14 @@ public class Area implements IArea
 		}
 		else
 		{
-			ICelestialBody cb = getCelestialBody(db);
+			ICelestialBody cb = getCelestialBody();
 			if (cb != null)
 			{
-				// SUIS LA
-				//sb.append(cb.toString(db, playerName)+"\n");
+				sb.append(cb.toString()+"\n");
 			}
 		}
 		
-		Set<IUnit> units = getUnits(db, IUnit.class);
+		Set<IUnit> units = getUnits(IUnit.class);
 		if (units != null && !units.isEmpty())
 		{
 			sb.append("Units :\n");
@@ -190,10 +323,9 @@ public class Area implements IArea
 		
 		return sb.toString();
 	}
-	
-	public Map<String, Object> getNode()
-	{
-		return baseAreaProxy.getNode();
-	}
 
+	public static void initializeNode(Node node, Location location)
+	{
+		node.setProperty("location", location.toString());
+	}
 }

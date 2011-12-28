@@ -1,40 +1,101 @@
 package org.axan.sep.common.db.orm;
 
+import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.db.orm.Building;
-import java.lang.Exception;
 import org.axan.sep.common.db.orm.base.IBaseSpaceCounter;
 import org.axan.sep.common.db.orm.base.BaseSpaceCounter;
 import org.axan.sep.common.db.ISpaceCounter;
-import java.util.HashMap;
-import java.util.Map;
-import org.axan.sep.common.Protocol.eBuildingType;
-import org.axan.sep.common.db.IGameConfig;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.Index;
+import org.axan.sep.common.db.IGameConfig;
+import java.util.Map;
+import java.util.HashMap;
 
-public class SpaceCounter extends Building implements ISpaceCounter
+class SpaceCounter extends Building implements ISpaceCounter
 {
-	private final IBaseSpaceCounter baseSpaceCounterProxy;
-
-	SpaceCounter(IBaseSpaceCounter baseSpaceCounterProxy)
+	// PK inherited.
+	
+	/*
+	 * Off-DB: off db fields (none).
+	 */
+	
+	/*
+	 * DB connection
+	 */
+	protected Index<Node> spaceCounterIndex;
+	
+	/**
+	 * Off-DB constructor.
+	 * @param productiveCelestialBodyName
+	 * @param builtDate
+	 * @param nbSlots
+	 */
+	public SpaceCounter(String productiveCelestialBodyName, int builtDate, int nbSlots)
 	{
-		super(baseSpaceCounterProxy);
-		this.baseSpaceCounterProxy = baseSpaceCounterProxy;
+		super(productiveCelestialBodyName, builtDate, nbSlots);
 	}
-
-	public SpaceCounter(eBuildingType type, String celestialBodyName, Integer turn, Integer nbSlots)
+	
+	/**
+	 * On-DB constructor.
+	 * @param sepDB
+	 * @param productiveCelestialBodyName
+	 */
+	public SpaceCounter(SEPCommonDB sepDB, String productiveCelestialBodyName)
 	{
-		this(new BaseSpaceCounter(type.toString(), celestialBodyName, turn, nbSlots));
-	}
-
-	public SpaceCounter(Node stmnt) throws Exception
-	{
-		this(new BaseSpaceCounter(stmnt));
+		super(sepDB, productiveCelestialBodyName);
 	}
 
 	@Override
-	public Map<String, Object> getNode()
+	final protected void checkForDBUpdate()
+	{				
+		if (!isDBOnline()) return;
+		if (isDBOutdated())
+		{
+			super.checkForDBUpdate();			
+			spaceCounterIndex = db.index().forNodes("SpaceCounterIndex");			
+		}
+	}
+	
+	/**
+	 * Create method final implementation.
+	 * Final implement actually create the db node and initialize it.
+	 */
+	@Override
+	final protected void create(SEPCommonDB sepDB)
 	{
-		return baseSpaceCounterProxy.getNode();
+		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			this.sepDB = sepDB;
+			checkForDBUpdate();
+			
+			if (spaceCounterIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type)).hasNext())
+			{
+				tx.failure();
+				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, spaceCounter[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
+			}
+			node = sepDB.getDB().createNode();
+			SpaceCounter.initializeNode(node, builtDate, nbSlots);
+			spaceCounterIndex.add(node, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			
+			super.create(sepDB);
+			
+			tx.success();			
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+
+	public static void initializeNode(Node node, int builtDate, int nbSlots)
+	{
+		node.setProperty("builtDate", builtDate);
+		node.setProperty("nbSlots", nbSlots);
 	}
 
 }

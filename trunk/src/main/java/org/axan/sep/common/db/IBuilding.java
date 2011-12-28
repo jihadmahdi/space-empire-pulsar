@@ -1,13 +1,15 @@
 package org.axan.sep.common.db;
 
-import java.util.Map;
+import org.neo4j.graphdb.Node;
 import org.axan.sep.common.Protocol.eBuildingType;
+import org.axan.sep.common.db.IGameConfig;
+import java.util.Map;
+import java.util.HashMap;
 
 public interface IBuilding
 {
+	public String getProductiveCelestialBodyName();
 	public eBuildingType getType();
-	public String getCelestialBodyName();
-	public Integer getTurn();
-	public Integer getNbSlots();
-	public Map<String, Object> getNode();
+	public int getBuiltDate();
+	public int getNbSlots();	
 }

@@ -1,46 +1,101 @@
 package org.axan.sep.common.db.orm;
 
+import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.db.orm.Building;
-import java.lang.Exception;
 import org.axan.sep.common.db.orm.base.IBasePulsarLaunchingPad;
 import org.axan.sep.common.db.orm.base.BasePulsarLaunchingPad;
 import org.axan.sep.common.db.IPulsarLaunchingPad;
-import java.util.HashMap;
-import java.util.Map;
-import org.axan.sep.common.Protocol.eBuildingType;
-import org.axan.sep.common.db.IGameConfig;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.Index;
+import org.axan.sep.common.db.IGameConfig;
+import java.util.Map;
+import java.util.HashMap;
 
-public class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
+class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 {
-	private final IBasePulsarLaunchingPad basePulsarLaunchingPadProxy;
-
-	PulsarLaunchingPad(IBasePulsarLaunchingPad basePulsarLaunchingPadProxy)
+	// PK inherited.
+	
+	/*
+	 * Off-DB: off db fields (none).
+	 */
+	
+	/*
+	 * DB connection
+	 */
+	protected Index<Node> pulsarLaunchingPadIndex;
+	
+	/**
+	 * Off-DB constructor.
+	 * @param productiveCelestialBodyName
+	 * @param builtDate
+	 * @param nbSlots
+	 */
+	public PulsarLaunchingPad(String productiveCelestialBodyName, int builtDate, int nbSlots)
 	{
-		super(basePulsarLaunchingPadProxy);
-		this.basePulsarLaunchingPadProxy = basePulsarLaunchingPadProxy;
+		super(productiveCelestialBodyName, builtDate, nbSlots);
 	}
-
-	public PulsarLaunchingPad(eBuildingType type, String celestialBodyName, Integer turn, Integer nbSlots, Integer firedDate)
+	
+	/**
+	 * On-DB constructor.
+	 * @param sepDB
+	 * @param productiveCelestialBodyName
+	 */
+	public PulsarLaunchingPad(SEPCommonDB sepDB, String productiveCelestialBodyName)
 	{
-		this(new BasePulsarLaunchingPad(type.toString(), celestialBodyName, turn, nbSlots, firedDate));
-	}
-
-	public PulsarLaunchingPad(Node stmnt) throws Exception
-	{
-		this(new BasePulsarLaunchingPad(stmnt));
+		super(sepDB, productiveCelestialBodyName);
 	}
 
 	@Override
-	public Integer getFiredDate()
+	final protected void checkForDBUpdate()
+	{				
+		if (!isDBOnline()) return;
+		if (isDBOutdated())
+		{
+			super.checkForDBUpdate();			
+			pulsarLaunchingPadIndex = db.index().forNodes("PulsarLaunchingPadIndex");			
+		}
+	}
+	
+	/**
+	 * Create method final implementation.
+	 * Final implement actually create the db node and initialize it.
+	 */
+	@Override
+	final protected void create(SEPCommonDB sepDB)
 	{
-		return basePulsarLaunchingPadProxy.getFiredDate();
+		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			this.sepDB = sepDB;
+			checkForDBUpdate();
+			
+			if (pulsarLaunchingPadIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type)).hasNext())
+			{
+				tx.failure();
+				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, pulsarLaunchingPad[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
+			}
+			node = sepDB.getDB().createNode();
+			PulsarLaunchingPad.initializeNode(node, builtDate, nbSlots);
+			pulsarLaunchingPadIndex.add(node, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			
+			super.create(sepDB);
+			
+			tx.success();			
+		}
+		finally
+		{
+			tx.finish();
+		}
 	}
 
-	@Override
-	public Map<String, Object> getNode()
+	public static void initializeNode(Node node, int builtDate, int nbSlots)
 	{
-		return basePulsarLaunchingPadProxy.getNode();
+		node.setProperty("builtDate", builtDate);
+		node.setProperty("nbSlots", nbSlots);
 	}
 
 }

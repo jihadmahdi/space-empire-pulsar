@@ -27,8 +27,6 @@ import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.db.IGameEvent;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
-import org.axan.sep.common.db.orm.Player;
-import org.axan.sep.common.db.orm.PlayerConfig;
 import org.axan.sep.server.SEPServer;
 import org.javabuilders.BuildResult;
 import org.javabuilders.annotations.DoInBackground;

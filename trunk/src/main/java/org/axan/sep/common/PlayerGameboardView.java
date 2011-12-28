@@ -8,7 +8,7 @@ import java.util.Vector;
 import org.axan.sep.common.db.IGameEvent;
 import org.axan.sep.common.db.IGameEvent.GameEventException;
 import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
-import org.axan.sep.common.db.SEPCommonDB;
+import org.axan.sep.common.db.orm.SEPCommonDB;
 
 public class PlayerGameboardView
 {

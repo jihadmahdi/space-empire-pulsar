@@ -1,5 +1,6 @@
 package org.axan.sep.common;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,9 +20,7 @@ import org.axan.sep.common.db.IGameEvent.GameEventException;
 import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
-import org.axan.sep.common.db.SEPCommonDB;
-import org.axan.sep.common.db.orm.Player;
-import org.axan.sep.common.db.orm.PlayerConfig;
+import org.axan.sep.common.db.orm.SEPCommonDB;
 
 /**
  * Represent the game board for a specific player. It provide
@@ -36,7 +35,7 @@ public class PlayerGameBoard implements IGameBoard
 	private PlayerGameboardView view;
 	
 	/** List players during game creation, must not be used once game is ran. */
-	private transient Map<IPlayer, IPlayerConfig> players = new TreeMap<IPlayer, IPlayerConfig>();
+	private transient Map<IPlayer, IPlayerConfig> players = new TreeMap<IPlayer, IPlayerConfig>(IPlayer.nameComparator);
 	
 	/** During game creation, temporary game config. */
 	private transient GameConfig gameConfig = new GameConfig();
@@ -189,7 +188,7 @@ public class PlayerGameBoard implements IGameBoard
 		Set<IPlayer> ps = getDB().getPlayers();
 		for(IPlayer p : ps)
 		{
-			IPlayerConfig pc = p.getConfig(getDB());
+			IPlayerConfig pc = p.getConfig();
 			result.put(p, pc);
 		}			
 
@@ -198,7 +197,7 @@ public class PlayerGameBoard implements IGameBoard
 	
 	private IPlayerConfig getDBPlayerConfig(String playerName) throws GameBoardException
 	{
-		return getDB().getPlayerConfig(playerName);		
+		return getDB().getPlayerByName(playerName).getConfig();
 	}
 	
 }

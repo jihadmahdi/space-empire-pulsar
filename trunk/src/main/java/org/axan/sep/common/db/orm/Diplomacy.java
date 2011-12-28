@@ -1,15 +1,14 @@
 package org.axan.sep.common.db.orm;
 
-import java.lang.Exception;
 import org.axan.sep.common.db.orm.base.IBaseDiplomacy;
 import org.axan.sep.common.db.orm.base.BaseDiplomacy;
 import org.axan.sep.common.db.IDiplomacy;
-import java.util.HashMap;
-import java.util.Map;
-import org.axan.sep.common.db.IGameConfig;
 import org.neo4j.graphdb.Node;
+import org.axan.sep.common.db.IGameConfig;
+import java.util.Map;
+import java.util.HashMap;
 
-public class Diplomacy implements IDiplomacy
+class Diplomacy implements IDiplomacy
 {
 	private final IBaseDiplomacy baseDiplomacyProxy;
 
@@ -18,44 +17,31 @@ public class Diplomacy implements IDiplomacy
 		this.baseDiplomacyProxy = baseDiplomacyProxy;
 	}
 
-	public Diplomacy(String owner, String target, Boolean allowToLand, String foreignPolicy)
+	public Diplomacy(boolean allowToLand)
 	{
-		this(new BaseDiplomacy(owner, target, allowToLand, foreignPolicy));
+		this(new BaseDiplomacy(allowToLand));
 	}
 
-	public Diplomacy(Node stmnt) throws Exception
+	public Diplomacy(Node stmnt)
 	{
 		this(new BaseDiplomacy(stmnt));
 	}
 
 	@Override
-	public String getOwner()
-	{
-		return baseDiplomacyProxy.getOwner();
-	}
-
-	@Override
-	public String getTarget()
-	{
-		return baseDiplomacyProxy.getTarget();
-	}
-
-	@Override
-	public Boolean getAllowToLand()
+	public boolean getAllowToLand()
 	{
 		return baseDiplomacyProxy.getAllowToLand();
-	}
-
-	@Override
-	public String getForeignPolicy()
-	{
-		return baseDiplomacyProxy.getForeignPolicy();
 	}
 
 	@Override
 	public Map<String, Object> getNode()
 	{
 		return baseDiplomacyProxy.getNode();
+	}
+
+	public static void initializeNode(Node node, boolean allowToLand)
+	{
+		node.setProperty("allowToLand", allowToLand);
 	}
 
 }

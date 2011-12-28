@@ -47,10 +47,7 @@ import org.axan.sep.common.db.IGameEvent;
 import org.axan.sep.common.db.IPlanet;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IUnit;
-import org.axan.sep.common.db.SEPCommonDB;
-import org.axan.sep.common.db.orm.Area;
-import org.axan.sep.common.db.orm.Planet;
-import org.axan.sep.common.db.orm.ProductiveCelestialBody;
+import org.axan.sep.common.db.orm.SEPCommonDB;
 import org.javabuilders.BuildResult;
 import org.javabuilders.swing.SwingJavaBuilder;
 
@@ -226,7 +223,7 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 		{
 			zSlider.setEnabled(true);
 			
-			IPlanet startingPlanet = Planet.getStartingPlanet(gameboard.getDB(), getSepClient().getLogin());
+			IPlanet startingPlanet = gameboard.getDB().getStartingPlanet(getSepClient().getLogin());
 			
 			// Changing zSlider bound to zSelection that fires changeZView UI refresh.
 			zSlider.setValue(startingPlanet.getLocation().z);
@@ -309,12 +306,12 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 					if (zViewRefresher.isInterrupted()) return;
 					
 					try
-					{						
-						boolean isVisible = area.isVisible(db, playerName);
+					{
+						boolean isVisible = area.isVisible(playerName);
 						
 						JImagePanel image = getImagePanel(area.getLocation().x, area.getLocation().y);
 						
-						String toolTipText = image.getToolTipText()+"\n"+area.toString();
+						String toolTipText = image.getToolTipText()+"\n"+area.toString(playerName);
 			
 						// If visible, background is gray				
 						//image.setBorder((area.isVisible() ? BorderFactory.createLineBorder(Color.green) : null));
@@ -331,7 +328,7 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 			
 						// Celestial body
 						boolean ownedCelestialBody = false;
-						ICelestialBody celestialBody = area.getCelestialBody(db);
+						ICelestialBody celestialBody = area.getCelestialBody();
 						if (celestialBody != null)
 						{				
 							image.setImage(getTile(celestialBody.getType().toString(), celestialBody.getName()));
@@ -342,7 +339,7 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 							}
 						}
 			
-						Set<IUnit> units = area.getUnits(db, IUnit.class);
+						Set<IUnit> units = area.getUnits(IUnit.class);
 						
 						Color borderColor = null;
 			
@@ -386,17 +383,12 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 			
 						image.setToolTipText("<html>" + toolTipText.replaceAll("\n", "<br>") + "</html>");
 					}
-					catch(SQLDataBaseException e)
-					{
-						if (InterruptedException.class.isInstance(e.getCause())) return;
-						if (Thread.interrupted()) return;
-						
-						log.log(Level.SEVERE, "SQL Error on area rendering, area skipped", e);
-						continue;
-					}
 					catch(Throwable t)
 					{
+						if (InterruptedException.class.isInstance(t.getCause())) return;
 						if (Thread.interrupted()) return;
+						
+						log.log(Level.SEVERE, "SQL Error on area rendering, area skipped", t);
 						throw new Error(t);
 					}
 				}

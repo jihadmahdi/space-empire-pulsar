@@ -36,8 +36,9 @@ import org.axan.sep.common.Protocol.eSpecialUnitType;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
+import org.axan.sep.common.db.IDBGraph;
 import org.axan.sep.common.db.IGameConfig;
-import org.axan.sep.common.db.SEPCommonDB;
+import org.axan.sep.common.db.orm.SEPCommonDB;
 import org.neo4j.graphdb.Node;
 
 class ORMGenerator
@@ -49,7 +50,7 @@ class ORMGenerator
 		{					
 			String baseDir = "/media/data/code/Java_Workspace/Space-Empire-Pulsar/src/main/java/";
 			String interfacePackageName = IGameConfig.class.getPackage().getName();
-			String dbPackageName = SEPCommonDB.class.getPackage().getName();
+			String dbPackageName = IDBGraph.class.getPackage().getName();
 			final String ormPackageName = dbPackageName+".orm";
 			File interfaceOutputDirectory = new File(baseDir+interfacePackageName.replace('.', '/'));
 			File outputDirectory = new File(baseDir+ormPackageName.replace('.', '/'));
@@ -359,7 +360,8 @@ class ORMGenerator
 
 					if (f.getLowerName().endsWith("_x"))
 					{
-						sb.append(String.format("\t\tthis.%s = (base%sProxy.get%s_x() == null ? null : new %s(base%sProxy.get%s_x(), base%sProxy.get%s_y(), base%sProxy.get%s_z()));\n", nf.getLowerName(), c.getUpperName(), nf.getUpperName(), nf.getType().getSimpleName(), c.getUpperName(), nf.getUpperName(), c.getUpperName(), nf.getUpperName(), c.getUpperName(), nf.getUpperName()));
+						//sb.append(String.format("\t\tthis.%s = (base%sProxy.get%s_x() == null ? null : new %s(base%sProxy.get%s_x(), base%sProxy.get%s_y(), base%sProxy.get%s_z()));\n", nf.getLowerName(), c.getUpperName(), nf.getUpperName(), nf.getType().getSimpleName(), c.getUpperName(), nf.getUpperName(), c.getUpperName(), nf.getUpperName(), c.getUpperName(), nf.getUpperName()));
+						sb.append(String.format("\t\tthis.%s = new %s(base%sProxy.get%s_x(), base%sProxy.get%s_y(), base%sProxy.get%s_z());\n", nf.getLowerName(), nf.getType().getSimpleName(), c.getUpperName(), nf.getUpperName(), c.getUpperName(), nf.getUpperName(), c.getUpperName(), nf.getUpperName()));
 					}
 
 					if (f.getLowerName().matches("type"))

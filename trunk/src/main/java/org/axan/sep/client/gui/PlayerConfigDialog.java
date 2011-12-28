@@ -20,7 +20,7 @@ import org.axan.sep.client.gui.lib.FTPRemoteFileSystemView;
 import org.axan.sep.client.gui.lib.GUIUtils;
 import org.axan.sep.client.gui.lib.JImagePanel;
 import org.axan.sep.common.db.IPlayerConfig;
-import org.axan.sep.common.db.orm.PlayerConfig;
+import org.axan.sep.common.db.orm.SEPCommonDB;
 import org.javabuilders.BuildResult;
 import org.javabuilders.annotations.DoInBackground;
 import org.javabuilders.event.BackgroundEvent;
@@ -165,7 +165,7 @@ public class PlayerConfigDialog extends JDialog implements IModalComponent
 	
 	public void ok()
 	{
-		PlayerConfig config = new PlayerConfig(getSepClient().getLogin(), Basic.colorToString(getPlayerColor()), getSymbolFilename(), getPortraitFilename());
+		IPlayerConfig config = SEPCommonDB.makePlayerConfig(Basic.colorToString(getPlayerColor()), getSymbolFilename(), getPortraitFilename());
 		try
 		{
 			getSepClient().getGameCreationInterface().updatePlayerConfig(config);

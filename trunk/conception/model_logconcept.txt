@@ -27,3 +27,8 @@ L'utilisateur client ne peut générer que des ICommand. Et il les applique tout
 
 Un problème est que les commandes utilisateur doivent pouvoir s'appliquer en local sans compter sur un traitement du serveur (ex: tirage d'un dé, ...).
 
+---
+ORM: Plutot que de piétiner avec l'ORM, commencer à coder à la main avec DBGraph en préparant le terrain pour plus tard faire générer par l'ORM.
+Une conception efficace de l'ORM passe par un exemple complet (codé à la main dans un premier temps).
+Les POJO sont connectés à une version donnée de la DB, ainsi on peut avoir une api KISS des pojos.
+Pour les objets qui doivent pouvoir être déconnectés, on implémente une version déconnecté de la meme interface.

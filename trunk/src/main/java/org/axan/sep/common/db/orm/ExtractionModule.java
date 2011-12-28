@@ -1,40 +1,101 @@
 package org.axan.sep.common.db.orm;
 
+import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.db.orm.Building;
-import java.lang.Exception;
 import org.axan.sep.common.db.orm.base.IBaseExtractionModule;
 import org.axan.sep.common.db.orm.base.BaseExtractionModule;
 import org.axan.sep.common.db.IExtractionModule;
-import java.util.HashMap;
-import java.util.Map;
-import org.axan.sep.common.Protocol.eBuildingType;
-import org.axan.sep.common.db.IGameConfig;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.Index;
+import org.axan.sep.common.db.IGameConfig;
+import java.util.Map;
+import java.util.HashMap;
 
-public class ExtractionModule extends Building implements IExtractionModule
+class ExtractionModule extends Building implements IExtractionModule
 {
-	private final IBaseExtractionModule baseExtractionModuleProxy;
-
-	ExtractionModule(IBaseExtractionModule baseExtractionModuleProxy)
+	// PK inherited.
+	
+	/*
+	 * Off-DB: off db fields (none).
+	 */
+	
+	/*
+	 * DB connection
+	 */
+	protected Index<Node> extractionModuleIndex;
+	
+	/**
+	 * Off-DB constructor.
+	 * @param productiveCelestialBodyName
+	 * @param builtDate
+	 * @param nbSlots
+	 */
+	public ExtractionModule(String productiveCelestialBodyName, int builtDate, int nbSlots)
 	{
-		super(baseExtractionModuleProxy);
-		this.baseExtractionModuleProxy = baseExtractionModuleProxy;
+		super(productiveCelestialBodyName, builtDate, nbSlots);
 	}
-
-	public ExtractionModule(eBuildingType type, String celestialBodyName, Integer turn, Integer nbSlots)
+	
+	/**
+	 * On-DB constructor.
+	 * @param sepDB
+	 * @param productiveCelestialBodyName
+	 */
+	public ExtractionModule(SEPCommonDB sepDB, String productiveCelestialBodyName)
 	{
-		this(new BaseExtractionModule(type.toString(), celestialBodyName, turn, nbSlots));
-	}
-
-	public ExtractionModule(Node stmnt) throws Exception
-	{
-		this(new BaseExtractionModule(stmnt));
+		super(sepDB, productiveCelestialBodyName);
 	}
 
 	@Override
-	public Map<String, Object> getNode()
+	final protected void checkForDBUpdate()
+	{				
+		if (!isDBOnline()) return;
+		if (isDBOutdated())
+		{
+			super.checkForDBUpdate();			
+			extractionModuleIndex = db.index().forNodes("ExtractionModuleIndex");			
+		}
+	}
+	
+	/**
+	 * Create method final implementation.
+	 * Final implement actually create the db node and initialize it.
+	 */
+	@Override
+	final protected void create(SEPCommonDB sepDB)
 	{
-		return baseExtractionModuleProxy.getNode();
+		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			this.sepDB = sepDB;
+			checkForDBUpdate();
+			
+			if (extractionModuleIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type)).hasNext())
+			{
+				tx.failure();
+				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, extractionModule[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
+			}
+			node = sepDB.getDB().createNode();
+			ExtractionModule.initializeNode(node, builtDate, nbSlots);
+			extractionModuleIndex.add(node, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			
+			super.create(sepDB);
+			
+			tx.success();			
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+
+	public static void initializeNode(Node node, int builtDate, int nbSlots)
+	{
+		node.setProperty("builtDate", builtDate);
+		node.setProperty("nbSlots", nbSlots);
 	}
 
 }

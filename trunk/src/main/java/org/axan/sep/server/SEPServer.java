@@ -237,16 +237,9 @@ public class SEPServer implements IServer, IDBFactory
 		@Override
 		public void updatePlayerConfig(final IPlayerConfig playerCfg)
 		{
-			if (getLogin().compareTo(playerCfg.getName()) != 0)
-			{
-				ConnectionAbortedError e = new ConnectionAbortedError("Cannot update "+playerCfg.getName()+" config.");
-				log.log(Level.WARNING, user.getLogin()+" tried to update "+playerCfg.getName()+" config.");
-				throw e;			
-			}
-			
 			try
 			{
-				sepServer.getGameInCreation().updatePlayerConfig(playerCfg);
+				sepServer.getGameInCreation().updatePlayerConfig(user.getLogin(), playerCfg);
 			}
 			catch(GameBoardException e)
 			{
