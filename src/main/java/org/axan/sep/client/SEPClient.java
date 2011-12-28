@@ -29,8 +29,7 @@ import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
 import org.axan.sep.common.db.IDBFactory;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
-import org.axan.sep.common.db.SEPCommonDB;
-import org.axan.sep.common.db.orm.PlayerConfig;
+import org.axan.sep.common.db.orm.SEPCommonDB;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 

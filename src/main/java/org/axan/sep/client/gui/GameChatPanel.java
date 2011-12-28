@@ -133,7 +133,7 @@ public class GameChatPanel extends JPanel implements IModalComponent
 			throw new IllegalArgumentException(sender==null?"Sender is null":"Unkown config for player '"+sender.getName()+"'");
 		}
 		
-		String htmlText = String.format("<br><font color='#%s'>%s</font> : %s</br>", GUIUtils.getHTMLColor(Basic.stringToColor(config.getColor())), config.getName(), message);
+		String htmlText = String.format("<br><font color='#%s'>%s</font> : %s</br>", GUIUtils.getHTMLColor(Basic.stringToColor(config.getColor())), sender.getName(), message);
 		HTMLDocument doc = (HTMLDocument) editorPane.getDocument();
 
 		try

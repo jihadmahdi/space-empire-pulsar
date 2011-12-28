@@ -9,25 +9,21 @@ import org.axan.eplib.orm.sql.SQLDataBaseException;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.SEPUtils.Location;
-import org.axan.sep.common.db.orm.Area;
-import org.axan.sep.common.db.orm.Building;
-import org.axan.sep.common.db.orm.CelestialBody;
-import org.axan.sep.common.db.orm.Government;
-import org.axan.sep.common.db.orm.GovernmentModule;
-import org.axan.sep.common.db.orm.Player;
-import org.axan.sep.common.db.orm.PlayerConfig;
+import org.axan.sep.common.db.orm.SEPCommonDB;
 
 public class EvCreateUniverse implements IGameEvent, Serializable
 {
 	final private Location sunLocation;
 	final private Map<IPlayer, IPlayerConfig> players;
-	final private Set<ICelestialBody> celestialBodies;
+	final private Map<Location, ICelestialBody> celestialBodies;
+	final private Map<IProductiveCelestialBody, IPlayer> ownershipRelations;
 	
-	public EvCreateUniverse(Location sunLocation, Map<IPlayer, IPlayerConfig> players, Set<ICelestialBody> celestialBodies)
+	public EvCreateUniverse(Location sunLocation, Map<IPlayer, IPlayerConfig> players, Map<Location, ICelestialBody> celestialBodies, Map<IProductiveCelestialBody, IPlayer> ownershipRelations)
 	{
 		this.sunLocation = sunLocation;
 		this.players = players;
 		this.celestialBodies = celestialBodies;
+		this.ownershipRelations = ownershipRelations;
 	}
 	
 	public Location getSunLocation()
@@ -50,6 +46,8 @@ public class EvCreateUniverse implements IGameEvent, Serializable
 	@Override
 	public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameEventException
 	{
+		// TODO: Recode GameBoard#createUniverse and EvCReateUniverse to remove unnecessary parameters (celestial body locations, owners, ...) that now can be retrieved from off-db objects getters.
+		
 		try
 		{
 			IGameConfig config = db.getConfig();
@@ -59,7 +57,7 @@ public class EvCreateUniverse implements IGameEvent, Serializable
 			// Generate players
 			for(IPlayer player : players.keySet())
 			{
-				db.createPlayer(player, players.get(player));
+				db.createPlayer(player);
 			}
 			
 			// Generate Universe
@@ -80,40 +78,43 @@ public class EvCreateUniverse implements IGameEvent, Serializable
 						Location parsedLoc = new Location(sunLocation.x + x, sunLocation.y + y, sunLocation.z + z);
 						if (SEPUtils.getDistance(parsedLoc, sunLocation) <= config.getSunRadius())
 						{
-							db.createArea(new Area(parsedLoc, true));
+							db.createArea(parsedLoc, true);
 						}						
 					}
 			
 			Map<String, IPlanet> playerStartingPlanets = new HashMap<String, IPlanet>();
-			for(ICelestialBody celestialBody : celestialBodies)
-			{				
-				db.createCelestialBody(celestialBody);
+			for(Location location : celestialBodies.keySet())
+			{
+				ICelestialBody celestialBody = celestialBodies.get(location);
 				
-				if (IPlanet.class.isInstance(celestialBody))
+				if (!location.equals(celestialBody.getLocation()))
 				{
-					IPlanet planet = (IPlanet) celestialBody;
-					if (planet.getOwner() != null)
+					throw new RuntimeException("Implementation error, mapped location differs from celestial body location.");
+				}
+				
+				ICelestialBody connectedCelestialBody = db.createCelestialBody(celestialBody);
+				
+				if (ownershipRelations.containsKey(celestialBody))
+				{
+					IPlayer player = ownershipRelations.get(celestialBody);
+					
+					((IProductiveCelestialBody) connectedCelestialBody).setOwner(player.getName());
+					
+					if (IPlanet.class.isInstance(celestialBody) && !playerStartingPlanets.containsKey(player.getName()))
 					{
-						for(IPlayer player : players.keySet())
-						{						
-							if (player.getName().equals(planet.getOwner()) && !playerStartingPlanets.containsKey(player.getName()))
-							{
-								// Player starting planet
-								playerStartingPlanets.put(player.getName(), planet);
-								
-								// If victory rule "Regimicide" is on, starting planet has a pre-built government module.
-								if (config.isRegimicide())
-								{
-									IGovernmentModule governmentModule = new GovernmentModule(eBuildingType.GovernmentModule, planet.getName(), config.getTurn(), 1);
-									IGovernment government = new Government(player.getName(), null, planet.getName());
-									
-									db.createBuilding(governmentModule);
-									db.updateGovernment(government);
-								}
-							}
+						IPlanet planet = (IPlanet) celestialBody;
+						
+						// Player starting planet
+						playerStartingPlanets.put(player.getName(), planet);
+						
+						// If victory rule "Regimicide" is on, starting planet has a pre-built government module.						
+						if (config.isRegimicide())
+						{
+							IGovernmentModule governmentModule = SEPCommonDB.makeGovernmentModule(planet.getName(), config.getTurn(), 1);
+							governmentModule = db.createGovernmentModule(governmentModule);							
 						}
 					}
-				}
+				}				
 			}
 			
 			config.setTurn(0);

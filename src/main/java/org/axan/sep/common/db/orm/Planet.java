@@ -1,81 +1,174 @@
 package org.axan.sep.common.db.orm;
 
-import org.axan.sep.common.db.orm.ProductiveCelestialBody;
-
-import java.io.Serializable;
-import java.lang.Exception;
-import org.axan.sep.common.db.orm.base.IBasePlanet;
-import org.axan.sep.common.db.orm.base.BasePlanet;
-import org.axan.sep.common.db.IPlanet;
-import org.axan.sep.common.db.SEPCommonDB;
-
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.SEPUtils.Location;
-import org.axan.sep.common.db.IGameConfig;
-import org.neo4j.graphdb.Direction;
+import org.axan.sep.common.db.orm.ProductiveCelestialBody;
+import org.axan.sep.common.db.orm.base.IBasePlanet;
+import org.axan.sep.common.db.orm.base.BasePlanet;
+import org.axan.sep.common.db.IBuilding;
+import org.axan.sep.common.db.IPlanet;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.ReturnableEvaluator;
-import org.neo4j.graphdb.StopEvaluator;
-import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.Index;
+import org.axan.sep.common.db.IGameConfig;
+import java.util.Map;
+import java.util.HashMap;
 
-public class Planet extends ProductiveCelestialBody implements IPlanet, Serializable
+class Planet extends ProductiveCelestialBody implements IPlanet
 {
-	private final IBasePlanet basePlanetProxy;
-
-	Planet(IBasePlanet basePlanetProxy)
-	{
-		super(basePlanetProxy);
-		this.basePlanetProxy = basePlanetProxy;
-	}
-
-	public Planet(String name, eCelestialBodyType type, Location location, Integer initialCarbonStock, Integer maxSlots, String owner, Integer carbonStock, Integer currentCarbon, Integer populationPerTurn, Integer maxPopulation, Integer currentPopulation)
-	{
-		this(new BasePlanet(name, type.toString(), location == null ? null : location.x, location == null ? null : location.y, location == null ? null : location.z, initialCarbonStock, maxSlots, owner, carbonStock, currentCarbon, populationPerTurn, maxPopulation, currentPopulation));
-	}
-
-	public Planet(Node stmnt)
-	{
-		this(new BasePlanet(stmnt));
-	}
-
-	@Override
-	public Integer getPopulationPerTurn()
-	{
-		return basePlanetProxy.getPopulationPerTurn();
-	}
-
-	@Override
-	public Integer getMaxPopulation()
-	{
-		return basePlanetProxy.getMaxPopulation();
-	}
-
-	@Override
-	public Integer getCurrentPopulation()
-	{
-		return basePlanetProxy.getCurrentPopulation();
-	}
-
-	@Override
-	public Map<String, Object> getNode()
-	{
-		return basePlanetProxy.getNode();
-	}
+	// PK inherited.
+	
+	/*
+	 * Off-DB: off db fields.
+	 */
+	private final int populationPerTurn;
+	private final int maxPopulation;
+	private final int currentPopulation;
+	
+	/*
+	 * DB connection
+	 */
+	protected Index<Node> planetIndex;
 
 	/**
-	 * Return the starting planet on first turn.
-	 * @param playerName
-	 * @return
-	 * @throws SQLDataBaseException 
+	 * Off-DB constructor.
+	 * @param name
+	 * @param initialCarbonStock
+	 * @param maxSlots
+	 * @param carbonStock
+	 * @param currentCarbon
+	 * @param populationPerTurn
+	 * @param maxPopulation
+	 * @param currentPopulation
 	 */
-	public static IPlanet getStartingPlanet(SEPCommonDB db, String playerName)
+	public Planet(String name, Location location, int initialCarbonStock, int maxSlots, int carbonStock, int currentCarbon, int populationPerTurn, int maxPopulation, int currentPopulation)
 	{
-		while(db.getConfig().getTurn() > 1) db = db.previous();
-		Iterator<Node> it = db.getPlayerNode(playerName).traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eCelestialBodyType.Planet, Direction.OUTGOING).iterator();
-		if (!it.hasNext()) return null;
-		return new Planet(it.next());
+		super(name, location, initialCarbonStock, maxSlots, carbonStock, currentCarbon);
+		this.populationPerTurn = populationPerTurn;
+		this.maxPopulation = maxPopulation;
+		this.currentPopulation = currentPopulation;
+	}
+	
+	/**
+	 * On-DB constructor.
+	 * @param sepDB
+	 * @param name
+	 */
+	public Planet(SEPCommonDB sepDB, String name)
+	{
+		super(sepDB, name);
+		
+		// Null values
+		this.populationPerTurn = 0;
+		this.maxPopulation = 0;
+		this.currentPopulation = 0;
+	}
+
+	@Override
+	final protected void checkForDBUpdate()
+	{				
+		if (!isDBOnline()) return;
+		if (isDBOutdated())
+		{
+			super.checkForDBUpdate();			
+			planetIndex = db.index().forNodes("PlanetIndex");			
+		}
+	}
+	
+	/**
+	 * Create method final implementation.
+	 * Final implement actually create the db node and initialize it.
+	 */
+	@Override
+	final protected void create(SEPCommonDB sepDB)
+	{
+		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			this.sepDB = sepDB;
+			checkForDBUpdate();
+			
+			if (planetIndex.get("name", name.toString()).hasNext())
+			{
+				tx.failure();
+				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, planet[name='"+name+"'] already exist.");
+			}
+			node = sepDB.getDB().createNode();
+			Planet.initializeNode(node, name, type, initialCarbonStock, maxSlots, carbonStock, currentCarbon, populationPerTurn, maxPopulation, currentPopulation);
+			planetIndex.add(node, "name", name);
+			
+			super.create(sepDB);
+			
+			tx.success();			
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+
+	@Override
+	public int getPopulationPerTurn()
+	{
+		if (isDBOnline())
+		{
+			checkForDBUpdate();
+			return (Integer) node.getProperty("populationPerTurn");
+		}
+		else
+		{
+			return populationPerTurn;
+		}
+	}
+
+	@Override
+	public int getMaxPopulation()
+	{
+		if (isDBOnline())
+		{
+			checkForDBUpdate();
+			return (Integer) node.getProperty("maxPopulation");
+		}
+		else
+		{
+			return maxPopulation;
+		}
+	}
+
+	@Override
+	public int getCurrentPopulation()
+	{
+		if (isDBOnline())
+		{
+			checkForDBUpdate();
+			return (Integer) node.getProperty("currentPopulation");
+		}
+		else
+		{
+			return currentPopulation;
+		}
+	}
+	
+	@Override
+	public String toString()
+	{
+		return super.toString().replace("  Carbon : ", "  Population : "+getCurrentPopulation()+" (+"+getPopulationPerTurn()+" per turn) / "+getMaxPopulation()+"\n  Carbon : ");		
+	}
+
+	public static void initializeNode(Node node, String name, eCelestialBodyType type, int initialCarbonStock, int maxSlots, int carbonStock, int currentCarbon, int populationPerTurn, int maxPopulation, int currentPopulation)
+	{
+		node.setProperty("name", name);
+		node.setProperty("type", type.toString());
+		node.setProperty("initialCarbonStock", initialCarbonStock);
+		node.setProperty("maxSlots", maxSlots);
+		node.setProperty("carbonStock", carbonStock);
+		node.setProperty("currentCarbon", currentCarbon);
+		node.setProperty("populationPerTurn", populationPerTurn);
+		node.setProperty("maxPopulation", maxPopulation);
+		node.setProperty("currentPopulation", currentPopulation);
 	}
 }

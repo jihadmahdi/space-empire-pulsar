@@ -1,43 +1,109 @@
 package org.axan.sep.common.db.orm;
 
+import org.axan.eplib.orm.nosql.DBGraphException;
+import org.axan.sep.common.Protocol.eCelestialBodyType;
+import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.orm.ProductiveCelestialBody;
-
-import java.io.Serializable;
-import java.lang.Exception;
 import org.axan.sep.common.db.orm.base.IBaseNebula;
 import org.axan.sep.common.db.orm.base.BaseNebula;
 import org.axan.sep.common.db.INebula;
-import java.util.HashMap;
-import java.util.Map;
-import org.axan.sep.common.Protocol.eCelestialBodyType;
-import org.axan.sep.common.SEPUtils.Location;
-import org.axan.sep.common.db.IGameConfig;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.Index;
+import org.axan.sep.common.db.IGameConfig;
+import java.util.Map;
+import java.util.HashMap;
 
-public class Nebula extends ProductiveCelestialBody implements INebula, Serializable
+class Nebula extends ProductiveCelestialBody implements INebula
 {
-	private final IBaseNebula baseNebulaProxy;
+	// PK inherited.
+	
+	/*
+	 * Off-DB: off db fields (none).
+	 */
+	
+	/*
+	 * DB connection
+	 */
+	protected Index<Node> nebulaIndex;
 
-	Nebula(IBaseNebula baseNebulaProxy)
+	/**
+	 * Off-DB constructor
+	 * @param name
+	 * @param initialCarbonStock
+	 * @param maxSlots
+	 * @param carbonStock
+	 * @param currentCarbon
+	 */
+	public Nebula(String name, Location location, int initialCarbonStock, int maxSlots, int carbonStock, int currentCarbon)
 	{
-		super(baseNebulaProxy);
-		this.baseNebulaProxy = baseNebulaProxy;
+		super(name, location, initialCarbonStock, maxSlots, carbonStock, currentCarbon);		
 	}
 
-	public Nebula(String name, eCelestialBodyType type, Location location, Integer initialCarbonStock, Integer maxSlots, String owner, Integer carbonStock, Integer currentCarbon)
+	/**
+	 * On-DB constructor.
+	 * @param sepDB
+	 * @param name
+	 */
+	public Nebula(SEPCommonDB sepDB, String name)
 	{
-		this(new BaseNebula(name, type.toString(), location == null ? null : location.x, location == null ? null : location.y, location == null ? null : location.z, initialCarbonStock, maxSlots, owner, carbonStock, currentCarbon));
-	}
-
-	public Nebula(Node stmnt) throws Exception
-	{
-		this(new BaseNebula(stmnt));
+		super(sepDB, name);
 	}
 
 	@Override
-	public Map<String, Object> getNode()
+	final protected void checkForDBUpdate()
+	{				
+		if (!isDBOnline()) return;
+		if (isDBOutdated())
+		{
+			super.checkForDBUpdate();			
+			nebulaIndex = db.index().forNodes("NebulaIndex");			
+		}
+	}
+	
+	/**
+	 * Create method final implementation.
+	 * Final implement actually create the db node and initialize it.
+	 */
+	@Override
+	final protected void create(SEPCommonDB sepDB)
 	{
-		return baseNebulaProxy.getNode();
+		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			this.sepDB = sepDB;
+			checkForDBUpdate();
+		
+			if (nebulaIndex.get("name", name.toString()).hasNext())
+			{
+				tx.failure();
+				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, nebula[name='"+name+"'] already exist.");
+			}
+			node = sepDB.getDB().createNode();
+			Nebula.initializeNode(node, name, type, initialCarbonStock, maxSlots, carbonStock, currentCarbon);
+			nebulaIndex.add(node, "name", name);
+			
+			super.create(sepDB);
+			
+			tx.success();			
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+		
+	public static void initializeNode(Node node, String name, eCelestialBodyType type, int initialCarbonStock, int maxSlots, int carbonStock, int currentCarbon)
+	{
+		node.setProperty("name", name);
+		node.setProperty("type", type.toString());
+		node.setProperty("initialCarbonStock", initialCarbonStock);
+		node.setProperty("maxSlots", maxSlots);
+		node.setProperty("carbonStock", carbonStock);
+		node.setProperty("currentCarbon", currentCarbon);
 	}
 
 }

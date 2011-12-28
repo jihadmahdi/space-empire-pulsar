@@ -141,7 +141,7 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 				}
 				else try
 				{
-					portraitUrl = new URL(String.format("%s/%s", getSepClient().getUserDirectoryURL(config.getName()).toExternalForm(), config.getPortrait()));					
+					portraitUrl = new URL(String.format("%s/%s", getSepClient().getUserDirectoryURL(player.getName()).toExternalForm(), config.getPortrait()));					
 				}
 				catch(Exception e)
 				{
@@ -181,7 +181,7 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 				}
 				else try
 				{
-					symbolUrl = new URL(String.format("%s/%s", getSepClient().getUserDirectoryURL(config.getName()).toExternalForm(), config.getSymbol()));					
+					symbolUrl = new URL(String.format("%s/%s", getSepClient().getUserDirectoryURL(player.getName()).toExternalForm(), config.getSymbol()));					
 				}
 				catch(Exception e)
 				{

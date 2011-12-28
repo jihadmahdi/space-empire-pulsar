@@ -10,7 +10,10 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.db.IGameConfig;
 
@@ -96,6 +99,17 @@ public abstract class SEPUtils
 		public String toString()
 		{
 			return String.format("[%d;%d;%d]", x, y, z);
+		}
+		
+		public static Location valueOf(String s)
+		{
+			Pattern p = Pattern.compile("\\[(\\d++);(\\d++);(\\d++)\\]", Pattern.DOTALL);
+			Matcher m = p.matcher(s);
+			if (!m.matches()) throw new NumberFormatException("Location string '"+s+"' does not matches \"[\\d++;\\d++;\\d++]\" format.");
+			int x = Integer.valueOf(m.group(1));
+			int y = Integer.valueOf(m.group(2));
+			int z = Integer.valueOf(m.group(3));
+			return new Location(x, y, z);
 		}
 		
 		public RealLocation asRealLocation()

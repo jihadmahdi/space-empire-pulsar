@@ -8,8 +8,10 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -35,16 +37,13 @@ import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.db.IGameEvent;
 import org.axan.sep.common.db.IGameEvent.GameEventException;
 import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
+import org.axan.sep.common.db.IProductiveCelestialBody;
+import org.axan.sep.common.db.orm.SEPCommonDB;
 import org.axan.sep.common.db.IDBFactory;
 import org.axan.sep.common.db.IPlanet;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
-import org.axan.sep.common.db.SEPCommonDB;
-import org.axan.sep.common.db.orm.AsteroidField;
-import org.axan.sep.common.db.orm.Nebula;
-import org.axan.sep.common.db.orm.Planet;
-import org.axan.sep.common.db.orm.Player;
-import org.axan.sep.common.db.orm.PlayerConfig;
+import org.neo4j.cypher.commands.ComparableClause;
 
 /**
  * Server IGameBoard class. Represents the game board on server side (all
@@ -114,7 +113,7 @@ class GameBoard implements Serializable, IGameBoard
 		*/
 
 	////////// attributes
-
+	
 	/**
 	 * Game views. null key is reserved to the global view. Other keys must
 	 * match player names.
@@ -122,13 +121,13 @@ class GameBoard implements Serializable, IGameBoard
 	private transient Map<String, PlayerGameboardView> playerViews = new HashMap<String, PlayerGameboardView>();;
 
 	/** List players during game creation, must not be used whence game is ran. */
-	private transient Map<IPlayer, IPlayerConfig> players = new TreeMap<IPlayer, IPlayerConfig>();
+	private transient Map<IPlayer, IPlayerConfig> players = new TreeMap<IPlayer, IPlayerConfig>(IPlayer.nameComparator);
 
 	/** During game creation, temporary game config. */
 	private transient GameConfig gameConfig = new GameConfig();
 
 	/** DB factory. */
-	private final IDBFactory dbFactory;
+	private transient final IDBFactory dbFactory;
 
 	//////////constructor
 
@@ -171,7 +170,8 @@ class GameBoard implements Serializable, IGameBoard
 		}
 
 		//TODO: Portrait & Symbol
-		players.put(new Player(playerLogin), new PlayerConfig(playerLogin, Basic.colorToString(new Color(rnd.nextInt(0xFFFFFF))), "symbol.png", "portrait.png"));
+		IPlayer p = SEPCommonDB.makePlayer(playerLogin, SEPCommonDB.makePlayerConfig(Basic.colorToString(new Color(rnd.nextInt(0xFFFFFF))), "symbol.png", "portrait.png"));
+		players.put(p, p.getConfig());
 	}
 
 	public void removePlayer(String playerLogin) throws GameBoardException
@@ -216,7 +216,7 @@ class GameBoard implements Serializable, IGameBoard
 	{
 		if (isGameInCreation()) // Game in creation
 		{
-			return players;
+			return new LinkedHashMap<IPlayer, IPlayerConfig>(players);
 		}
 		else
 		{
@@ -245,7 +245,7 @@ class GameBoard implements Serializable, IGameBoard
 		this.gameConfig = gameCfg;
 	}
 	
-	public void updatePlayerConfig(IPlayerConfig playerCfg) throws GameBoardException
+	public void updatePlayerConfig(String playerName, IPlayerConfig playerCfg) throws GameBoardException
 	{
 		if (!isGameInCreation())
 		{
@@ -254,14 +254,14 @@ class GameBoard implements Serializable, IGameBoard
 		
 		for(IPlayer p : players.keySet())
 		{
-			if (p.getName().compareTo(playerCfg.getName()) == 0)
+			if (p.getName().compareTo(playerName) == 0)
 			{
 				players.put(p, playerCfg);
 				return;
 			}
 		}
 		
-		throw new GameBoardException("Player "+playerCfg.getName()+" unknown.");		
+		throw new GameBoardException("Player "+playerName+" unknown.");		
 	}
 
 	/////////////// Universe creation
@@ -298,11 +298,14 @@ class GameBoard implements Serializable, IGameBoard
 			Location sunLocation = new Location(getConfig().getDimX() / 2, getConfig().getDimY() / 2, getConfig().getDimZ() / 2);
 	
 			// Celestialbodies
-			Set<ICelestialBody> celestialBodies = new HashSet<ICelestialBody>();
+			Map<Location, ICelestialBody> celestialBodies = new HashMap<SEPUtils.Location, ICelestialBody>();
 	
 			// Add the players starting planets.
 			Set<Location> playersPlanetLocations = new HashSet<Location>();
 	
+			// Initial ownership relations
+			Map<IProductiveCelestialBody, IPlayer> ownershipRelations = new HashMap<IProductiveCelestialBody, IPlayer>();
+			
 			for(IPlayer player: players.keySet())
 			{
 				/*
@@ -352,7 +355,8 @@ class GameBoard implements Serializable, IGameBoard
 				} while (!locationOk);				
 	
 				IPlanet planet = createPlayerStartingPlanet(generateCelestialBodyName(), planetLocation, player.getName());
-				celestialBodies.add(planet);				
+				celestialBodies.put(planetLocation, planet);
+				ownershipRelations.put(planet, player);
 			}
 	
 			// Add neutral celestial bodies
@@ -405,10 +409,10 @@ class GameBoard implements Serializable, IGameBoard
 	
 				ICelestialBody neutralCelestialBody = createNeutralCelestialBody(celestialBodyType, nextName, celestialBodyLocation);
 	
-				celestialBodies.add(neutralCelestialBody);				
+				celestialBodies.put(celestialBodyLocation, neutralCelestialBody);				
 			}
 	
-			EvCreateUniverse createUniverseEvent = new EvCreateUniverse(sunLocation, players, celestialBodies);			
+			EvCreateUniverse createUniverseEvent = new EvCreateUniverse(sunLocation, players, celestialBodies, ownershipRelations);
 			
 			PlayerGameboardView globalDBView = playerViews.get(null);
 			// Process event on globalDB. It's not resolveTurn method, so we will fire CreateUniverse event anyway, but it will be ignored server-side on next resolvingTurn (@see EvCreateUniverse#skipCondition()).
@@ -1008,22 +1012,22 @@ class GameBoard implements Serializable, IGameBoard
 	}
 
 	private Map<IPlayer, IPlayerConfig> getDBPlayerList()
-	{
-		Map<IPlayer, IPlayerConfig> result = new TreeMap<IPlayer, IPlayerConfig>();
+	{		
+		Map<IPlayer, IPlayerConfig> result = new TreeMap<IPlayer, IPlayerConfig>(IPlayer.nameComparator);
 
 		Set<IPlayer> ps = getGlobalDB().getPlayers();
-		for(IPlayer p : ps)
+		for(IPlayer p : ps)			
 		{
-			IPlayerConfig pc = p.getConfig(getGlobalDB());
+			IPlayerConfig pc = p.getConfig();
 			result.put(p, pc);
 		}			
 
-		return result;		
+		return new LinkedHashMap<IPlayer, IPlayerConfig>(result);		
 	}
 
 	private IPlayer getDBPlayer(String playerLogin)
 	{
-		return getGlobalDB().getPlayer(playerLogin);		
+		return getGlobalDB().getPlayerByName(playerLogin);		
 	}
 	
 	////////////// Universe creation
@@ -1055,12 +1059,12 @@ class GameBoard implements Serializable, IGameBoard
 			{
 				case AsteroidField:
 				{
-					cb = new AsteroidField(name, celestialBodyType, location, initialCarbon, maxSlots, null, initialCarbon, 0);
+					cb = SEPCommonDB.makeAsteroidField(name, location, initialCarbon, maxSlots, initialCarbon, 0);
 					break;
 				}
 				case Nebula:
 				{
-					cb = new Nebula(name, celestialBodyType, location, initialCarbon, maxSlots, null, initialCarbon, 0);
+					cb = SEPCommonDB.makeNebula(name, location, initialCarbon, maxSlots, initialCarbon, 0);
 					break;
 				}
 
@@ -1072,7 +1076,7 @@ class GameBoard implements Serializable, IGameBoard
 					int[] populationLimitRange = getConfig().getPopulationLimit();
 					int maxPopulation = rnd.nextInt(populationLimitRange[1] - populationLimitRange[0]) + populationLimitRange[0];
 
-					cb = new Planet(name, celestialBodyType, location, initialCarbon, maxSlots, null, initialCarbon, 0, populationPerTurn, maxPopulation, 0);
+					cb = SEPCommonDB.makePlanet(name, location, initialCarbon, maxSlots, initialCarbon, 0, populationPerTurn, maxPopulation, 0);
 					break;
 				}
 
@@ -1144,7 +1148,7 @@ class GameBoard implements Serializable, IGameBoard
 		int currentCarbon = getConfig().getPlayersPlanetsStartingCarbonResources();
 		int currentPopulation = getConfig().getPlayersPlanetsStartingPopulation();
 
-		return new Planet(name, eCelestialBodyType.Planet, location, initialCarbonStock, maxSlots, ownerName, initialCarbonStock, currentCarbon, populationPerTurn, maxPopulation, currentPopulation);
+		return SEPCommonDB.makePlanet(name, location, initialCarbonStock, maxSlots, initialCarbonStock, currentCarbon, populationPerTurn, maxPopulation, currentPopulation);
 	}
 
 	////////// serialization

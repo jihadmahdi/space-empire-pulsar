@@ -1,18 +1,21 @@
 package org.axan.sep.common.db;
 
+import org.neo4j.graphdb.Node;
+import org.axan.sep.common.db.IGameConfig;
 import java.util.Map;
-import org.axan.sep.common.Protocol.eUnitType;
-import org.axan.sep.common.SEPUtils.Location;
+import java.util.HashMap;
 
 public interface IUnit
 {
-	public String getOwner();
-	public String getName();
+	String getName();
+	double getProgress();
+	String getOwner();
+	/*
+	
 	public eUnitType getType();
 	public Location getDeparture();
-	public double getProgress();
 	public Location getDestination();
 	public float getSight();
-	public boolean isMoving();
-	Map<String, Object> getNode();
+	public boolean isMoving();	
+	*/
 }
