@@ -5,7 +5,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Vector;
 
+import org.axan.sep.common.db.ICommand;
 import org.axan.sep.common.db.IGameEvent;
+import org.axan.sep.common.db.ICommand.GameCommandException;
 import org.axan.sep.common.db.IGameEvent.GameEventException;
 import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
 import org.axan.sep.common.db.orm.SEPCommonDB;
@@ -22,15 +24,31 @@ public class PlayerGameboardView
 	private final List<IGameEvent> loggedEvents = new Vector<IGameEvent>();
 
 	/**
+	 * Commands resolved during previous turn. Commands are separated from events because clients does not need them to be send from server on new turn (clients already processed them).
+	 */
+	private final List<ICommand> lastTurnCommands = new Vector<ICommand>();
+	
+	/**
 	 * Events resolved on previous turn resolution. Events to be sent with
 	 * {@link Client#receiveNewTurnGameBoard(List)}.
 	 */
 	private final List<IGameEvent> lastTurnEvents = new Vector<IGameEvent>();
 
 	/**
+	 * Commands generated on current turn. Unlike other events, commands are processed as soon as they are fired.
+	 */
+	private final List<ICommand> currentTurnCommands = new Vector<ICommand>();
+	
+	/**
 	 * Events generated on current turn, before turn resolution.
 	 */
 	private final List<IGameEvent> currentTurnEvents = new Vector<IGameEvent>();
+	
+	/**
+	 * While this flag is on, no new Command event are accepted.
+	 * Flag is reset on resolveTurn call.
+	 */
+	private boolean hasEndedTurn = false;
 
 	private SEPCommonDB db;
 
@@ -69,12 +87,24 @@ public class PlayerGameboardView
 	{
 		return Collections.unmodifiableList(lastTurnEvents);
 	}
+	
+	public List<ICommand> getCurrentTurnCommands()
+	{
+		return Collections.unmodifiableList(currentTurnCommands);
+	}
 
 	public synchronized void onGameEvents(Collection<? extends IGameEvent> events)
 	{
 		currentTurnEvents.addAll(events);
 	}
 
+	public synchronized void onLocalCommand(ICommand command) throws GameCommandException
+	{
+		if (hasEndedTurn()) throw new GameCommandException(command, "Cannot process command once turn is ended.");
+		command.process(executor, db);
+		currentTurnCommands.add(command);
+	}
+	
 	public synchronized void onGameEvent(IGameEvent evt)
 	{
 		currentTurnEvents.add(evt);
@@ -94,18 +124,31 @@ public class PlayerGameboardView
 			// If event change db turn, ensure to work with the most recent db.
 			while(db.hasNext()) db = db.next();
 		}
-
+		
+		loggedEvents.addAll(lastTurnCommands);
+		lastTurnCommands.clear();
 		loggedEvents.addAll(lastTurnEvents);
 		lastTurnEvents.clear();
+		
+		lastTurnCommands.addAll(currentTurnCommands);
+		currentTurnCommands.clear();
 		lastTurnEvents.addAll(resolvedEvents);
+		
+		hasEndedTurn = false;
 		
 		// Increment turn
 		db.getConfig().setTurn(db.getConfig().getTurn()+1);
 		while(db.hasNext()) db = db.next();
 	}
 
-	public boolean hasEndedTurn()
+	public synchronized void endTurn()
 	{
-		return currentTurnEvents != null && !currentTurnEvents.isEmpty();
+		hasEndedTurn = true;
+	}
+	
+	public synchronized boolean hasEndedTurn()
+	{
+		return hasEndedTurn;
+		//return currentTurnEvents != null && !currentTurnEvents.isEmpty();
 	}
 }

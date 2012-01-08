@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
 
 public interface IPlayer extends Serializable
 {
@@ -23,4 +24,5 @@ public interface IPlayer extends Serializable
 	
 	String getName();
 	IPlayerConfig getConfig();
+	<T extends IUnit> Set<T> getUnits(Class<T> expectedType);
 }

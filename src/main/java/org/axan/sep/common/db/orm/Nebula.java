@@ -82,9 +82,9 @@ class Nebula extends ProductiveCelestialBody implements INebula
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, nebula[name='"+name+"'] already exist.");
 			}
-			node = sepDB.getDB().createNode();
-			Nebula.initializeNode(node, name, type, initialCarbonStock, maxSlots, carbonStock, currentCarbon);
-			nebulaIndex.add(node, "name", name);
+			properties = sepDB.getDB().createNode();
+			Nebula.initializeProperties(properties, name, initialCarbonStock, maxSlots, carbonStock, currentCarbon);
+			nebulaIndex.add(properties, "name", name);
 			
 			super.create(sepDB);
 			
@@ -96,14 +96,14 @@ class Nebula extends ProductiveCelestialBody implements INebula
 		}
 	}
 		
-	public static void initializeNode(Node node, String name, eCelestialBodyType type, int initialCarbonStock, int maxSlots, int carbonStock, int currentCarbon)
+	public static void initializeProperties(Node properties, String name, int initialCarbonStock, int maxSlots, int carbonStock, int currentCarbon)
 	{
-		node.setProperty("name", name);
-		node.setProperty("type", type.toString());
-		node.setProperty("initialCarbonStock", initialCarbonStock);
-		node.setProperty("maxSlots", maxSlots);
-		node.setProperty("carbonStock", carbonStock);
-		node.setProperty("currentCarbon", currentCarbon);
+		properties.setProperty("name", name);
+		properties.setProperty("type", eCelestialBodyType.Nebula.toString());
+		properties.setProperty("initialCarbonStock", initialCarbonStock);
+		properties.setProperty("maxSlots", maxSlots);
+		properties.setProperty("carbonStock", carbonStock);
+		properties.setProperty("currentCarbon", currentCarbon);
 	}
 
 }

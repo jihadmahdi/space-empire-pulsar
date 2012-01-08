@@ -27,4 +27,5 @@ public interface IUniverseRenderer
 	
 	void setUniverseRendererListener(IUniverseRendererListener listener);
 	void receiveNewTurnGameBoard(List<IGameEvent> newTurnEvents);
+	void refresh(boolean force);
 }

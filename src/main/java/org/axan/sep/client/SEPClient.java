@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.swing.SwingUtilities;
+
 import org.axan.eplib.clientserver.ftp.FTPClient;
 import org.axan.eplib.clientserver.rpc.RpcException;
 import org.axan.eplib.gameserver.client.GameClient;
@@ -24,6 +26,8 @@ import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.IGameBoard.GameBoardException;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.Protocol;
+import org.axan.sep.common.Protocol.SEPImplementationError;
+import org.axan.sep.common.db.ICommand.GameCommandException;
 import org.axan.sep.common.db.IGameEvent;
 import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
 import org.axan.sep.common.db.IDBFactory;
@@ -133,42 +137,76 @@ public class SEPClient implements IDBFactory
 		 * @see common.Protocol.Client#refreshPlayerList(java.util.Set)
 		 */
 		@Override
-		public void refreshPlayerList(Map<IPlayer, IPlayerConfig> playerList) throws RpcException
+		public void refreshPlayerList(final Map<IPlayer, IPlayerConfig> playerList) throws RpcException
 		{
 			client.getGameboard().refreshPlayerList(playerList);
-			client.ui.refreshPlayerList(playerList);
+			
+			SwingUtilities.invokeLater(new Runnable()
+			{
+				
+				@Override
+				public void run()
+				{
+					client.ui.refreshPlayerList(playerList);
+				}
+			});
 		}
 
 		/* (non-Javadoc)
 		 * @see common.Protocol.Client#receiveGameCreationMessage(common.Player, java.lang.String)
 		 */
 		@Override
-		public void receiveGameCreationMessage(IPlayer fromPlayer, String msg)
+		public void receiveGameCreationMessage(final IPlayer fromPlayer, final String msg)
 		{
-			client.ui.receiveGameCreationMessage(fromPlayer, msg);
+			SwingUtilities.invokeLater(new Runnable()
+			{
+				
+				@Override
+				public void run()
+				{
+					client.ui.receiveGameCreationMessage(fromPlayer, msg);
+				}
+			});
 		}
 
 		/* (non-Javadoc)
 		 * @see common.Protocol.Client#refreshGameConfig(common.GameConfig)
 		 */
 		@Override
-		public void refreshGameConfig(GameConfig gameCfg)
+		public void refreshGameConfig(final GameConfig gameCfg)
 		{
 			client.getGameboard().refreshGameConfig(gameCfg);
-			client.ui.refreshGameConfig(gameCfg);
+			
+			SwingUtilities.invokeLater(new Runnable()
+			{
+				
+				@Override
+				public void run()
+				{
+					client.ui.refreshGameConfig(gameCfg);
+				}
+			});
 		}
 
 		/* (non-Javadoc)
 		 * @see common.Protocol.Client#receiveRunningGameMessage(common.Player, java.lang.String)
 		 */
 		@Override
-		public void receiveRunningGameMessage(IPlayer fromPlayer, String msg) throws RpcException
+		public void receiveRunningGameMessage(final IPlayer fromPlayer, final String msg) throws RpcException
 		{
-			client.ui.receiveRunningGameMessage(fromPlayer, msg);
+			SwingUtilities.invokeLater(new Runnable()
+			{
+				
+				@Override
+				public void run()
+				{
+					client.ui.receiveRunningGameMessage(fromPlayer, msg);
+				}
+			});
 		}
 
 		@Override
-		public void receiveNewTurnGameBoard(List<IGameEvent> newTurnEvents) throws RpcException
+		public void receiveNewTurnGameBoard(final List<IGameEvent> newTurnEvents) throws RpcException
 		{
 			try
 			{
@@ -181,13 +219,27 @@ public class SEPClient implements IDBFactory
 				return;
 			}
 			
-			client.ui.receiveNewTurnGameBoard(newTurnEvents);
+			SwingUtilities.invokeLater(new Runnable()
+			{
+				public void run()
+				{
+					client.ui.receiveNewTurnGameBoard(newTurnEvents);
+				};
+			});
 		}
 
 		@Override
-		public void receivePausedGameMessage(IPlayer fromPlayer, String msg) throws RpcException
+		public void receivePausedGameMessage(final IPlayer fromPlayer, final String msg) throws RpcException
 		{
-			client.ui.receivePausedGameMessage(fromPlayer, msg);
+			SwingUtilities.invokeLater(new Runnable()
+			{
+				
+				@Override
+				public void run()
+				{
+					client.ui.receivePausedGameMessage(fromPlayer, msg);
+				}
+			});
 		}
 		
 	}
@@ -308,6 +360,11 @@ public class SEPClient implements IDBFactory
 	public void saveGame(String saveGameId) throws ServerPrivilegeException, StateMachineNotExpectedEventException, RpcException
 	{
 		client.getServerInterface().saveGame(saveGameId);
+	}
+	
+	public void endTurn() throws StateMachineNotExpectedEventException, GameCommandException, RpcException, GameBoardException
+	{
+		getRunningGameInterface().endTurn(getGameboard().endTurn());
 	}
 	
 	private Protocol.ServerGameCreation gameCreationProxy = null;

@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.axan.eplib.utils.Basic;
@@ -29,9 +30,11 @@ import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
-import org.axan.sep.common.db.EvCreateUniverse;
+import org.axan.sep.common.db.Events;
+import org.axan.sep.common.db.Events.RessourcesGeneration;
 import org.axan.sep.common.db.ICelestialBody;
 import org.axan.sep.common.db.ICommand;
+import org.axan.sep.common.db.Events.UniverseCreation;
 import org.axan.sep.common.db.ICommand.GameCommandException;
 import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.db.IGameEvent;
@@ -53,7 +56,7 @@ class GameBoard implements Serializable, IGameBoard
 {
 	////////// static attributes
 	private static final long serialVersionUID = 1L;
-	private static final Logger log = Logger.getLogger(GameBoard.class.getName());
+	private static final Logger log = SEPServer.log;
 	private static final Random rnd = new Random();
 	private static String nextCelestialBodyName = "A";
 
@@ -412,32 +415,69 @@ class GameBoard implements Serializable, IGameBoard
 				celestialBodies.put(celestialBodyLocation, neutralCelestialBody);				
 			}
 	
-			EvCreateUniverse createUniverseEvent = new EvCreateUniverse(sunLocation, players, celestialBodies, ownershipRelations);
+			UniverseCreation createUniverseEvent = new UniverseCreation(players, celestialBodies, ownershipRelations);
 			
 			PlayerGameboardView globalDBView = playerViews.get(null);
 			// Process event on globalDB. It's not resolveTurn method, so we will fire CreateUniverse event anyway, but it will be ignored server-side on next resolvingTurn (@see EvCreateUniverse#skipCondition()).
+			
+			boolean copy = true;
+			
+			long t0 = System.currentTimeMillis();
 			createUniverseEvent.process(globalExecutor, globalDB);
+			long t1 = System.currentTimeMillis();			
 			
-			SEPCommonDB[] copies = Basic.clone(globalDB, players.size());
-			
-			int i=0;
-			for(IPlayer player: players.keySet())
-			{
-				final String playerName = player.getName();
-				SEPCommonDB playerDB = copies[i];
-				playerViews.put(playerName, new PlayerGameboardView(playerName, playerDB, new IGameEventExecutor()
-				{					
-					@Override
-					public void onGameEvent(IGameEvent event, Set<String> observers)
-					{
-						// executor filtered on current player view player.
-						if (!observers.contains(playerName)) return;
-						GameBoard.this.onGameEvent(event, playerName);
-					}
-				}));
+			if (copy)
+			{				
+				//SEPCommonDB[] copies = Basic.clone(globalDB, players.size());
+				SEPCommonDB[] copies = SEPCommonDB.clone(globalDB, players.size());
 				
-				++i;
+				int i=0;
+				for(IPlayer player: players.keySet())
+				{
+					final String playerName = player.getName();
+					SEPCommonDB playerDB = copies[i];
+					IGameEventExecutor executor = new IGameEventExecutor()
+					{					
+						@Override
+						public void onGameEvent(IGameEvent event, Set<String> observers)
+						{
+							// executor filtered on current player view player.
+							if (!observers.contains(playerName)) return;
+							GameBoard.this.onGameEvent(event, playerName);
+						}
+					};
+					playerViews.put(playerName, new PlayerGameboardView(playerName, playerDB, executor));				
+					
+					++i;
+				}
 			}
+			else
+			{			
+				int i=0;
+				for(IPlayer player: players.keySet())
+				{
+					final String playerName = player.getName();
+					SEPCommonDB playerDB = new SEPCommonDB(dbFactory.createDB(), gameConfig);
+					IGameEventExecutor executor = new IGameEventExecutor()
+					{					
+						@Override
+						public void onGameEvent(IGameEvent event, Set<String> observers)
+						{
+							// executor filtered on current player view player.
+							if (!observers.contains(playerName)) return;
+							GameBoard.this.onGameEvent(event, playerName);
+						}
+					};
+					playerViews.put(playerName, new PlayerGameboardView(playerName, playerDB, executor));				
+					createUniverseEvent.process(executor, playerDB);
+					
+					++i;
+				}
+			}
+			
+			long t2 = System.currentTimeMillis();
+			
+			log.log(Level.INFO, "Initial event processing: "+(t1-t0)+"ms; "+(copy?"copying: ":"player views processing: ")+(t2-t1)+"ms");
 			
 			onGameEvent(createUniverseEvent, playerViews.keySet());
 		}
@@ -491,13 +531,14 @@ class GameBoard implements Serializable, IGameBoard
 		
 		for(ICommand command : commands)
 		{
-			command.check(getGlobalDB());			
+			onPlayerCommand(command, playerName);			
 		}
 		
-		onGameEvents(commands, playerName);
+		playerViews.get(playerName).endTurn();
 		
 		for(String p : playerViews.keySet())
 		{
+			if (p == null) continue;
 			if (!hasEndedTurn(p)) return false;
 		}
 		
@@ -508,6 +549,9 @@ class GameBoard implements Serializable, IGameBoard
 	{		
 		try
 		{
+			RessourcesGeneration ressourcesGeneration = new RessourcesGeneration();
+			onGameEvent(ressourcesGeneration, playerViews.keySet());
+			
 			PlayerGameboardView globalView = playerViews.get(null);
 			globalView.resolveCurrentTurn();						
 			
@@ -924,18 +968,18 @@ class GameBoard implements Serializable, IGameBoard
 			IBuilding b = null;
 			if (!bs.isEmpty())
 			{
-			b = bs.iterator().next();
-			
-			if (!Rules.getBuildingCanBeUpgraded(b.getType()))
-			{
-				throw new GameBoardException(buildingType + " cannot be upgraded.");							
-			}										
-			
-			nbBuilt = b.getNbSlots();
+				b = bs.iterator().next();
+				
+				if (!Rules.getBuildingCanBeUpgraded(b.getType()))
+				{
+					throw new GameBoardException(buildingType + " cannot be upgraded.");							
+				}										
+				
+				nbBuilt = b.getNbSlots();
 			}
 			else
 			{
-			nbBuilt = 0;												
+				nbBuilt = 0;												
 			}
 
 			carbonCost = Rules.getBuildingUpgradeCarbonCost(buildingType, nbBuilt+1); 
@@ -977,6 +1021,19 @@ class GameBoard implements Serializable, IGameBoard
 		return playerViews.get(null) == null ? null : playerViews.get(null).getDB();
 	}
 
+	private void onPlayerCommand(ICommand command, String playerName) throws GameCommandException
+	{
+		playerViews.get(playerName).onLocalCommand(command);
+		
+		/*
+		 *  We assume that any command that is valid on player view must be valid on global db.
+		 *  i.e. on the same turn, global db is order-independant with commands received from players.
+		 *  i.e. no command effect shall change another command availability.
+		 *  i.e. For any commands C, D; For Database DB; DB.check(D) == DB.process(C).check(D) 
+		 */			
+		playerViews.get(null).onLocalCommand(command);
+	}
+	
 	private void onGameEvent(IGameEvent event, String observer)
 	{
 		onGameEvents(Arrays.asList(event), new HashSet<String>(Arrays.asList(observer)));
@@ -1027,7 +1084,7 @@ class GameBoard implements Serializable, IGameBoard
 
 	private IPlayer getDBPlayer(String playerLogin)
 	{
-		return getGlobalDB().getPlayerByName(playerLogin);		
+		return getGlobalDB().getPlayer(playerLogin);		
 	}
 	
 	////////////// Universe creation

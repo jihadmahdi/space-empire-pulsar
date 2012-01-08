@@ -1,15 +1,23 @@
 package org.axan.sep.common.db.orm;
 
+import java.beans.DesignMode;
+import java.io.Externalizable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.ListIterator;
@@ -19,18 +27,22 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import javax.management.RuntimeErrorException;
+import javax.management.monitor.Monitor;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.axan.eplib.orm.DataBaseORMGenerator;
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.eplib.utils.Basic;
 import org.axan.eplib.utils.Compression;
+import org.axan.eplib.utils.Basic.GenericHolder;
 import org.axan.sep.common.GameConfigCopier;
 import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
 import org.axan.sep.common.Protocol;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Protocol.eUnitType;
+import org.axan.sep.common.Rules;
+import org.axan.sep.common.Rules.StarshipTemplate;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.IArea;
 import org.axan.sep.common.db.IAsteroidField;
@@ -38,6 +50,7 @@ import org.axan.sep.common.db.IBuilding;
 import org.axan.sep.common.db.ICelestialBody;
 import org.axan.sep.common.db.IDefenseModule;
 import org.axan.sep.common.db.IExtractionModule;
+import org.axan.sep.common.db.IFleet;
 import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.db.IGovernmentModule;
 import org.axan.sep.common.db.INebula;
@@ -48,6 +61,7 @@ import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IPulsarLaunchingPad;
 import org.axan.sep.common.db.ISpaceCounter;
 import org.axan.sep.common.db.IStarshipPlant;
+import org.axan.sep.common.db.IUnit;
 import org.axan.sep.common.db.IVortex;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -86,8 +100,26 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		/** Relation from Area node to its CelestialBody node. */
 		CelestialBody,
 		
-		/** Relation from Fleet node to its assigned CelestialBody node. */
-		AssignedCelestialBody,
+		/** 
+		 * Relation from CelestialBody node to its assigned Fleets node.
+		 * Relationship has a "playerName" property and each player must
+		 * have only one assigned fleet per celestial body.
+		 */
+		AssignedFleets,
+		
+		/**
+		 * Relation from Unit node to Area node.
+		 * If the Unit is stopped, Area is its current location.
+		 * If the Unit is moving, Area is its last location before it moved.
+		 */
+		UnitDeparture,
+		
+		/**
+		 * Relation from Unit node to Area node.
+		 * If the Unit is stopped, it shall not have any UnitDestination relationship.
+		 * If the Unit is moving, Area is its destination location.
+		 */
+		UnitDestination,
 		
 		/** Relation from ProductiveCelestialBody node to Building nodes. */
 		Buildings,
@@ -96,8 +128,15 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		PlayerConfig,
 		
 		/** Relation from Player node to owned CelestialBody nodes. */
-		PlayerCelestialBodies
+		PlayerCelestialBodies,
 		// eCelestialBodyType value
+		
+		/** Releation from Player node to owned Unit nodes. */
+		PlayerUnit,
+		// eUnitType value
+		
+		/** Relation from SpaceCounter node (source, i.e. builder) to SpaceCounter node (destination). */
+		SpaceRoad
 	}
 
 	private static class GameConfigInvocationHandler implements InvocationHandler
@@ -191,7 +230,8 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 						synchronized(sepDB)
 						{
-							sepDB.nextVersion = Basic.clone(sepDB);
+							//sepDB.nextVersion = Basic.clone(sepDB);
+							sepDB.nextVersion = SEPCommonDB.clone(sepDB, 1)[0];
 							sepDB.nextVersion.previousVersion = sepDB;
 
 							// Increment next version turn.
@@ -369,6 +409,8 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	private transient Index<Node> nebulaIndex;
 	private transient Index<Node> asteroidFieldIndex;
 	private transient Index<Node> planetIndex;
+	private transient Index<Node> buildingIndex;
+	private transient Index<Node> unitIndex;
 
 	private transient Node playersFactory;
 	private transient Node areasFactory;
@@ -376,7 +418,15 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	private SEPCommonDB previousVersion = null;
 	private SEPCommonDB nextVersion = null;
-
+	
+	private transient GenericHolder<Boolean> initFlag;
+	
+	// lazy clone ctor
+	private SEPCommonDB(GenericHolder<Boolean> initFlag)
+	{
+		this.initFlag = initFlag;
+	}
+	
 	public SEPCommonDB(GraphDatabaseService db, IGameConfig config) throws IOException, GameConfigCopierException, InterruptedException
 	{
 		init(db);
@@ -385,16 +435,19 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	public IGameConfig getConfig()
 	{
+		waitForInit();
 		return this.config;
 	}
 
 	public synchronized GraphDatabaseService getConfigDB()
 	{
+		waitForInit();
 		return db;
 	}
 
 	public synchronized GraphDatabaseService getDB()
 	{
+		waitForInit();
 		return db;
 	}
 
@@ -408,11 +461,13 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	 */
 	public boolean isUniverseCreated()
 	{
+		waitForInit();
 		return areasFactory.hasRelationship(eRelationTypes.Areas, Direction.OUTGOING);
 	}
 
 	public Set<IPlayer> getPlayers()
 	{
+		waitForInit();
 		Set<IPlayer> players = new HashSet<IPlayer>();
 		for(Node n: playersFactory.traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eRelationTypes.Players, Direction.OUTGOING))
 		{
@@ -422,9 +477,11 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		return players;
 	}
 
-	public IPlayer getPlayerByName(String name)
+	public IPlayer getPlayer(String name)
 	{
-		return new Player(this, name);
+		waitForInit();
+		Player player = new Player(this, name);
+		return player.exists() ? player : null;
 	}
 
 	/**
@@ -437,35 +494,53 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	 */
 	public IPlanet getStartingPlanet(String playerName)
 	{
+		waitForInit();
 		SEPCommonDB db = this;
 		while (db.getConfig().getTurn() > 1)
+		{
 			db = db.previous();
+		}
 		Iterator<Node> it = db.playerIndex.get("name", playerName).getSingle().traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eCelestialBodyType.Planet, Direction.OUTGOING).iterator();
 		if (!it.hasNext())
+		{
 			return null;
+		}
 		return new Planet(this, (String) it.next().getProperty("name"));
 	}
 
 	public Set<IArea> getAreasByZ(int z)
 	{
-		Set<IArea> areas = new HashSet<IArea>();
+		waitForInit();
+		Map<String, IArea> areas = new HashMap<String, IArea>();
+		
 		// Lucene reserved characters: + - && || ! ( ) { } [ ] ^ " ~ * ? : \
 		for(Node n: areaIndex.query("location", String.format("\\[*;%d\\]", z)))
 		{
-			areas.add(new Area(this, Location.valueOf((String) n.getProperty("location"))));
+			areas.put((String) n.getProperty("location"), getArea(Location.valueOf((String) n.getProperty("location"))));
 		}
-		return areas;
+		
+		for(Location sunArea : Rules.getSunAreasByZ(getConfig(), z))
+		{
+			if (!areas.containsKey(sunArea.toString()))
+			{
+				areas.put(sunArea.toString(), getArea(sunArea));
+			}
+		}
+		
+		return new HashSet<IArea>(areas.values());
 	}
 
 	//////////////// CRUD: Create
 
 	public IPlayer createPlayer(IPlayer player)
 	{
+		waitForInit();
 		return createPlayer(player.getName(), player.getConfig().getColor(), player.getConfig().getSymbol(), player.getConfig().getPortrait());
 	}
 
 	public IPlayer createPlayer(String name, String configColor, String configSymbol, String configPortrait)
 	{
+		waitForInit();
 		Player result = new Player(name, new PlayerConfig(configColor, configSymbol, configPortrait));
 		result.create(this);
 		return result;
@@ -481,20 +556,58 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		return new PlayerConfig(color, symbol, portrait);
 	}
 
+	/*
 	public IArea createArea(IArea area)
 	{
 		return createArea(area.getLocation(), area.isSun());
 	}
+	*/
 
-	public IArea createArea(Location location, boolean isSun)
+	/**
+	 * Create sun area. To create non-sun area, just call {@link #getArea(Location)}.
+	 * @param location
+	 * @return
+	 *
+	public IArea createSun(Location location)
 	{
-		Area result = new Area(location, isSun);
+		waitForInit();
+		Area result = new Area(location, true);
 		result.create(this);
 		return result;
 	}
+	*/
+	
+	/**
+	 * Return given location area. The area might not exist in DB.
+	 * @param location
+	 * @return
+	 */
+	public IArea getArea(Location location)
+	{
+		waitForInit();
+		Area area = new Area(this, location);
+		if (area.exists()) return area;
+		
+		area = new Area(location);
+		area.create(this);
+		return area;
+	}
+	
+	/**
+	 * Return the given location area if it is already exists in DB, or null if not.
+	 * @param location
+	 * @return
+	 *
+	public IArea getArea(Location location)
+	{
+		Area area = new Area(this, location);
+		return area.exists() ? area : null;
+	}
+	*/
 
 	public IVortex createVortex(IVortex vortex)
 	{
+		waitForInit();
 		Vortex result = new Vortex(vortex.getName(), vortex.getLocation(), vortex.getBirth(), vortex.getDeath());
 		result.create(this);
 		return result;
@@ -502,7 +615,9 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	public IVortex getVortex(String name)
 	{
-		return new Vortex(this, name);
+		waitForInit();
+		Vortex vortex = new Vortex(this, name);
+		return vortex.exists() ? vortex : null;
 	}
 
 	static public IVortex makeVortex(String name, Location location, int birth, int death)
@@ -512,6 +627,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	public IAsteroidField createAsteroidField(IAsteroidField asteroidField)
 	{
+		waitForInit();
 		AsteroidField result = new AsteroidField(asteroidField.getName(), asteroidField.getLocation(), asteroidField.getInitialCarbonStock(), asteroidField.getMaxSlots(), asteroidField.getCarbonStock(), asteroidField.getCurrentCarbon());
 		result.create(this);
 		return result;
@@ -519,7 +635,9 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	public IAsteroidField getAsteroidField(String name)
 	{
-		return new AsteroidField(this, name);
+		waitForInit();
+		AsteroidField asteroidField = new AsteroidField(this, name);
+		return asteroidField.exists() ? asteroidField : null;
 	}
 
 	static public IAsteroidField makeAsteroidField(String name, Location location, int initialCarbonStock, int maxSlots, int carbonStock, int currentCarbon)
@@ -529,6 +647,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	public INebula createNebula(INebula nebula)
 	{
+		waitForInit();
 		Nebula result = new Nebula(nebula.getName(), nebula.getLocation(), nebula.getInitialCarbonStock(), nebula.getMaxSlots(), nebula.getCarbonStock(), nebula.getCurrentCarbon());
 		result.create(this);
 		return result;
@@ -536,7 +655,9 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	public INebula getNebula(String name)
 	{
-		return new Nebula(this, name);
+		waitForInit();
+		Nebula nebula = new Nebula(this, name);
+		return nebula.exists() ? nebula : null;
 	}
 
 	static public INebula makeNebula(String name, Location location, int initialCarbonStock, int maxSlots, int carbonStock, int currentCarbon)
@@ -546,6 +667,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	public IPlanet createPlanet(IPlanet planet)
 	{
+		waitForInit();
 		Planet result = new Planet(planet.getName(), planet.getLocation(), planet.getInitialCarbonStock(), planet.getMaxSlots(), planet.getCarbonStock(), planet.getCurrentCarbon(), planet.getPopulationPerTurn(), planet.getMaxPopulation(), planet.getCurrentPopulation());
 		result.create(this);
 		return result;
@@ -553,7 +675,9 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	public IPlanet getPlanet(String name)
 	{
-		return new Planet(this, name);
+		waitForInit();
+		Planet planet = new Planet(this, name);
+		return planet.exists() ? planet : null;
 	}
 
 	static public IPlanet makePlanet(String name, Location location, int initialCarbonStock, int maxSlots, int carbonStock, int currentCarbon, int populationPerTurn, int maxPopulation, int currentPopulation)
@@ -563,6 +687,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	public ICelestialBody createCelestialBody(ICelestialBody celestialBody)
 	{
+		waitForInit();
 		switch (celestialBody.getType())
 		{
 			case Vortex:
@@ -580,9 +705,29 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		}
 	}
 
+	/**
+	 * Return set of all productives celestial bodies
+	 * @return
+	 */
+	public Set<IProductiveCelestialBody> getProductiveCelestialBodies()
+	{
+		waitForInit();
+		Set<IProductiveCelestialBody> result = new HashSet<IProductiveCelestialBody>();
+		for(Node n : productiveCelestialBodyIndex.query("name", "*"))
+		{
+			result.add((IProductiveCelestialBody) getCelestialBody((String) n.getProperty("name")));
+		}
+		
+		return result;
+	}	
+	
 	public ICelestialBody getCelestialBody(String name)
 	{
-		eCelestialBodyType type = eCelestialBodyType.valueOf((String) celestialBodyIndex.get("name", name).getSingle().getProperty("type"));
+		waitForInit();
+		IndexHits<Node> hit = celestialBodyIndex.get("name", name);
+		if (!hit.hasNext()) return null;
+		
+		eCelestialBodyType type = eCelestialBodyType.valueOf((String) hit.getSingle().getProperty("type"));
 
 		switch (type)
 		{
@@ -603,6 +748,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	public IDefenseModule createDefenseModule(IDefenseModule defenseModule)
 	{
+		waitForInit();
 		DefenseModule result = new DefenseModule(defenseModule.getProductiveCelestialBodyName(), defenseModule.getBuiltDate(), defenseModule.getNbSlots());
 		result.create(this);
 		return result;
@@ -615,6 +761,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	public IExtractionModule createExtractionModule(IExtractionModule extractionModule)
 	{
+		waitForInit();
 		ExtractionModule result = new ExtractionModule(extractionModule.getProductiveCelestialBodyName(), extractionModule.getBuiltDate(), extractionModule.getNbSlots());
 		result.create(this);
 		return result;
@@ -627,6 +774,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	public IGovernmentModule createGovernmentModule(IGovernmentModule governmentModule)
 	{
+		waitForInit();
 		GovernmentModule result = new GovernmentModule(governmentModule.getProductiveCelestialBodyName(), governmentModule.getBuiltDate(), governmentModule.getNbSlots());
 		result.create(this);
 		return result;
@@ -639,6 +787,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	public IPulsarLaunchingPad createPulsarLaunchingPad(IPulsarLaunchingPad pulsarLaunchingPad)
 	{
+		waitForInit();
 		PulsarLaunchingPad result = new PulsarLaunchingPad(pulsarLaunchingPad.getProductiveCelestialBodyName(), pulsarLaunchingPad.getBuiltDate(), pulsarLaunchingPad.getNbSlots());
 		result.create(this);
 		return result;
@@ -651,6 +800,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	public ISpaceCounter createSpaceCounter(ISpaceCounter spaceCounter)
 	{
+		waitForInit();
 		SpaceCounter result = new SpaceCounter(spaceCounter.getProductiveCelestialBodyName(), spaceCounter.getBuiltDate(), spaceCounter.getNbSlots());
 		result.create(this);
 		return result;
@@ -663,6 +813,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	public IStarshipPlant createStarshipPlant(IStarshipPlant starshipPlant)
 	{
+		waitForInit();
 		StarshipPlant result = new StarshipPlant(starshipPlant.getProductiveCelestialBodyName(), starshipPlant.getBuiltDate(), starshipPlant.getNbSlots());
 		result.create(this);
 		return result;
@@ -673,8 +824,33 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		return new StarshipPlant(productiveCelestialBodyName, builtDate, nbSlots);
 	}
 	
+	public IBuilding createBuilding(String productiveCelestialBodyName, int builtDate, eBuildingType buildingType)
+	{
+		waitForInit();
+		switch (buildingType)
+		{
+			case DefenseModule:
+				return createBuilding(new DefenseModule(productiveCelestialBodyName, builtDate, 1));
+			case ExtractionModule:
+				return createExtractionModule(new ExtractionModule(productiveCelestialBodyName, builtDate, 1));
+			case GovernmentModule:
+				return createGovernmentModule(new GovernmentModule(productiveCelestialBodyName, builtDate, 1));
+			case PulsarLaunchingPad:
+				return createPulsarLaunchingPad(new PulsarLaunchingPad(productiveCelestialBodyName, builtDate, 1));
+			case SpaceCounter:
+				return createSpaceCounter(new SpaceCounter(productiveCelestialBodyName, builtDate, 1));
+			case StarshipPlant:
+				return createStarshipPlant(new StarshipPlant(productiveCelestialBodyName, builtDate, 1));
+			default:
+			{
+				throw new RuntimeException("Unknown Building type '" + buildingType + "'.");
+			}
+		}
+	}
+	
 	public IBuilding createBuilding(IBuilding building)
-	{	
+	{
+		waitForInit();
 		switch (building.getType())
 		{
 			case DefenseModule:
@@ -696,8 +872,20 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		}
 	}
 
+	/**
+	 * Return building identified by given productiveCelestialBodyName and type, or null if such building does not exist.
+	 * @param productiveCelestialBodyName
+	 * @param type
+	 * @return
+	 */
 	public IBuilding getBuilding(String productiveCelestialBodyName, eBuildingType type)
-	{	
+	{
+		waitForInit();
+		if (!buildingIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type.toString())).hasNext())
+		{
+			return null;
+		}
+		
 		switch (type)
 		{
 			case DefenseModule:
@@ -719,6 +907,66 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		}
 	}	
 
+	public IFleet createFleet(IFleet fleet)
+	{
+		waitForInit();
+		Fleet result = new Fleet(fleet.getOwnerName(), fleet.getName(), fleet.getInitialDepartureName(), fleet.getStarships());
+		result.create(this);
+		return result;
+	}
+	
+	public IFleet getFleet(String ownerName, String name)
+	{
+		waitForInit();
+		Fleet fleet = new Fleet(this, ownerName, name);
+		return fleet.exists() ? fleet : null;
+	}
+
+	public static IFleet makeFleet(String ownerName, String name, String productiveCelestialBodyName, Map<StarshipTemplate, Integer> starships)
+	{
+		return new Fleet(ownerName, name, productiveCelestialBodyName, starships);
+	}
+	
+	/**
+	 * Return unit identified by given ownerName, name and type. Return null if such unit does not exist.
+	 * @param ownerName
+	 * @param name
+	 * @param type
+	 * @return
+	 */
+	public IUnit getUnit(String ownerName, String name, eUnitType type)
+	{
+		waitForInit();
+		IndexHits<Node> hit = unitIndex.get("ownerName@name", String.format("%s@%s", ownerName, name));
+		if (!hit.hasNext())
+		{
+			return null;
+		}
+		
+		Node n = hit.next();
+		if (!n.hasProperty("type") || !type.toString().equals((String) n.getProperty("type")))
+		{
+			return null;
+		}
+				
+		switch (type)
+		{
+			case Fleet:
+				return new Fleet(this, ownerName, name);
+			default:
+			{
+				throw new RuntimeException("Unknown Unit type '" + type + "'.");
+			}
+		}
+	}
+	
+	public IFleet getCreateAssignedFleet(String productiveCelestialBodyName, String playerName)
+	{
+		waitForInit();
+		ProductiveCelestialBody pcb = (ProductiveCelestialBody) getCelestialBody(productiveCelestialBodyName);
+		return pcb.getAssignedFleet(playerName, true);
+	}
+	
 	/*
 	Use IProductiveCelestialBody#setOwner(String) instead.
 	public void updateOwnership(IProductiveCelestialBody productiveCelestialBody, IPlayer owner)
@@ -894,10 +1142,11 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	////////// Private Querying methods
 
 	//////////////// ListIterator implementation
-
+		
 	@Override
 	public boolean hasNext()
 	{
+		//return (initFlag == null || initFlag.get()) ? nextVersion != null : false;
 		return nextVersion != null;
 	}
 
@@ -950,10 +1199,111 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		throw new UnsupportedOperationException(SEPCommonDB.class.getName() + " iterator cannot be used to set elements.");
 	}
 
-	//////////////// Serialization
-
-	protected synchronized void init(final GraphDatabaseService db)
+	//////////////// Serialization, Cloning
+	
+	private void waitForInit()
 	{
+		if (initFlag == null) return;
+		
+		synchronized(initFlag)
+		{
+			while(!initFlag.get())
+			{
+				try
+				{
+					initFlag.wait(1000);
+				}
+				catch(InterruptedException ie)
+				{
+					Thread.currentThread().interrupt();
+				}
+			}
+		}
+	}	
+
+	public static SEPCommonDB[] clone(SEPCommonDB source, int nbCopies)
+	{
+		SEPCommonDB[] copies = new SEPCommonDB[nbCopies];
+		
+		try
+		{			
+			final File tmpFile = File.createTempFile("cloneBuf", ".tmp");
+			
+			FileOutputStream fos = new FileOutputStream(tmpFile);
+			ObjectOutputStream oos = new ObjectOutputStream(fos);
+			
+			//oos.writeObject(source);
+			source.writeExternal(oos);
+			
+			oos.close();
+			fos.close();
+			
+			for(int i=0; i < nbCopies; ++i)
+			{
+				final SEPCommonDB copy = new SEPCommonDB(new GenericHolder<Boolean>(false));
+				
+				new Thread(new Runnable()
+				{
+					
+					@Override
+					public void run()
+					{
+						try
+						{
+							FileInputStream fis = new FileInputStream(tmpFile);
+							ObjectInputStream ois = new ObjectInputStream(fis);
+							
+							copy.readExternal(ois);
+							
+							ois.close();
+							fis.close();
+						}
+						catch(Throwable t)
+						{
+							throw new RuntimeException(t);
+						}
+					}
+				}).start();
+				
+				copies[i] = copy;
+								
+				tmpFile.deleteOnExit();
+			}
+			
+			return copies;
+		}
+		catch (Exception e)
+		{
+			throw new Error("Cannot serialise/deserialise object from class "+source.getClass().getCanonicalName(), e);
+		}
+	}
+	
+	protected void init(GraphDatabaseService db)
+	{
+		if (initFlag != null)
+		{
+			synchronized(initFlag)
+			{
+				doInit(db);
+				
+				initFlag.set(true);
+				initFlag.notify();
+			}
+		}
+		else
+		{
+			doInit(db);
+		}
+		
+		// Already refresh itself if SEPCommonDB#db change.
+		if (config == null)
+		{
+			config = (IGameConfig) Proxy.newProxyInstance(IGameConfig.class.getClassLoader(), new Class<?>[] {IGameConfig.class}, new GameConfigInvocationHandler(this));
+		}
+	}
+	
+	private void doInit(final GraphDatabaseService db)
+	{		
 		this.db = db;
 		Runtime.getRuntime().addShutdownHook(new Thread()
 		{
@@ -975,6 +1325,8 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 			vortexIndex = db.index().forNodes("VortexIndex");
 			asteroidFieldIndex = db.index().forNodes("AsteroidFieldIndex");
 			celestialBodyIndex = db.index().forNodes("CelestialBodyIndex");
+			buildingIndex = db.index().forNodes("BuildingIndex");
+			unitIndex = db.index().forNodes("UnitIndex");
 			Relationship playersFactoryRel = db.getReferenceNode().getSingleRelationship(eRelationTypes.Players, Direction.OUTGOING);
 			if (playersFactoryRel == null)
 			{
@@ -1013,17 +1365,16 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		{
 			tx.finish();
 		}
-
-		// Already refresh itself if SEPCommonDB#db change.
-		if (config == null)
-		{
-			config = (IGameConfig) Proxy.newProxyInstance(IGameConfig.class.getClassLoader(), new Class<?>[] {IGameConfig.class}, new GameConfigInvocationHandler(this));
-		}
 	}
-
-	private synchronized void writeObject(final java.io.ObjectOutputStream out) throws IOException
+	
+	private synchronized void writeObject(java.io.ObjectOutputStream out) throws IOException
 	{
-		out.defaultWriteObject();
+		out.defaultWriteObject();		
+		writeExternal(out);
+	}
+	
+	private synchronized void writeExternal(java.io.ObjectOutput out) throws IOException
+	{	
 		EmbeddedGraphDatabase edb = (EmbeddedGraphDatabase) db;
 		//File backupDirectory = File.createTempFile("dbCopy", "");		
 		File zipFile = File.createTempFile("dbCopy", ".zip");
@@ -1052,11 +1403,15 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 		fis.close();
 	}
-
+	
 	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
-
+		readExternal(in);
+	}
+	
+	private void readExternal(java.io.ObjectInput in) throws IOException, ClassNotFoundException
+	{
 		File dbDirectory = File.createTempFile("dbRestore", "");
 		dbDirectory.delete();
 		dbDirectory.mkdir();
@@ -1069,6 +1424,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		do
 		{
 			int toRead = Math.min(512, (int) (size - red));
+			// in.read() call blocks untill input is available. 
 			toRead = in.read(bb, 0, toRead);
 			fos.write(bb, 0, toRead);
 			red += toRead;

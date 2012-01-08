@@ -1,6 +1,7 @@
 package org.axan.sep.common.db.orm;
 
 import org.axan.eplib.orm.nosql.DBGraphException;
+import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.db.orm.Building;
 import org.axan.sep.common.db.orm.base.IBaseStarshipPlant;
 import org.axan.sep.common.db.orm.base.BaseStarshipPlant;
@@ -78,9 +79,9 @@ class StarshipPlant extends Building implements IStarshipPlant
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, starshipPlant[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
-			node = sepDB.getDB().createNode();
-			StarshipPlant.initializeNode(node, builtDate, nbSlots);
-			starshipPlantIndex.add(node, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			properties = sepDB.getDB().createNode();
+			StarshipPlant.initializeProperties(properties, builtDate, nbSlots);
+			starshipPlantIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
 			
 			super.create(sepDB);
 			
@@ -92,10 +93,17 @@ class StarshipPlant extends Building implements IStarshipPlant
 		}
 	}
 
-	public static void initializeNode(Node node, int builtDate, int nbSlots)
+	@Override
+	public String toString()
 	{
-		node.setProperty("builtDate", builtDate);
-		node.setProperty("nbSlots", nbSlots);
+		return "Starship plant";
+	}
+	
+	public static void initializeProperties(Node properties, int builtDate, int nbSlots)
+	{
+		properties.setProperty("type", eBuildingType.StarshipPlant.toString());
+		properties.setProperty("builtDate", builtDate);
+		properties.setProperty("nbSlots", nbSlots);
 	}
 
 }

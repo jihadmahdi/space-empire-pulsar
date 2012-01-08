@@ -97,9 +97,9 @@ class Planet extends ProductiveCelestialBody implements IPlanet
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, planet[name='"+name+"'] already exist.");
 			}
-			node = sepDB.getDB().createNode();
-			Planet.initializeNode(node, name, type, initialCarbonStock, maxSlots, carbonStock, currentCarbon, populationPerTurn, maxPopulation, currentPopulation);
-			planetIndex.add(node, "name", name);
+			properties = sepDB.getDB().createNode();
+			Planet.initializeProperties(properties, name, initialCarbonStock, maxSlots, carbonStock, currentCarbon, populationPerTurn, maxPopulation, currentPopulation);
+			planetIndex.add(properties, "name", name);
 			
 			super.create(sepDB);
 			
@@ -117,7 +117,7 @@ class Planet extends ProductiveCelestialBody implements IPlanet
 		if (isDBOnline())
 		{
 			checkForDBUpdate();
-			return (Integer) node.getProperty("populationPerTurn");
+			return (Integer) properties.getProperty("populationPerTurn");
 		}
 		else
 		{
@@ -131,7 +131,7 @@ class Planet extends ProductiveCelestialBody implements IPlanet
 		if (isDBOnline())
 		{
 			checkForDBUpdate();
-			return (Integer) node.getProperty("maxPopulation");
+			return (Integer) properties.getProperty("maxPopulation");
 		}
 		else
 		{
@@ -145,11 +145,51 @@ class Planet extends ProductiveCelestialBody implements IPlanet
 		if (isDBOnline())
 		{
 			checkForDBUpdate();
-			return (Integer) node.getProperty("currentPopulation");
+			return (Integer) properties.getProperty("currentPopulation");
 		}
 		else
 		{
 			return currentPopulation;
+		}
+	}
+	
+	@Override
+	public void payPopulation(int populationCost)
+	{
+		assertOnlineStatus(true);
+		
+		Transaction tx = db.beginTx();
+		
+		try
+		{
+			checkForDBUpdate();
+			if (getCurrentPopulation() < populationCost) throw new RuntimeException("Cannot pay population cost, not enough population");
+			properties.setProperty("currentPopulation", getCurrentPopulation() - populationCost);
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+	
+	@Override
+	public void generatePopulation(int generatedPopulation)
+	{
+		assertOnlineStatus(true);
+		
+		Transaction tx = db.beginTx();
+		
+		try
+		{
+			checkForDBUpdate();
+			if ((getMaxPopulation() - getCurrentPopulation()) < generatedPopulation) throw new RuntimeException("Cannot generate off-limit population");
+			properties.setProperty("currentPopulation", getCurrentPopulation() + generatedPopulation);
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
 		}
 	}
 	
@@ -159,16 +199,16 @@ class Planet extends ProductiveCelestialBody implements IPlanet
 		return super.toString().replace("  Carbon : ", "  Population : "+getCurrentPopulation()+" (+"+getPopulationPerTurn()+" per turn) / "+getMaxPopulation()+"\n  Carbon : ");		
 	}
 
-	public static void initializeNode(Node node, String name, eCelestialBodyType type, int initialCarbonStock, int maxSlots, int carbonStock, int currentCarbon, int populationPerTurn, int maxPopulation, int currentPopulation)
+	public static void initializeProperties(Node properties, String name, int initialCarbonStock, int maxSlots, int carbonStock, int currentCarbon, int populationPerTurn, int maxPopulation, int currentPopulation)
 	{
-		node.setProperty("name", name);
-		node.setProperty("type", type.toString());
-		node.setProperty("initialCarbonStock", initialCarbonStock);
-		node.setProperty("maxSlots", maxSlots);
-		node.setProperty("carbonStock", carbonStock);
-		node.setProperty("currentCarbon", currentCarbon);
-		node.setProperty("populationPerTurn", populationPerTurn);
-		node.setProperty("maxPopulation", maxPopulation);
-		node.setProperty("currentPopulation", currentPopulation);
+		properties.setProperty("name", name);
+		properties.setProperty("type", eCelestialBodyType.Planet.toString());
+		properties.setProperty("initialCarbonStock", initialCarbonStock);
+		properties.setProperty("maxSlots", maxSlots);
+		properties.setProperty("carbonStock", carbonStock);
+		properties.setProperty("currentCarbon", currentCarbon);
+		properties.setProperty("populationPerTurn", populationPerTurn);
+		properties.setProperty("maxPopulation", maxPopulation);
+		properties.setProperty("currentPopulation", currentPopulation);
 	}
 }

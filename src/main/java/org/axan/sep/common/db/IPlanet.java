@@ -11,4 +11,7 @@ public interface IPlanet extends IProductiveCelestialBody
 	int getPopulationPerTurn();
 	int getMaxPopulation();
 	int getCurrentPopulation();
+	
+	void payPopulation(int populationCost);
+	void generatePopulation(int generatedPopulation);
 }

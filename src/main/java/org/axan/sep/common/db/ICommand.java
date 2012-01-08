@@ -11,10 +11,12 @@ public interface ICommand extends IGameEvent
 	{
 		private static final long	serialVersionUID	= 1L;
 
+		/*
 		public GameCommandException(ICommand command, Throwable t)
 		{
 			super(command, t);
 		}
+		*/
 
 		public GameCommandException(ICommand command, String msg)
 		{
@@ -28,5 +30,15 @@ public interface ICommand extends IGameEvent
 		}				
 	}
 	
+	@Override
+	public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameCommandException;
+	
+	/**
+	 * This method check if the current command is applicable to the db.
+	 * If the command is not applicable, GameCommandException is thrown with user-friendly message to explain the reason (e.g. when build command is tried but player cannot afford it, message should give information about the cost).
+	 * Such message should be used as tips on user interface to show why a command is not enabled.
+	 * @param db
+	 * @throws GameCommandException
+	 */
 	void check(SEPCommonDB db) throws GameCommandException;
 }

@@ -12,7 +12,8 @@ import org.axan.eplib.clientserver.ConnectionAbortedError;
 import org.axan.eplib.orm.sql.ISQLDataBaseFactory;
 import org.axan.eplib.orm.sql.SQLDataBaseException;
 import org.axan.sep.client.SEPClient;
-import org.axan.sep.common.db.EvCreateUniverse;
+import org.axan.sep.common.db.Events.UniverseCreation;
+import org.axan.sep.common.db.ICommand;
 import org.axan.sep.common.db.IDBFactory;
 import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.db.IGameEvent;
@@ -41,7 +42,7 @@ public class PlayerGameBoard implements IGameBoard
 	private transient GameConfig gameConfig = new GameConfig();
 
 	/** DB factory. */
-	private final IDBFactory dbFactory;
+	private final IDBFactory dbFactory;	
 	
 	public PlayerGameBoard(SEPClient client)
 	{
@@ -123,12 +124,26 @@ public class PlayerGameBoard implements IGameBoard
 		}		
 	}
 	
-	public synchronized void receiveNewTurnGameBoard(List<IGameEvent> newTurnEvents) throws GameBoardException
+	public synchronized void onLocalCommand(ICommand command) throws GameBoardException
 	{
+		if (view.hasEndedTurn()) throw new GameBoardException("Cannot process new command because turn is ended.");
+		
+		try
+		{
+			view.onLocalCommand(command);
+		}
+		catch(GameEventException e)
+		{
+			throw new GameBoardException(e);
+		}
+	}
+	
+	public synchronized void receiveNewTurnGameBoard(List<IGameEvent> newTurnEvents) throws GameBoardException
+	{		
 		if (isGameInCreation())
 		{
 			IGameEvent e = newTurnEvents.get(0);
-			if (!EvCreateUniverse.class.isInstance(e))
+			if (!UniverseCreation.class.isInstance(e))
 			{
 				throw new GameBoardException("First game event must be EvCreateUniverse but is '"+e.getClass().getSimpleName()+"'.");
 			}
@@ -152,7 +167,7 @@ public class PlayerGameBoard implements IGameBoard
 				throw new ConnectionAbortedError(t);
 			}
 		}
-		
+				
 		view.onGameEvents(newTurnEvents);
 		
 		try
@@ -163,6 +178,18 @@ public class PlayerGameBoard implements IGameBoard
 		{
 			throw new GameBoardException(e);
 		}
+	}
+	
+	public boolean hasEndedTurn()
+	{
+		return view.hasEndedTurn();
+	}
+	
+	public synchronized List<ICommand> endTurn() throws GameBoardException
+	{
+		if (hasEndedTurn()) throw new GameBoardException("Turn already ended.");
+		view.endTurn();
+		return view.getCurrentTurnCommands();		
 	}
 	
 	public SEPCommonDB getDB()
@@ -197,7 +224,7 @@ public class PlayerGameBoard implements IGameBoard
 	
 	private IPlayerConfig getDBPlayerConfig(String playerName) throws GameBoardException
 	{
-		return getDB().getPlayerByName(playerName).getConfig();
+		return getDB().getPlayer(playerName).getConfig();
 	}
 	
 }

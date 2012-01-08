@@ -20,7 +20,7 @@ import java.util.HashMap;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
-abstract class CelestialBody extends AGraphObject implements ICelestialBody
+abstract class CelestialBody extends AGraphObject<Node> implements ICelestialBody
 {
 	/*
 	 * PK: first pk field.
@@ -81,10 +81,10 @@ abstract class CelestialBody extends AGraphObject implements ICelestialBody
 			
 			celestialBodyIndex = db.index().forNodes("CelestialBodyIndex");
 			IndexHits<Node> hits = celestialBodyIndex.get("name", name);
-			node = hits.hasNext() ? hits.getSingle() : null;			
-			if (node != null && !node.getProperty("type").equals(type.toString()))
+			properties = hits.hasNext() ? hits.getSingle() : null;			
+			if (properties != null && !properties.getProperty("type").equals(type.toString()))
 			{
-				throw new RuntimeException("Node type error: tried to connect '"+type+"' to '"+node.getProperty("type")+"'");
+				throw new RuntimeException("Node type error: tried to connect '"+type+"' to '"+properties.getProperty("type")+"'");
 			}
 		}
 	}
@@ -108,22 +108,21 @@ abstract class CelestialBody extends AGraphObject implements ICelestialBody
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, celestialBody[name='"+name+"'] already exist.");
 			}
-			celestialBodyIndex.add(node, "name", name);
+			celestialBodyIndex.add(properties, "name", name);
+			
+			// Force area creation if not exists.
+			sepDB.getArea(location);
 			
 			IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get("location", location.toString());
 			if (!hits.hasNext())
 			{
-				/*
 				tx.failure();
-				throw new DBGraphException("Constraint error: Cannot find Area[location='"+location.toString()+"']. Area must be created before CelestialBody.");
-				*/
-				sepDB.createArea(location, false);
-				hits = sepDB.getDB().index().forNodes("AreaIndex").get("location", location.toString());
+				throw new DBGraphException("Implementation error: Cannot find Area[location='"+location.toString()+"']. Area must be created before CelestialBody.");				
 			}
 			
 			Node nArea = hits.getSingle();
 			
-			nArea.createRelationshipTo(node, eRelationTypes.CelestialBody);
+			nArea.createRelationshipTo(properties, eRelationTypes.CelestialBody);
 			
 			tx.success();			
 		}
@@ -155,7 +154,7 @@ abstract class CelestialBody extends AGraphObject implements ICelestialBody
 		else
 		{
 			checkForDBUpdate();
-			Node nArea = node.getSingleRelationship(eRelationTypes.CelestialBody, Direction.INCOMING).getStartNode();
+			Node nArea = properties.getSingleRelationship(eRelationTypes.CelestialBody, Direction.INCOMING).getStartNode();
 			return Location.valueOf((String) nArea.getProperty("location"));
 		}
 	}

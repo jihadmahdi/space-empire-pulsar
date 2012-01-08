@@ -90,9 +90,9 @@ class Vortex extends CelestialBody implements IVortex
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, vortex[name='"+name+"'] already exist.");
 			}
-			node = sepDB.getDB().createNode();
-			Vortex.initializeNode(node, name, type, birth, death);
-			vortexIndex.add(node, "name", name);
+			properties = sepDB.getDB().createNode();
+			Vortex.initializeProperties(properties, name, birth, death);
+			vortexIndex.add(properties, "name", name);
 			
 			super.create(sepDB);
 			
@@ -114,7 +114,7 @@ class Vortex extends CelestialBody implements IVortex
 		else
 		{
 			checkForDBUpdate();
-			return (Integer) node.getProperty("birth");
+			return (Integer) properties.getProperty("birth");
 		}		
 	}
 
@@ -128,16 +128,16 @@ class Vortex extends CelestialBody implements IVortex
 		else
 		{
 			checkForDBUpdate();
-			return (Integer) node.getProperty("death");
+			return (Integer) properties.getProperty("death");
 		}
 	}
 
-	public static void initializeNode(Node node, String name, eCelestialBodyType type, int birth, int death)
+	public static void initializeProperties(Node properties, String name, int birth, int death)
 	{
-		node.setProperty("name", name);
-		node.setProperty("type", type.toString());
-		node.setProperty("birth", birth);
-		node.setProperty("death", death);
+		properties.setProperty("name", name);
+		properties.setProperty("type", eCelestialBodyType.Vortex.toString());
+		properties.setProperty("birth", birth);
+		properties.setProperty("death", death);
 	}
 
 }

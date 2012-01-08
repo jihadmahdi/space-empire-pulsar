@@ -8,8 +8,10 @@ import java.util.HashMap;
 
 public interface IBuilding
 {
-	public String getProductiveCelestialBodyName();
-	public eBuildingType getType();
-	public int getBuiltDate();
-	public int getNbSlots();	
+	String getProductiveCelestialBodyName();
+	eBuildingType getType();
+	int getBuiltDate();
+	int getNbSlots();
+	
+	void upgrade();
 }

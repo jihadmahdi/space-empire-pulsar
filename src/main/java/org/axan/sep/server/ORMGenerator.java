@@ -165,9 +165,9 @@ class ORMGenerator
 			}
 
 			@Override
-			protected StringBuffer genBasicCtorLegacyImplementation(Class c, java.lang.Class<? extends Throwable> exceptionClass, StringBuffer ctorFilter, StringBuffer booleanFields, StringBuffer ctorFields)
+			protected StringBuilder genBasicCtorLegacyImplementation(Class c, java.lang.Class<? extends Throwable> exceptionClass, StringBuilder ctorFilter, StringBuilder booleanFields, StringBuilder ctorFields)
 			{				
-				StringBuffer sb = new StringBuffer();
+				StringBuilder sb = new StringBuilder();
 				
 				if (!c.getSpecificFields().isEmpty())
 				{
@@ -350,7 +350,7 @@ class ORMGenerator
 			@Override
 			public String constructorFields(Class c)
 			{
-				StringBuffer sb = new StringBuffer();
+				StringBuilder sb = new StringBuilder();
 
 				for(Field f: c.getSpecificFields())
 				{
