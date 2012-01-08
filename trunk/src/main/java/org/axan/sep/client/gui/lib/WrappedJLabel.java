@@ -78,7 +78,7 @@ public class WrappedJLabel extends JScrollPane
 
 		/*
 		int offset = 0;
-		StringBuffer currentLine = new StringBuffer();
+		StringBuilder currentLine = new StringBuilder();
 		
 		Stack<Integer> tagBegins = new Stack<Integer>();
 		int currentTagBegin;
@@ -106,8 +106,8 @@ public class WrappedJLabel extends JScrollPane
 		BreakIterator boundary = BreakIterator.getWordInstance();
 		boundary.setText(text);
 
-		StringBuffer trial = new StringBuffer();
-		StringBuffer real = new StringBuffer("<html>");
+		StringBuilder trial = new StringBuilder();
+		StringBuilder real = new StringBuilder("<html>");
 
 		int start = boundary.first();
 		for(int end = boundary.next(); end != BreakIterator.DONE; start = end, end = boundary.next())
@@ -117,7 +117,7 @@ public class WrappedJLabel extends JScrollPane
 			int trialWidth = SwingUtilities.computeStringWidth(fm, trial.toString());
 			if (trialWidth > containerWidth)
 			{
-				trial = new StringBuffer(word);
+				trial = new StringBuilder(word);
 				real.append("<br>");
 			}
 			real.append(word);

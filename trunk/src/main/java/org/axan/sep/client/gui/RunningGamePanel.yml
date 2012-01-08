@@ -1,4 +1,7 @@
 JPanel(name=runningGamePanel):
+  # Actions tabs
+  - StarshipPlantActionPanel(name=starshipPlantActionPanel)
+  
   # Dock Left
   - JPanel(name=dockedLeftPanel):
     - AUniverseRendererPanel(name=universePanel)
@@ -11,7 +14,7 @@ JPanel(name=runningGamePanel):
                [grow]      [200px]
                chatPanel   >playersListPanel   [grow]
         - JPanel(tabTitle="Logs", name=logsTab, background=yellow)
-        - JPanel(tabTitle="Action", name=actionTab, background=olive)
+        - JScrollPane(tabTitle="Action", name=actionTab, vScrollBar=asNeeded, hScrollBar=never):
     - MigLayout: |
         [[insets 0]]
         [grow]
@@ -20,21 +23,44 @@ JPanel(name=runningGamePanel):
 
   # Dock Right
   - JPanel(name=dockedRightPanel):    
-    - JPanel(name=celestialBodyPanel, background=blue)
-    - JPanel(name=unitPanel, background=yellow)
+    - JPanel(name=celestialBodyPanel):
+      - JTextPane(name=celestialBodyInfos, editable=false, focusable=false)
+      - JList(name=buildingsList):
+          EventListModel(name=buildingsListModel)
+      - JTextPane(name=buildingInfos, editable=false, focusable=false)
+      - JPanel(name=buildingActionsPanel)      
+      - JPanel(name=celestialBodyActionsPanel)
+      - JList(name=unitsList):
+          EventListModel(name=unitsListModel)
+      - MigLayout: |
+          [[insets 0]]
+          [grow]
+          celestialBodyInfos          [pref, top]
+          buildingsList               [pref, top]
+          buildingInfos               [pref, top]
+          buildingActionsPanel        [pref, top]          
+          celestialBodyActionsPanel   [grow, top]
+          unitsList                   [pref, top]
+    - JPanel(name=unitPanel):
+      - JTextPane(name=unitInfos, editable=false, focusable=false)
+      - JPanel(name=unitActionsPanel)
+      - MigLayout: |
+          [[insets 0]]
+          [grow]
+          unitInfos          [pref, top]
+          unitActionsPanel   [grow, top]
     - MigLayout: |
         [[insets 0]]
         [grow]
         celestialBodyPanel   [grow, center]
         unitPanel            [pref, bottom]
-        
+
   # Dock Bottom
   - JPanel(name=dockedBottomPanel):
-    - JPanel(name=btnsPanel, background=pink)
-    - MigLayout: |
-        [[insets 0]]
-        [grow]
-        btnsPanel   [grow]
+    - JButton(name=btnDiplomacy, text="btn.diplomacy")
+    - JButton(name=btnUndo, text="btn.undo")
+    - JButton(name=btnEndTurn, text="btn.endTurn", onAction=endTurn)
+    - FlowLayout(alignment=left,hgap=30,vgap=0,alignOnBaseline=true)
 
   #gameCreationPanel layout      
   - MigLayout: |
@@ -46,3 +72,4 @@ bind:
   - universePanel.sepClient: this.sepClient
   - chatPanel.sepClient: this.sepClient
   - playersListPanel.sepClient: this.sepClient
+  - starshipPlantActionPanel.sepClient: this.sepClient

@@ -1,5 +1,6 @@
 package org.axan.sep.common.db;
 
+import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.db.ICelestialBody;
 import org.neo4j.graphdb.Node;
 import org.axan.sep.common.db.IGameConfig;
@@ -17,4 +18,9 @@ public interface IProductiveCelestialBody extends ICelestialBody
 	void setOwner(String ownerName);
 	int getBuiltSlotsCount();
 	Set<IBuilding> getBuildings();
+	
+	void payCarbon(int carbonCost);
+	void extractCarbon(int extractedCarbon);
+	IFleet getAssignedFleet(String playerName);
+	IBuilding getBuilding(eBuildingType type);
 }

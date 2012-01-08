@@ -1,6 +1,7 @@
 package org.axan.sep.common.db.orm;
 
 import org.axan.eplib.orm.nosql.DBGraphException;
+import org.axan.sep.common.Rules;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
@@ -18,7 +19,7 @@ import java.util.HashMap;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
-abstract class Building extends AGraphObject implements IBuilding
+abstract class Building extends AGraphObject<Node> implements IBuilding
 {
 	/*
 	 * PK: first pk field (composed pk).
@@ -84,10 +85,10 @@ abstract class Building extends AGraphObject implements IBuilding
 			
 			buildingIndex = db.index().forNodes("BuildingIndex");
 			IndexHits<Node> hits = buildingIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
-			node = hits.hasNext() ? hits.getSingle() : null;
-			if (node != null && !node.getProperty("type").equals(type.toString()))
+			properties = hits.hasNext() ? hits.getSingle() : null;
+			if (properties != null && !properties.getProperty("type").equals(type.toString()))
 			{
-				throw new RuntimeException("Node type error: tried to connect '"+type+"' to '"+node.getProperty("type")+"'");
+				throw new RuntimeException("Node type error: tried to connect '"+type+"' to '"+properties.getProperty("type")+"'");
 			}
 			productiveCelestialBodyIndex = db.index().forNodes("ProductiveCelestialBodyIndex");			
 		}
@@ -112,7 +113,7 @@ abstract class Building extends AGraphObject implements IBuilding
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, building[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
-			buildingIndex.add(node, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			buildingIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
 			
 			IndexHits<Node> hits = productiveCelestialBodyIndex.get("name", productiveCelestialBodyName);
 			if (!hits.hasNext())
@@ -122,7 +123,7 @@ abstract class Building extends AGraphObject implements IBuilding
 			}
 			
 			Node nProductiveCelestialBody = hits.getSingle();
-			nProductiveCelestialBody.createRelationshipTo(node, eRelationTypes.Buildings);
+			nProductiveCelestialBody.createRelationshipTo(properties, eRelationTypes.Buildings);
 			
 			tx.success();			
 		}
@@ -154,7 +155,7 @@ abstract class Building extends AGraphObject implements IBuilding
 		else
 		{
 			checkForDBUpdate();
-			return (Integer) node.getProperty("builtDate");
+			return (Integer) properties.getProperty("builtDate");
 		}
 	}
 
@@ -168,7 +169,29 @@ abstract class Building extends AGraphObject implements IBuilding
 		else
 		{
 			checkForDBUpdate();
-			return (Integer) node.getProperty("nbSlots");
+			return (Integer) properties.getProperty("nbSlots");
+		}
+	}
+	
+	@Override
+	public void upgrade()
+	{
+		assertOnlineStatus(true);
+		
+		if (!Rules.getBuildingCanBeUpgraded(getType())) throw new RuntimeException("Cannot upgrade '"+getType()+"'");
+		
+		Transaction tx = db.beginTx();
+		
+		try
+		{
+			// TODO: Check for productive celestial body free slots condition ?
+			
+			properties.setProperty("nbSlots", getNbSlots()+1);
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
 		}
 	}
 

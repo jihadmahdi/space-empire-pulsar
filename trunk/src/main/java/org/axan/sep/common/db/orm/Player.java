@@ -1,16 +1,21 @@
 package org.axan.sep.common.db.orm;
 
 import org.axan.eplib.orm.nosql.DBGraphException;
+import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
 import org.axan.sep.common.db.orm.base.IBasePlayer;
 import org.axan.sep.common.db.orm.base.BasePlayer;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
+import org.axan.sep.common.db.IUnit;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ReturnableEvaluator;
+import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.axan.sep.common.db.IGameConfig;
@@ -19,10 +24,12 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
 
-class Player extends AGraphObject implements IPlayer, Serializable
+class Player extends AGraphObject<Node> implements IPlayer, Serializable
 {
 	/*
 	 * PK: first pk field.
@@ -74,7 +81,7 @@ class Player extends AGraphObject implements IPlayer, Serializable
 			playersFactory = db.getReferenceNode().getSingleRelationship(eRelationTypes.Players, Direction.OUTGOING).getEndNode();
 			playerIndex = db.index().forNodes("PlayerIndex");
 			IndexHits<Node> hits = playerIndex.get("name", name);
-			node = hits.hasNext() ? hits.getSingle() : null;			
+			properties = hits.hasNext() ? hits.getSingle() : null;			
 		}
 	}
 	
@@ -101,13 +108,13 @@ class Player extends AGraphObject implements IPlayer, Serializable
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, player[name='"+name+"'] already exist.");
 			}
 			
-			node = sepDB.getDB().createNode();
-			Player.initializeNode(node, name);
-			playerIndex.add(node, "name", name);
-			playersFactory.createRelationshipTo(node, eRelationTypes.Players);
+			properties = sepDB.getDB().createNode();
+			Player.initializeProperties(properties, name);
+			playerIndex.add(properties, "name", name);
+			playersFactory.createRelationshipTo(properties, eRelationTypes.Players);
 			Node nConfig = sepDB.getDB().createNode();
 			PlayerConfig.initializeNode(nConfig, config.getColor(), config.getSymbol(), config.getPortrait());
-			node.createRelationshipTo(nConfig, eRelationTypes.PlayerConfig);
+			properties.createRelationshipTo(nConfig, eRelationTypes.PlayerConfig);
 			
 			tx.success();			
 		}
@@ -129,15 +136,48 @@ class Player extends AGraphObject implements IPlayer, Serializable
 		if (isDBOnline())
 		{
 			checkForDBUpdate();
-			Node nConfig = node.getSingleRelationship(eRelationTypes.PlayerConfig, Direction.OUTGOING).getEndNode();
+			Node nConfig = properties.getSingleRelationship(eRelationTypes.PlayerConfig, Direction.OUTGOING).getEndNode();
 			config = new PlayerConfig(nConfig);
 		}
 		return config;
 	}
-
-	public static void initializeNode(Node node, String name)
+	
+	@Override
+	public <T extends IUnit> Set<T> getUnits(final Class<T> expectedType)
 	{
-		node.setProperty("name", name);
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Set<T> result = new HashSet<T>();
+		
+		eUnitType type;
+		if (IUnit.class.equals(expectedType))
+		{
+			type = null;
+		}
+		else try
+		{
+			type = eUnitType.valueOf(expectedType.getSimpleName().charAt(0) == 'I' ? expectedType.getSimpleName().substring(1) : expectedType.getSimpleName());
+		}
+		catch(IllegalArgumentException e)
+		{
+			throw new RuntimeException("Unknown eUnitType value for class '"+expectedType.getSimpleName()+"'", e);
+		}
+		
+		for(Node n : properties.traverse(Order.BREADTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eRelationTypes.PlayerUnit, Direction.OUTGOING))
+		{
+			if (type != null && !type.toString().equals((String) n.getProperty("type"))) continue;
+			
+			T unit = (T) sepDB.getUnit((String) n.getProperty("ownerName"), (String) n.getProperty("name"), type);
+			if (unit.isStopped()) result.add(unit);
+		}
+		
+		return result;
+	}
+
+	public static void initializeProperties(Node properties, String name)
+	{
+		properties.setProperty("name", name);
 	}
 
 	private synchronized void writeObject(ObjectOutputStream out) throws IOException

@@ -7,9 +7,14 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.Protocol.eUnitType;
+import org.axan.sep.common.Rules;
+import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.IArea;
 import org.axan.sep.common.db.ICelestialBody;
+import org.axan.sep.common.db.IFleet;
+import org.axan.sep.common.db.IPlayer;
+import org.axan.sep.common.db.IProbe;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IUnit;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
@@ -25,7 +30,7 @@ import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 
-class Area extends AGraphObject implements IArea
+class Area extends AGraphObject<Node> implements IArea
 {
 	/*
 	 * PK: first pk field.
@@ -35,7 +40,7 @@ class Area extends AGraphObject implements IArea
 	/*
 	 * Off-DB fields (none)
 	 */
-	protected final boolean isSun;
+	protected boolean isSun;
 	
 	/*
 	 * DB connection: DB connection and useful objects (e.g. indexes and nodes).
@@ -50,11 +55,10 @@ class Area extends AGraphObject implements IArea
 	 * @param location
 	 * @param isSun
 	 */
-	public Area(Location location, boolean isSun)
+	public Area(Location location)
 	{
 		super(location);
 		this.location = location;
-		this.isSun = isSun;
 	}
 	
 	/**
@@ -65,10 +69,7 @@ class Area extends AGraphObject implements IArea
 	public Area(SEPCommonDB sepDB, Location location)
 	{
 		super(sepDB, location);
-		this.location = location;
-		
-		// Null values
-		this.isSun = false;
+		this.location = location;		
 	}
 	
 	/**
@@ -82,11 +83,13 @@ class Area extends AGraphObject implements IArea
 		{
 			db = sepDB.getDB();
 			
+			Location sunLocation = Rules.getSunLocation(sepDB.getConfig());
+			isSun = (SEPUtils.getDistance(sunLocation, location) <= sepDB.getConfig().getSunRadius());
 			areaIndex = db.index().forNodes("AreaIndex");
 			areasFactory = db.getReferenceNode().getSingleRelationship(eRelationTypes.Areas, Direction.OUTGOING).getEndNode();
 			sun = db.getReferenceNode().getSingleRelationship(eRelationTypes.Sun, Direction.OUTGOING).getEndNode();
 			IndexHits<Node> hits = areaIndex.get("location", location.toString());
-			node = hits.hasNext() ? hits.getSingle() : null;			
+			properties = hits.hasNext() ? hits.getSingle() : null;			
 		}
 	}
 	
@@ -112,14 +115,14 @@ class Area extends AGraphObject implements IArea
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'location' must be unique, area[location='"+location+"'] already exist.");
 			}
-			node = sepDB.getDB().createNode();
-			Area.initializeNode(node, location);			
-			areasFactory.createRelationshipTo(node, eRelationTypes.Areas);
+			properties = sepDB.getDB().createNode();
+			Area.initializeProperties(properties, location);			
+			areasFactory.createRelationshipTo(properties, eRelationTypes.Areas);
 			if (isSun)
 			{
-				sun.createRelationshipTo(node, eRelationTypes.Sun);
+				sun.createRelationshipTo(properties, eRelationTypes.Sun);
 			}
-			areaIndex.add(node, "location", location.toString());
+			areaIndex.add(properties, "location", location.toString());
 						
 			tx.success();			
 		}
@@ -141,7 +144,8 @@ class Area extends AGraphObject implements IArea
 		if (isDBOnline())
 		{
 			checkForDBUpdate();
-			return node.hasRelationship(eRelationTypes.Sun, Direction.INCOMING);
+			if (properties == null) return false;
+			return properties.hasRelationship(eRelationTypes.Sun, Direction.INCOMING);
 		}
 		else
 		{
@@ -155,7 +159,8 @@ class Area extends AGraphObject implements IArea
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Relationship cb = node.getSingleRelationship(eRelationTypes.CelestialBody, Direction.OUTGOING);
+		if (properties == null) return null;
+		Relationship cb = properties.getSingleRelationship(eRelationTypes.CelestialBody, Direction.OUTGOING);
 		String celestialBodyName = cb == null ? null : (String) cb.getEndNode().getProperty("name");
 		
 		return celestialBodyName == null ? null : sepDB.getCelestialBody(celestialBodyName);
@@ -170,92 +175,82 @@ class Area extends AGraphObject implements IArea
 	
 	private static boolean isVisible(SEPCommonDB sepDB, final Location location, final String playerName)
 	{
-		Area area = new Area(sepDB, location);
+		IArea area = sepDB.getArea(location);
 		
 		// TODO: Pulsar effect is not implemented yet
 		
-		// If player own a (productive) celestial body in this area
 		ICelestialBody cb = area.getCelestialBody();
-				
-		if (cb != null && IProductiveCelestialBody.class.isInstance(cb) && playerName.equals(IProductiveCelestialBody.class.cast(cb).getOwner())) return true;		
+		IProductiveCelestialBody pcb = IProductiveCelestialBody.class.isInstance(cb) ? (IProductiveCelestialBody) cb : null;
+		
+		// If player own a (productive) celestial body in this area		
+		if (pcb != null && playerName.equals(pcb.getOwner())) return true;		
 		
 		// If player has assigned fleet in this area
-		if (cb != null && area.node.getSingleRelationship(eRelationTypes.CelestialBody, Direction.OUTGOING).getEndNode().traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, new ReturnableEvaluator()
-		{
-			
-			@Override
-			public boolean isReturnableNode(TraversalPosition currentPos)
-			{
-				Node n = currentPos.currentNode();
-				return (n.hasRelationship(eRelationTypes.AssignedCelestialBody, Direction.OUTGOING) && playerName.equals(n.getProperty("owner")));
-			}
-		}, eRelationTypes.AssignedCelestialBody, Direction.INCOMING).iterator().hasNext()) return true;
+		IFleet assignedFleet = (pcb == null) ? null : pcb.getAssignedFleet(playerName);
+		if (assignedFleet != null) return true;
 		
 		// If player has stopped fleet in this area
-		if (area.node.traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, new ReturnableEvaluator()
-		{			
-			@Override
-			public boolean isReturnableNode(TraversalPosition currentPos)
-			{
-				Node n = currentPos.currentNode();
-				return (n.hasRelationship(eUnitType.Fleet, Direction.OUTGOING) && playerName.equals(n.getProperty("owner")) && (false == ((((Integer) n.getProperty("progress")) > 0) && (((Integer) n.getProperty("progress")) != 1) && (n.getProperty("destination_x") != null) && (n.getProperty("departure_x") != null))) );
-			}
-		}, eUnitType.Fleet, Direction.INCOMING).iterator().hasNext()) return true;
+		for(IFleet fleet : area.getUnits(IFleet.class))
+		{
+			if (playerName.equals(fleet.getOwnerName())) return true;
+		}		
 		
 		// If player has deployed probe to observe this area
 		final double probeSight = sepDB.getConfig().getUnitTypeSight(eUnitType.Probe);
-		if (area.node.traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, new ReturnableEvaluator()
-		{
-			
-			@Override
-			public boolean isReturnableNode(TraversalPosition currentPos)
-			{
-				if (currentPos.isStartNode()) return false;
-				
-				Node n = currentPos.currentNode();
-				double distance = Math.pow(location.x - (Integer) n.getProperty("departure_x"), 2) + Math.pow(location.y - (Integer) n.getProperty("departure_y"), 2) + Math.pow(location.z - (Integer) n.getProperty("departure_z"), 2);
-				return (n.hasRelationship(eUnitType.Probe, Direction.OUTGOING) && playerName.equals(n.getProperty("owner")) && ((Integer) n.getProperty("progress") == 1) && distance <= probeSight);
-			}
-		}, eUnitType.Probe, Direction.INCOMING).iterator().hasNext()) return true;
 		
+		IPlayer player = sepDB.getPlayer(playerName);
+		for(IProbe probe : player.getUnits(IProbe.class))
+		{
+			if (!probe.isDeployed()) continue;
+			if (SEPUtils.getDistance(location.asRealLocation(), probe.getRealLocation()) <= probeSight) return true;
+		}
+				
 		return false;
 	}
 	
 	@Override
 	public <T extends IUnit> Set<T> getUnits(final Class<T> expectedType)
 	{
-		try
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Set<T> result = new HashSet<T>();
+		
+		eUnitType type;
+		if (IUnit.class.equals(expectedType))
 		{
-			Set<T> result = new HashSet<T>();
-			
-			/*
-			// TODO
-			eUnitType type;
-			try
-			{
-				type = eUnitType.valueOf(expectedType.getSimpleName().charAt(0) == 'I' ? expectedType.getSimpleName().substring(1) : expectedType.getSimpleName());
-			}
-			catch(IllegalArgumentException e)
-			{
-				type = null;
-			}
-			
-			for(Node n : node.traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, type == null ? eRelationsTypes.Unit : type, Direction.INCOMING))
-			{
-				result.add(DataBaseORMGenerator.mapTo(expectedType, n));
-			}
-			*/
-			return result;
+			type = null;
 		}
-		catch(Throwable t)
+		else try
 		{
-			throw new RuntimeException(t);
+			type = eUnitType.valueOf(expectedType.getSimpleName().charAt(0) == 'I' ? expectedType.getSimpleName().substring(1) : expectedType.getSimpleName());
 		}
+		catch(IllegalArgumentException e)
+		{
+			throw new RuntimeException("Unknown eUnitType value for class '"+expectedType.getSimpleName()+"'", e);
+		}
+		
+		for(Node n : properties.traverse(Order.BREADTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eRelationTypes.UnitDeparture, Direction.INCOMING))
+		{
+			if (type != null)
+			{
+				if (!type.toString().equals((String) n.getProperty("type"))) continue;
+			}
+			else
+			{
+				type = eUnitType.valueOf((String) n.getProperty("type"));
+			}			
+			
+			T unit = (T) sepDB.getUnit((String) n.getProperty("ownerName"), (String) n.getProperty("name"), type);
+			if (unit.isStopped()) result.add(unit);
+		}
+		
+		return result;
 	}
 
 	public String toString(String playerName)
 	{
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		
 		if (!isDBOnline())
 		{
@@ -306,7 +301,7 @@ class Area extends AGraphObject implements IArea
 			sb.append("Units :\n");
 			for(IUnit u : units)
 			{
-				sb.append("   ["+u.getOwner()+"] "+u.getName()+"\n");
+				sb.append("   ["+u.getOwnerName()+"] "+u.getName()+"\n");
 			}
 		}
 		
@@ -324,8 +319,8 @@ class Area extends AGraphObject implements IArea
 		return sb.toString();
 	}
 
-	public static void initializeNode(Node node, Location location)
+	public static void initializeProperties(Node properties, Location location)
 	{
-		node.setProperty("location", location.toString());
+		properties.setProperty("location", location.toString());
 	}
 }

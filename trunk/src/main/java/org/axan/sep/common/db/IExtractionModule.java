@@ -8,4 +8,5 @@ import java.util.HashMap;
 
 public interface IExtractionModule extends IBuilding
 {
+	int getCarbonProductionPerTurn();
 }

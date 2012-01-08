@@ -1,6 +1,7 @@
 package org.axan.sep.common.db.orm;
 
 import org.axan.eplib.orm.nosql.DBGraphException;
+import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.db.orm.Building;
 import org.axan.sep.common.db.orm.base.IBasePulsarLaunchingPad;
 import org.axan.sep.common.db.orm.base.BasePulsarLaunchingPad;
@@ -78,9 +79,9 @@ class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, pulsarLaunchingPad[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
-			node = sepDB.getDB().createNode();
-			PulsarLaunchingPad.initializeNode(node, builtDate, nbSlots);
-			pulsarLaunchingPadIndex.add(node, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			properties = sepDB.getDB().createNode();
+			PulsarLaunchingPad.initializeProperties(properties, builtDate, nbSlots);
+			pulsarLaunchingPadIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
 			
 			super.create(sepDB);
 			
@@ -91,11 +92,64 @@ class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 			tx.finish();
 		}
 	}
-
-	public static void initializeNode(Node node, int builtDate, int nbSlots)
+	
+	public int getNbFired()
 	{
-		node.setProperty("builtDate", builtDate);
-		node.setProperty("nbSlots", nbSlots);
+		assertOnlineStatus(true);
+		
+		return (Integer) properties.getProperty("nbFired");
+	}
+	
+	public static double getTotalBonus(int nbFreshSlots)
+	{
+		return Double.valueOf(nbFreshSlots)* (double) 0.25;
+	}
+	
+	public static int getUpgradeCarbonCost(int nbSlots)
+	{
+		return (int) (1+nbSlots * 0.25) * 1000;
+	}
+	
+	public static int getUpgradePopulationCost(int nbSlots)
+	{
+		return (int) (1+nbSlots * 0.25) * 1000;
+	}
+	
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		
+		if (!isDBOnline())
+		{
+			sb.append("db off");
+			return sb.toString();
+		}
+		
+		checkForDBUpdate();
+		
+		int nbFired = getNbFired();
+		int nbFreshSlots = getNbSlots()-nbFired;		
+		sb.append(String.format("%d pulsar launching pads ready t fire with a power bonus of %.2f, %d already used.\n", nbFreshSlots, getTotalBonus(nbFreshSlots), nbFired));
+		
+		if (getUpgradeCarbonCost(nbSlots) < 0 && getUpgradePopulationCost(nbSlots) < 0)
+		{
+			sb.append("Cannot build more");
+		}
+		else
+		{
+			sb.append(String.format("Upgrade cost %dC, %dP.", getUpgradeCarbonCost(nbSlots), getUpgradePopulationCost(nbSlots)));
+		}			
+
+		return sb.toString();		
+	}
+	
+	public static void initializeProperties(Node properties, int builtDate, int nbSlots)
+	{
+		properties.setProperty("type", eBuildingType.PulsarLaunchingPad.toString());
+		properties.setProperty("builtDate", builtDate);
+		properties.setProperty("nbSlots", nbSlots);
+		properties.setProperty("nbFired", 0);
 	}
 
 }

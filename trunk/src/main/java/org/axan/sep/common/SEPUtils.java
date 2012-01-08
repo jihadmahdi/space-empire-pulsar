@@ -136,10 +136,6 @@ public abstract class SEPUtils
 		return Math.sqrt(Math.pow(a.x-b.x, 2) + Math.pow(a.y-b.y, 2) + Math.pow(a.z-b.z, 2));
 	}
 	
-	public static RealLocation getMobileEstimatedLocation(RealLocation a, RealLocation b, double progress, boolean stopOnB)
-	{
-		return getMobileLocation(a, b, progress, stopOnB);
-	}
 	public static RealLocation getMobileLocation(RealLocation departure, RealLocation destination, double progress, boolean stopOnB)
 	{
 		double x = departure.x + (destination.x - departure.x)*progress;
@@ -165,7 +161,7 @@ public abstract class SEPUtils
 		RealLocation loc;
 		for(float t = 0; t < 1; t += delta)
 		{
-			loc = getMobileEstimatedLocation(a, b, t, true);
+			loc = getMobileLocation(a, b, t, true);
 			if (lastLoc == null || !loc.equals(lastLoc))
 			{
 				result.add(loc);

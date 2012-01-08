@@ -7,8 +7,9 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 import org.junit.matchers.IsCollectionContaining;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 
-public abstract class AGraphObject implements Serializable
+public abstract class AGraphObject<T extends PropertyContainer> implements Serializable
 {
 	/*
 	 * PK: first pk field.
@@ -20,7 +21,7 @@ public abstract class AGraphObject implements Serializable
 	 */
 	protected SEPCommonDB sepDB;
 	protected GraphDatabaseService db;
-	protected Node node;
+	protected T properties;
 	
 	/**
 	 * Off-DB constructor.
@@ -82,7 +83,18 @@ public abstract class AGraphObject implements Serializable
 	 */
 	protected boolean isDBOutdated()
 	{
-		return db == null || node == null || !db.equals(sepDB.getDB());
+		return db == null || properties == null || !db.equals(sepDB.getDB());
+	}
+	
+	/**
+	 * Check if current object exists in DB.
+	 * Always return false while object is DB-off.
+	 * @return
+	 */
+	public boolean exists()
+	{
+		checkForDBUpdate();
+		return isDBOnline() && properties != null;
 	}
 	
 	/**

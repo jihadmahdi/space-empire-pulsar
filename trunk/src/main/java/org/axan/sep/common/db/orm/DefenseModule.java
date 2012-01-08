@@ -1,9 +1,11 @@
 package org.axan.sep.common.db.orm;
 
 import org.axan.eplib.orm.nosql.DBGraphException;
+import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.db.orm.Building;
 import org.axan.sep.common.db.orm.base.IBaseDefenseModule;
 import org.axan.sep.common.db.orm.base.BaseDefenseModule;
+import org.axan.sep.common.db.IBuilding;
 import org.axan.sep.common.db.IDefenseModule;
 import org.javabuilders.annotations.Built;
 import org.neo4j.graphdb.Node;
@@ -79,9 +81,9 @@ class DefenseModule extends Building implements IDefenseModule
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, defenseModule[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
-			node = sepDB.getDB().createNode();
-			DefenseModule.initializeNode(node, builtDate, nbSlots);
-			defenseModuleIndex.add(node, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			properties = sepDB.getDB().createNode();
+			DefenseModule.initializeProperties(properties, builtDate, nbSlots);
+			defenseModuleIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
 			
 			super.create(sepDB);
 			
@@ -93,10 +95,53 @@ class DefenseModule extends Building implements IDefenseModule
 		}
 	}	
 
-	public static void initializeNode(Node node, int builtDate, int nbSlots)
+	public static double getTotalBonus(int nbSlots)
 	{
-		node.setProperty("builtDate", builtDate);
-		node.setProperty("nbSlots", nbSlots);
+		return (int) (0.25 * nbSlots * 100);
+	}
+	
+	public static int getUpgradeCarbonCost(int nbSlots)
+	{
+		return (int) ((Double.valueOf(1+nbSlots) * 0.25) * 1000);
+	}
+	
+	public static int getUpgradePopulationCost(int nbSlots)
+	{
+		return 0;
+	}
+	
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		
+		if (!isDBOnline())
+		{
+			sb.append("db off");
+			return sb.toString();
+		}
+		
+		checkForDBUpdate();
+		
+		int nbSlots = getNbSlots();
+		sb.append(String.format("%d defense modules built, give a defense bonus of %.2f.\n", nbSlots, getTotalBonus(nbSlots)));
+		if (getUpgradeCarbonCost(nbSlots) < 0 && getUpgradePopulationCost(nbSlots) < 0)
+		{
+			sb.append("Cannot build more");
+		}
+		else
+		{
+			sb.append(String.format("Upgrade cost %dC, %dP.", getUpgradeCarbonCost(nbSlots), getUpgradePopulationCost(nbSlots)));
+		}
+		
+		return sb.toString();		
+	}
+	
+	public static void initializeProperties(Node properties, int builtDate, int nbSlots)
+	{
+		properties.setProperty("type", eBuildingType.DefenseModule.toString());
+		properties.setProperty("builtDate", builtDate);
+		properties.setProperty("nbSlots", nbSlots);
 	}
 
 }

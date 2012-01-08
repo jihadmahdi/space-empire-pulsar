@@ -482,7 +482,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		void endTurn(List<ICommand> commands) throws RpcException, StateMachineNotExpectedEventException, SEPImplementationError, GameCommandException;
+		void endTurn(List<ICommand> commands) throws RpcException, StateMachineNotExpectedEventException, GameCommandException;
 	}
 	
 	/**

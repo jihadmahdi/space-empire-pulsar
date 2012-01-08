@@ -3,6 +3,7 @@ package org.axan.sep.common.db.orm;
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
+import org.axan.sep.common.Rules.StarshipTemplate;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.orm.CelestialBody;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
@@ -10,20 +11,27 @@ import org.axan.sep.common.db.orm.base.BasePlanet;
 import org.axan.sep.common.db.orm.base.IBaseProductiveCelestialBody;
 import org.axan.sep.common.db.orm.base.BaseProductiveCelestialBody;
 import org.axan.sep.common.db.IBuilding;
+import org.axan.sep.common.db.IFleet;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.Traverser.Order;
+import org.neo4j.graphdb.TraversalPosition;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.traversal.Evaluation;
+import org.neo4j.graphdb.traversal.Evaluator;
+import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.graphdb.traversal.Traverser;
+import org.neo4j.kernel.Traversal;
 import org.axan.sep.common.db.IGameConfig;
 
 import java.util.HashSet;
@@ -113,7 +121,7 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, productiveCelestialBody[name='"+name+"'] already exist.");
 			}
-			productiveCelestialBodyIndex.add(node, "name", name);
+			productiveCelestialBodyIndex.add(properties, "name", name);
 			
 			updateOwnership();
 			
@@ -136,14 +144,14 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 		
 		try
 		{
-			Relationship ownership = node.getSingleRelationship(eRelationTypes.PlayerCelestialBodies, Direction.INCOMING);
+			Relationship ownership = properties.getSingleRelationship(eRelationTypes.PlayerCelestialBodies, Direction.INCOMING);
 			eCelestialBodyType type = eCelestialBodyType.valueOf(getClass().getSimpleName());
 			
 			if (ownerName == null)
 			{
 				// Delete ownership relation
 				if (ownership != null) ownership.delete();
-				ownership = node.getSingleRelationship(type, Direction.INCOMING);
+				ownership = properties.getSingleRelationship(type, Direction.INCOMING);
 				if (ownership != null) ownership.delete();			
 			}
 			else
@@ -156,8 +164,8 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 					ownership = null;
 				}
 				
-				nOwner.createRelationshipTo(node, eRelationTypes.PlayerCelestialBodies);			
-				nOwner.createRelationshipTo(node, type);
+				nOwner.createRelationshipTo(properties, eRelationTypes.PlayerCelestialBodies);			
+				nOwner.createRelationshipTo(properties, type);
 			}
 			
 			tx.success();
@@ -174,7 +182,7 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 		if (isDBOnline())		
 		{
 			checkForDBUpdate();
-			Relationship ownership = node == null ? null : node.getSingleRelationship(eRelationTypes.PlayerCelestialBodies, Direction.INCOMING);
+			Relationship ownership = properties == null ? null : properties.getSingleRelationship(eRelationTypes.PlayerCelestialBodies, Direction.INCOMING);
 			Node nOwner = ownership == null ? null : ownership.getStartNode();
 			ownerName = nOwner == null ? null : (String) nOwner.getProperty("name");
 		}
@@ -200,7 +208,7 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 		if (isDBOnline())
 		{
 			checkForDBUpdate();
-			return (Integer) node.getProperty("initialCarbonStock");
+			return (Integer) properties.getProperty("initialCarbonStock");
 		}
 		else
 		{
@@ -214,7 +222,7 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 		if (isDBOnline())
 		{
 			checkForDBUpdate();
-			return (Integer) node.getProperty("maxSlots");
+			return (Integer) properties.getProperty("maxSlots");
 		}
 		else
 		{
@@ -228,7 +236,7 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 		if (isDBOnline())
 		{
 			checkForDBUpdate();
-			return (Integer) node.getProperty("carbonStock");
+			return (Integer) properties.getProperty("carbonStock");
 		}
 		else
 		{
@@ -242,7 +250,7 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 		if (isDBOnline())
 		{
 			checkForDBUpdate();
-			return (Integer) node.getProperty("currentCarbon");
+			return (Integer) properties.getProperty("currentCarbon");
 		}
 		else
 		{
@@ -251,11 +259,54 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 	}
 	
 	@Override
+	public void payCarbon(int carbonCost)
+	{
+		assertOnlineStatus(true);
+		
+		Transaction tx = db.beginTx();
+		
+		try
+		{
+			checkForDBUpdate();
+			if (getCurrentCarbon() < carbonCost) throw new RuntimeException("Cannot pay carbon cost, not enough carbon");
+			properties.setProperty("currentCarbon", getCurrentCarbon() - carbonCost);
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+	
+	@Override
+	public void extractCarbon(int extractedCarbon)
+	{
+		assertOnlineStatus(true);
+		
+		Transaction tx = db.beginTx();
+		
+		try
+		{
+			checkForDBUpdate();
+			if (getCarbonStock() < extractedCarbon) throw new RuntimeException("Cannot extract carbon, not enough stock");
+			properties.setProperty("carbonStock", getCarbonStock() - extractedCarbon);
+			properties.setProperty("currentCarbon", getCurrentCarbon() + extractedCarbon);
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+	
+	@Override
 	public int getBuiltSlotsCount()
 	{
 		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
 		int result=0;
-		for(Node n : buildingIndex.get("productiveCelestialBodyName;class", String.format("%s;*", name)))
+		for(Node n : buildingIndex.query("productiveCelestialBodyName;class", String.format("%s;*", name)))
 		{
 			result += (Integer) n.getProperty("nbSlots");
 		}
@@ -264,21 +315,101 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 	}
 	
 	@Override
+	public IBuilding getBuilding(eBuildingType type)
+	{
+		assertOnlineStatus(true);		
+		return sepDB.getBuilding(getName(), type);
+	}
+	
+	@Override
 	public Set<IBuilding> getBuildings()
 	{
 		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
 		Set<IBuilding> result = new HashSet<IBuilding>();
-		for(Node n : buildingIndex.get("productiveCelestialBodyName;class", String.format("%s;*", name)))
+		for(Node n : buildingIndex.query("productiveCelestialBodyName;class", String.format("%s;*", name)))
 		{
 			result.add(sepDB.getBuilding(name, eBuildingType.valueOf((String) n.getProperty("type"))));
 		}
 		return result;
 	}
 	
+	/**
+	 * Get assigned fleet for current productive celestial body and given player name.
+	 * If not exist and create flag is true, create and return it.
+	 * If not exist and create flag is false, return null.
+	 * @param playerName
+	 * @return
+	 */
+	@Override
+	public IFleet getAssignedFleet(String playerName)
+	{
+		return getAssignedFleet(playerName, false);
+	}
+	
+	IFleet getAssignedFleet(final String playerName, boolean create)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		TraversalDescription td = Traversal.description().breadthFirst().relationships(eRelationTypes.AssignedFleets, Direction.OUTGOING).evaluator(new Evaluator()
+		{
+			
+			@Override
+			public Evaluation evaluate(Path path)
+			{
+				Relationship rel = path.lastRelationship();
+				if (rel == null) return Evaluation.EXCLUDE_AND_CONTINUE;
+				if (!rel.hasProperty("playerName")) return Evaluation.EXCLUDE_AND_PRUNE;
+				if (!playerName.equals(rel.getProperty("playerName"))) return Evaluation.EXCLUDE_AND_PRUNE;
+				return Evaluation.INCLUDE_AND_PRUNE;
+			}
+		});			
+		
+		Traverser traverser = td.traverse(properties);
+		Node nFleet = traverser.nodes().iterator().hasNext() ? traverser.nodes().iterator().next() : null;
+		
+		if (nFleet == null)
+		{
+			if (!create) return null;
+			
+			Transaction tx = db.beginTx();
+			
+			try
+			{
+				String fleetName = String.format("%s assigned fleet", getName());
+				sepDB.createFleet(sepDB.makeFleet(playerName, fleetName, name, new HashMap<StarshipTemplate, Integer>()));
+				
+				nFleet = db.index().forNodes("FleetIndex").get("ownerName@name", String.format("%s@%s", playerName, fleetName)).getSingle();
+				
+				if (nFleet == null)
+				{
+					throw new RuntimeException("Implementation error, cannot get just created assigned fleet "+playerName+"@"+fleetName);
+				}
+				
+				Relationship rel = properties.createRelationshipTo(nFleet, eRelationTypes.AssignedFleets);
+				rel.setProperty("playerName", playerName);
+				
+				tx.success();
+			}
+			finally
+			{
+				tx.finish();
+			}
+			
+			// Double check
+			nFleet = td.traverse(properties).nodes().iterator().next();
+		}
+		
+		String fleetName = (String) nFleet.getProperty("name");
+		return new Fleet(sepDB, playerName, fleetName);
+	}
+	
 	@Override
 	public String toString()
 	{		
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		
 		if (!isDBOnline())
 		{

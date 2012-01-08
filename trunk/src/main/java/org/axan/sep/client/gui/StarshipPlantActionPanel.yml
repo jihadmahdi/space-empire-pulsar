@@ -1,0 +1,10 @@
+JPanel(name=starshipPlantActionPanel):
+  - JLabel(name=label)
+  - JPanel(name=starshipsPanel)
+  - JPanel(name=probingPanel)
+  - MigLayout: |
+      [[insets 0]]
+      [grow]
+      label            [pref]
+      starshipsPanel   [pref]
+      probingPanel     [pref]

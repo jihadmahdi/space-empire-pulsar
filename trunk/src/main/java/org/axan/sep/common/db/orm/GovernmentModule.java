@@ -1,6 +1,7 @@
 package org.axan.sep.common.db.orm;
 
 import org.axan.eplib.orm.nosql.DBGraphException;
+import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.db.orm.Building;
 import org.axan.sep.common.db.orm.base.IBaseGovernmentModule;
 import org.axan.sep.common.db.orm.base.BaseGovernmentModule;
@@ -78,9 +79,9 @@ class GovernmentModule extends Building implements IGovernmentModule
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, governmentModule[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
-			node = sepDB.getDB().createNode();
-			GovernmentModule.initializeNode(node, builtDate, nbSlots);
-			governmentModuleIndex.add(node, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			properties = sepDB.getDB().createNode();
+			GovernmentModule.initializeProperties(properties, builtDate, nbSlots);
+			governmentModuleIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
 			
 			super.create(sepDB);
 			
@@ -92,10 +93,17 @@ class GovernmentModule extends Building implements IGovernmentModule
 		}
 	}
 	
-	public static void initializeNode(Node node, int builtDate, int nbSlots)
+	@Override
+	public String toString()
 	{
-		node.setProperty("builtDate", builtDate);
-		node.setProperty("nbSlots", nbSlots);
+		return "Government module gives a +50% bonus to population per turn and +50% bonus to carbon resource extraction on the current planet.";			
+	}	
+	
+	public static void initializeProperties(Node properties, int builtDate, int nbSlots)
+	{
+		properties.setProperty("type", eBuildingType.GovernmentModule.toString());
+		properties.setProperty("builtDate", builtDate);
+		properties.setProperty("nbSlots", nbSlots);
 	}
 
 }

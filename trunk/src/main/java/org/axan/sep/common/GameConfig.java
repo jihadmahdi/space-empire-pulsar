@@ -677,7 +677,7 @@ public class GameConfig implements IGameConfig, Serializable
 	@Override
 	public String toString()
 	{
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		sb.append("Universe (" + dimX + ";" + dimY + ";" + dimZ + "); ");
 		sb.append("Neutrals " + neutralCelestialBodiesCount + "; ");
 		// TODO: Celestials carbon & slots amount

@@ -25,6 +25,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
+import javax.swing.border.Border;
 import javax.swing.border.EtchedBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -119,8 +120,7 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 			public void propertyChange(PropertyChangeEvent evt)
 			{
 				if (evt.getNewValue().equals(evt.getOldValue())) return;
-				int z = (Integer) evt.getNewValue();
-				changeZView(z);
+				refresh(false);
 			}
 		});
 	}
@@ -185,53 +185,53 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 		
 		PlayerGameBoard gameboard = getGameboard();
 		if (gameboard == null) return;
-		IGameConfig config = gameboard.getConfig();
-
-		GridLayout layout = new GridLayout(config.getDimX(), config.getDimY());
-		layout.setRows(config.getDimX() + 1);
-		layout.setColumns(config.getDimY() + 1);
-		layout.setHgap(1);
-		layout.setVgap(1);
-		universeViewPanel.setLayout(layout);
-		universeViewPanel.removeAll();
-		for(int row = 0; row < config.getDimY() + 1; ++row)
-			for(int col = 0; col < config.getDimX() + 1; ++col)
-			{
-				if (row == 0)
+		IGameConfig config = gameboard.getConfig();		
+		
+		getCoordLabel(false, 0).setText(String.format("T %d", config.getTurn()));
+		
+		//if (universeViewPanel.getComponentCount() == 0)		
+		if (!zSlider.isEnabled())
+		{		
+			GridLayout layout = new GridLayout(config.getDimX(), config.getDimY());
+			layout.setRows(config.getDimX() + 1);
+			layout.setColumns(config.getDimY() + 1);
+			layout.setHgap(1);
+			layout.setVgap(1);
+			universeViewPanel.setLayout(layout);
+			universeViewPanel.removeAll();
+			for(int row = 0; row < config.getDimY() + 1; ++row)
+				for(int col = 0; col < config.getDimX() + 1; ++col)
 				{
-					universeViewPanel.add(getCoordLabel(false, col));
-
-					if (col == 0)
+					if (row == 0)
 					{
-						getCoordLabel(false, col).setText(String.format("T %d", config.getTurn()));
+						universeViewPanel.add(getCoordLabel(false, col));						
+					}
+					else if (col == 0)
+					{
+						universeViewPanel.add(getCoordLabel(true, row));
+					}
+					else
+					{
+						universeViewPanel.add(getImagePanel(col - 1, row - 1));
 					}
 				}
-				else if (col == 0)
-				{
-					universeViewPanel.add(getCoordLabel(true, row));
-				}
-				else
-				{
-					universeViewPanel.add(getImagePanel(col - 1, row - 1));
-				}
-			}
-		
-		zSlider.setMinimum(0);
-		zSlider.setMaximum(config.getDimZ() - 1);
+			
+			zSlider.setMinimum(0);
+			zSlider.setMaximum(config.getDimZ() - 1);
 
-		if (!zSlider.isEnabled()) // First refresh, force z value to player starting planet z coord.
-		{
+			// First refresh, force z value to player starting planet z coord.
 			zSlider.setEnabled(true);
 			
 			IPlanet startingPlanet = gameboard.getDB().getStartingPlanet(getSepClient().getLogin());
 			
 			// Changing zSlider bound to zSelection that fires changeZView UI refresh.
 			zSlider.setValue(startingPlanet.getLocation().z);
+			refresh(true); // Force refresh
 			return;			
 		}		
 		
 		// Does not change zSelection, only do UI refresh.
-		changeZView(getzSelection());
+		refresh(true);
 	}
 
 	////////// ui events
@@ -240,22 +240,28 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 
 	private Integer lastRefreshZ = -1;
 	private Thread zViewRefresher = null;
-	private void changeZView(final int z)
+	private Boolean interruptRefresh = false;
+	
+	/**
+	 * Refresh view if z selection has changed, or force is true.
+	 * @param force
+	 */
+	public void refresh(boolean force)
 	{
-		// SUIS LA: Mesurer quel est l'opération la plus couteuse (instanciation des objets ORM, ou requetes ?) puis concevoir une solution d'optimisation (cache des requetes avec système d'abonnement au "tables" qui force les refresh des caches des requetes seulement lorsqu'une des tables a été update/insert/delete.
-		
 		// TODO: Instead of refreshing from 0 every time, load every required component in memory for fast z switching.
-		// Don't forget to refresh on local events.
-		
+		// Don't forget to refresh on local events.		
 		if (getGameboard() == null) return;		
 		if (!zSlider.isEnabled()) return;
 		
-		if (lastRefreshZ == z) return;
+		final int z = getzSelection();
+		
+		if (!force && lastRefreshZ == z) return;
 		lastRefreshZ = z;		
 		
 		if (zViewRefresher != null)
 		{
-			zViewRefresher.interrupt();
+			//zViewRefresher.interrupt();
+			interruptRefresh = true;
 			try
 			{
 				zViewRefresher.join();
@@ -272,6 +278,7 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 			@Override
 			public void run()
 			{
+				interruptRefresh = false;
 				PlayerGameBoard gamboard = getGameboard();
 				IGameConfig config = gameboard.getConfig();
 				SEPCommonDB db = gameboard.getDB();
@@ -285,11 +292,13 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 								
 				lastRefreshZ = z;
 
+				if (interruptRefresh) return;
 				resetImages(z);
 				
 				Set<IArea> areas;
 				try
 				{
+					if (interruptRefresh) return;
 					areas = db.getAreasByZ(z);
 				}
 				catch(Throwable t)
@@ -303,7 +312,7 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 				
 				for(IArea area: areas)
 				{	
-					if (zViewRefresher.isInterrupted()) return;
+					if (interruptRefresh) return;
 					
 					try
 					{
@@ -354,7 +363,7 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 								for(IUnit u: units)
 								{
 									toolTipText += "\t" + u.toString() + "\n";
-									ownedUnit = (playerName.equals(u.getOwner()));
+									ownedUnit = (playerName.equals(u.getOwnerName()));
 								}
 							}				
 			
@@ -393,7 +402,8 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 					}
 				}
 				
-				updateUI();
+				if (interruptRefresh) return;
+				updateUI();				
 			}
 		}, "zViewRefresher");
 		
@@ -437,6 +447,8 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 		int dimX = getGameboard().getConfig().getDimX();
 		for(Map.Entry<Integer, JImagePanel> e : images.entrySet())
 		{
+			if (interruptRefresh) return;
+			
 			int x = e.getKey() / dimX;
 			int y = e.getKey() % dimX;
 			
@@ -479,7 +491,7 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 
 					if (e.getClickCount() == 1 && e.getButton() == MouseEvent.BUTTON1)
 					{
-						System.out.println("Location [" + x + ";" + y + ";" + z + "] clicked");
+						//System.out.println("Location [" + x + ";" + y + ";" + z + "] clicked");
 						selectLocation(x, y, z);
 					}
 
@@ -493,9 +505,16 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 		return images.get(i);
 	}
 
+	private Border previousBorder = null;
 	private void selectLocation(int x, int y, int z)
 	{
+		if (selectedLocation != null && selectedLocation.z == z)
+		{
+			getImagePanel(selectedLocation.x, selectedLocation.y).setBorder(previousBorder);
+		}
+				
 		selectedLocation = new Location(x, y, z);
+		previousBorder = getImagePanel(x, y).getBorder();
 		
 		// Border is yellow if selected
 		getImagePanel(x, y).setBorder(BorderFactory.createLineBorder(Color.yellow));		
