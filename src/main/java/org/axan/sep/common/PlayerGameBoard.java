@@ -12,6 +12,7 @@ import org.axan.eplib.clientserver.ConnectionAbortedError;
 import org.axan.eplib.orm.sql.ISQLDataBaseFactory;
 import org.axan.eplib.orm.sql.SQLDataBaseException;
 import org.axan.sep.client.SEPClient;
+import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.Events.UniverseCreation;
 import org.axan.sep.common.db.ICommand;
 import org.axan.sep.common.db.IDBFactory;
@@ -160,6 +161,22 @@ public class PlayerGameBoard implements IGameBoard
 						view.onGameEvent(event);
 					}
 				});
+				
+				new Thread(new Runnable()
+				{
+					
+					@Override
+					public void run()
+					{
+						IGameConfig config = PlayerGameBoard.this.getConfig();
+						SEPCommonDB sepDB = PlayerGameBoard.this.getDB();
+						
+						for(Location l : SEPUtils.scanSphere(Rules.getSunLocation(config), config.getSunRadius()))
+						{
+							sepDB.getArea(l);
+						}						
+					}
+				}, "Sun areas loader").start();
 			}
 			catch(Throwable t)
 			{

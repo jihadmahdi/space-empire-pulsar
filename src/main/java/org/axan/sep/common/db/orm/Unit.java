@@ -12,6 +12,7 @@ import org.axan.sep.common.db.IArea;
 import org.axan.sep.common.db.ICelestialBody;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IUnit;
+import org.axan.sep.common.db.IUnitMarker;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -24,26 +25,28 @@ import java.util.HashMap;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
-abstract class Unit extends AGraphObject<Node> implements IUnit
-{
+abstract class Unit extends UnitMarker implements IUnit
+{	
+	protected static final String PK = "ownerName@name";
+	protected static final String getPK(String ownerName, String name)
+	{
+		return String.format("%s@%s", ownerName, name);
+	}
+	
 	/*
-	 * PK
+	 * PK: inherited
 	 */
-	protected final String ownerName;
-	protected final String name;
 	
 	/*
 	 * Off-DB fields.
-	 */
-	protected final eUnitType type;
+	 */	
 	/** 
 	 * Celestial body to spawn the unit to.
 	 * It determines the initial value of departure.
 	 * Celestial body must already exist.
 	 */
 	protected final String initialDepartureName;
-	protected Location departure;
-	
+	protected Location departure;	
 	
 	/*
 	 * DB connection
@@ -57,10 +60,7 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 	 */
 	public Unit(String ownerName, String name, String productiveCelestialBodyName)
 	{
-		super(String.format("%s@%s", ownerName, name));
-		this.ownerName = ownerName;
-		this.name = name;
-		this.type = eUnitType.valueOf(getClass().getSimpleName());
+		super(-1, ownerName, name, true, null, 0F);
 		this.initialDepartureName = productiveCelestialBodyName;
 	}
 	
@@ -72,10 +72,7 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 	 */
 	public Unit(SEPCommonDB sepDB, String ownerName, String name)
 	{
-		super(sepDB, String.format("%s@%s", ownerName, name));
-		this.ownerName = ownerName;
-		this.name = name;
-		this.type = eUnitType.valueOf(getClass().getSimpleName());
+		super(sepDB, -1, ownerName, name);
 		
 		// Null values
 		this.initialDepartureName = null;
@@ -85,7 +82,6 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 	 * If object is DB connected, check for DB update.
 	 */
 	@Override
-	@OverridingMethodsMustInvokeSuper
 	protected void checkForDBUpdate()
 	{
 		if (!isDBOnline()) return;
@@ -94,7 +90,7 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 			db = sepDB.getDB();
 			
 			unitIndex = db.index().forNodes("UnitIndex");
-			IndexHits<Node> hits = unitIndex.get("ownerName@name", String.format("%s@%s", ownerName, name));
+			IndexHits<Node> hits = unitIndex.get(PK, getPK(ownerName, name));
 			
 			if (departure == null && initialDepartureName != null)
 			{
@@ -107,7 +103,7 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 			if (properties != null && !properties.getProperty("type").equals(type.toString()))
 			{
 				throw new RuntimeException("Node type error: tried to connect '"+type+"' to '"+properties.getProperty("type")+"'");
-			}
+			}			
 		}
 	}
 
@@ -118,20 +114,19 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 	 * @param sepDB
 	 */
 	@Override
-	@OverridingMethodsMustInvokeSuper
 	protected void create(SEPCommonDB sepDB)
 	{
 		Transaction tx = sepDB.getDB().beginTx();
 		
 		try
 		{
-			if (unitIndex.get("ownerName@name", String.format("%s@%s", ownerName, name)).hasNext())
+			if (unitIndex.get(PK, getPK(ownerName, name)).hasNext())
 			{
 				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'ownerName@name' must be unique, unit[ownerName='"+ownerName+"', name='"+name+"'] already exist.");
+				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, unit["+getPK(ownerName, name)+"] already exist.");
 			}			
 						
-			unitIndex.add(properties, "ownerName@name", String.format("%s@%s", ownerName, name));
+			unitIndex.add(properties, PK, getPK(ownerName, name));
 			
 			Node nOwner = db.index().forNodes("PlayerIndex").get("name", ownerName).getSingle();
 			if (nOwner == null)
@@ -142,18 +137,7 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 			nOwner.createRelationshipTo(properties, eRelationTypes.PlayerUnit);
 			
 			// Ensure area creation
-			sepDB.getArea(departure);
-			
-			IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get("location", departure.toString());
-			if (!hits.hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Cannot find Area[location='"+departure.toString()+"']. Area must be created before Unit.");				
-			}
-			
-			Node nArea = hits.getSingle();
-			
-			properties.createRelationshipTo(nArea, eRelationTypes.UnitDeparture);
+			updateDeparture();
 			
 			tx.success();			
 		}
@@ -164,21 +148,52 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 	}
 	
 	@Override
-	public String getOwnerName()
+	@OverridingMethodsMustInvokeSuper
+	public void destroy()
 	{
-		return ownerName;
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			unitIndex.remove(properties);
+			properties.getSingleRelationship(eRelationTypes.PlayerUnit, Direction.INCOMING).delete();
+			properties.getSingleRelationship(eRelationTypes.UnitDeparture, Direction.OUTGOING).delete();
+			
+			Relationship destination = properties.getSingleRelationship(eRelationTypes.UnitDestination, Direction.OUTGOING);
+			if (destination != null) destination.delete();
+			
+			for(Relationship encounterLog : properties.getRelationships(eRelationTypes.UnitEncounterLog, Direction.OUTGOING))
+			{
+				Node nEncounterLog = encounterLog.getEndNode();
+				Relationship publication = nEncounterLog.getSingleRelationship(eRelationTypes.PlayerEncounterLog, Direction.INCOMING);
+				
+				if (publication == null)
+				{
+					encounterLog.delete();
+					nEncounterLog.delete();
+				}
+			}
+			
+			properties.delete();
+			
+			tx.success();			
+		}
+		finally
+		{
+			tx.finish();
+		}
 	}
 	
 	@Override
-	public String getName()
+	public int getTurn()
 	{
-		return name;
-	}
-	
-	@Override
-	public eUnitType getType()
-	{
-		return type;
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		return sepDB.getConfig().getTurn();
 	}
 	
 	@Override
@@ -191,12 +206,69 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 	}
 	
 	@Override
-	public double getTravellingProgress()
+	public RealLocation getRealLocation()
+	{
+		Location destination = getDestination();
+		if (destination == null) return getDeparture().asRealLocation();
+		
+		double progress = getTravelingProgress();
+		if (progress >= 1) throw new RuntimeException("Progress should not be greater or equal to 1");
+		return SEPUtils.getMobileLocation(getDeparture().asRealLocation(), destination.asRealLocation(), progress, true);				
+	}
+	
+	/**
+	 * Return unit real location during the current move at given step.
+	 * @param step
+	 * @return
+	 */
+	protected RealLocation getRealLocation(double step)
+	{
+		if (step < 0 || step > 1) throw new RuntimeException("Step is out of bounds [0; 1]");
+		
+		Location departure = getDeparture();
+		Location destination = getDestination();
+		if (destination == null) return getDeparture().asRealLocation();
+		
+		double progress = getTravelingProgress();
+		if (progress >= 1) throw new RuntimeException("Progress should not be greater or equal to 1");
+		return SEPUtils.getMobileLocation(getDeparture().asRealLocation(), destination.asRealLocation(), getSpeed(), progress, step, true);
+	}
+	
+	@Override
+	public float getSpeed()
 	{
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		return properties.hasProperty("travellingProgress") ? (Double) properties.getProperty("travellingProgress") : 0.0;
+		return sepDB.getConfig().getUnitTypeSpeed(getType());
+	}
+	
+	@Override
+	public double getTravelingProgress()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		return properties.hasProperty("travelingProgress") ? (Double) properties.getProperty("travelingProgress") : 0.0;
+	}
+	
+	@Override
+	public void setTravelingProgress(double travelingProgress)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = db.beginTx();
+		
+		try
+		{
+			properties.setProperty("travelingProgress", travelingProgress);
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
 	}
 	
 	@Override
@@ -216,7 +288,47 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
+		//return Location.valueOf((String) properties.getSingleRelationship(eRelationTypes.UnitDeparture, Direction.OUTGOING).getEndNode().getProperty("location"));		
 		return Location.valueOf((String) properties.getProperty("departure"));
+	}
+	
+	@Override
+	public void setDeparture(Location departure)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = db.beginTx();
+		
+		try
+		{
+			this.departure = departure;
+			updateDeparture();
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+	
+	private void updateDeparture()
+	{
+		sepDB.getArea(departure);
+		
+		Relationship oldDeparture = properties.getSingleRelationship(eRelationTypes.UnitDeparture, Direction.OUTGOING);
+		if (oldDeparture != null) oldDeparture.delete();		
+		
+		IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get("location", departure.toString());
+		if (!hits.hasNext())
+		{
+			throw new DBGraphException("Constraint error: Cannot find Area[location='"+departure.toString()+"']. Area must be created before Unit.");				
+		}
+		
+		Node nArea = hits.getSingle();
+		
+		properties.createRelationshipTo(nArea, eRelationTypes.UnitDeparture);
+		properties.setProperty("departure", departure.toString());
 	}
 	
 	@Override
@@ -233,14 +345,82 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 	}
 	
 	@Override
-	public RealLocation getRealLocation()
+	public void setDestination(Location destination)
 	{
-		Location destination = getDestination();
-		if (destination == null) return getDeparture().asRealLocation();
+		assertOnlineStatus(true);
+		checkForDBUpdate();
 		
-		double progress = getTravellingProgress();
-		if (progress >= 1) throw new RuntimeException("Progress should not be greater or equal to 1");
-		return SEPUtils.getMobileLocation(getDeparture().asRealLocation(), destination.asRealLocation(), progress, true);				
+		Transaction tx = db.beginTx();
+		
+		try
+		{
+			Relationship currentDestination = properties.getSingleRelationship(eRelationTypes.UnitDestination, Direction.OUTGOING);
+			
+			if (destination == null)
+			{
+				if (currentDestination != null)
+				{
+					currentDestination.delete();
+				}
+			}
+			else
+			{
+				if (currentDestination != null)
+				{
+					tx.failure();
+					throw new RuntimeException("Destination already defined");
+				}
+				
+				sepDB.getArea(destination);
+				Node nArea = db.index().forNodes("AreaIndex").get("location", destination.toString()).getSingle();
+				
+				properties.createRelationshipTo(nArea, eRelationTypes.UnitDestination);							
+			}
+			
+			properties.setProperty("travelingProgress", 0.0D);
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+	
+	@Override
+	public float getSight()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		return sepDB.getConfig().getUnitTypeSight(getType());
+	}
+	
+	@Override
+	public void logEncounter(IUnit encounteredUnit, double step)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = db.beginTx();
+		
+		try
+		{		
+			// NOTE: We do not delete previous marker versions.		
+			IUnitMarker unitMarker = encounteredUnit.getMarker(step);
+					
+			EncounterLog encounterLog = new EncounterLog(getOwnerName(), getName(), unitMarker.getOwnerName(), unitMarker.getName(), unitMarker.getTurn());
+			encounterLog.create(sepDB);
+			
+			Node nEncounterLog = db.index().forNodes("EncounterLogIndex").get(EncounterLog.PK, EncounterLog.getPK(unitMarker.getTurn(), getOwnerName(), getName(), unitMarker.getOwnerName(), unitMarker.getName())).getSingle();
+			
+			properties.createRelationshipTo(nEncounterLog, eRelationTypes.UnitEncounterLog);
+			
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
 	}
 	
 	@Override

@@ -17,9 +17,14 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -44,6 +49,7 @@ import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.Rules;
 import org.axan.sep.common.Rules.StarshipTemplate;
 import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.db.IAntiProbeMissile;
 import org.axan.sep.common.db.IArea;
 import org.axan.sep.common.db.IAsteroidField;
 import org.axan.sep.common.db.IBuilding;
@@ -57,11 +63,13 @@ import org.axan.sep.common.db.INebula;
 import org.axan.sep.common.db.IPlanet;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
+import org.axan.sep.common.db.IProbe;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IPulsarLaunchingPad;
 import org.axan.sep.common.db.ISpaceCounter;
 import org.axan.sep.common.db.IStarshipPlant;
 import org.axan.sep.common.db.IUnit;
+import org.axan.sep.common.db.IUnitMarker;
 import org.axan.sep.common.db.IVortex;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -83,6 +91,11 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 {
 	private static final long serialVersionUID = 1L;
 
+	public static interface IAreaChangeListener
+	{
+		void onAreaChanged(Location location);
+	}
+	
 	public static enum eRelationTypes implements RelationshipType
 	{
 		/** Relation from ReferenceNode to Config factory node. */
@@ -131,12 +144,25 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		PlayerCelestialBodies,
 		// eCelestialBodyType value
 		
-		/** Releation from Player node to owned Unit nodes. */
+		/** Relation from Player node to owned Unit nodes. */
 		PlayerUnit,
 		// eUnitType value
 		
+		/** Relation from Player node to owned UnitMarker node. */
+		PlayerUnitMarker,
+		// eUnitType value+"Marker" dynamic relationship type
+		
 		/** Relation from SpaceCounter node (source, i.e. builder) to SpaceCounter node (destination). */
-		SpaceRoad
+		SpaceRoad,
+		
+		/** Relation from AntiProbeMissile node to Probe node (target) */
+		AntiProbeMissileTarget,
+		
+		/** Relation from Unit node to EncounterLog nodes */
+		UnitEncounterLog,
+		
+		/** Relation from Player node to EncounterLog nodes */
+		PlayerEncounterLog
 	}
 
 	private static class GameConfigInvocationHandler implements InvocationHandler
@@ -411,10 +437,15 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	private transient Index<Node> planetIndex;
 	private transient Index<Node> buildingIndex;
 	private transient Index<Node> unitIndex;
+	private transient Index<Node> probeIndex;
+	private transient Index<Node> antiProbeMissileIndex;
+	private transient Index<Node> unitMarkerIndex;
 
 	private transient Node playersFactory;
 	private transient Node areasFactory;
 	private transient Node sun;
+	
+	private transient Set<IAreaChangeListener> areaChangeListeners;
 
 	private SEPCommonDB previousVersion = null;
 	private SEPCommonDB nextVersion = null;
@@ -433,6 +464,26 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		GameConfigCopier.copy(IGameConfig.class, config, this.config);
 	}
 
+	public void addAreaChangeListener(IAreaChangeListener listener)
+	{
+		waitForInit();
+		areaChangeListeners.add(listener);
+	}
+	
+	public void removeAreaChangeListener(IAreaChangeListener listener)
+	{
+		waitForInit();
+		areaChangeListeners.remove(listener);
+	}
+	
+	public void fireAreaChangedEvent(Location location)
+	{
+		for(IAreaChangeListener listener : areaChangeListeners)
+		{
+			listener.onAreaChanged(location);
+		}
+	}
+	
 	public IGameConfig getConfig()
 	{
 		waitForInit();
@@ -465,15 +516,27 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		return areasFactory.hasRelationship(eRelationTypes.Areas, Direction.OUTGOING);
 	}
 
+	public Set<String> getPlayersNames()
+	{
+		waitForInit();
+		Set<String> playersNames = new HashSet<String>();
+		for(Node n: playersFactory.traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eRelationTypes.Players, Direction.OUTGOING))
+		{
+			playersNames.add((String) n.getProperty("name"));
+		}
+
+		return playersNames;
+	}
+	
 	public Set<IPlayer> getPlayers()
 	{
 		waitForInit();
 		Set<IPlayer> players = new HashSet<IPlayer>();
-		for(Node n: playersFactory.traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eRelationTypes.Players, Direction.OUTGOING))
+		for(String playerName : getPlayersNames())
 		{
-			players.add(new Player(this, (String) n.getProperty("name")));
+			players.add(new Player(this, playerName));
 		}
-
+		
 		return players;
 	}
 
@@ -507,7 +570,24 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		}
 		return new Planet(this, (String) it.next().getProperty("name"));
 	}
+	
+	/**
+	 * Return list of all already created areas.
+	 * @return
+	 */
+	public Set<IArea> getAreas()
+	{
+		waitForInit();
+		Set<IArea> result = new HashSet<IArea>();
+		for(Node n : areasFactory.traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eRelationTypes.Areas, Direction.OUTGOING))
+		{
+			Location location = Location.valueOf((String) n.getProperty("location"));
+			result.add(getArea(location));
+		}
+		return result;
+	}
 
+	/*
 	public Set<IArea> getAreasByZ(int z)
 	{
 		waitForInit();
@@ -529,6 +609,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		
 		return new HashSet<IArea>(areas.values());
 	}
+	*/
 
 	//////////////// CRUD: Create
 
@@ -586,10 +667,15 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	{
 		waitForInit();
 		Area area = new Area(this, location);
-		if (area.exists()) return area;
 		
-		area = new Area(location);
-		area.create(this);
+		synchronized(Area.class)
+		{
+			if (area.exists()) return area;
+			
+			area = new Area(location);
+			area.create(this);
+		}
+		
 		return area;
 	}
 	
@@ -927,8 +1013,110 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		return new Fleet(ownerName, name, productiveCelestialBodyName, starships);
 	}
 	
+	public IProbe createProbe(IProbe probe)
+	{
+		waitForInit();
+		Probe result = new Probe(probe.getOwnerName(), probe.getSerieName(), probe.getSerialNumber(), probe.getInitialDepartureName());
+		result.create(this);
+		return result;
+	}
+	
+	public IProbe getProbe(String ownerName, String name)
+	{
+		waitForInit();
+		Probe probe = new Probe(this, ownerName, name);
+		return probe.exists() ? probe : null;
+	}
+	
+	public List<IProbe> getProbeSerie(String ownerName, String serieName)
+	{
+		waitForInit();
+		List<IProbe> result = new LinkedList<IProbe>();
+		IndexHits<Node> hit = probeIndex.query(Unit.PK, Probe.querySeriePK(ownerName, serieName));
+		if (!hit.hasNext()) return result;
+		
+		for(Node n : hit)
+		{
+			result.add(getProbe(ownerName, (String) n.getProperty("name")));
+		}
+		
+		Collections.sort(result, new Comparator<IProbe>()
+		{
+			@Override
+			public int compare(IProbe o1, IProbe o2)
+			{
+				return ((Integer) o1.getSerialNumber()).compareTo(o2.getSerialNumber());
+			}
+		});
+		
+		return result;
+	}
+
+	public static IProbe makeProbe(String ownerName, String serieName, int serialNumber, String productiveCelestialBodyName)
+	{
+		return new Probe(ownerName, serieName, serialNumber, productiveCelestialBodyName);
+	}
+	
+	public IAntiProbeMissile createAntiProbeMissile(IAntiProbeMissile antiProbeMissile)
+	{
+		waitForInit();
+		AntiProbeMissile result = new AntiProbeMissile(antiProbeMissile.getOwnerName(), antiProbeMissile.getSerieName(), antiProbeMissile.getSerialNumber(), antiProbeMissile.getInitialDepartureName());
+		result.create(this);
+		return result;
+	}
+	
+	public IAntiProbeMissile getAntiProbeMissile(String ownerName, String name)
+	{
+		waitForInit();
+		AntiProbeMissile antiProbeMissile = new AntiProbeMissile(this, ownerName, name);
+		return antiProbeMissile.exists() ? antiProbeMissile : null;
+	}
+	
+	public List<IAntiProbeMissile> getAntiProbeMissileSerie(String ownerName, String serieName)
+	{
+		waitForInit();
+		List<IAntiProbeMissile> result = new LinkedList<IAntiProbeMissile>();
+		IndexHits<Node> hit = antiProbeMissileIndex.query(Unit.PK, AntiProbeMissile.querySeriePK(ownerName, serieName));
+		if (!hit.hasNext()) return result;
+		
+		for(Node n : hit)
+		{
+			result.add(getAntiProbeMissile(ownerName, (String) n.getProperty("name")));
+		}
+		
+		Collections.sort(result, new Comparator<IAntiProbeMissile>()
+		{
+			@Override
+			public int compare(IAntiProbeMissile o1, IAntiProbeMissile o2)
+			{
+				return ((Integer) o1.getSerialNumber()).compareTo(o2.getSerialNumber());
+			}
+		});
+		
+		return result;
+	}
+
+	public static IAntiProbeMissile makeAntiProbeMissile(String ownerName, String serieName, int serialNumber, String productiveCelestialBodyName)
+	{
+		return new AntiProbeMissile(ownerName, serieName, serialNumber, productiveCelestialBodyName);
+	}
+	
+	public Set<IUnit> getUnits()
+	{
+		waitForInit();
+		
+		Set<IUnit> result = new HashSet<IUnit>();
+		for(IPlayer player : getPlayers())
+		{
+			result.addAll(player.getUnits(null));
+		}
+		
+		return result;
+	}	
+	
 	/**
 	 * Return unit identified by given ownerName, name and type. Return null if such unit does not exist.
+	 * type may be null if any unit type is accepted.
 	 * @param ownerName
 	 * @param name
 	 * @param type
@@ -937,25 +1125,113 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	public IUnit getUnit(String ownerName, String name, eUnitType type)
 	{
 		waitForInit();
-		IndexHits<Node> hit = unitIndex.get("ownerName@name", String.format("%s@%s", ownerName, name));
+		IndexHits<Node> hit = unitIndex.get(Unit.PK, Unit.getPK(ownerName, name));
+		if (!hit.hasNext())
+		{
+			return null;
+		}
+		
+		Node n = hit.next();		
+		if (type != null && (!n.hasProperty("type") || !type.toString().equals((String) n.getProperty("type"))))
+		{
+			return null;
+		}
+		
+		if (type == null) type = eUnitType.valueOf((String) n.getProperty("type"));
+				
+		switch (type)
+		{
+			case Fleet:
+				return new Fleet(this, ownerName, name);
+			case Probe:
+				return new Probe(this, ownerName, name);
+			case AntiProbeMissile:
+				return new AntiProbeMissile(this, ownerName, name);
+			default:
+			{
+				throw new RuntimeException("Unknown Unit type '" + type + "'.");
+			}
+		}
+	}
+	
+	public Set<IUnitMarker> getUnitsMarkers()
+	{
+		waitForInit();
+		
+		Set<IUnitMarker> result = new HashSet<IUnitMarker>();
+		for(IPlayer player : getPlayers())
+		{
+			result.addAll(player.getUnitsMarkers(null));
+		}
+		
+		return result;
+	}
+	
+	/**
+	 * Return unit marker identified by given ownerName, name and type. Return null if such unit marker does not exist.
+	 * type may be null if any unit type is accepted.
+	 * @param ownerName
+	 * @param name
+	 * @param type
+	 * @return
+	 */
+	public IUnitMarker getUnitMarker(int turn, String ownerName, String name, eUnitType type)
+	{
+		waitForInit();
+		IndexHits<Node> hit = unitMarkerIndex.get(UnitMarker.PK, UnitMarker.getPK(turn, ownerName, name));
 		if (!hit.hasNext())
 		{
 			return null;
 		}
 		
 		Node n = hit.next();
-		if (!n.hasProperty("type") || !type.toString().equals((String) n.getProperty("type")))
+		if (type != null && (!n.hasProperty("type") || !type.toString().equals((String) n.getProperty("type"))))
 		{
 			return null;
 		}
+		
+		if (type == null) type = eUnitType.valueOf((String) n.getProperty("type"));
 				
 		switch (type)
 		{
 			case Fleet:
-				return new Fleet(this, ownerName, name);
+				return new FleetMarker(this, turn, ownerName, name);
+			case Probe:
+				return new ProbeMarker(this, turn, ownerName, name);
+			case AntiProbeMissile:
+				return new AntiProbeMissileMarker(this, turn, ownerName, name);
 			default:
 			{
 				throw new RuntimeException("Unknown Unit type '" + type + "'.");
+			}
+		}
+	}
+	
+	public static <T extends IUnit> T makeUnit(T unit)
+	{
+		switch(unit.getType())
+		{
+			case AntiProbeMissile:
+			{
+				IAntiProbeMissile apm = (IAntiProbeMissile) unit;
+				return (T) makeAntiProbeMissile(apm.getOwnerName(), apm.getSerieName(), apm.getSerialNumber(), apm.getInitialDepartureName());
+			}
+			
+			case Fleet:
+			{
+				IFleet fleet = (IFleet) unit;
+				return (T) makeFleet(fleet.getOwnerName(), fleet.getName(), fleet.getInitialDepartureName(), fleet.getStarships());
+			}
+			
+			case Probe:
+			{
+				IProbe probe = (IProbe) unit;
+				return (T) makeProbe(probe.getOwnerName(), probe.getSerieName(), probe.getSerialNumber(), probe.getInitialDepartureName());
+			}
+			
+			default:
+			{
+				throw new RuntimeException("Unknown Unit type '"+unit.getType()+"'.");
 			}
 		}
 	}
@@ -966,82 +1242,6 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		ProductiveCelestialBody pcb = (ProductiveCelestialBody) getCelestialBody(productiveCelestialBodyName);
 		return pcb.getAssignedFleet(playerName, true);
 	}
-	
-	/*
-	Use IProductiveCelestialBody#setOwner(String) instead.
-	public void updateOwnership(IProductiveCelestialBody productiveCelestialBody, IPlayer owner)
-	{
-		Node nProductiveCelestialBody = productiveCelestialBodyIndex.get("name", productiveCelestialBody.getName()).getSingle();
-		Node nOwner = playerIndex.get("name", owner.getName()).getSingle();
-		
-		Transaction tx = db.beginTx();
-		
-		try
-		{
-			Relationship ownership = nProductiveCelestialBody.getSingleRelationship(eRelationTypes.CelestialBody, Direction.INCOMING);
-			if (ownership != null)
-			{
-				ownership.delete();
-				ownership = null;
-			}
-			
-			nOwner.createRelationshipTo(nProductiveCelestialBody, eRelationTypes.CelestialBody);
-			
-			tx.success();
-		}
-		finally
-		{
-			tx.finish();
-		}		
-	}
-	*/
-
-	/*		
-	public void createBuilding(IBuilding building, IProductiveCelestialBody productiveCelestialBody)
-	{
-		Transaction tx = db.beginTx();
-		
-		try
-		{
-			Node nProductiveCelestialBody = celestialBodyIndex.get("name", productiveCelestialBody.getName()).getSingle();
-			super.createBuilding(building);
-		}
-		finally
-		{
-			tx.finish();
-		}
-	}
-	
-	/*
-	public void createBuilding(IBuilding building)
-	{
-		Transaction tx = db.beginTx();
-		try
-		{
-			Node nCelestialBody = celestialBodyIndex.get("name", building.getCelestialBodyName()).getSingle();
-			if (nCelestialBody == null)
-			{
-				tx.failure();
-				throw new RuntimeException("Unknown celestial body '"+building.getCelestialBodyName()+"'.");
-			}
-			
-			if (nCelestialBody.traverse(Order.DEPTH_FIRST, StopEvaluator.END_OF_GRAPH, ReturnableEvaluator.ALL_BUT_START_NODE, building.getType(), Direction.OUTGOING).iterator().hasNext())
-			{
-				tx.failure();
-				throw new RuntimeException("Building '"+building.getType()+"' already exists on '"+building.getCelestialBodyName()+"'.");
-			}
-			
-			Node nBuidling = db.createNode();
-			initializeNode(nBuidling, building.getNode());
-			nCelestialBody.createRelationshipTo(nBuidling, building.getType());
-			tx.success();
-		}
-		finally
-		{
-			tx.finish();
-		}
-	}
-	*/
 
 	/*
 	public void updateGovernment(final IGovernment government)
@@ -1303,7 +1503,16 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	}
 	
 	private void doInit(final GraphDatabaseService db)
-	{		
+	{
+		this.areaChangeListeners = new HashSet<SEPCommonDB.IAreaChangeListener>();
+		SEPCommonDB pDB = previous();
+		
+		if (pDB != null)
+		{
+			this.areaChangeListeners.addAll(pDB.areaChangeListeners);
+			pDB.areaChangeListeners.clear();
+		}
+		
 		this.db = db;
 		Runtime.getRuntime().addShutdownHook(new Thread()
 		{
@@ -1327,6 +1536,9 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 			celestialBodyIndex = db.index().forNodes("CelestialBodyIndex");
 			buildingIndex = db.index().forNodes("BuildingIndex");
 			unitIndex = db.index().forNodes("UnitIndex");
+			probeIndex = db.index().forNodes("ProbeIndex");
+			antiProbeMissileIndex = db.index().forNodes("AntiProbeMissileIndex");
+			unitMarkerIndex = db.index().forNodes("UnitMarkerIndex");
 			Relationship playersFactoryRel = db.getReferenceNode().getSingleRelationship(eRelationTypes.Players, Direction.OUTGOING);
 			if (playersFactoryRel == null)
 			{

@@ -8,13 +8,16 @@ package org.axan.sep.common;
 import java.io.File;
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
+import org.axan.sep.common.db.IArea;
 import org.axan.sep.common.db.IGameConfig;
 
 
@@ -62,6 +65,17 @@ public abstract class SEPUtils
 		public Location asLocation()
 		{
 			return new Location((int) x, (int) y, (int) z);
+		}
+		
+		public static RealLocation valueOf(String s)
+		{
+			Pattern p = Pattern.compile("\\[([0-9]{1,}(?:[,\\.][0-9]+)?+);([0-9]{1,}(?:[,\\.][0-9]+)?+);([0-9]{1,}(?:[,\\.][0-9]+)?+)\\]", Pattern.DOTALL);			
+			Matcher m = p.matcher(s);
+			if (!m.matches()) throw new NumberFormatException("Location string '"+s+"' does not matches \"[([0-9]{1,}(?:[,.][0-9]+)?+);([0-9]{1,}(?:[,.][0-9]+)?+);([0-9]{1,}(?:[,.][0-9]+)?+)]\" format.");
+			double x = Double.valueOf(m.group(1));
+			double y = Double.valueOf(m.group(2));
+			double z = Double.valueOf(m.group(3));
+			return new RealLocation(x, y, z);
 		}
 	}
 	
@@ -136,6 +150,11 @@ public abstract class SEPUtils
 		return Math.sqrt(Math.pow(a.x-b.x, 2) + Math.pow(a.y-b.y, 2) + Math.pow(a.z-b.z, 2));
 	}
 	
+	public static RealLocation getMobileLocation(RealLocation departure, RealLocation destination, float speed, double progress, double step, boolean stopOnB)
+	{
+		return getMobileLocation(departure, destination, progress + (step / getDistance(departure, destination)) * speed, stopOnB);
+	}
+	
 	public static RealLocation getMobileLocation(RealLocation departure, RealLocation destination, double progress, boolean stopOnB)
 	{
 		double x = departure.x + (destination.x - departure.x)*progress;
@@ -150,6 +169,41 @@ public abstract class SEPUtils
 		{
 			return new RealLocation((departure.x<destination.x?Math.min(x, destination.x):Math.max(x, destination.x)), (departure.y<destination.y?Math.min(y, destination.y):Math.max(y, destination.y)), (departure.z<destination.z?Math.min(z, destination.z):Math.max(z, destination.z)));
 		}
+	}
+	
+	public static Set<Location> scanSphere(Location center, int radius)
+	{
+		Set<Location> result = new HashSet<Location>();
+		
+		for(int x=0; x <= radius; ++x)
+		{
+			if (x > center.x) break;
+			
+			for(int y=0; y <= radius; ++y)
+			{
+				if (y > center.y) break;
+				
+				for(int z=0; z <= radius; ++z)
+				{
+					if (z > center.z) break;
+					
+					Location l = new Location(center.x + x, center.y + y, center.z + z);
+					if (SEPUtils.getDistance(center, l) <= radius)
+					{
+						result.add(l); 														// +++
+						result.add(new Location(center.x + x, center.y + y, center.z - z));	// ++-
+						result.add(new Location(center.x + x, center.y - y, center.z + z));	// +-+
+						result.add(new Location(center.x + x, center.y - y, center.z - z));	// +--
+						result.add(new Location(center.x - x, center.y + y, center.z + z));	// -++
+						result.add(new Location(center.x - x, center.y + y, center.z - z));	// -+-
+						result.add(new Location(center.x - x, center.y - y, center.z + z));	// --+
+						result.add(new Location(center.x - x, center.y - y, center.z - z));	// ---
+					}
+				}
+			}
+		}
+		
+		return result;
 	}
 	
 	public static Stack<RealLocation> getAllPathLoc(RealLocation a, RealLocation b)
@@ -176,6 +230,22 @@ public abstract class SEPUtils
 		}
 		
 		return result;
+	}
+	
+	public static boolean isTravelingTheSun(IGameConfig config, Location a, Location b)
+	{
+		// TODO: Optimize with a SQL request using "... IN ( ... )" as where clause.
+		Location sunLocation = Rules.getSunLocation(config);
+		
+		for(RealLocation pathStep: SEPUtils.getAllPathLoc(a.asRealLocation(), b.asRealLocation()))
+		{
+			if (SEPUtils.getDistance(pathStep.asLocation(), sunLocation) <= config.getSunRadius())
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 	
 	/*

@@ -4,10 +4,14 @@ import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.axan.sep.common.Protocol.eBuildingType;
+import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.Rules.StarshipTemplate;
 import org.axan.sep.common.Rules;
+import org.axan.sep.common.SEPUtils;
+import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.orm.SEPCommonDB;
 
 public abstract class Commands
@@ -37,7 +41,7 @@ public abstract class Commands
 		
 		protected void checkOwnership(String expectedOwner, String actualOwner, String errorMessage) throws GameCommandException
 		{
-			if (!actualOwner.equals(expectedOwner)) throw new GameCommandException(this, errorMessage);
+			if ((actualOwner == null && expectedOwner != null) || !actualOwner.equals(expectedOwner)) throw new GameCommandException(this, errorMessage);
 		}
 		
 		protected void checkCanAfford(IProductiveCelestialBody productiveCelestialBody, int carbonCost, int populationCost) throws GameCommandException
@@ -58,6 +62,199 @@ public abstract class Commands
 				throw new GameCommandException(this, String.format("'%s' cannot afford building :%s%s", productiveCelestialBody.getName(), (carbonCost > 0) ? " "+carbonCost+"C" : "", (populationCost > 0) ? " "+populationCost+"P" : ""));
 			}
 		}
+		
+		protected void checkLocation(Location location, IGameConfig config) throws GameCommandException
+		{
+			if (location.x < 0 || location.x > config.getDimX() || location.y < 0 || location.y > config.getDimY() || location.z < 0 || location.z > config.getDimZ())
+			{
+				throw new GameCommandException(this, "Invalid location "+location.toString());
+			}
+		}
+	}
+	
+	public static class LaunchProbe extends ACommand implements Serializable
+	{
+		private final String probeName;
+		private final Location destination;
+		
+		private transient IProbe probe;
+		
+		public LaunchProbe(String playerName, String probeName, Location destination)
+		{
+			super(playerName);
+			this.probeName = probeName;
+			this.destination = destination;
+		}
+		
+		@Override
+		public void check(SEPCommonDB db) throws GameCommandException
+		{
+			probe = (IProbe) db.getUnit(playerName, probeName, eUnitType.Probe);
+			if (probe == null) throw new GameCommandException(this, "Unknown probe "+playerName+"@"+probeName);
+			if (probe.isDeployed()) throw new GameCommandException(this, "Probe is already deployed");
+			if (!probe.isStopped()) throw new GameCommandException(this, "Probe has already been launched");
+			
+			checkLocation(destination, db.getConfig());
+			
+			if (SEPUtils.isTravelingTheSun(db.getConfig(), probe.getDeparture(), destination))
+			{
+				throw new GameCommandException(this, "Cannot launch probe to "+destination+" because there is the sun on the way");
+			}			
+		}
+		
+		@Override
+		public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameCommandException
+		{
+			check(db);
+			probe.setDestination(destination);
+			db.fireAreaChangedEvent(probe.getRealLocation().asLocation());
+		}
+	}
+	
+	public static class MakeAntiProbeMissile extends ACommand implements Serializable
+	{
+		private final String productiveCelestialBodyName;
+		private final String serieName;
+		private final int quantity;
+		
+		private transient IProductiveCelestialBody productiveCelestialBody;
+		private transient int lastSerialNumber;
+		private transient int carbonCost;
+		private transient int populationCost;
+		private transient IPlanet planet;
+		
+		public MakeAntiProbeMissile(String playerName, String productiveCelestialBodyName, String serieName, int quantity)
+		{
+			super(playerName);
+			this.productiveCelestialBodyName = productiveCelestialBodyName;
+			this.serieName = serieName;
+			this.quantity = quantity;
+		}
+		
+		@Override
+		public void check(SEPCommonDB db) throws GameCommandException
+		{
+			if (quantity <= 0) throw new GameCommandException(this, "Incorrect quantity ("+quantity+"), must be greater than 0");
+			
+			if (serieName == null || serieName.isEmpty()) throw new GameCommandException(this, "Incorrect serie name");
+			
+			productiveCelestialBody = checkProductiveCelestialBody(db, productiveCelestialBodyName);			
+			checkOwnership(playerName, productiveCelestialBody.getOwner(), playerName+" does not own "+productiveCelestialBodyName);
+			
+			IStarshipPlant starshipPlant = (IStarshipPlant) productiveCelestialBody.getBuilding(eBuildingType.StarshipPlant);
+			if (starshipPlant == null) throw new GameCommandException(this, "Cannot find "+eBuildingType.StarshipPlant+" on '"+productiveCelestialBodyName+"'");			
+			
+			lastSerialNumber = 0;
+			for(SEPCommonDB pDB = db ; pDB.hasPrevious(); pDB = pDB.previous())
+			{
+				for(IAntiProbeMissile apm : pDB.getAntiProbeMissileSerie(playerName, serieName))
+				{
+					lastSerialNumber = Math.max(lastSerialNumber, apm.getSerialNumber());
+				}
+				if (lastSerialNumber != 0) break;
+			}			
+			
+			carbonCost = Rules.antiProbeMissileCarbonPrice * quantity;
+			populationCost = Rules.antiProbeMissilePopulationPrice * quantity;						
+			
+			checkCanAfford(productiveCelestialBody, carbonCost, populationCost);
+			planet = (IPlanet.class.isInstance(productiveCelestialBody)) ? (IPlanet) productiveCelestialBody : null;
+		}
+		
+		public int getLastSerialNumber()
+		{
+			return lastSerialNumber;
+		}
+		
+		@Override
+		public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameCommandException
+		{
+			check(db);
+			
+			if (carbonCost > 0) productiveCelestialBody.payCarbon(carbonCost);
+			if (populationCost > 0) planet.payPopulation(populationCost);
+			
+			for(int i = 0; i < quantity; ++i)
+			{
+				int serialNumber = lastSerialNumber+i+1;
+				db.createAntiProbeMissile(db.makeAntiProbeMissile(playerName, serieName, serialNumber, productiveCelestialBodyName));
+			}
+			
+			db.fireAreaChangedEvent(productiveCelestialBody.getLocation());
+		}
+	}
+	
+	public static class MakeProbes extends ACommand implements Serializable
+	{
+		private final String productiveCelestialBodyName;
+		private final String serieName;
+		private final int quantity;
+		
+		private transient IProductiveCelestialBody productiveCelestialBody;
+		private transient int lastSerialNumber;
+		private transient int carbonCost;
+		private transient int populationCost;
+		private transient IPlanet planet;
+		
+		public MakeProbes(String playerName, String productiveCelestialBodyName, String serieName, int quantity)
+		{
+			super(playerName);
+			this.productiveCelestialBodyName = productiveCelestialBodyName;
+			this.serieName = serieName;
+			this.quantity = quantity;
+		}
+		
+		@Override
+		public void check(SEPCommonDB db) throws GameCommandException
+		{
+			if (quantity <= 0) throw new GameCommandException(this, "Incorrect quantity ("+quantity+"), must be greater than 0");
+			
+			if (serieName == null || serieName.isEmpty()) throw new GameCommandException(this, "Incorrect serie name");
+			
+			productiveCelestialBody = checkProductiveCelestialBody(db, productiveCelestialBodyName);			
+			checkOwnership(playerName, productiveCelestialBody.getOwner(), playerName+" does not own "+productiveCelestialBodyName);
+			
+			IStarshipPlant starshipPlant = (IStarshipPlant) productiveCelestialBody.getBuilding(eBuildingType.StarshipPlant);
+			if (starshipPlant == null) throw new GameCommandException(this, "Cannot find "+eBuildingType.StarshipPlant+" on '"+productiveCelestialBodyName+"'");			
+			
+			lastSerialNumber = 0;
+			for(SEPCommonDB pDB = db ; pDB.hasPrevious(); pDB = pDB.previous())
+			{
+				for(IProbe probe : pDB.getProbeSerie(playerName, serieName))
+				{
+					lastSerialNumber = Math.max(lastSerialNumber, probe.getSerialNumber());
+				}
+				if (lastSerialNumber != 0) break;
+			}			
+			
+			carbonCost = Rules.probeCarbonPrice * quantity;
+			populationCost = Rules.probePopulationPrice * quantity;						
+			
+			checkCanAfford(productiveCelestialBody, carbonCost, populationCost);
+			planet = (IPlanet.class.isInstance(productiveCelestialBody)) ? (IPlanet) productiveCelestialBody : null;
+		}
+		
+		public int getLastSerialNumber()
+		{
+			return lastSerialNumber;
+		}
+		
+		@Override
+		public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameCommandException
+		{
+			check(db);
+			
+			if (carbonCost > 0) productiveCelestialBody.payCarbon(carbonCost);
+			if (populationCost > 0) planet.payPopulation(populationCost);
+			
+			for(int i = 0; i < quantity; ++i)
+			{
+				int serialNumber = lastSerialNumber+i+1;
+				db.createProbe(db.makeProbe(playerName, serieName, serialNumber, productiveCelestialBodyName));
+			}
+			
+			db.fireAreaChangedEvent(productiveCelestialBody.getLocation());
+		}
 	}
 	
 	public static class AssignStarships extends ACommand implements Serializable
@@ -71,10 +268,10 @@ public abstract class Commands
 		private transient IFleet destinationFleet;
 		private transient Map<StarshipTemplate, Integer> newcomers;
 		
-		public AssignStarships(String playerName, String productiveCelestialBody, Map<String, Integer> starships, String fleetName)
+		public AssignStarships(String playerName, String productiveCelestialBodyName, Map<String, Integer> starships, String fleetName)
 		{
 			super(playerName);
-			this.productiveCelestialBodyName = productiveCelestialBody;
+			this.productiveCelestialBodyName = productiveCelestialBodyName;
 			this.starships.putAll(starships);
 			this.fleetName = fleetName;
 		}
@@ -103,9 +300,21 @@ public abstract class Commands
 				if (quantity > 0) newcomers.put(template, quantity);
 			}
 			
-			if (fleetName == null || fleetName.isEmpty()) throw new GameCommandException(this, "Incorrect fleet name");
-			destinationFleet = db.getFleet(playerName, fleetName);			
-			if (destinationFleet != null)
+			if (fleetName == null || fleetName.isEmpty()) throw new GameCommandException(this, "Incorrect fleet name");			
+			
+			destinationFleet = db.getFleet(playerName, fleetName);
+			
+			if (destinationFleet == null)
+			{
+				// Check that fleetName has never been used previously
+				
+				for(SEPCommonDB pDB = db ; pDB.hasPrevious(); pDB = pDB.previous())
+				{
+					destinationFleet = pDB.getFleet(playerName, fleetName);
+					if (destinationFleet != null) throw new GameCommandException(this, "Fleet name reserved, '"+fleetName+"' has been destroyed on turn "+destinationFleet.getTurn()+". Its name cannot be used again.");
+				}
+			}
+			else
 			{
 				if (!destinationFleet.isStopped()) throw new GameCommandException(this, "Cannot assign starships to fleet '"+fleetName+"' because fleet is currently moving ("+destinationFleet.getRealLocation().toString()+")");
 				if (!productiveCelestialBody.getLocation().equals(destinationFleet.getDeparture())) throw new GameCommandException(this, "Cannot assign starships to fleet '"+fleetName+"' because fleet is not stopped on '"+productiveCelestialBodyName+"' ("+destinationFleet.getRealLocation().toString()+")");				
@@ -124,13 +333,15 @@ public abstract class Commands
 			
 			if (destinationFleet == null)
 			{
-				db.createFleet(db.makeFleet(playerName, fleetName, productiveCelestialBodyName, newcomers));
+				destinationFleet = db.createFleet(db.makeFleet(playerName, fleetName, productiveCelestialBodyName, newcomers));
 			}
 			else
 			{
-				destinationFleet.addStarships(newcomers);
-				assignedFleet.removeStarships(newcomers);
+				destinationFleet.addStarships(newcomers);				
 			}
+			
+			assignedFleet.removeStarships(newcomers);
+			db.fireAreaChangedEvent(destinationFleet.getRealLocation().asLocation());
 		}
 	}
 	
@@ -212,6 +423,8 @@ public abstract class Commands
 			
 			IFleet assignedFleet = db.getCreateAssignedFleet(productiveCelestialBodyName, playerName);
 			assignedFleet.addStarships(newcomers);
+			
+			db.fireAreaChangedEvent(productiveCelestialBody.getLocation());
 		}
 	}
 	
@@ -296,6 +509,8 @@ public abstract class Commands
 			{
 				existingBuilding.upgrade();
 			}
+			
+			db.fireAreaChangedEvent(productiveCelestialBody.getLocation());
 		}
 	}
 }

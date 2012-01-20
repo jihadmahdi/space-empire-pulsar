@@ -1,7 +1,18 @@
 JPanel(name=starshipPlantActionPanel):
   - JLabel(name=label)
   - JPanel(name=starshipsPanel)
-  - JPanel(name=probingPanel)
+  - JPanel(name=probingPanel):
+      - JTextField(name=txtProbesSerieName)
+      - JSpinner(name=spnProbesQuantity)
+      - JButton(name=btnMakeProbes, text="starshipplant.action.btn.make")
+      - JTextField(name=txtAPMSerieName)
+      - JSpinner(name=spnAPMQuantity)
+      - JButton(name=btnMakeAPM, text="starshipplant.action.btn.make")
+      - MigLayout: |
+          [[insets 0]]
+          [pref]                 [50px]               [30px]              [40px]
+          "Probe"                txtProbesSerieName   spnProbesQuantity   btnMakeProbes   [pref]
+          "Anti-probe missile"   txtAPMSerieName      spnAPMQuantity      btnMakeAPM      [pref]
   - MigLayout: |
       [[insets 0]]
       [grow]

@@ -6,6 +6,8 @@ import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -39,13 +41,16 @@ import org.axan.sep.common.db.Commands;
 import org.axan.sep.common.db.IArea;
 import org.axan.sep.common.db.IBuilding;
 import org.axan.sep.common.db.ICelestialBody;
+import org.axan.sep.common.db.IProbe;
 import org.axan.sep.common.db.IUnit;
 import org.axan.sep.common.db.ICommand.GameCommandException;
 import org.axan.sep.common.db.IGameEvent;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IStarshipPlant;
+import org.axan.sep.common.db.IUnitMarker;
 import org.axan.sep.common.db.orm.SEPCommonDB;
+import org.axan.sep.common.db.orm.SEPCommonDB.IAreaChangeListener;
 import org.javabuilders.BuildResult;
 import org.javabuilders.swing.SwingJavaBuilder;
 
@@ -56,7 +61,7 @@ import ca.odell.glazedlists.EventList;
 import ca.odell.glazedlists.GlazedLists;
 import ca.odell.glazedlists.swing.EventListModel;
 
-public class RunningGamePanel extends JPanel implements IModalComponent, IUniverseRendererListener
+public class RunningGamePanel extends JPanel implements IModalComponent, IUniverseRendererListener, IAreaChangeListener
 {
 	//////////static attributes
 	private static Logger log = Logger.getLogger(SpaceEmpirePulsarGUI.class.getName());
@@ -74,7 +79,7 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 	////////// bean fields
 	private SEPClient sepClient;
 	private final EventList<eBuildingType> buildings = GlazedLists.threadSafeList(new BasicEventList<eBuildingType>());
-	private final EventList<IUnit> units = GlazedLists.threadSafeList(new BasicEventList<IUnit>());
+	private final EventList<IUnitMarker> units = GlazedLists.threadSafeList(new BasicEventList<IUnitMarker>());
 	private IArea selectedArea = null;
 
 	//////////ui controls
@@ -83,7 +88,7 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 	private PlayersListPanel playersListPanel;
 	private EventListModel<eBuildingType> buildingsListModel = new EventListModel<eBuildingType>(buildings);
 	private JList buildingsList;
-	private EventListModel<IUnit> unitsListModel = new EventListModel<IUnit>(units);
+	private EventListModel<IUnitMarker> unitsListModel = new EventListModel<IUnitMarker>(units);
 	private JList unitsList;
 	private JTextPane celestialBodyInfos;
 	private JTextPane buildingInfos;	
@@ -94,17 +99,19 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 	private JTabbedPane tabsPanel;
 	private JScrollPane actionTab;
 	private StarshipPlantActionPanel starshipPlantActionPanel;
+	private ProbeActionsPanel probeActionsPanel;
 
 	////////// no arguments constructor
 	public RunningGamePanel()
 	{
-		SwingJavaBuilderMyUtils.addType(AUniverseRendererPanel.class, StarshipPlantActionPanel.class);
+		SwingJavaBuilderMyUtils.addType(AUniverseRendererPanel.class, StarshipPlantActionPanel.class, ProbeActionsPanel.class);
 		
 		build = SwingJavaBuilder.build(this);
 		
 		universePanel.setUniverseRendererListener(this);		
 		
 		starshipPlantActionPanel.setRunningGamePanel(this);
+		probeActionsPanel.setRunningGamePanel(this);
 		
 		buildingActionsPanel.setLayout(new FlowLayout());
 		
@@ -196,7 +203,7 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 				}
 				*/
 				
-				IUnit unit = (IUnit) value;
+				IUnitMarker unit = (IUnitMarker) value;
 				return defaultListCellRenderer.getListCellRendererComponent(list, String.format("%s [%s] %s", unit.getOwnerName(), unit.getType().toString(), unit.getName()), index, isSelected, cellHasFocus);
 			}
 		});
@@ -217,7 +224,7 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 					@Override
 					public void run()
 					{
-						updateSelectedUnit((IUnit) unitsList.getSelectedValue());
+						updateSelectedUnit((IUnitMarker) unitsList.getSelectedValue());
 					}
 				});
 			}
@@ -246,6 +253,25 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 		});
 	}
 
+	@Override
+	public void onAreaChanged(final Location location)
+	{
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			
+			@Override
+			public void run()
+			{
+				getUniversePanel().onAreaChanged(location);
+				
+				if (selectedArea != null && selectedArea.getLocation().equals(location))
+				{
+					updateSelectedArea(location.x, location.y, location.z);
+				}
+			}
+		});		
+	}
+	
 	////////// IModal implementation
 
 	@Override
@@ -282,6 +308,11 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 	public PlayersListPanel getPlayersListPanel()
 	{
 		return playersListPanel;
+	}
+	
+	public AUniverseRendererPanel getUniversePanel()
+	{
+		return universePanel;
 	}
 	
 	////////// ui events
@@ -342,14 +373,15 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 		
 		// Units
 		
-		IUnit selectedUnit = (IUnit) unitsList.getSelectedValue();
+		IUnitMarker selectedUnit = (IUnitMarker) unitsList.getSelectedValue();
 		int selectedUnitIndex = -1;
 		
 		unitsList.clearSelection();
 		units.clear();
 		
 		
-		units.addAll(selectedArea.getUnits(IUnit.class));
+		//units.addAll(selectedArea.getUnits(null));
+		units.addAll(selectedArea.getUnitsMarkers(null));
 		
 		if (selectedUnit != null) for(int i=0; i < units.size(); ++i)
 		{
@@ -372,15 +404,36 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 		}
 	}
 	
-	void updateSelectedUnit(IUnit unit)
+	void updateSelectedUnit(IUnitMarker unit)
 	{
+		// Erase
 		unitInfos.setText("");
 		unitActionsPanel.removeAll();
 		
 		if (selectedArea == null) return;
 		if (unit == null) return;
 		
+		/*
+		ICelestialBody celestialBody = selectedArea.getCelestialBody();
+		if (celestialBody == null || !IProductiveCelestialBody.class.isInstance(celestialBody)) return;
+		IProductiveCelestialBody productiveCelestialBody = (IProductiveCelestialBody) celestialBody;
+		PlayerGameBoard gb = getSepClient().getGameboard();
+		 */
+		
 		unitInfos.setText(unit.toString());
+
+		if (IUnit.class.isInstance(unit))
+		{
+			switch(unit.getType())
+			{
+				case Probe:
+				{
+					probeActionsPanel.setProbe((IProbe) unit);
+					unitActionsPanel.add(probeActionsPanel);
+					break;
+				}
+			}
+		}
 	}
 	
 	/**
@@ -432,8 +485,6 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 						log.log(Level.SEVERE, "Error on Build command", ex);
 						return;
 					}
-					
-					refresh(true);
 				}
 			});			
 		}
@@ -461,6 +512,7 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 		actionTab.invalidate();
 	}
 	
+	/*
 	void refresh(boolean refreshUniversePanel)
 	{
 		if (refreshUniversePanel) universePanel.refresh(true);
@@ -470,16 +522,17 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 			updateSelectedArea(loc.x, loc.y, loc.z);
 		}
 	}
+	*/
 	
 	//TODO: Should override some common interface to everybody's implementing this method
 	void receiveNewTurnGameBoard(List<IGameEvent> newTurnEvents)
-	{
+	{		
+		getSepClient().getGameboard().getDB().addAreaChangeListener(this);
 		universePanel.receiveNewTurnGameBoard(newTurnEvents);
 		playersListPanel.setEnabled(true);
 		btnEndTurn.setEnabled(true);
-		refresh(false);
 		
-		JOptionPane.showConfirmDialog(null, "Turn n°"+getSepClient().getGameboard().getConfig().getTurn()+" begins !", "New turn", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showConfirmDialog(null, "Turn n°"+getSepClient().getGameboard().getConfig().getTurn()+" begins !", "New turn", JOptionPane.YES_OPTION, JOptionPane.INFORMATION_MESSAGE);
 	}
 	
 	void endTurn()

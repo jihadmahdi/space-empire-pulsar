@@ -17,6 +17,7 @@ import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IProbe;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IUnit;
+import org.axan.sep.common.db.IUnitMarker;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -190,7 +191,7 @@ class Area extends AGraphObject<Node> implements IArea
 		if (assignedFleet != null) return true;
 		
 		// If player has stopped fleet in this area
-		for(IFleet fleet : area.getUnits(IFleet.class))
+		for(IFleet fleet : (Set<IFleet>) area.getUnits(eUnitType.Fleet))
 		{
 			if (playerName.equals(fleet.getOwnerName())) return true;
 		}		
@@ -199,7 +200,7 @@ class Area extends AGraphObject<Node> implements IArea
 		final double probeSight = sepDB.getConfig().getUnitTypeSight(eUnitType.Probe);
 		
 		IPlayer player = sepDB.getPlayer(playerName);
-		for(IProbe probe : player.getUnits(IProbe.class))
+		for(IProbe probe : (Set<IProbe>) player.getUnits(eUnitType.Probe))
 		{
 			if (!probe.isDeployed()) continue;
 			if (SEPUtils.getDistance(location.asRealLocation(), probe.getRealLocation()) <= probeSight) return true;
@@ -209,40 +210,52 @@ class Area extends AGraphObject<Node> implements IArea
 	}
 	
 	@Override
-	public <T extends IUnit> Set<T> getUnits(final Class<T> expectedType)
+	//public <T extends IUnit> Set<T> getUnits(final Class<T> expectedType)
+	public Set<? extends IUnit> getUnits(eUnitType type)
 	{
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Set<T> result = new HashSet<T>();
+		Set<IUnit> result = new HashSet<IUnit>();		
 		
-		eUnitType type;
-		if (IUnit.class.equals(expectedType))
-		{
-			type = null;
-		}
-		else try
-		{
-			type = eUnitType.valueOf(expectedType.getSimpleName().charAt(0) == 'I' ? expectedType.getSimpleName().substring(1) : expectedType.getSimpleName());
-		}
-		catch(IllegalArgumentException e)
-		{
-			throw new RuntimeException("Unknown eUnitType value for class '"+expectedType.getSimpleName()+"'", e);
-		}
-		
+		/*
 		for(Node n : properties.traverse(Order.BREADTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eRelationTypes.UnitDeparture, Direction.INCOMING))
 		{
 			if (type != null)
 			{
 				if (!type.toString().equals((String) n.getProperty("type"))) continue;
-			}
-			else
-			{
-				type = eUnitType.valueOf((String) n.getProperty("type"));
 			}			
 			
-			T unit = (T) sepDB.getUnit((String) n.getProperty("ownerName"), (String) n.getProperty("name"), type);
+			IUnit unit = sepDB.getUnit((String) n.getProperty("ownerName"), (String) n.getProperty("name"), eUnitType.valueOf((String) n.getProperty("type")));
 			if (unit.isStopped()) result.add(unit);
+		}
+		*/
+		
+		for(IPlayer player : sepDB.getPlayers())
+		{
+			for(IUnit unit : player.getUnits(type))
+			{
+				if (unit.getRealLocation().asLocation().equals(location)) result.add(unit);				
+			}
+		}
+		
+		return result;
+	}
+	
+	@Override
+	public Set<? extends IUnitMarker> getUnitsMarkers(eUnitType type)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Set<IUnitMarker> result = new HashSet<IUnitMarker>();
+		
+		for(IPlayer player : sepDB.getPlayers())
+		{
+			for(IUnitMarker unitMarker : player.getUnitsMarkers(type))
+			{
+				if (unitMarker.getRealLocation().asLocation().equals(location)) result.add(unitMarker);
+			}
 		}
 		
 		return result;
@@ -295,11 +308,11 @@ class Area extends AGraphObject<Node> implements IArea
 			}
 		}
 		
-		Set<IUnit> units = getUnits(IUnit.class);
+		Set<? extends IUnitMarker> units = getUnitsMarkers(null);
 		if (units != null && !units.isEmpty())
 		{
 			sb.append("Units :\n");
-			for(IUnit u : units)
+			for(IUnitMarker u : units)
 			{
 				sb.append("   ["+u.getOwnerName()+"] "+u.getName()+"\n");
 			}

@@ -117,6 +117,16 @@ public abstract class AGraphObject<T extends PropertyContainer> implements Seria
 	abstract protected void create(SEPCommonDB sepDB);
 	
 	/**
+	 * Return connected DB version (game turn), or -1 if DB-off.
+	 * @return
+	 */
+	int getVersion()
+	{
+		if (sepDB == null) return -1;
+		return sepDB.getConfig().getTurn();
+	}
+	
+	/**
 	 * AGraphObject are equals if class are equal, pk are equal, and sepDB are equal or both null.
 	 */
 	@Override

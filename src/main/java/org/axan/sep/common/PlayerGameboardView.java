@@ -7,6 +7,7 @@ import java.util.Vector;
 
 import org.axan.sep.common.db.ICommand;
 import org.axan.sep.common.db.IGameEvent;
+import org.axan.sep.common.db.Events.IConditionalEvent;
 import org.axan.sep.common.db.ICommand.GameCommandException;
 import org.axan.sep.common.db.IGameEvent.GameEventException;
 import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
@@ -95,7 +96,10 @@ public class PlayerGameboardView
 
 	public synchronized void onGameEvents(Collection<? extends IGameEvent> events)
 	{
-		currentTurnEvents.addAll(events);
+		for(IGameEvent event : events)
+		{
+			onGameEvent(event);
+		}
 	}
 
 	public synchronized void onLocalCommand(ICommand command) throws GameCommandException
@@ -107,6 +111,12 @@ public class PlayerGameboardView
 	
 	public synchronized void onGameEvent(IGameEvent evt)
 	{
+		if (IConditionalEvent.class.isInstance(evt))
+		{
+			IConditionalEvent conditionalEvent = (IConditionalEvent) evt;
+			if (!conditionalEvent.test(db, playerName)) return;
+		}
+		
 		currentTurnEvents.add(evt);
 	}
 

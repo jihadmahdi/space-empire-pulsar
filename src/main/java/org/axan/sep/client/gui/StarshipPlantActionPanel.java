@@ -31,10 +31,12 @@ import org.axan.sep.common.IGameBoard.GameBoardException;
 import org.axan.sep.common.Rules.StarshipTemplate;
 import org.axan.sep.common.Rules;
 import org.axan.sep.common.SEPUtils;
+import org.axan.sep.common.db.Commands.MakeProbes;
 import org.axan.sep.common.db.IFleet;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IStarshipPlant;
 import org.axan.sep.common.db.Commands.AssignStarships;
+import org.axan.sep.common.db.Commands.MakeAntiProbeMissile;
 import org.axan.sep.common.db.Commands.MakeStarships;
 import org.axan.sep.common.db.ICommand.GameCommandException;
 import org.javabuilders.BuildResult;
@@ -56,6 +58,12 @@ public class StarshipPlantActionPanel extends JPanel implements IModalComponent
 	private final JButton btnMake;
 	private final JTextField txtFleetName;
 	private final JButton btnJoinFleet;
+	private JTextField txtProbesSerieName;
+	private JSpinner spnProbesQuantity;
+	private JButton btnMakeProbes;
+	private JTextField txtAPMSerieName;
+	private JSpinner spnAPMQuantity;
+	private JButton btnMakeAPM;
 	
 	////////// bean fields	
 	private SEPClient sepClient;
@@ -101,6 +109,72 @@ public class StarshipPlantActionPanel extends JPanel implements IModalComponent
 			public void propertyChange(PropertyChangeEvent evt)
 			{
 				refreshUI();
+			}
+		});
+		
+		spnProbesQuantity.setModel(new SpinnerNumberModel(0, 0, 20, 1));
+		spnProbesQuantity.getModel().addChangeListener(new ChangeListener()
+		{
+			
+			@Override
+			public void stateChanged(ChangeEvent e)
+			{
+				updateProbeForm();
+			}
+		});
+		
+		txtProbesSerieName.getDocument().addDocumentListener(new DocumentListener()
+		{
+			
+			@Override
+			public void removeUpdate(DocumentEvent e)
+			{
+				updateProbeForm();
+			}
+			
+			@Override
+			public void insertUpdate(DocumentEvent e)
+			{
+				updateProbeForm();
+			}
+			
+			@Override
+			public void changedUpdate(DocumentEvent e)
+			{
+				updateProbeForm();
+			}
+		});
+		
+		spnAPMQuantity.setModel(new SpinnerNumberModel(0, 0, 20, 1));
+		spnAPMQuantity.getModel().addChangeListener(new ChangeListener()
+		{
+			
+			@Override
+			public void stateChanged(ChangeEvent e)
+			{
+				updateAPMForm();
+			}
+		});
+		
+		txtAPMSerieName.getDocument().addDocumentListener(new DocumentListener()
+		{
+			
+			@Override
+			public void removeUpdate(DocumentEvent e)
+			{
+				updateAPMForm();
+			}
+			
+			@Override
+			public void insertUpdate(DocumentEvent e)
+			{
+				updateAPMForm();				
+			}
+			
+			@Override
+			public void changedUpdate(DocumentEvent e)
+			{
+				updateAPMForm();
 			}
 		});
 	}
@@ -166,13 +240,14 @@ public class StarshipPlantActionPanel extends JPanel implements IModalComponent
 		IStarshipPlant starshipPlant = getStarshipPlant();
 		
 		starshipsPanel.removeAll();
-		probingPanel.removeAll();		
 		
 		if (starshipPlant == null)
 		{
 			label.setText("No starship plant selected.");
+			setEnabled(false);
 			return;
 		}
+		setEnabled(true);
 		
 		label.setText(MessageFormat.format(build.getResource("starshipplant.action.label"), starshipPlant.getProductiveCelestialBodyName()));
 		starshipsPanel.setLayout(new MigLayout());
@@ -197,7 +272,7 @@ public class StarshipPlantActionPanel extends JPanel implements IModalComponent
 		starshipsPanel.add(btnMake, "cell 2 "+ (++rowCpt));
 		starshipsPanel.add(btnJoinFleet, "cell 3 "+rowCpt);
 		
-		refreshValues();
+		refreshAll();
 	}	
 	
 	private void refreshValues()
@@ -246,7 +321,7 @@ public class StarshipPlantActionPanel extends JPanel implements IModalComponent
 						return;
 					}
 					
-					getRunningGamePanel().refresh(true);
+					refreshAll();
 					
 					for(StarshipTemplate template : Rules.getStarshipTemplates())
 					{
@@ -284,8 +359,8 @@ public class StarshipPlantActionPanel extends JPanel implements IModalComponent
 						log.log(Level.SEVERE, "Error on Assign starships command", ex);
 						return;
 					}
-					
-					getRunningGamePanel().refresh(true);
+										
+					refreshAll();
 					
 					for(StarshipTemplate template : Rules.getStarshipTemplates())
 					{
@@ -302,6 +377,98 @@ public class StarshipPlantActionPanel extends JPanel implements IModalComponent
 			btnJoinFleet.setEnabled(false);
 			btnJoinFleet.setToolTipText("Cannot assign starhips : "+e.getMessage());
 		}
+	}
+	
+	private void updateProbeForm()
+	{
+		IStarshipPlant starshipPlant = getStarshipPlant();
+		if (starshipPlant == null) return;
+		IProductiveCelestialBody productiveCelestialBody = (IProductiveCelestialBody) getSepClient().getGameboard().getDB().getCelestialBody(starshipPlant.getProductiveCelestialBodyName());		
+		final MakeProbes makeProbes = new MakeProbes(getSepClient().getLogin(), productiveCelestialBody.getName(), txtProbesSerieName.getText(), (Integer) spnProbesQuantity.getValue());
+		try
+		{
+			makeProbes.check(getSepClient().getGameboard().getDB());			
+			btnMakeProbes.setToolTipText((makeProbes.getLastSerialNumber() == 0 ? "Make" : "Continue")+" probe serie");
+			for(ActionListener l : btnMakeProbes.getActionListeners()) btnMakeProbes.removeActionListener(l);
+			btnMakeProbes.addActionListener(new ActionListener()
+			{
+				
+				@Override
+				public void actionPerformed(ActionEvent e)
+				{
+					try
+					{
+						getSepClient().getGameboard().onLocalCommand(makeProbes);
+					}
+					catch(GameBoardException ex)
+					{
+						log.log(Level.SEVERE, "Error on Assign starships command", ex);
+						return;
+					}
+					
+					refreshAll();
+					
+					spnProbesQuantity.setValue(0);
+					txtProbesSerieName.setText("");
+				}
+			});
+			btnMakeProbes.setEnabled(true);
+		}
+		catch(GameCommandException e)
+		{
+			btnMakeProbes.setEnabled(false);
+			btnMakeProbes.setToolTipText("Cannot make probe : "+e.getMessage());
+		}
+	}
+	
+	private void updateAPMForm()
+	{
+		IStarshipPlant starshipPlant = getStarshipPlant();
+		if (starshipPlant == null) return;
+		IProductiveCelestialBody productiveCelestialBody = (IProductiveCelestialBody) getSepClient().getGameboard().getDB().getCelestialBody(starshipPlant.getProductiveCelestialBodyName());		
+		final MakeAntiProbeMissile makeAntiProbeMissiles = new MakeAntiProbeMissile(getSepClient().getLogin(), productiveCelestialBody.getName(), txtAPMSerieName.getText(), (Integer) spnAPMQuantity.getValue());
+		try
+		{
+			makeAntiProbeMissiles.check(getSepClient().getGameboard().getDB());			
+			btnMakeAPM.setToolTipText((makeAntiProbeMissiles.getLastSerialNumber() == 0 ? "Make" : "Continue")+" APM serie");
+			for(ActionListener l : btnMakeAPM.getActionListeners()) btnMakeAPM.removeActionListener(l);
+			btnMakeAPM.addActionListener(new ActionListener()
+			{
+				
+				@Override
+				public void actionPerformed(ActionEvent e)
+				{
+					try
+					{
+						getSepClient().getGameboard().onLocalCommand(makeAntiProbeMissiles);
+					}
+					catch(GameBoardException ex)
+					{
+						log.log(Level.SEVERE, "Error on Assign starships command", ex);
+						return;
+					}					
+					
+					refreshAll();
+					
+					spnAPMQuantity.setValue(0);
+					txtAPMSerieName.setText("");
+				}
+			});
+			btnMakeAPM.setEnabled(true);
+		}
+		catch(GameCommandException e)
+		{
+			btnMakeAPM.setEnabled(false);
+			btnMakeAPM.setToolTipText("Cannot make probe : "+e.getMessage());
+		}
+	}
+	
+	private void refreshAll()
+	{
+		//if (refreshRunningGame) getRunningGamePanel().refresh(true);
+		updateProbeForm();
+		updateAPMForm();
+		refreshValues();
 	}
 	
 	//////////ui dynamic controls
