@@ -26,12 +26,14 @@ import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
 import org.axan.sep.common.IGameBoard;
 import org.axan.sep.common.PlayerGameboardView;
 import org.axan.sep.common.Protocol;
+import org.axan.sep.common.Rules;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.Events;
 import org.axan.sep.common.db.Events.RessourcesGeneration;
+import org.axan.sep.common.db.Events.UnitsMoves;
 import org.axan.sep.common.db.ICelestialBody;
 import org.axan.sep.common.db.ICommand;
 import org.axan.sep.common.db.Events.UniverseCreation;
@@ -298,7 +300,7 @@ class GameBoard implements Serializable, IGameBoard
 			// Generating CreateUniverse event.
 	
 			// Sun location: center of the universe.
-			Location sunLocation = new Location(getConfig().getDimX() / 2, getConfig().getDimY() / 2, getConfig().getDimZ() / 2);
+			Location sunLocation = Rules.getSunLocation(getConfig());
 	
 			// Celestialbodies
 			Map<Location, ICelestialBody> celestialBodies = new HashMap<SEPUtils.Location, ICelestialBody>();
@@ -347,7 +349,7 @@ class GameBoard implements Serializable, IGameBoard
 						}
 	
 						// Must be in direct line from all other player starting planets
-						if (isTravellingTheSun(sunLocation, planetLocation.asRealLocation(), l.asRealLocation()))
+						if (SEPUtils.isTravelingTheSun(getConfig(), planetLocation, l))
 						{
 							continue;
 						}
@@ -388,7 +390,7 @@ class GameBoard implements Serializable, IGameBoard
 						}
 	
 						// Must be in direct line from all other player starting planets
-						if (isTravellingTheSun(sunLocation, celestialBodyLocation.asRealLocation(), l.asRealLocation()))
+						if (SEPUtils.isTravelingTheSun(getConfig(), celestialBodyLocation, l))
 						{
 							continue;
 						}
@@ -420,64 +422,30 @@ class GameBoard implements Serializable, IGameBoard
 			PlayerGameboardView globalDBView = playerViews.get(null);
 			// Process event on globalDB. It's not resolveTurn method, so we will fire CreateUniverse event anyway, but it will be ignored server-side on next resolvingTurn (@see EvCreateUniverse#skipCondition()).
 			
-			boolean copy = true;
-			
-			long t0 = System.currentTimeMillis();
 			createUniverseEvent.process(globalExecutor, globalDB);
-			long t1 = System.currentTimeMillis();			
+							
+			//SEPCommonDB[] copies = Basic.clone(globalDB, players.size());
+			SEPCommonDB[] copies = SEPCommonDB.clone(globalDB, players.size());
 			
-			if (copy)
-			{				
-				//SEPCommonDB[] copies = Basic.clone(globalDB, players.size());
-				SEPCommonDB[] copies = SEPCommonDB.clone(globalDB, players.size());
+			int i=0;
+			for(IPlayer player: players.keySet())
+			{
+				final String playerName = player.getName();
+				SEPCommonDB playerDB = copies[i];
+				IGameEventExecutor executor = new IGameEventExecutor()
+				{					
+					@Override
+					public void onGameEvent(IGameEvent event, Set<String> observers)
+					{
+						// executor filtered on current player view player.
+						if (!observers.contains(playerName)) return;
+						GameBoard.this.onGameEvent(event, playerName);
+					}
+				};
+				playerViews.put(playerName, new PlayerGameboardView(playerName, playerDB, executor));				
 				
-				int i=0;
-				for(IPlayer player: players.keySet())
-				{
-					final String playerName = player.getName();
-					SEPCommonDB playerDB = copies[i];
-					IGameEventExecutor executor = new IGameEventExecutor()
-					{					
-						@Override
-						public void onGameEvent(IGameEvent event, Set<String> observers)
-						{
-							// executor filtered on current player view player.
-							if (!observers.contains(playerName)) return;
-							GameBoard.this.onGameEvent(event, playerName);
-						}
-					};
-					playerViews.put(playerName, new PlayerGameboardView(playerName, playerDB, executor));				
-					
-					++i;
-				}
+				++i;
 			}
-			else
-			{			
-				int i=0;
-				for(IPlayer player: players.keySet())
-				{
-					final String playerName = player.getName();
-					SEPCommonDB playerDB = new SEPCommonDB(dbFactory.createDB(), gameConfig);
-					IGameEventExecutor executor = new IGameEventExecutor()
-					{					
-						@Override
-						public void onGameEvent(IGameEvent event, Set<String> observers)
-						{
-							// executor filtered on current player view player.
-							if (!observers.contains(playerName)) return;
-							GameBoard.this.onGameEvent(event, playerName);
-						}
-					};
-					playerViews.put(playerName, new PlayerGameboardView(playerName, playerDB, executor));				
-					createUniverseEvent.process(executor, playerDB);
-					
-					++i;
-				}
-			}
-			
-			long t2 = System.currentTimeMillis();
-			
-			log.log(Level.INFO, "Initial event processing: "+(t1-t0)+"ms; "+(copy?"copying: ":"player views processing: ")+(t2-t1)+"ms");
 			
 			onGameEvent(createUniverseEvent, playerViews.keySet());
 		}
@@ -549,6 +517,9 @@ class GameBoard implements Serializable, IGameBoard
 	{		
 		try
 		{
+			UnitsMoves unitsMoves = new UnitsMoves();
+			onGameEvent(unitsMoves, playerViews.keySet());
+			
 			RessourcesGeneration ressourcesGeneration = new RessourcesGeneration();
 			onGameEvent(ressourcesGeneration, playerViews.keySet());
 			
@@ -1168,20 +1139,6 @@ class GameBoard implements Serializable, IGameBoard
 		}
 
 		return cb;
-	}
-
-	private boolean isTravellingTheSun(Location sunLocation, RealLocation a, RealLocation b)
-	{
-		// TODO: Optimize with a SQL request using "... IN ( ... )" as where clause.
-		for(RealLocation pathStep: SEPUtils.getAllPathLoc(a, b))
-		{
-			if (SEPUtils.getDistance(pathStep.asLocation(), sunLocation) <= getConfig().getSunRadius())
-			{
-				return true;
-			}
-		}
-
-		return false;
 	}
 
 	private IPlanet createPlayerStartingPlanet(String name, Location location, String ownerName)

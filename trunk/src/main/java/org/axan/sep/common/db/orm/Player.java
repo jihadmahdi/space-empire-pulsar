@@ -1,6 +1,7 @@
 package org.axan.sep.common.db.orm;
 
 import org.axan.eplib.orm.nosql.DBGraphException;
+import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
@@ -9,6 +10,7 @@ import org.axan.sep.common.db.orm.base.BasePlayer;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
 import org.axan.sep.common.db.IUnit;
+import org.axan.sep.common.db.IUnitMarker;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -143,36 +145,64 @@ class Player extends AGraphObject<Node> implements IPlayer, Serializable
 	}
 	
 	@Override
-	public <T extends IUnit> Set<T> getUnits(final Class<T> expectedType)
+	public Set<? extends IUnit> getUnits(eUnitType type)
 	{
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Set<T> result = new HashSet<T>();
-		
-		eUnitType type;
-		if (IUnit.class.equals(expectedType))
-		{
-			type = null;
-		}
-		else try
-		{
-			type = eUnitType.valueOf(expectedType.getSimpleName().charAt(0) == 'I' ? expectedType.getSimpleName().substring(1) : expectedType.getSimpleName());
-		}
-		catch(IllegalArgumentException e)
-		{
-			throw new RuntimeException("Unknown eUnitType value for class '"+expectedType.getSimpleName()+"'", e);
-		}
-		
+		Set<IUnit> result = new HashSet<IUnit>();
+				
 		for(Node n : properties.traverse(Order.BREADTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eRelationTypes.PlayerUnit, Direction.OUTGOING))
 		{
 			if (type != null && !type.toString().equals((String) n.getProperty("type"))) continue;
 			
-			T unit = (T) sepDB.getUnit((String) n.getProperty("ownerName"), (String) n.getProperty("name"), type);
-			if (unit.isStopped()) result.add(unit);
+			IUnit unit = sepDB.getUnit((String) n.getProperty("ownerName"), (String) n.getProperty("name"), eUnitType.valueOf((String) n.getProperty("type")));
+			result.add(unit);
 		}
 		
 		return result;
+	}
+	
+	@Override
+	public Set<? extends IUnitMarker> getUnitsMarkers(eUnitType type)
+	{
+		return getUnitsMarkers(type, new HashMap<String, IUnitMarker>());
+	}
+	
+	private Set<? extends IUnitMarker> getUnitsMarkers(eUnitType type, Map<String, IUnitMarker> result)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		for(Node n : properties.traverse(Order.BREADTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eRelationTypes.PlayerUnitMarker, Direction.OUTGOING, eRelationTypes.PlayerUnit, Direction.OUTGOING))
+		{
+			if (type != null && !type.toString().equals((String) n.getProperty("type"))) continue;
+		
+			String ownerName = (String) n.getProperty("ownerName");
+			String name = (String) n.getProperty("name");
+			
+			IUnitMarker unitMarker = null;
+			
+			if (n.hasProperty("turn")) // UnitMarker
+			{
+				unitMarker = sepDB.getUnitMarker((Integer) n.getProperty("turn"), ownerName, name, type);
+			}
+			
+			IUnit unit = sepDB.getUnit(ownerName, name, type);
+			
+			String pk = Unit.getPK(ownerName, name);
+						
+			if (unit != null && (unitMarker == null || unit.getTurn() >= unitMarker.getTurn())) unitMarker = unit;
+			
+			if (!result.containsKey(pk) || (result.get(pk).getTurn() < unitMarker.getTurn())) result.put(pk, unitMarker);
+		}
+		
+		if (sepDB.hasPrevious())
+		{
+			return ((Player) sepDB.previous().getPlayer(getName())).getUnitsMarkers(type, result);
+		}
+		
+		return new HashSet<IUnitMarker>(result.values());
 	}
 
 	public static void initializeProperties(Node properties, String name)

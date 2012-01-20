@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.Protocol.eUnitType;
@@ -12,9 +14,14 @@ import org.axan.sep.common.Rules.StarshipTemplate;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.ICelestialBody;
 import org.axan.sep.common.db.IFleet;
+import org.axan.sep.common.db.IFleetMarker;
 import org.axan.sep.common.db.IProductiveCelestialBody;
+import org.axan.sep.common.db.IUnitMarker;
+import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 
@@ -83,15 +90,15 @@ public class Fleet extends Unit implements IFleet
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 			
-			if (fleetIndex.get("ownerName@name", String.format("%s@%s", ownerName, name)).hasNext())
+			if (fleetIndex.get(PK, getPK(ownerName, name)).hasNext())
 			{
 				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'ownerName@name' must be unique, fleet[ownerName='"+ownerName+"', name='"+name+"'] already exist.");
+				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, fleet["+getPK(ownerName, name)+"] already exist.");
 			}			
 			
 			properties = sepDB.getDB().createNode();
 			Fleet.initializeProperties(properties, ownerName, name, initialDepartureName, departure, starships);
-			fleetIndex.add(properties, "ownerName@name", String.format("%s@%s", ownerName, name));
+			fleetIndex.add(properties, PK, getPK(ownerName, name));
 			
 			Node nOwner = db.index().forNodes("PlayerIndex").get("name", ownerName).getSingle();
 			if (nOwner == null)
@@ -109,6 +116,68 @@ public class Fleet extends Unit implements IFleet
 		{
 			tx.finish();
 		}
+	}
+	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public void destroy()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			fleetIndex.remove(properties);
+			properties.getSingleRelationship(eUnitType.Fleet, Direction.INCOMING).delete();
+			
+			super.destroy();
+			
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+	
+	@Override
+	public void onArrival(IGameEventExecutor executor)
+	{
+		// TODO: nothing yet
+	}
+	
+	@Override
+	public IFleetMarker getMarker(double step)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		return new FleetMarker(getTurn(), ownerName, name, isStopped(), getRealLocation(), getSpeed(), getStarships());
+	}
+	
+	@Override
+	public Map<StarshipTemplate, Integer> getStarships()
+	{
+		if (isDBOnline())
+		{
+			checkForDBUpdate();
+			
+			for(StarshipTemplate template : Rules.getStarshipTemplates())
+			{
+				if (properties.hasProperty("starships"+template.getName()))
+				{
+					starships.put(template, (Integer) properties.getProperty("starships"+template.getName()));
+				}
+				else
+				{
+					starships.put(template, 0);
+				}
+			}
+		}
+		
+		return Collections.unmodifiableMap(starships);
 	}
 	
 	@Override
@@ -168,58 +237,16 @@ public class Fleet extends Unit implements IFleet
 		{
 			tx.finish();
 		}
-	}
-	
-	@Override
-	public Map<StarshipTemplate, Integer> getStarships()
-	{
-		if (isDBOnline())
-		{
-			checkForDBUpdate();
-			
-			for(StarshipTemplate template : Rules.getStarshipTemplates())
-			{
-				if (properties.hasProperty("starships"+template.getName()))
-				{
-					starships.put(template, (Integer) properties.getProperty("starships"+template.getName()));
-				}
-				else
-				{
-					starships.put(template, 0);
-				}
-			}
-		}
-		
-		return Collections.unmodifiableMap(starships);
-	}
-	
-	/*
-	@Override
-	public boolean isEmpty()
-	{
-		for(int quantity : getStarships().values())
-		{
-			if (quantity > 0) return false;
-		}
-		return true;
-	}
-	*/
-	
+	}	
+
 	@Override
 	public String toString()
 	{
-		StringBuilder sb = new StringBuilder();
-		
-		if (!isDBOnline())
-		{
-			// TODO: implement offline version ?
-			sb.append("db offline");
-			return sb.toString();
-		}
+		StringBuilder sb = new StringBuilder(super.toString());		
+		if (!isDBOnline()) return sb.toString(); // TODO: implement Fleet offline version ?		
 		
 		checkForDBUpdate();
 		
-		sb.append(super.toString());
 		sb.append("Fleet composition :\n");
 		for(Map.Entry<StarshipTemplate, Integer> e : getStarships().entrySet())
 		{

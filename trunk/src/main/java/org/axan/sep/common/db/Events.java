@@ -1,12 +1,15 @@
 package org.axan.sep.common.db;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.axan.eplib.orm.sql.SQLDataBaseException;
 import org.axan.eplib.utils.Profiling;
@@ -14,6 +17,7 @@ import org.axan.eplib.utils.Profiling.ExecTimeMeasures;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.IGameEvent.GameEventException;
 import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
 import org.axan.sep.common.db.orm.SEPCommonDB;
@@ -159,7 +163,9 @@ public abstract class Events
 								governmentModule = db.createGovernmentModule(governmentModule);							
 							}
 						}
-					}				
+					}
+					
+					db.fireAreaChangedEvent(location);
 				}
 				
 				em.measures("set turn to 0");
@@ -234,7 +240,161 @@ public abstract class Events
 					
 					planet.generatePopulation(generatedPopulation);
 				}
+				
+				db.fireAreaChangedEvent(productiveCelestialBody.getLocation());
 			}
+		}
+	}
+	
+	/**
+	 * Moves traveling units.
+	 */
+	public static class UnitsMoves implements IGameEvent, Serializable
+	{
+		@Override
+		public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameEventException
+		{
+			//Set<IUnit> stoppedUnits = new HashSet<IUnit>();
+			Set<IUnit> movingUnits = new HashSet<IUnit>();
+			Set<IUnit> allUnits = db.getUnits();
+			
+			for(IUnit u : allUnits)
+			{
+				if (!u.isStopped())
+				{
+					movingUnits.add(u);
+				}
+				/*
+				else
+				{
+					stoppedUnits.add(u);
+				}
+				*/
+			}
+			
+			double step = 0D;
+			
+			Map<IUnit, Map<IUnit, Double>> encounters = new HashMap<IUnit, Map<IUnit,Double>>();
+			
+			if (!movingUnits.isEmpty()) while(step < 1)
+			{
+				IUnit fastestUnit = null;
+				double minDistance = Double.POSITIVE_INFINITY;
+				
+				for(IUnit u : movingUnits)
+				{
+					if (fastestUnit == null || u.getSpeed() > fastestUnit.getSpeed()) fastestUnit = u;
+					
+					for(IUnit v : allUnits)
+					{
+						if (u == v) continue;
+						if (u.getOwnerName().equals(v.getOwnerName())) continue;
+						
+						// NOTE: Following code should never run on player DB view (as there is no other player units on playerDB view)
+						
+						RealLocation uLoc = SEPUtils.getMobileLocation(u.getDeparture().asRealLocation(), u.getDestination().asRealLocation(), u.getSpeed(), u.getTravelingProgress(), step, true);
+						RealLocation vLoc = SEPUtils.getMobileLocation(v.getDeparture().asRealLocation(), v.getDestination().asRealLocation(), v.getSpeed(), v.getTravelingProgress(), step, true);
+						double d = SEPUtils.getDistance(uLoc, vLoc);
+						
+						if (u.getSight() >= d)
+						{
+							if (!encounters.containsKey(u)) encounters.put(u, new HashMap<IUnit, Double>());
+							encounters.get(u).put(v, step);
+						}
+						
+						if (v.getSight() >= d)
+						{
+							if (!encounters.containsKey(v)) encounters.put(v, new HashMap<IUnit, Double>());
+							encounters.get(v).put(u, step);
+						}
+						
+						if (d > u.getSight() || d > v.getSight()) minDistance = Math.min(minDistance, d);
+					}
+				}
+				
+				step += minDistance / fastestUnit.getSpeed();
+			}
+			
+			for(IUnit u : encounters.keySet())
+			{
+				for(IUnit v : encounters.get(u).keySet())
+				{
+					step = encounters.get(u).get(v);					
+					u.logEncounter(v, step);
+				}
+			}
+			
+			for(IUnit u : movingUnits)
+			{
+				Location oldLocation = u.getRealLocation().asLocation();
+				
+				double progress = u.getTravelingProgress() + u.getSpeed() / SEPUtils.getDistance(u.getDeparture(), u.getDestination());
+				
+				if (progress < 1)
+				{
+					u.setTravelingProgress(progress);
+					db.getArea(u.getRealLocation().asLocation());
+				}
+				else
+				{
+					u.setDeparture(u.getDestination());
+					u.setDestination(null);
+					u.onArrival(executor);
+				}
+				
+				db.fireAreaChangedEvent(oldLocation);
+				db.fireAreaChangedEvent(u.getRealLocation().asLocation());
+			}
+		}
+	}
+	
+	public static interface IConditionalEvent extends IGameEvent
+	{
+		boolean test(SEPCommonDB sepDB, String playerName);
+	}	
+	
+	public static class AntiProbeMissileExplosion implements IConditionalEvent, Serializable
+	{
+		final private Location location;
+		final private String antiProbeMissileOwnerName;
+		final private String antiProbeMissileName;
+		final private String targetOwnerName;
+		final private String targetName;
+		
+		public AntiProbeMissileExplosion(Location location, String antiProbeMissileOwnerName, String antiProbeMissileName, String targetOwnerName, String targetName)
+		{
+			this.location = location;
+			this.antiProbeMissileOwnerName = antiProbeMissileOwnerName;
+			this.antiProbeMissileName = antiProbeMissileName;
+			this.targetOwnerName = targetOwnerName;
+			this.targetName = targetName;
+		}
+		
+		@Override
+		public boolean test(SEPCommonDB sepDB, String playerName)
+		{
+			IArea area = sepDB.getArea(location);
+			return area.isVisible(playerName);
+		}
+		
+		@Override
+		public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameEventException
+		{
+			IProbe target = db.getProbe(targetOwnerName, targetName);
+			if (target != null)
+			{
+				if (!target.getRealLocation().asLocation().equals(location)) throw new GameEventException(this, "Probe location differs "+target.getRealLocation().asLocation()+" != "+location);
+				target.destroy();
+			}
+			
+			IAntiProbeMissile antiProbeMissile = db.getAntiProbeMissile(antiProbeMissileOwnerName, antiProbeMissileName);
+			if (antiProbeMissile != null)
+			{
+				if (!antiProbeMissile.getRealLocation().asLocation().equals(location)) throw new GameEventException(this, "AntiProbeMissile location differs "+antiProbeMissile.getRealLocation().asLocation()+" != "+location);
+				antiProbeMissile.destroy();
+			}
+			
+			db.fireAreaChangedEvent(location);
 		}
 	}
 }

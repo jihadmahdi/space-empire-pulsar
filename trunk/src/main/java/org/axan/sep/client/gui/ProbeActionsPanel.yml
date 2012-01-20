@@ -1,0 +1,12 @@
+JPanel(name=probeActionsPanel):
+  - JSpinner(name=spnDestinationX)
+  - JSpinner(name=spnDestinationY)
+  - JSpinner(name=spnDestinationZ)
+  - JButton(name=btnSelectDestination, text="probe.action.btn.selectDestination", onAction=selectDestination)
+  - JButton(name=btnLaunch, text="probe.action.btn.launch")
+  - MigLayout: |
+      [[insets 0]]
+      [30px]                   [30px]                   [30px]                   [pref]
+      "probe.action.label.x"   "probe.action.label.y"   "probe.action.label.z"   
+      spnDestinationX          spnDestinationY          spnDestinationZ          btnSelectDestination
+      |btnLaunch+*

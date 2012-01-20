@@ -58,11 +58,18 @@ public class Rules
 		}
 	}
 	
+	public static final int probeCarbonPrice = 300;
+	public static final int probePopulationPrice = 900;
+	
+	public static final int antiProbeMissileCarbonPrice = 200;
+	public static final int antiProbeMissilePopulationPrice = 0;
+	
 	public static Location getSunLocation(IGameConfig config)
 	{
 		return new Location(config.getDimX()/2, config.getDimY()/2, config.getDimZ()/2);
 	}
 	
+	/*
 	public static Set<Location> getSunAreasByZ(IGameConfig config, int z)
 	{
 		Location sunLocation = getSunLocation(config);
@@ -94,6 +101,7 @@ public class Rules
 		
 		return result;
 	}
+	*/
 	
 	public static enum eStarshipSpecializationClass
 	{

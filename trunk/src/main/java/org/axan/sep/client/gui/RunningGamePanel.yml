@@ -1,6 +1,7 @@
 JPanel(name=runningGamePanel):
   # Actions tabs
   - StarshipPlantActionPanel(name=starshipPlantActionPanel)
+  - ProbeActionsPanel(name=probeActionsPanel)
   
   # Dock Left
   - JPanel(name=dockedLeftPanel):
@@ -73,3 +74,4 @@ bind:
   - chatPanel.sepClient: this.sepClient
   - playersListPanel.sepClient: this.sepClient
   - starshipPlantActionPanel.sepClient: this.sepClient
+  - probeActionsPanel.sepClient: this.sepClient
