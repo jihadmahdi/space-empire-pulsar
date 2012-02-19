@@ -1,11 +1,16 @@
 package org.axan.sep.common.db.orm;
 
 import org.axan.eplib.orm.nosql.DBGraphException;
+import org.axan.sep.common.SEPCommonImplementationException;
 import org.axan.sep.common.Protocol.eBuildingType;
+import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.orm.Building;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
 import org.axan.sep.common.db.orm.base.IBaseSpaceCounter;
 import org.axan.sep.common.db.orm.base.BaseSpaceCounter;
+import org.axan.sep.common.db.IBuilding;
+import org.axan.sep.common.db.IProductiveCelestialBody;
+import org.axan.sep.common.db.IPulsarLaunchingPad;
 import org.axan.sep.common.db.ISpaceCounter;
 import org.axan.sep.common.db.ISpaceRoad;
 import org.neo4j.graphdb.Direction;
@@ -20,6 +25,10 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
+import java.util.Stack;
+import java.util.Vector;
+
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 class SpaceCounter extends Building implements ISpaceCounter
 {
@@ -88,7 +97,7 @@ class SpaceCounter extends Building implements ISpaceCounter
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, spaceCounter[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
 			properties = sepDB.getDB().createNode();
-			SpaceCounter.initializeProperties(properties, builtDate, nbSlots);
+			SpaceCounter.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
 			spaceCounterIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
 			
 			super.create(sepDB);
@@ -101,6 +110,50 @@ class SpaceCounter extends Building implements ISpaceCounter
 		}
 	}
 	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public void delete()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			for(ISpaceRoad bsr : getBuiltSpaceRoads())
+			{
+				bsr.destroy();
+			}
+			
+			for(ISpaceRoad lsr : getLinkedSpaceRoads())
+			{
+				lsr.destroy();
+			}
+			
+			spaceCounterIndex.remove(properties);
+			super.delete();
+			
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+	
+	@Override
+	public void buildSpaceRoad(String destinationName)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		if (getNbSlots() - getBuiltSpaceRoads().size() < 1) throw new RuntimeException("Illegal buildSpaceRoad call, no more space roads to build.");
+		
+		new SpaceRoad(getProductiveCelestialBodyName(), destinationName).create(sepDB);
+	}
+	
+	@Override
 	public Set<ISpaceRoad> getBuiltSpaceRoads()
 	{
 		assertOnlineStatus(true);
@@ -120,6 +173,7 @@ class SpaceCounter extends Building implements ISpaceCounter
 		return result;
 	}
 	
+	@Override
 	public Set<ISpaceRoad> getLinkedSpaceRoads()
 	{
 		assertOnlineStatus(true);
@@ -137,6 +191,119 @@ class SpaceCounter extends Building implements ISpaceCounter
 		}
 		
 		return result;
+	}
+	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public void update(IBuilding buildingUpdate)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			super.update(buildingUpdate);
+			
+			if (!ISpaceCounter.class.isInstance(buildingUpdate)) throw new RuntimeException("Illegal space counter update, not a pulsar launching pad instance.");
+			
+			ISpaceCounter spaceCounterUpdate = (ISpaceCounter) buildingUpdate;
+			
+			// Built space roads
+			Set<ISpaceRoad> builtSpaceRoadsUpdate = spaceCounterUpdate.getBuiltSpaceRoads();
+			Stack<ISpaceRoad> builtSpaceRoads = new Stack<ISpaceRoad>();
+			builtSpaceRoads.addAll(getBuiltSpaceRoads());
+			
+			while(!builtSpaceRoads.isEmpty())
+			{				
+				ISpaceRoad spaceRoad = builtSpaceRoads.pop();
+
+				boolean found = false;
+				for(ISpaceRoad spaceRoadUpdate : builtSpaceRoadsUpdate)
+				{
+					if (spaceRoad.getDestinationName().equals(spaceRoadUpdate.getDestinationName()))
+					{
+						found = true;
+						builtSpaceRoadsUpdate.remove(spaceRoadUpdate);
+						break;
+					}
+				}
+				
+				if (!found)
+				{
+					// Remove
+					spaceRoad.destroy();
+				}
+			}
+			
+			for(ISpaceRoad spaceRoadUpdate : builtSpaceRoadsUpdate)
+			{
+				// Add
+				IProductiveCelestialBody destination = (IProductiveCelestialBody) sepDB.getCelestialBody(spaceRoadUpdate.getDestinationName());
+				ISpaceCounter destinationSpaceCounter = (ISpaceCounter) destination.getBuilding(eBuildingType.SpaceCounter);
+				if (destinationSpaceCounter == null)
+				{
+					// Create hypothesis space counter, which will be updated on destination observation.
+					destinationSpaceCounter = (ISpaceCounter) sepDB.createBuilding(destination.getName(), sepDB.getConfig().getTurn(), eBuildingType.SpaceCounter);
+				}
+				
+				buildSpaceRoad(destination.getName());
+			}
+			
+			// Linked space roads
+			Set<ISpaceRoad> linkedSpaceRoadsUpdate = spaceCounterUpdate.getLinkedSpaceRoads();
+			Stack<ISpaceRoad> linkedSpaceRoads = new Stack<ISpaceRoad>();
+			linkedSpaceRoads.addAll(getLinkedSpaceRoads());
+			
+			while(!linkedSpaceRoads.isEmpty())
+			{				
+				ISpaceRoad spaceRoad = builtSpaceRoads.pop();
+
+				boolean found = false;
+				for(ISpaceRoad spaceRoadUpdate : linkedSpaceRoadsUpdate)
+				{
+					if (spaceRoad.getSourceName().equals(spaceRoadUpdate.getSourceName()))
+					{
+						found = true;
+						linkedSpaceRoadsUpdate.remove(spaceRoadUpdate);
+						break;
+					}
+				}
+				
+				if (!found)
+				{
+					// Remove
+					spaceRoad.destroy();
+				}
+			}
+			
+			for(ISpaceRoad spaceRoadUpdate : linkedSpaceRoadsUpdate)
+			{
+				// Add
+				IProductiveCelestialBody source = (IProductiveCelestialBody) sepDB.getCelestialBody(spaceRoadUpdate.getSourceName());
+				ISpaceCounter sourceSpaceCounter = (ISpaceCounter) source.getBuilding(eBuildingType.SpaceCounter);
+				if (sourceSpaceCounter == null)
+				{
+					// Create hypothesis space counter, which will be updated on destination observation.
+					sourceSpaceCounter = (ISpaceCounter) sepDB.createBuilding(source.getName(), sepDB.getConfig().getTurn(), eBuildingType.SpaceCounter);
+				}
+								
+				if (sourceSpaceCounter.getNbSlots() - sourceSpaceCounter.getBuiltSpaceRoads().size() < 1) // To match this condition, only 0 < 1 is expected.
+				{
+					// Hypothetically upgrade the source space counter so we can add space road. The true space counter will be updated whence source is observed.
+					sourceSpaceCounter.upgrade();
+				}
+				
+				sourceSpaceCounter.buildSpaceRoad(getProductiveCelestialBodyName());
+			}
+			
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
 	}
 	
 	public String toString()
@@ -202,8 +369,9 @@ class SpaceCounter extends Building implements ISpaceCounter
 		return sb.toString();
 	}
 
-	public static void initializeProperties(Node properties, int builtDate, int nbSlots)
+	public static void initializeProperties(Node properties, String productiveCelestialBodyName, int builtDate, int nbSlots)
 	{
+		properties.setProperty("productiveCelestialBodyName", productiveCelestialBodyName);
 		properties.setProperty("type", eBuildingType.SpaceCounter.toString());
 		properties.setProperty("builtDate", builtDate);
 		properties.setProperty("nbSlots", nbSlots);

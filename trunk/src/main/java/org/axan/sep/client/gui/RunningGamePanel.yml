@@ -2,6 +2,9 @@ JPanel(name=runningGamePanel):
   # Actions tabs
   - StarshipPlantActionPanel(name=starshipPlantActionPanel)
   - ProbeActionsPanel(name=probeActionsPanel)
+  - AntiProbeMissileActionsPanel(name=antiProbeMissileActionsPanel)
+  - FleetActionPanel(name=fleetActionPanel)
+  - DiplomacyActionPanel(name=diplomacyActionPanel)
   
   # Dock Left
   - JPanel(name=dockedLeftPanel):
@@ -14,7 +17,10 @@ JPanel(name=runningGamePanel):
                [[insets 0]]
                [grow]      [200px]
                chatPanel   >playersListPanel   [grow]
-        - JPanel(tabTitle="Logs", name=logsTab, background=yellow)
+        - JScrollPane(tabTitle="Logs", name=logsTab, vScrollBar=always, hScrollBar=never):
+            JEditorPane(name=logsEditorPane, editable=false):
+              contentType: "text/html"
+              text: "<b><u>HTML</u></b> <i>enabled</i> <font color='blue'>Logs</font>"        
         - JScrollPane(tabTitle="Action", name=actionTab, vScrollBar=asNeeded, hScrollBar=never):
     - MigLayout: |
         [[insets 0]]
@@ -58,9 +64,10 @@ JPanel(name=runningGamePanel):
 
   # Dock Bottom
   - JPanel(name=dockedBottomPanel):
-    - JButton(name=btnDiplomacy, text="btn.diplomacy")
+    - JButton(name=btnDiplomacy, text="btn.diplomacy", onAction=showDiplomacyActionPanel)
     - JButton(name=btnUndo, text="btn.undo")
     - JButton(name=btnEndTurn, text="btn.endTurn", onAction=endTurn)
+    - JButton(name=btnSave, text="btn.save", onAction=save)
     - FlowLayout(alignment=left,hgap=30,vgap=0,alignOnBaseline=true)
 
   #gameCreationPanel layout      
@@ -75,3 +82,6 @@ bind:
   - playersListPanel.sepClient: this.sepClient
   - starshipPlantActionPanel.sepClient: this.sepClient
   - probeActionsPanel.sepClient: this.sepClient
+  - antiProbeMissileActionsPanel.sepClient: this.sepClient
+  - fleetActionPanel.sepClient: this.sepClient
+  - diplomacyActionPanel.sepClient: this.sepClient

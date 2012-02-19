@@ -21,6 +21,17 @@ public interface IGameEvent
 	 */
 	public static interface IGameEventExecutor
 	{
+		/**
+		 * Return current view player name, or null if global view.
+		 */
+		String getCurrentViewPlayerName();
+		
+		/**
+		 * Try to fire given events on given observers views.
+		 * Note that player view executors can only fire on their player view, whereas global view executor can fire any player view.
+		 * @param event
+		 * @param observers
+		 */
 		void onGameEvent(IGameEvent event, Set<String> observers);
 	}
 	

@@ -6,15 +6,22 @@ import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.orm.CelestialBody;
 import org.axan.sep.common.db.orm.base.IBaseVortex;
 import org.axan.sep.common.db.orm.base.BaseVortex;
+import org.axan.sep.common.db.IBuilding;
+import org.axan.sep.common.db.ICelestialBody;
+import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IVortex;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.axan.sep.common.db.IGameConfig;
+
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
 
-class Vortex extends CelestialBody implements IVortex
+class Vortex extends CelestialBody implements IVortex, Serializable
 {
 	/*
 	 * PK (inherited): first pk field.
@@ -29,7 +36,7 @@ class Vortex extends CelestialBody implements IVortex
 	/*
 	 * DB connection
 	 */
-	protected Index<Node> vortexIndex;
+	protected transient Index<Node> vortexIndex;
 	
 	/**
 	 * Off-DB constructor
@@ -131,7 +138,34 @@ class Vortex extends CelestialBody implements IVortex
 			return (Integer) properties.getProperty("death");
 		}
 	}
-
+	
+	@Override
+	public void update(ICelestialBody celestialBodyUpdate)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			super.update(celestialBodyUpdate);
+			
+			if (!IVortex.class.isInstance(celestialBodyUpdate)) throw new RuntimeException("Illegal vortex update, not a vortex instance.");
+			
+			IVortex vortexUpdate = (IVortex) celestialBodyUpdate;
+			
+			properties.setProperty("birth", vortexUpdate.getBirth());
+			properties.setProperty("death", vortexUpdate.getDeath());			
+			
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}		
+	}
+	
 	public static void initializeProperties(Node properties, String name, int birth, int death)
 	{
 		properties.setProperty("name", name);

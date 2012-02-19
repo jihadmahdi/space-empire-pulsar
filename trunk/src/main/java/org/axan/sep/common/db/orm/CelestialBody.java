@@ -15,6 +15,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.axan.sep.common.db.IGameConfig;
+
+import java.io.IOException;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -30,13 +32,13 @@ abstract class CelestialBody extends AGraphObject<Node> implements ICelestialBod
 	/*
 	 * Off-DB fields (none)
 	 */
-	protected final Location location;
+	protected Location location;
 	protected final eCelestialBodyType type;
 	
 	/*
 	 * DB connection: DB connection and useful objects (e.g. indexes and nodes).
 	 */
-	protected Index<Node> celestialBodyIndex;	
+	protected transient Index<Node> celestialBodyIndex;	
 	
 	/**
 	 * Off-DB constructor.
@@ -158,4 +160,20 @@ abstract class CelestialBody extends AGraphObject<Node> implements ICelestialBod
 			return Location.valueOf((String) nArea.getProperty("location"));
 		}
 	}
+	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public void update(ICelestialBody celestialBodyUpdate)
+	{
+		if (getType() != celestialBodyUpdate.getType()) throw new RuntimeException("Illegal celestial body update, inconsistent type.");
+		if (!getName().equals(celestialBodyUpdate.getName())) throw new RuntimeException("Illegal celestial body update, inconsistent name.");
+		if (!getLocation().equals(celestialBodyUpdate.getLocation())) throw new RuntimeException("Illegal celestial body update, inconsistent location.");
+	}
+	
+	private void writeObject(java.io.ObjectOutputStream out) throws IOException
+	{		
+		location = getLocation();
+		out.defaultWriteObject();
+	}
+
 }

@@ -1,55 +1,35 @@
 package org.axan.sep.server.ai;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
-import org.axan.eplib.orm.sql.SQLDataBaseException;
-import org.axan.eplib.orm.sql.sqlite.SQLiteDB;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.common.PlayerGameBoard;
-import org.axan.sep.common.db.orm.ProductiveCelestialBody;
+import org.axan.sep.common.Protocol.eBuildingType;
+import org.axan.sep.common.db.IBuilding;
+import org.axan.sep.common.db.orm.SEPCommonDB;
 
 import com.almworks.sqlite4java.SQLiteException;
 
-public class ClientAI implements IGame.Client
+public class ClientAI
 {
-	private static Boolean sqlite_lib_init = false;
-	
-	private final Stack<PlayerGameBoard> previousGameBoards = new Stack<PlayerGameBoard>();
 	private final String playerName;
 	private String startingPlanet;
-	private IGame currentLocalGame;
 	private final SEPClient client;
 	private final boolean isClientTest;
 	
 	public ClientAI(String playerName, SEPClient client, boolean isClientTest)
 	{
-		synchronized(sqlite_lib_init)
-		{
-			if (!sqlite_lib_init)
-			{
-				try
-				{
-					SQLiteDB.checkSQLiteLib("target/izpack/lib/");
-				}
-				catch(SQLiteException e)
-				{
-					throw new Error(e);
-				}
-				
-				sqlite_lib_init = true;
-			}
-		}
-		
 		this.playerName = playerName;
 		this.client = client;
 		this.isClientTest = isClientTest;
-	}
-	
-	public IGame getLocalGame()
-	{
-		return currentLocalGame;
 	}
 	
 	public SEPClient getClient()
@@ -57,88 +37,56 @@ public class ClientAI implements IGame.Client
 		return client;
 	}
 	
-	@Override
-	public void endTurn(List<GameCommand<?>> commands) throws Throwable
+	public SEPCommonDB getDB()
 	{
-		client.getRunningGameInterface().endTurn(commands);
+		SEPCommonDB sepDB = getGameBoard().getDB();
+		if (sepDB == null) throw new IllegalStateException("Gameboard not refreshed yet.");
+		return sepDB;
 	}
 	
-	public void refreshLocalGameBoard(PlayerGameBoard gameBoard)
+	public PlayerGameBoard getGameBoard()
 	{
-		//getStartingPlanetName();
-	}
-	
-	public void refreshGameBoard(PlayerGameBoard gameBoard)
-	{
-		if (currentLocalGame != null) previousGameBoards.add(currentLocalGame.getGameBoard());
-		if (isClientTest)
-		{
-			currentLocalGame = new LocalGame(this, gameBoard);
-		}
-		else
-		{
-			currentLocalGame = new UncheckedLocalGame(this, gameBoard);
-		}
-		refreshLocalGameBoard(gameBoard);
+		PlayerGameBoard gb = client == null ? null : client.getGameboard();
+		if (gb == null) throw new IllegalStateException("Gameboard not refreshed yet.");
+		return gb;
 	}
 	
 	public String getStartingPlanetName()
 	{
 		if (startingPlanet == null)
-		{
-			if (previousGameBoards.isEmpty() && currentLocalGame == null) throw new IllegalStateException("Gameboard not refreshed yet.");
-			
-			final PlayerGameBoard initial = (previousGameBoards.isEmpty()?currentLocalGame.getGameBoard():previousGameBoards.firstElement());
-			
-			try
-			{				 
-				Set<IVersionedPlanet> planets = ProductiveCelestialBody.selectVersion(initial.getDB(), IVersionedPlanet.class, 0, null, "owner = '%s'", playerName);
-				if (planets.isEmpty()) throw new Error("No starting planet found for player '"+playerName+"'.");
-				startingPlanet = planets.iterator().next().getName();
-			}
-			catch(SQLDataBaseException e)
-			{
-				throw new Error(e);
-			}
+		{			
+			startingPlanet = getDB().getStartingPlanet(playerName).getName();
 		}
 		return startingPlanet;
 	}
 	
 	public int getTurn()
 	{
-		if (currentLocalGame == null) return -1;
-		return currentLocalGame.getGameBoard().getTurn();
+		SEPCommonDB sepDB = client == null ? null : client.getGameboard() == null ? null : client.getGameboard().getDB();
+		if (sepDB == null) return -1;
+		return sepDB.getConfig().getTurn();
 	}
 	
-	/*
-	public void checkBuilding(String celestialBodyName, Class<? extends ABuilding> buildingType, int buildSlotsCount)
+	public void checkBuilding(String celestialBodyName, eBuildingType buildingType, int buildSlotsCount)
 	{
-		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
+		SEPCommonDB sepDB = getDB();
 		
-		ABuilding building;
-		try
-		{
-			building = currentLocalGame.getGameBoard().getBuilding(celestialBodyName, buildingType);
-		}
-		catch(PlayerGameBoardQueryException e)
-		{
-			e.printStackTrace();
-			fail(e.getMessage());
-			return;
-		}
-		
+		IBuilding building = sepDB.getBuilding(celestialBodyName, buildingType);
+				
 		if (building == null && buildSlotsCount > 0)
 		{
 			fail("No building but "+buildSlotsCount+" expected.");
 			return;
 		}
-		if (building != null && building.getBuildSlotsCount() != buildSlotsCount)
+		
+		if (building != null && building.getNbSlots() != buildSlotsCount)
 		{
-			fail(buildSlotsCount+" building slots count expected but "+building.getBuildSlotsCount()+" found.");
+			fail(buildSlotsCount+" building slots count expected but "+building.getNbSlots()+" found.");
 			return;
 		}
 	}		
 	
+	/*
 	public void checkFleetNotMoved(String fleetName, int expectedQt, boolean checkPreviousGameBoard)
 	{
 		checkFleetMove(fleetName, expectedQt, null, null, -1, checkPreviousGameBoard);

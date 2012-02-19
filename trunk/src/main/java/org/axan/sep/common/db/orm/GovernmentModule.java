@@ -13,6 +13,8 @@ import org.axan.sep.common.db.IGameConfig;
 import java.util.Map;
 import java.util.HashMap;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 class GovernmentModule extends Building implements IGovernmentModule
 {
 	// PK inherited.
@@ -80,7 +82,7 @@ class GovernmentModule extends Building implements IGovernmentModule
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, governmentModule[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
 			properties = sepDB.getDB().createNode();
-			GovernmentModule.initializeProperties(properties, builtDate, nbSlots);
+			GovernmentModule.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
 			governmentModuleIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
 			
 			super.create(sepDB);
@@ -94,13 +96,36 @@ class GovernmentModule extends Building implements IGovernmentModule
 	}
 	
 	@Override
+	@OverridingMethodsMustInvokeSuper
+	public void delete()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			governmentModuleIndex.remove(properties);
+			super.delete();
+			
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+	
+	@Override
 	public String toString()
 	{
 		return "Government module gives a +50% bonus to population per turn and +50% bonus to carbon resource extraction on the current planet.";			
 	}	
 	
-	public static void initializeProperties(Node properties, int builtDate, int nbSlots)
+	public static void initializeProperties(Node properties, String productiveCelestialBodyName, int builtDate, int nbSlots)
 	{
+		properties.setProperty("productiveCelestialBodyName", productiveCelestialBodyName);
 		properties.setProperty("type", eBuildingType.GovernmentModule.toString());
 		properties.setProperty("builtDate", builtDate);
 		properties.setProperty("nbSlots", nbSlots);

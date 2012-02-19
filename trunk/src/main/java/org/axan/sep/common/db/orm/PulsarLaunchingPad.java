@@ -5,6 +5,8 @@ import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.db.orm.Building;
 import org.axan.sep.common.db.orm.base.IBasePulsarLaunchingPad;
 import org.axan.sep.common.db.orm.base.BasePulsarLaunchingPad;
+import org.axan.sep.common.db.IBuilding;
+import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IPulsarLaunchingPad;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -12,6 +14,8 @@ import org.neo4j.graphdb.index.Index;
 import org.axan.sep.common.db.IGameConfig;
 import java.util.Map;
 import java.util.HashMap;
+
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 {
@@ -80,7 +84,7 @@ class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, pulsarLaunchingPad[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
 			properties = sepDB.getDB().createNode();
-			PulsarLaunchingPad.initializeProperties(properties, builtDate, nbSlots);
+			PulsarLaunchingPad.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
 			pulsarLaunchingPadIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
 			
 			super.create(sepDB);
@@ -93,6 +97,29 @@ class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 		}
 	}
 	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public void delete()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			pulsarLaunchingPadIndex.remove(properties);
+			super.delete();
+			
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+	
+	@Override
 	public int getNbFired()
 	{
 		assertOnlineStatus(true);
@@ -113,6 +140,34 @@ class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 	public static int getUpgradePopulationCost(int nbSlots)
 	{
 		return (int) (1+nbSlots * 0.25) * 1000;
+	}
+	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public void update(IBuilding buildingUpdate)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			super.update(buildingUpdate);
+			
+			if (!IPulsarLaunchingPad.class.isInstance(buildingUpdate)) throw new RuntimeException("Illegal pulsar launching pad update, not a pulsar launching pad instance.");
+			
+			IPulsarLaunchingPad pulsarLaunchingPadUpdate = (IPulsarLaunchingPad) buildingUpdate;
+			
+			if (getNbSlots() < pulsarLaunchingPadUpdate.getNbFired()) throw new RuntimeException("Illegal pulsar launching pad update, nbSlots < nbFired.");
+			
+			properties.setProperty("nbFired", pulsarLaunchingPadUpdate.getNbFired());
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
 	}
 	
 	@Override
@@ -144,8 +199,9 @@ class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 		return sb.toString();		
 	}
 	
-	public static void initializeProperties(Node properties, int builtDate, int nbSlots)
+	public static void initializeProperties(Node properties, String productiveCelestialBodyName, int builtDate, int nbSlots)
 	{
+		properties.setProperty("productiveCelestialBodyName", productiveCelestialBodyName);
 		properties.setProperty("type", eBuildingType.PulsarLaunchingPad.toString());
 		properties.setProperty("builtDate", builtDate);
 		properties.setProperty("nbSlots", nbSlots);

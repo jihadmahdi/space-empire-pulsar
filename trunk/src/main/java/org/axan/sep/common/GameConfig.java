@@ -14,6 +14,7 @@ import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.IDiplomacyMarker.eForeignPolicy;
 
 
 
@@ -864,5 +865,33 @@ public class GameConfig implements IGameConfig, Serializable
 	public void setVortexLifetime(int min, int max)
 	{
 		vortexLifetime = new int[] {min, max};
+	}
+	
+	private boolean isAllowedToLandDefault = false;
+	
+	@Override
+	public boolean isAllowedToLandDefault()
+	{
+		return isAllowedToLandDefault;
+	}
+	
+	@Override
+	public void setAllowedToLandDefault(boolean isAllowedToLand)
+	{
+		this.isAllowedToLandDefault = isAllowedToLand;
+	}
+	
+	private eForeignPolicy foreignPolicyDefault = eForeignPolicy.NEUTRAL;
+	
+	@Override
+	public eForeignPolicy getForeignPolicyDefault()
+	{
+		return foreignPolicyDefault;
+	}
+	
+	@Override
+	public void setForeignPolicyDefault(eForeignPolicy foreignPolicy)
+	{
+		this.foreignPolicyDefault = foreignPolicy;
 	}
 }

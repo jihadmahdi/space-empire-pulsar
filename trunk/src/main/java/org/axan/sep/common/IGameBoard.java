@@ -28,7 +28,7 @@ public interface IGameBoard
 		}
 	}
 	
-	Map<IPlayer, IPlayerConfig> getPlayerList() throws GameBoardException;
+	//Map<String, IPlayerConfig> getPlayerList() throws GameBoardException;
 	
 	///////////////////// Commands
 	

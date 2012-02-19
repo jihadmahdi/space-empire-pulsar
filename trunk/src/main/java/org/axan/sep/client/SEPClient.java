@@ -75,7 +75,7 @@ public class SEPClient implements IDBFactory
 		 * Must return fast (let's spawn a new thread to make the job).
 		 * @param playerList new player list.
 		 */
-		void refreshPlayerList(Map<IPlayer, IPlayerConfig> playerList);
+		void refreshPlayerList(Map<String, IPlayerConfig> playerList);
 
 		/**
 		 * New GameCreation message received from another player.
@@ -83,7 +83,7 @@ public class SEPClient implements IDBFactory
 		 * @param fromPlayer
 		 * @param msg
 		 */
-		void receiveGameCreationMessage(IPlayer fromPlayer, String msg);
+		void receiveGameCreationMessage(String fromPlayer, String msg);
 
 		/**
 		 * Refresh game config display.
@@ -97,7 +97,7 @@ public class SEPClient implements IDBFactory
 		 * @param fromPlayer
 		 * @param msg
 		 */
-		void receiveRunningGameMessage(IPlayer fromPlayer, String msg);
+		void receiveRunningGameMessage(String fromPlayer, String msg);
 
 		/**
 		 * New turn has been sent from the server. Client must refresh the gameboard.
@@ -111,7 +111,7 @@ public class SEPClient implements IDBFactory
 		 * @param fromPlayer
 		 * @param msg
 		 */
-		void receivePausedGameMessage(IPlayer fromPlayer, String msg);
+		void receivePausedGameMessage(String fromPlayer, String msg);
 		
 		/**
 		 * Return true if current client is supposed to be game admin (i.e. server host).
@@ -137,7 +137,7 @@ public class SEPClient implements IDBFactory
 		 * @see common.Protocol.Client#refreshPlayerList(java.util.Set)
 		 */
 		@Override
-		public void refreshPlayerList(final Map<IPlayer, IPlayerConfig> playerList) throws RpcException
+		public void refreshPlayerList(final Map<String, IPlayerConfig> playerList) throws RpcException
 		{
 			client.getGameboard().refreshPlayerList(playerList);
 			
@@ -156,7 +156,7 @@ public class SEPClient implements IDBFactory
 		 * @see common.Protocol.Client#receiveGameCreationMessage(common.Player, java.lang.String)
 		 */
 		@Override
-		public void receiveGameCreationMessage(final IPlayer fromPlayer, final String msg)
+		public void receiveGameCreationMessage(final String fromPlayer, final String msg)
 		{
 			SwingUtilities.invokeLater(new Runnable()
 			{
@@ -192,7 +192,7 @@ public class SEPClient implements IDBFactory
 		 * @see common.Protocol.Client#receiveRunningGameMessage(common.Player, java.lang.String)
 		 */
 		@Override
-		public void receiveRunningGameMessage(final IPlayer fromPlayer, final String msg) throws RpcException
+		public void receiveRunningGameMessage(final String fromPlayer, final String msg) throws RpcException
 		{
 			SwingUtilities.invokeLater(new Runnable()
 			{
@@ -229,7 +229,7 @@ public class SEPClient implements IDBFactory
 		}
 
 		@Override
-		public void receivePausedGameMessage(final IPlayer fromPlayer, final String msg) throws RpcException
+		public void receivePausedGameMessage(final String fromPlayer, final String msg) throws RpcException
 		{
 			SwingUtilities.invokeLater(new Runnable()
 			{

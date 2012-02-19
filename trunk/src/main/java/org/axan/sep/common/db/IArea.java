@@ -29,7 +29,10 @@ public interface IArea
 	Set<? extends IUnit> getUnits(eUnitType type);
 	
 	/** Return units markers (including units) in this area. */
-	Set<? extends IUnitMarker> getUnitsMarkers(eUnitType type);
+	<T extends IUnitMarker> Set<T> getUnitsMarkers(eUnitType type);
+	
+	/** Update current area (including celestial bodies, etc..) with given off-DB areaUpdate. */
+	void update(IArea areaUpdate);
 
 	/** Return readable string of this area for given player (according to current DB view). */
 	String toString(String playerName);

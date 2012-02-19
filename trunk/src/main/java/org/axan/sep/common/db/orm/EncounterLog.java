@@ -7,13 +7,15 @@ import org.axan.sep.common.db.ICelestialBody;
 import org.axan.sep.common.db.IEncounterLog;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IUnit;
+import org.axan.sep.common.db.IUnitMarker;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 
-public class EncounterLog extends AGraphObject<Node> implements IEncounterLog
+public class EncounterLog extends AGraphObject<Relationship> implements IEncounterLog
 {
 	static final String PK = "[turn] observerOwnerName@observerName observation of encounterOwnerName@encounterName";
 	static final String getPK(int turn, String observerOwnerName, String observerName, String encounterOwnerName, String encounterName)
@@ -33,7 +35,7 @@ public class EncounterLog extends AGraphObject<Node> implements IEncounterLog
 	/*
 	 * DB connection
 	 */
-	protected Index<Node> encounterLogIndex;
+	protected Index<Relationship> encounterLogIndex;
 	
 	EncounterLog(String observerOwnerName, String observerName, String encounterOwnerName, String encounterName, int turn)
 	{
@@ -73,8 +75,8 @@ public class EncounterLog extends AGraphObject<Node> implements IEncounterLog
 		{
 			db = sepDB.getDB();
 			
-			encounterLogIndex = db.index().forNodes("EncounterLogIndex");
-			IndexHits<Node> hits = encounterLogIndex.get(PK, getPK(turn, observerOwnerName, observerName, encounterOwnerName, encounterName));
+			encounterLogIndex = db.index().forRelationships("EncounterLogIndex");
+			IndexHits<Relationship> hits = encounterLogIndex.get(PK, getPK(turn, observerOwnerName, observerName, encounterOwnerName, encounterName));
 						
 			properties = hits.hasNext() ? hits.getSingle() : null;			
 		}
@@ -104,18 +106,24 @@ public class EncounterLog extends AGraphObject<Node> implements IEncounterLog
 				throw new DBGraphException("Constraint error: Indexed fields  '"+PK+"' must be unique, encounterLog["+getPK(turn, observerOwnerName, observerName, encounterOwnerName, encounterName)+"] already exist.");
 			}			
 
-			properties = sepDB.getDB().createNode();
-			EncounterLog.initializeProperties(properties, turn, observerOwnerName, observerName, encounterOwnerName, encounterName);			
-			encounterLogIndex.add(properties, PK, getPK(turn, observerOwnerName, observerName, encounterOwnerName, encounterName));
-			
-			Node nObserver = db.index().forNodes("UnitIndex").get("ownerName@name", String.format("%s@%s", observerOwnerName, observerName)).getSingle();
+			Node nObserver = db.index().forNodes("UnitIndex").get(Unit.PK, Unit.getPK(observerOwnerName, observerName)).getSingle();
 			if (nObserver == null)
 			{
 				tx.failure();
-				throw new DBGraphException("Constraint error: Cannot find observer Unit '"+observerOwnerName+"@"+observerName+"'");
+				throw new DBGraphException("Constraint error: Cannot find observer Unit '"+Unit.getPK(observerOwnerName, observerName)+"'");
 			}
-			nObserver.createRelationshipTo(properties, eRelationTypes.UnitEncounterLog);
 			
+			Node nEncounter = db.index().forNodes("UnitMarkerIndex").get(UnitMarker.PK, UnitMarker.getPK(turn, encounterOwnerName, encounterName)).getSingle();
+			if (nEncounter == null)
+			{
+				tx.failure();
+				throw new DBGraphException("Constraint error: Cannot find encounter UnitMarker '"+UnitMarker.getPK(turn, encounterOwnerName, encounterName)+"'");
+			}
+			
+			properties = nObserver.createRelationshipTo(nEncounter, eRelationTypes.UnitEncounterLog);
+			EncounterLog.initializeProperties(properties, turn, observerOwnerName, observerName, encounterOwnerName, encounterName);			
+			encounterLogIndex.add(properties, PK, getPK(turn, observerOwnerName, observerName, encounterOwnerName, encounterName));
+						
 			tx.success();			
 		}
 		finally
@@ -124,7 +132,16 @@ public class EncounterLog extends AGraphObject<Node> implements IEncounterLog
 		}
 	}
 	
-	public static void initializeProperties(Node properties, int turn, String observerOwnerName, String observerName, String encounterOwnerName, String encounterName)
+	@Override
+	public IUnitMarker getEncounter()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		return sepDB.getUnitMarker(turn, encounterOwnerName, encounterName, null);
+	}
+	
+	public static void initializeProperties(Relationship properties, int turn, String observerOwnerName, String observerName, String encounterOwnerName, String encounterName)
 	{
 		properties.setProperty("turn", turn);
 		properties.setProperty("observerOwnerName", observerOwnerName);

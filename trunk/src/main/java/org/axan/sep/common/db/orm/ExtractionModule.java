@@ -13,6 +13,8 @@ import org.axan.sep.common.db.IGameConfig;
 import java.util.Map;
 import java.util.HashMap;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 class ExtractionModule extends Building implements IExtractionModule
 {
 	// PK inherited.
@@ -80,7 +82,7 @@ class ExtractionModule extends Building implements IExtractionModule
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, extractionModule[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
 			properties = sepDB.getDB().createNode();
-			ExtractionModule.initializeProperties(properties, builtDate, nbSlots);
+			ExtractionModule.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
 			extractionModuleIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
 			
 			super.create(sepDB);
@@ -92,6 +94,28 @@ class ExtractionModule extends Building implements IExtractionModule
 			tx.finish();
 		}
 	}	
+	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public void delete()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			extractionModuleIndex.remove(properties);
+			super.delete();
+			
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
 	
 	public static int getCarbonProductionPerTurn(int nbSlots)
 	{
@@ -141,8 +165,9 @@ class ExtractionModule extends Building implements IExtractionModule
 		return sb.toString();		
 	}
 
-	public static void initializeProperties(Node properties, int builtDate, int nbSlots)
+	public static void initializeProperties(Node properties, String productiveCelestialBodyName, int builtDate, int nbSlots)
 	{
+		properties.setProperty("productiveCelestialBodyName", productiveCelestialBodyName);
 		properties.setProperty("type", eBuildingType.ExtractionModule.toString());
 		properties.setProperty("builtDate", builtDate);
 		properties.setProperty("nbSlots", nbSlots);

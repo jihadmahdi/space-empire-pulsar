@@ -1,0 +1,5 @@
+JPanel(name=diplomacyActionPanel):
+  - JPanel(name=dynamicPanel)
+  - MigLayout: |
+      [[insets 0]]
+      dynamicPanel

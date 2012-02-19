@@ -9,7 +9,18 @@ import java.util.HashMap;
 
 public interface ICelestialBody
 {
+	/** Celestial body name */
 	String getName();
+	
+	/** Celestial body location */
 	Location getLocation();
-	eCelestialBodyType getType();	
+	
+	/** Celestial body type */
+	eCelestialBodyType getType();
+	
+	/**
+	 * Update current celestial body (including buildings, etc..) with given off-DB celestialBodyUpdate.
+	 * @param celestialBodyUpdate must be the same type of the current celestial body instance.
+	 */
+	void update(ICelestialBody celestialBodyUpdate);
 }

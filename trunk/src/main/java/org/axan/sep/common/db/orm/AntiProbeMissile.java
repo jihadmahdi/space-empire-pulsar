@@ -14,6 +14,7 @@ import org.axan.sep.common.Rules.StarshipTemplate;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.IAntiProbeMissile;
 import org.axan.sep.common.db.IAntiProbeMissileMarker;
+import org.axan.sep.common.db.IProbeMarker;
 import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
 import org.axan.sep.common.db.IProbe;
 import org.axan.sep.common.db.IUnitMarker;
@@ -109,7 +110,7 @@ public class AntiProbeMissile extends Unit implements IAntiProbeMissile
 				tx.failure();
 				throw new DBGraphException("Constraint error: Cannot find owner Player '"+ownerName+"'");
 			}
-			nOwner.createRelationshipTo(properties, eUnitType.AntiProbeMissile);
+			//nOwner.createRelationshipTo(properties, eUnitType.AntiProbeMissile);
 			
 			super.create(sepDB);
 			
@@ -133,10 +134,7 @@ public class AntiProbeMissile extends Unit implements IAntiProbeMissile
 		try
 		{
 			antiProbeMissileIndex.remove(properties);
-			properties.getSingleRelationship(eUnitType.AntiProbeMissile, Direction.INCOMING).delete();
-			
-			Relationship r = properties.getSingleRelationship(eRelationTypes.AntiProbeMissileTarget, Direction.OUTGOING);
-			if (r != null) r.delete();			
+			//properties.getSingleRelationship(eUnitType.AntiProbeMissile, Direction.INCOMING).delete();
 			
 			super.destroy();
 			
@@ -166,26 +164,56 @@ public class AntiProbeMissile extends Unit implements IAntiProbeMissile
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		return properties.hasRelationship(eRelationTypes.AntiProbeMissileTarget, Direction.OUTGOING);
+		return getTarget() != null;
 	}
 	
 	@Override
-	public IProbe getTarget()
+	public void setTarget(IProbeMarker target)
 	{
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
+		Transaction tx = db.beginTx();
+		
+		try
+		{
+			if (IProbe.class.isInstance(target))
+			{
+				Probe probe = (Probe) target;
+				ProbeMarker marker = (ProbeMarker) sepDB.getUnitMarker(target.getTurn(), target.getOwnerName(), target.getName(), eUnitType.Probe);
+				
+				if (marker == null)
+				{
+					marker = (ProbeMarker) probe.getMarker(0);
+					marker.create(sepDB);
+				}				
+			}
+			
+			properties.setProperty("targetTurn", target.getTurn());
+			properties.setProperty("targetOwnerName", target.getOwnerName());
+			properties.setProperty("targetName", target.getName());
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+	
+	@Override
+	public IProbeMarker getTarget()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		if (!properties.hasProperty("targetTurn")) return null;
+		int targetTurn = (Integer) properties.getProperty("targetTurn");
 		if (!properties.hasProperty("targetOwnerName")) return null;
 		String targetOwnerName = (String) properties.getProperty("targetOwnerName");
 		if (!properties.hasProperty("targetName")) return null;
 		String targetName = (String) properties.getProperty("targetName");
-		if (!properties.hasProperty("targetTurn")) return null;
-		int targetTurn = (Integer) properties.getProperty("targetTurn");
 		
-		SEPCommonDB pDB = sepDB;
-		while(pDB.getConfig().getTurn() > targetTurn) pDB = pDB.previous();
-		
-		return pDB.getProbe(targetOwnerName, targetName);
+		return (IProbeMarker) sepDB.getUnitMarker(targetTurn, targetOwnerName, targetName, eUnitType.Probe);		
 	}
 	
 	@Override
@@ -196,7 +224,7 @@ public class AntiProbeMissile extends Unit implements IAntiProbeMissile
 		
 		checkForDBUpdate();
 
-		IProbe target = getTarget();
+		IProbeMarker target = getTarget();
 		sb.append("Status : "+(isFired()?String.format("fired to '%s@%s' (%s)", target.getOwnerName(), target.getName(), getDestination()) : "not fired"));
 		return sb.toString();
 	}
@@ -211,9 +239,10 @@ public class AntiProbeMissile extends Unit implements IAntiProbeMissile
 	}
 	
 	@Override
+	@OverridingMethodsMustInvokeSuper
 	public void onArrival(IGameEventExecutor executor)
-	{				
-		IProbe target = getTarget(); // Initial version		
+	{		
+		IProbeMarker target = getTarget(); // Marker version
 		executor.onGameEvent(new AntiProbeMissileExplosion(getRealLocation().asLocation(), getOwnerName(), getName(), target.getOwnerName(), target.getName()), sepDB.getPlayersNames());		
 	}
 	

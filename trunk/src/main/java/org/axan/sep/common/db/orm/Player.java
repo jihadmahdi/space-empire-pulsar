@@ -1,12 +1,17 @@
 package org.axan.sep.common.db.orm;
 
 import org.axan.eplib.orm.nosql.DBGraphException;
+import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.db.IDiplomacyMarker.eForeignPolicy;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
 import org.axan.sep.common.db.orm.base.IBasePlayer;
 import org.axan.sep.common.db.orm.base.BasePlayer;
+import org.axan.sep.common.db.IDiplomacy;
+import org.axan.sep.common.db.IDiplomacyMarker;
+import org.axan.sep.common.db.IGovernmentModule;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
 import org.axan.sep.common.db.IUnit;
@@ -14,6 +19,7 @@ import org.axan.sep.common.db.IUnitMarker;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
@@ -26,6 +32,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.security.acl.Owner;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
@@ -145,6 +152,37 @@ class Player extends AGraphObject<Node> implements IPlayer, Serializable
 	}
 	
 	@Override
+	public IDiplomacy getDiplomacy(String targetName)
+	{		
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Diplomacy d = new Diplomacy(sepDB, name, targetName);
+		if (!d.exists()) return null;
+		
+		return d;
+	}
+	
+	@Override
+	public void setDiplomacy(String targetName, boolean isAllowedToLand, eForeignPolicy foreignPolicy)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();		
+		
+		Diplomacy d = new Diplomacy(sepDB, name, targetName);
+		if (!d.exists())
+		{
+			d = new Diplomacy(name, targetName, isAllowedToLand, foreignPolicy);
+			d.create(sepDB);
+		}
+		else
+		{
+			d.setAllowedToLand(isAllowedToLand);
+			d.setForeignPolicy(foreignPolicy);
+		}
+	}
+	
+	@Override
 	public Set<? extends IUnit> getUnits(eUnitType type)
 	{
 		assertOnlineStatus(true);
@@ -164,10 +202,85 @@ class Player extends AGraphObject<Node> implements IPlayer, Serializable
 	}
 	
 	@Override
+	public IDiplomacyMarker getDiplomacyMarker(String targetName)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Diplomacy diplomacy = new Diplomacy(sepDB, getName(), targetName);
+		if (diplomacy.exists()) return diplomacy;
+		
+		IDiplomacyMarker result = null;
+		
+		for(Relationship r : properties.getRelationships(Direction.OUTGOING, eRelationTypes.PlayerDiplomacyMarker))
+		{
+			if (!targetName.equals(r.getEndNode().getProperty("name"))) continue;
+			
+			IDiplomacyMarker diplomacyMarker = new DiplomacyMarker(sepDB, (Integer) r.getProperty("turn"), getName(), targetName);
+			if (result == null || result.getTurn() < diplomacyMarker.getTurn()) result = diplomacyMarker;		
+		}
+		
+		if (sepDB.hasPrevious())
+		{
+			IDiplomacyMarker pResult = ((Player) sepDB.previous().getPlayer(getName())).getDiplomacyMarker(targetName);
+			if ((result == null && pResult != null) || (result != null && pResult != null && result.getTurn() < pResult.getTurn())) result = pResult;
+		}
+		
+		return result;
+	}
+	
+	@Override
+	public void setDiplomacyMarker(String targetName, boolean isAllowedToLand, eForeignPolicy foreignPolicy)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+
+		DiplomacyMarker d = new DiplomacyMarker(getVersion(), name, targetName, isAllowedToLand, foreignPolicy);
+		d.create(sepDB);		
+	}
+	
+	@Override
+	public IUnitMarker getUnitMarker(String name)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		IUnitMarker result = null;
+		
+		for(Node n : properties.traverse(Order.BREADTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eRelationTypes.PlayerUnitMarker, Direction.OUTGOING, eRelationTypes.PlayerUnit, Direction.OUTGOING))
+		{
+			if (!name.equals(n.getProperty("name"))) continue;
+			
+			IUnitMarker unitMarker = null; 
+			
+			if (n.hasProperty("turn")) // UnitMarker
+			{
+				unitMarker = sepDB.getUnitMarker((Integer) n.getProperty("turn"), getName(), name, null);
+			}
+			
+			IUnit unit = sepDB.getUnit(getName(), name, null);
+			
+			if (unit != null && (unitMarker == null || unit.getTurn() >= unitMarker.getTurn())) unitMarker = unit;
+			
+			if (result == null || result.getTurn() < unitMarker.getTurn()) result = unitMarker;
+		}
+		
+		if (sepDB.hasPrevious())
+		{
+			IUnitMarker pResult = ((Player) sepDB.previous().getPlayer(getName())).getUnitMarker(name);
+			if ((result == null && pResult != null) || (result != null && pResult != null && result.getTurn() < pResult.getTurn())) result = pResult;
+		}
+		
+		return result;
+	}
+	
+	@Override
 	public Set<? extends IUnitMarker> getUnitsMarkers(eUnitType type)
 	{
 		return getUnitsMarkers(type, new HashMap<String, IUnitMarker>());
 	}
+	
+	private static transient Map<String, Map<String, IUnitMarker>> previousUnitsMarkers = null;	
 	
 	private Set<? extends IUnitMarker> getUnitsMarkers(eUnitType type, Map<String, IUnitMarker> result)
 	{
@@ -178,31 +291,69 @@ class Player extends AGraphObject<Node> implements IPlayer, Serializable
 		{
 			if (type != null && !type.toString().equals((String) n.getProperty("type"))) continue;
 		
-			String ownerName = (String) n.getProperty("ownerName");
 			String name = (String) n.getProperty("name");
 			
 			IUnitMarker unitMarker = null;
 			
 			if (n.hasProperty("turn")) // UnitMarker
 			{
-				unitMarker = sepDB.getUnitMarker((Integer) n.getProperty("turn"), ownerName, name, type);
+				unitMarker = sepDB.getUnitMarker((Integer) n.getProperty("turn"), getName(), name, type);
 			}
 			
-			IUnit unit = sepDB.getUnit(ownerName, name, type);
+			IUnit unit = sepDB.getUnit(getName(), name, type);
 			
-			String pk = Unit.getPK(ownerName, name);
+			String pk = Unit.getPK(getName(), name);
 						
 			if (unit != null && (unitMarker == null || unit.getTurn() >= unitMarker.getTurn())) unitMarker = unit;
 			
 			if (!result.containsKey(pk) || (result.get(pk).getTurn() < unitMarker.getTurn())) result.put(pk, unitMarker);
 		}
 		
-		if (sepDB.hasPrevious())
+		if (previousUnitsMarkers == null)
 		{
-			return ((Player) sepDB.previous().getPlayer(getName())).getUnitsMarkers(type, result);
+			previousUnitsMarkers = new HashMap<String, Map<String, IUnitMarker>>();
+		}
+		
+		int hash = sepDB.hashCode();
+		String cacheKey = String.format("%d-%s", hash, getName());
+		if (!previousUnitsMarkers.containsKey(cacheKey))
+		{	
+			previousUnitsMarkers.put(cacheKey, new HashMap<String, IUnitMarker>());
+						
+			if (sepDB.hasPrevious())
+			{
+				((Player) sepDB.previous().getPlayer(getName())).getUnitsMarkers(null, previousUnitsMarkers.get(cacheKey));
+			}
+		}
+		
+		for(String pk : previousUnitsMarkers.get(cacheKey).keySet())
+		{
+			IUnitMarker unitMarker = previousUnitsMarkers.get(cacheKey).get(pk);
+			
+			if ((!result.containsKey(pk) || (result.get(pk).getTurn() < unitMarker.getTurn())) && (type == null || type.equals(unitMarker.getType())))
+			{
+				result.put(pk, unitMarker);
+			}			
 		}
 		
 		return new HashSet<IUnitMarker>(result.values());
+	}
+	
+	@Override
+	public IGovernmentModule getGovernmentModule()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Relationship r = properties.getSingleRelationship(eRelationTypes.PlayerGovernment, Direction.OUTGOING);
+		if (r == null) return null;
+		
+		Node n = r.getEndNode();
+		if (!n.hasProperty("type")) return null;
+		
+		if (!eBuildingType.GovernmentModule.toString().equals((String) n.getProperty("type"))) return null;
+		
+		return (IGovernmentModule) sepDB.getBuilding((String) n.getProperty("productiveCelestialBodyName"), eBuildingType.GovernmentModule);
 	}
 
 	public static void initializeProperties(Node properties, String name)

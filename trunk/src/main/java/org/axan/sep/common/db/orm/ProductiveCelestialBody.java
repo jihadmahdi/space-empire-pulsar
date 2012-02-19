@@ -11,6 +11,7 @@ import org.axan.sep.common.db.orm.base.BasePlanet;
 import org.axan.sep.common.db.orm.base.IBaseProductiveCelestialBody;
 import org.axan.sep.common.db.orm.base.BaseProductiveCelestialBody;
 import org.axan.sep.common.db.IBuilding;
+import org.axan.sep.common.db.ICelestialBody;
 import org.axan.sep.common.db.IFleet;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
@@ -34,6 +35,7 @@ import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Traversal;
 import org.axan.sep.common.db.IGameConfig;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
@@ -50,17 +52,22 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 	/*
 	 * Off-DB fields
 	 */
-	protected final int initialCarbonStock;
-	protected final int maxSlots;
-	protected final int carbonStock;
-	protected final int currentCarbon;
+	protected int initialCarbonStock;
+	protected int maxSlots;
+	protected int carbonStock;
+	protected int currentCarbon;
 	protected String ownerName;
+	
+	/*
+	 * Serialization fields.
+	 */
+	protected Set<IBuilding> serializedBuildings = new HashSet<IBuilding>();
 	
 	/*
 	 * DB connection: DB connection and useful objects (e.g. indexes and nodes).
 	 */
-	protected Index<Node> productiveCelestialBodyIndex;
-	protected Index<Node> buildingIndex;
+	protected transient Index<Node> productiveCelestialBodyIndex;
+	protected transient Index<Node> buildingIndex;
 	
 	/**
 	 * Off-DB constructor.
@@ -145,27 +152,28 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 		try
 		{
 			Relationship ownership = properties.getSingleRelationship(eRelationTypes.PlayerCelestialBodies, Direction.INCOMING);
-			eCelestialBodyType type = eCelestialBodyType.valueOf(getClass().getSimpleName());
 			
 			if (ownerName == null)
 			{
 				// Delete ownership relation
 				if (ownership != null) ownership.delete();
+				/*
 				ownership = properties.getSingleRelationship(type, Direction.INCOMING);
-				if (ownership != null) ownership.delete();			
+				if (ownership != null) ownership.delete();
+				*/			
 			}
-			else
+			else if (ownership == null || !ownerName.equals((String) ownership.getStartNode().getProperty("name")))
 			{
-				// Delete any previous and Create ownership relation
-				Node nOwner = db.index().forNodes("PlayerIndex").get("name", ownerName).getSingle();			
+				// Delete previous and Create ownership relation				
 				if (ownership != null)
 				{
 					ownership.delete();
 					ownership = null;
 				}
 				
+				Node nOwner = db.index().forNodes("PlayerIndex").get("name", ownerName).getSingle();
 				nOwner.createRelationshipTo(properties, eRelationTypes.PlayerCelestialBodies);			
-				nOwner.createRelationshipTo(properties, type);
+				//nOwner.createRelationshipTo(properties, type);
 			}
 			
 			tx.success();
@@ -324,15 +332,21 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 	@Override
 	public Set<IBuilding> getBuildings()
 	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		Set<IBuilding> result = new HashSet<IBuilding>();
-		for(Node n : buildingIndex.query("productiveCelestialBodyName;class", String.format("%s;*", name)))
+		if (isDBOnline())
 		{
-			result.add(sepDB.getBuilding(name, eBuildingType.valueOf((String) n.getProperty("type"))));
+			checkForDBUpdate();
+			
+			Set<IBuilding> result = new HashSet<IBuilding>();
+			for(Node n : buildingIndex.query("productiveCelestialBodyName;class", String.format("%s;*", name)))
+			{
+				result.add(sepDB.getBuilding(name, eBuildingType.valueOf((String) n.getProperty("type"))));
+			}
+			return result;
 		}
-		return result;
+		else
+		{
+			return serializedBuildings;
+		}
 	}
 	
 	/**
@@ -404,6 +418,80 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 		
 		String fleetName = (String) nFleet.getProperty("name");
 		return new Fleet(sepDB, playerName, fleetName);
+	}
+	
+	@Override
+	public void update(ICelestialBody celestialBodyUpdate)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			super.update(celestialBodyUpdate);
+			
+			if (!IProductiveCelestialBody.class.isInstance(celestialBodyUpdate)) throw new RuntimeException("Illegal productive celestial body update, not a productive celestial body instance.");
+			
+			IProductiveCelestialBody productiveCelestialBodyUpdate = (IProductiveCelestialBody) celestialBodyUpdate;
+			
+			if (getInitialCarbonStock() != productiveCelestialBodyUpdate.getInitialCarbonStock()) throw new RuntimeException("Illegal productive celestial body update, initial carbon stock value is inconsistent.");
+			if (getMaxSlots() != productiveCelestialBodyUpdate.getMaxSlots()) throw new RuntimeException("Illegal productive celestial body update, max slots value is inconsistent.");
+			
+			properties.setProperty("carbonStock", productiveCelestialBodyUpdate.getCarbonStock());
+			properties.setProperty("currentCarbon", productiveCelestialBodyUpdate.getCurrentCarbon());
+			
+			// Owner
+			setOwner(productiveCelestialBodyUpdate.getOwner());
+			
+			// Buildings
+			Set<IBuilding> buildingsUpdate = productiveCelestialBodyUpdate.getBuildings();
+			
+			for(IBuilding building : getBuildings())
+			{
+				boolean found = false;
+				for(IBuilding buildingUpdate : buildingsUpdate)
+				{
+					if (building.getType() == buildingUpdate.getType())
+					{
+						found = true;
+						building.update(buildingUpdate);
+						buildingsUpdate.remove(buildingUpdate);
+						break;
+					}
+				}
+				
+				if (!found)
+				{					
+					// Remove building
+					((Building) building).delete();
+				}
+			}
+			
+			for(IBuilding buildingUpdate : buildingsUpdate)
+			{
+				// Add building
+				sepDB.createBuilding(getName(), buildingUpdate.getBuiltDate(), buildingUpdate.getType()).update(buildingUpdate);
+			}
+			
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}		
+	}
+	
+	private void writeObject(java.io.ObjectOutputStream out) throws IOException
+	{		
+		this.initialCarbonStock = getInitialCarbonStock();
+		this.maxSlots = getMaxSlots();
+		this.carbonStock = getCarbonStock();
+		this.currentCarbon = getCurrentCarbon();
+		this.ownerName = getOwner();
+		this.serializedBuildings = getBuildings();
+		out.defaultWriteObject();
 	}
 	
 	@Override

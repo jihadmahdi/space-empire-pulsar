@@ -37,7 +37,7 @@ public class PlayerGameBoard implements IGameBoard
 	private PlayerGameboardView view;
 	
 	/** List players during game creation, must not be used once game is ran. */
-	private transient Map<IPlayer, IPlayerConfig> players = new TreeMap<IPlayer, IPlayerConfig>(IPlayer.nameComparator);
+	private transient Map<String, IPlayerConfig> players = new TreeMap<String, IPlayerConfig>();
 	
 	/** During game creation, temporary game config. */
 	private transient GameConfig gameConfig = new GameConfig();
@@ -69,7 +69,7 @@ public class PlayerGameBoard implements IGameBoard
 		gameConfig = gameCfg;
 	}
 	
-	public synchronized void refreshPlayerList(Map<IPlayer, IPlayerConfig> playerList)
+	public synchronized void refreshPlayerList(Map<String, IPlayerConfig> playerList)
 	{
 		if (isGameInCreation())
 		{
@@ -90,6 +90,7 @@ public class PlayerGameBoard implements IGameBoard
 		}
 	}
 	
+	/*
 	@Override
 	public Map<IPlayer, IPlayerConfig> getPlayerList() throws GameBoardException
 	{
@@ -102,6 +103,7 @@ public class PlayerGameBoard implements IGameBoard
 			return getDBPlayerList();			
 		}
 	}
+	*/
 	
 	/**
 	 * Get player config no matter the game current state (in creation or running)
@@ -113,11 +115,7 @@ public class PlayerGameBoard implements IGameBoard
 	{
 		if (isGameInCreation())
 		{
-			for(IPlayer p : players.keySet())
-			{
-				if (p.getName().equals(playerName)) return players.get(p);
-			}
-			return null;
+			return players.get(playerName);
 		}
 		else
 		{
@@ -152,7 +150,13 @@ public class PlayerGameBoard implements IGameBoard
 			try
 			{
 				view = new PlayerGameboardView(client.getLogin(), new SEPCommonDB(dbFactory.createDB(), getConfig()), new IGameEventExecutor()
-				{					
+				{
+					@Override
+					public String getCurrentViewPlayerName()
+					{
+						return client.getLogin();
+					}
+					
 					@Override
 					public void onGameEvent(IGameEvent event, Set<String> observers)
 					{

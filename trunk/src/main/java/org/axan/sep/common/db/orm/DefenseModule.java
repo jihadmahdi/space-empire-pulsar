@@ -15,6 +15,8 @@ import org.axan.sep.common.db.IGameConfig;
 import java.util.Map;
 import java.util.HashMap;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 class DefenseModule extends Building implements IDefenseModule
 {
 	// PK inherited.
@@ -82,7 +84,7 @@ class DefenseModule extends Building implements IDefenseModule
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, defenseModule[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
 			properties = sepDB.getDB().createNode();
-			DefenseModule.initializeProperties(properties, builtDate, nbSlots);
+			DefenseModule.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
 			defenseModuleIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
 			
 			super.create(sepDB);
@@ -93,7 +95,29 @@ class DefenseModule extends Building implements IDefenseModule
 		{
 			tx.finish();
 		}
-	}	
+	}
+	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public void delete()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			defenseModuleIndex.remove(properties);
+			super.delete();
+			
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
 
 	public static double getTotalBonus(int nbSlots)
 	{
@@ -137,8 +161,9 @@ class DefenseModule extends Building implements IDefenseModule
 		return sb.toString();		
 	}
 	
-	public static void initializeProperties(Node properties, int builtDate, int nbSlots)
+	public static void initializeProperties(Node properties, String productiveCelestialBodyName, int builtDate, int nbSlots)
 	{
+		properties.setProperty("productiveCelestialBodyName", productiveCelestialBodyName);
 		properties.setProperty("type", eBuildingType.DefenseModule.toString());
 		properties.setProperty("builtDate", builtDate);
 		properties.setProperty("nbSlots", nbSlots);

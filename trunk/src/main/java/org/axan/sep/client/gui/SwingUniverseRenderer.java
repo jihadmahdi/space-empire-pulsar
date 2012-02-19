@@ -36,7 +36,6 @@ import org.axan.eplib.orm.sql.SQLDataBaseException;
 import org.axan.eplib.utils.Basic;
 import org.axan.eplib.utils.Profiling;
 import org.axan.eplib.utils.Reflect;
-import org.axan.eplib.utils.Profiling.ExecTimeMeasures;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.client.gui.RunningGamePanel.AUniverseRendererPanel;
 import org.axan.sep.client.gui.lib.GUIUtils;
@@ -221,8 +220,8 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 			return;			
 		}		
 		
-		// Does not change zSelection, only do UI refresh.
-		//refresh(true);
+		// Force turn counter refresh
+		getZGrid(getzSelection());
 	}
 	
 	////////// ui events
@@ -265,12 +264,8 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 				Location sunLocation = Rules.getSunLocation(config);
 				int sunRadius = config.getSunRadius();
 								
-				ExecTimeMeasures etm = new ExecTimeMeasures();
-				
 				Map<Location, IArea> areas = new HashMap<Location, IArea>();
-				etm.measures("<getAreas>");
 				Set<IArea> areasSet = db.getAreas();
-				etm.measures("</getAreas>");
 				try
 				{
 					for(IArea area : areasSet)
@@ -304,8 +299,6 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 								areas.put(location, db.getArea(location));
 							}
 							
-							etm.measures("load "+location);
-							
 							JImagePanel image = getImagePanel(location);
 														
 							resetImagePanel(image, location);
@@ -316,7 +309,6 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 							{
 								try
 								{
-									etm.measures("refresh area "+location);
 									refreshArea(areas.get(location), playerName);
 								}
 								catch(Throwable t)
@@ -332,18 +324,11 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 					}
 				}
 				
-				etm.measures("refreshSelection");
 				refreshSelection();
 				
 				if (viewReloaderInterrupt) return;
 								
-				etm.measures("refreshZView(true)");
-				
 				refreshZView(true); // Force refresh
-				
-				etm.measures("end");				
-				
-				System.err.println(etm.toString());
 			}
 		}, "View Reloader");
 		
@@ -609,18 +594,34 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 		boolean otherUnit = false;
 		boolean ownedMarker = false;
 		boolean otherMarker = false;
+		int mostRecent = 0;
 		Set<? extends IUnitMarker> units = area.getUnitsMarkers(null);
 								
 		if (units != null && units.size() > 0)
 		{
 			for(IUnitMarker unitMarker: units)
-			{			
+			{
+				if (mostRecent > unitMarker.getTurn())
+				{
+					continue;
+				}
+				else if (mostRecent < unitMarker.getTurn())
+				{
+					ownedUnit = false;
+					otherUnit = false;
+					ownedMarker = false;
+					otherMarker = false;
+				}
+					
+				mostRecent = unitMarker.getTurn();
+				
+				// TODO: Distinguer l'âge du marker!
 				boolean owned = playerName.equals(unitMarker.getOwnerName());
 				
 				if (IUnit.class.isInstance(unitMarker))
 				{					
 					ownedUnit |= owned;
-					otherUnit |= !otherUnit;
+					otherUnit |= !owned;
 				}
 				else
 				{
@@ -635,7 +636,13 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 		Color borderColor = ownedMarker ? Color.blue : ownedUnit ? Color.green : otherMarker ? Color.red.darker() : otherUnit ? Color.red : null; 
 		if (borderColor != null)
 		{
-			image.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED, borderColor, Color.white));
+			int currentTurn = getSepClient().getGameboard().getConfig().getTurn();
+			for(int i=mostRecent; i < currentTurn; ++i)
+			{
+				borderColor = borderColor.darker();
+			}
+			
+			image.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED, borderColor, Color.lightGray));
 		}
 		
 		if (ownedCelestialBody)

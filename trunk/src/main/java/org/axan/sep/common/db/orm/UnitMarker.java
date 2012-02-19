@@ -1,20 +1,26 @@
 package org.axan.sep.common.db.orm;
 
+import java.io.IOException;
+import java.io.Serializable;
+
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.Protocol.eUnitType;
+import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.ICelestialBody;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IUnitMarker;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 
-abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker
+abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker, Serializable
 {
 	protected static final String PK = "[turn] ownerName@name";
 	protected static final String getPK(int turn, String ownerName, String name)
@@ -39,14 +45,14 @@ abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker
 	 * Off-DB fields.
 	 */
 	protected final eUnitType type;
-	protected final boolean isStopped;
-	protected final RealLocation realLocation;
-	protected final float speed;
+	protected boolean isStopped;
+	protected RealLocation realLocation;
+	protected float speed;
 	
 	/*
 	 * DB connection
 	 */
-	protected Index<Node> unitMarkerIndex;
+	protected transient Index<Node> unitMarkerIndex;
 	
 	/**
 	 * Off-DB constructor.
@@ -59,19 +65,26 @@ abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker
 		this.turn = turn;
 		this.ownerName = ownerName;
 		this.name = name;
-		this.type = eUnitType.valueOf(getClass().getSimpleName());
+		this.type = eUnitType.valueOf(getClass().getSimpleName().endsWith("Marker") ? getClass().getSimpleName().substring(0, getClass().getSimpleName().length() - 6) : getClass().getSimpleName());
 		this.isStopped = isStopped;
 		this.realLocation = realLocation;
 		this.speed = speed;
 	}
 	
+	/**
+	 * On-DB constructor.
+	 * @param sepDB
+	 * @param turn
+	 * @param ownerName
+	 * @param name
+	 */
 	public UnitMarker(SEPCommonDB sepDB, int turn, String ownerName, String name)
 	{
 		super(sepDB, getPK(turn, ownerName, name));
 		this.turn = turn;
 		this.ownerName = ownerName;
 		this.name = name;
-		this.type = eUnitType.valueOf(getClass().getSimpleName());
+		this.type = eUnitType.valueOf(getClass().getSimpleName().endsWith("Marker") ? getClass().getSimpleName().substring(0, getClass().getSimpleName().length() - 6) : getClass().getSimpleName());
 		
 		// Null values
 		this.isStopped = false;
@@ -132,7 +145,16 @@ abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker
 			}
 			nOwner.createRelationshipTo(properties, eRelationTypes.PlayerUnitMarker);
 			
-			// Ensure area creation ?			
+			// Ensure area creation ?						
+			sepDB.getArea(realLocation.asLocation());
+			IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get("location", realLocation.asLocation().toString());
+			if (!hits.hasNext())
+			{
+				throw new DBGraphException("Contraint error: Cannot find Area[location='"+realLocation.asLocation().toString()+"']. Area must be created first.");
+			}
+			
+			Node nArea = hits.getSingle();		
+			properties.createRelationshipTo(nArea, eRelationTypes.UnitMarkerRealLocation);
 			
 			tx.success();			
 		}
@@ -169,28 +191,43 @@ abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker
 	@Override
 	public boolean isStopped()
 	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		return (Boolean) properties.getProperty("isStopped");
+		if (isDBOnline())
+		{		
+			checkForDBUpdate();
+			return (Boolean) properties.getProperty("isStopped");
+		}
+		else
+		{
+			return isStopped;
+		}
 	}
 
 	@Override
 	public RealLocation getRealLocation()
 	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		return RealLocation.valueOf((String) properties.getProperty("realLocation"));
+		if (isDBOnline())
+		{
+			checkForDBUpdate();		
+			return RealLocation.valueOf((String) properties.getProperty("realLocation"));
+		}
+		else
+		{
+			return realLocation;
+		}
 	}
 
 	@Override
 	public float getSpeed()
 	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		return (Float) properties.getProperty("speed");
+		if (isDBOnline())
+		{
+			checkForDBUpdate();		
+			return (Float) properties.getProperty("speed");
+		}
+		else
+		{
+			return speed;
+		}
 	}
 
 	@Override
@@ -210,5 +247,18 @@ abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker
 		sb.append(String.format("Observed on turn %d\n[%s] %s (%s)\n", getTurn(), getOwnerName(), getName(), isStopped() ? "stopped" : "moving"));
 		
 		return sb.toString();
+	}
+	
+	private void writeObject(java.io.ObjectOutputStream out) throws IOException
+	{
+		isStopped = isStopped();
+		realLocation = getRealLocation();
+		speed = getSpeed();
+		out.defaultWriteObject();
+	}
+	
+	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
+	{
+		in.defaultReadObject();
 	}
 }

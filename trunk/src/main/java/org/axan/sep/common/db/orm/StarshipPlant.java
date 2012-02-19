@@ -5,6 +5,7 @@ import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.db.orm.Building;
 import org.axan.sep.common.db.orm.base.IBaseStarshipPlant;
 import org.axan.sep.common.db.orm.base.BaseStarshipPlant;
+import org.axan.sep.common.db.ISpaceRoad;
 import org.axan.sep.common.db.IStarshipPlant;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -12,6 +13,8 @@ import org.neo4j.graphdb.index.Index;
 import org.axan.sep.common.db.IGameConfig;
 import java.util.Map;
 import java.util.HashMap;
+
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 class StarshipPlant extends Building implements IStarshipPlant
 {
@@ -80,7 +83,7 @@ class StarshipPlant extends Building implements IStarshipPlant
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, starshipPlant[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
 			properties = sepDB.getDB().createNode();
-			StarshipPlant.initializeProperties(properties, builtDate, nbSlots);
+			StarshipPlant.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
 			starshipPlantIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
 			
 			super.create(sepDB);
@@ -94,13 +97,36 @@ class StarshipPlant extends Building implements IStarshipPlant
 	}
 
 	@Override
+	@OverridingMethodsMustInvokeSuper
+	public void delete()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			starshipPlantIndex.remove(properties);
+			super.delete();
+			
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+	
+	@Override
 	public String toString()
 	{
 		return "Starship plant";
 	}
 	
-	public static void initializeProperties(Node properties, int builtDate, int nbSlots)
+	public static void initializeProperties(Node properties, String productiveCelestialBodyName, int builtDate, int nbSlots)
 	{
+		properties.setProperty("productiveCelestialBodyName", productiveCelestialBodyName);
 		properties.setProperty("type", eBuildingType.StarshipPlant.toString());
 		properties.setProperty("builtDate", builtDate);
 		properties.setProperty("nbSlots", nbSlots);

@@ -21,7 +21,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.axan.eplib.utils.Basic;
+import org.axan.eplib.utils.Profiling;
+import org.axan.eplib.utils.Profiling.ExecTimeMeasures;
 import org.axan.sep.common.GameConfig;
+import org.axan.sep.common.GameConfigCopier;
 import org.axan.sep.common.GameConfigCopier.GameConfigCopierException;
 import org.axan.sep.common.IGameBoard;
 import org.axan.sep.common.PlayerGameboardView;
@@ -32,6 +35,7 @@ import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.Events;
+import org.axan.sep.common.db.Events.CreateDiplomacy;
 import org.axan.sep.common.db.Events.RessourcesGeneration;
 import org.axan.sep.common.db.Events.UnitsMoves;
 import org.axan.sep.common.db.ICelestialBody;
@@ -54,7 +58,7 @@ import org.neo4j.cypher.commands.ComparableClause;
  * Server IGameBoard class. Represents the game board on server side (all
  * players). Must be implemented by db.
  */
-class GameBoard implements Serializable, IGameBoard
+class GameBoard implements IGameBoard
 {
 	////////// static attributes
 	private static final long serialVersionUID = 1L;
@@ -64,11 +68,11 @@ class GameBoard implements Serializable, IGameBoard
 
 	////////// static methods
 	
-	public static GameBoard load(ObjectInputStream ois) throws IOException, ClassNotFoundException
-	{	
-		return GameBoard.class.cast(ois.readObject());
+	public static GameBoard load(IDBFactory dbFactory, ObjectInputStream ois) throws IOException, ClassNotFoundException, GameConfigCopierException, InterruptedException, GameEventException
+	{
+		return new GameBoard(dbFactory, ois);
 	}
-
+	
 	private static String generateCelestialBodyName()
 	{
 		String result = nextCelestialBodyName;
@@ -123,10 +127,10 @@ class GameBoard implements Serializable, IGameBoard
 	 * Game views. null key is reserved to the global view. Other keys must
 	 * match player names.
 	 */
-	private transient Map<String, PlayerGameboardView> playerViews = new HashMap<String, PlayerGameboardView>();;
+	private transient Map<String, PlayerGameboardView> playerViews = new HashMap<String, PlayerGameboardView>();
 
 	/** List players during game creation, must not be used whence game is ran. */
-	private transient Map<IPlayer, IPlayerConfig> players = new TreeMap<IPlayer, IPlayerConfig>(IPlayer.nameComparator);
+	private transient Map<String, IPlayerConfig> players = new TreeMap<String, IPlayerConfig>();
 
 	/** During game creation, temporary game config. */
 	private transient GameConfig gameConfig = new GameConfig();
@@ -136,7 +140,7 @@ class GameBoard implements Serializable, IGameBoard
 
 	//////////constructor
 
-	public GameBoard(IDBFactory dbFactory) throws IOException, GameConfigCopierException
+	public GameBoard(IDBFactory dbFactory)
 	{
 		this.dbFactory = dbFactory;
 		//TODO: Testing config, to remove later.
@@ -144,17 +148,103 @@ class GameBoard implements Serializable, IGameBoard
 		gameConfig.setDimY(15);
 		gameConfig.setDimZ(3);
 	}
+	
+	private GameBoard(IDBFactory dbFactory, ObjectInputStream ois) throws IOException, ClassNotFoundException, GameConfigCopierException, InterruptedException, GameEventException
+	{
+		ExecTimeMeasures etm = new ExecTimeMeasures();
+		etm.start("GameBoard.load");
+		
+		this.dbFactory = dbFactory;
+		//this.gameConfig = (GameConfig) ois.readObject();
+		//int expectedTurn = gameConfig.getTurn();
+		//this.gameConfig.setTurn(0);
+		List<IGameEvent> globalGameEvents = (List<IGameEvent>) ois.readObject();		
+		
+		etm.measures("create global DB");
+		SEPCommonDB globalDB = new SEPCommonDB(dbFactory.createDB(), gameConfig);
+		
+		if (globalGameEvents.isEmpty()) throw new IOException("Global game events list is empty");
+		IGameEvent firstEvent = globalGameEvents.iterator().next();
+		if (!UniverseCreation.class.isInstance(firstEvent)) throw new IOException("First game event is not UniverseCreation");
+		
+		UniverseCreation universeCreation = (UniverseCreation) firstEvent;
+		
+		etm.measures("universeCreation.process(globalDB)");
+		universeCreation.process(null, globalDB);
+		
+		Set<IPlayer> players = globalDB.getPlayers();
+		
+		etm.start("globalDB.clone x"+players.size());
+		SEPCommonDB[] copies = SEPCommonDB.clone(globalDB, players.size(), 0);
+		etm.end("globalDB.clone x"+players.size());
+		IGameEventExecutor globalExecutor = new IGameEventExecutor()
+		{				
+			@Override
+			public String getCurrentViewPlayerName()
+			{
+				return null;
+			}
+			
+			// Unfiltered executor
+			@Override
+			public void onGameEvent(IGameEvent event, Set<String> observers)
+			{
+				GameBoard.this.onGameEvent(event, observers);
+			}
+		};
+		playerViews.put(null, new PlayerGameboardView(globalDB, globalExecutor));
+		etm.measures("globalDB.importEvents");
+		playerViews.get(null).importEvents(globalGameEvents);
+				
+		int i=0;
+		for(IPlayer player: players)
+		{
+			final String playerName = player.getName();
+			SEPCommonDB playerDB = copies[i];
+			IGameEventExecutor executor = new IGameEventExecutor()
+			{
+				@Override
+				public String getCurrentViewPlayerName()
+				{
+					return playerName;
+				}
+				
+				@Override
+				public void onGameEvent(IGameEvent event, Set<String> observers)
+				{
+					// executor filtered on current player view player.
+					if (!observers.contains(playerName)) return;
+					GameBoard.this.onGameEvent(event, playerName);
+				}
+			};
+			playerViews.put(playerName, new PlayerGameboardView(playerName, playerDB, executor));
+			
+			List<IGameEvent> playerGameEvents = (List<IGameEvent>) ois.readObject();
+			etm.measures(playerName+".importEvents");
+			playerViews.get(playerName).importEvents(playerGameEvents);
+			
+			++i;
+		}
+		
+		System.err.println(etm.toString());
+	}
 
 	////////// public methods
+	
+	public synchronized void save(ObjectOutputStream oos) throws IOException, GameConfigCopierException
+	{
+		//GameConfigCopier.copy(IGameConfig.class, getConfig(), gameConfig);
+		//oos.writeObject(gameConfig);
+		oos.writeObject(playerViews.get(null).exportEvents());
+		for(String playerName : getGlobalDB().getPlayersNames())
+		{
+			oos.writeObject(playerViews.get(playerName).exportEvents());
+		}
+	}
 
 	public synchronized boolean isGameInCreation()
 	{
 		return getGlobalDB() == null;
-	}
-	
-	public synchronized void save(ObjectOutputStream oos) throws IOException
-	{
-		oos.writeObject(this);
 	}
 
 	/////////////// GameInCreation methods
@@ -166,17 +256,15 @@ class GameBoard implements Serializable, IGameBoard
 			throw new GameBoardException("Cannot update game config when game is already running.");
 		}
 
-		for(IPlayer p: players.keySet())
+		if (players.containsKey(playerLogin))
 		{
-			if (p.getName().compareTo(playerLogin) == 0)
-			{
-				throw new GameBoardException("Player " + playerLogin + " already exists.");
-			}
+			throw new GameBoardException("Player " + playerLogin + " already exists.");
 		}
 
 		//TODO: Portrait & Symbol
-		IPlayer p = SEPCommonDB.makePlayer(playerLogin, SEPCommonDB.makePlayerConfig(Basic.colorToString(new Color(rnd.nextInt(0xFFFFFF))), "symbol.png", "portrait.png"));
-		players.put(p, p.getConfig());
+		//IPlayer p = SEPCommonDB.makePlayer(playerLogin, SEPCommonDB.makePlayerConfig(new Color(rnd.nextInt(0xFFFFFF)), "symbol.png", "portrait.png"));
+		IPlayerConfig playerCfg = SEPCommonDB.makePlayerConfig(new Color(rnd.nextInt(0xFFFFFF)), "symbol.png", "portrait.png");
+		players.put(playerLogin, playerCfg);
 	}
 
 	public void removePlayer(String playerLogin) throws GameBoardException
@@ -186,29 +274,20 @@ class GameBoard implements Serializable, IGameBoard
 			throw new GameBoardException("Cannot update game config when game is already running.");
 		}
 
-		for(IPlayer p: players.keySet())
+		if (players.remove(playerLogin) == null)
 		{
-			if (p.getName().compareTo(playerLogin) == 0)
-			{
-				players.remove(p);
-				return;
-			}
+			throw new GameBoardException("Player " + playerLogin + " is unknown.");
 		}
-
-		throw new GameBoardException("Player " + playerLogin + " is unknown.");
 	}
 
 	public IPlayer getPlayer(String playerLogin) throws GameBoardException
 	{
 		if (isGameInCreation()) // Game in creation
 		{
-			for(IPlayer p: players.keySet())
-			{
-				if (p.getName().compareTo(playerLogin) == 0)
-					return p;
-			}
-
-			return null;
+			if (!players.containsKey(playerLogin)) return null;
+			
+			IPlayerConfig playerCfg = players.get(playerLogin);
+			return SEPCommonDB.makePlayer(playerLogin, playerCfg);
 		}
 		else
 		{
@@ -216,12 +295,12 @@ class GameBoard implements Serializable, IGameBoard
 		}
 	}
 	
-	@Override
-	public Map<IPlayer, IPlayerConfig> getPlayerList() throws GameBoardException
+	//@Override
+	public Map<String, IPlayerConfig> getPlayerList() throws GameBoardException
 	{
 		if (isGameInCreation()) // Game in creation
 		{
-			return new LinkedHashMap<IPlayer, IPlayerConfig>(players);
+			return new LinkedHashMap<String, IPlayerConfig>(players);
 		}
 		else
 		{
@@ -257,16 +336,12 @@ class GameBoard implements Serializable, IGameBoard
 			throw new GameBoardException("Cannot update game config when game is already running.");
 		}
 		
-		for(IPlayer p : players.keySet())
+		if (!players.containsKey(playerName))
 		{
-			if (p.getName().compareTo(playerName) == 0)
-			{
-				players.put(p, playerCfg);
-				return;
-			}
+			throw new GameBoardException("Player "+playerName+" unknown.");
 		}
 		
-		throw new GameBoardException("Player "+playerName+" unknown.");		
+		players.put(playerName, playerCfg);
 	}
 
 	/////////////// Universe creation
@@ -287,7 +362,13 @@ class GameBoard implements Serializable, IGameBoard
 		{
 			SEPCommonDB globalDB = new SEPCommonDB(dbFactory.createDB(), gameConfig);
 			IGameEventExecutor globalExecutor = new IGameEventExecutor()
-			{				
+			{	
+				@Override
+				public String getCurrentViewPlayerName()
+				{
+					return null;
+				}
+				
 				// Unfiltered executor
 				@Override
 				public void onGameEvent(IGameEvent event, Set<String> observers)
@@ -309,9 +390,9 @@ class GameBoard implements Serializable, IGameBoard
 			Set<Location> playersPlanetLocations = new HashSet<Location>();
 	
 			// Initial ownership relations
-			Map<IProductiveCelestialBody, IPlayer> ownershipRelations = new HashMap<IProductiveCelestialBody, IPlayer>();
+			Map<IProductiveCelestialBody, String> ownershipRelations = new HashMap<IProductiveCelestialBody, String>();
 			
-			for(IPlayer player: players.keySet())
+			for(String playerName: players.keySet())
 			{
 				/*
 				SEPCommonDB playerDB = new SEPCommonDB(dbFactory.createSQLDataBase(), getConfig());				
@@ -359,9 +440,9 @@ class GameBoard implements Serializable, IGameBoard
 					locationOk = true;
 				} while (!locationOk);				
 	
-				IPlanet planet = createPlayerStartingPlanet(generateCelestialBodyName(), planetLocation, player.getName());
+				IPlanet planet = createPlayerStartingPlanet(generateCelestialBodyName(), planetLocation, playerName);
 				celestialBodies.put(planetLocation, planet);
-				ownershipRelations.put(planet, player);
+				ownershipRelations.put(planet, playerName);
 			}
 	
 			// Add neutral celestial bodies
@@ -417,7 +498,7 @@ class GameBoard implements Serializable, IGameBoard
 				celestialBodies.put(celestialBodyLocation, neutralCelestialBody);				
 			}
 	
-			UniverseCreation createUniverseEvent = new UniverseCreation(players, celestialBodies, ownershipRelations);
+			UniverseCreation createUniverseEvent = new UniverseCreation(gameConfig, players, new HashSet<ICelestialBody>(celestialBodies.values()), ownershipRelations);
 			
 			PlayerGameboardView globalDBView = playerViews.get(null);
 			// Process event on globalDB. It's not resolveTurn method, so we will fire CreateUniverse event anyway, but it will be ignored server-side on next resolvingTurn (@see EvCreateUniverse#skipCondition()).
@@ -425,15 +506,20 @@ class GameBoard implements Serializable, IGameBoard
 			createUniverseEvent.process(globalExecutor, globalDB);
 							
 			//SEPCommonDB[] copies = Basic.clone(globalDB, players.size());
-			SEPCommonDB[] copies = SEPCommonDB.clone(globalDB, players.size());
+			SEPCommonDB[] copies = SEPCommonDB.clone(globalDB, players.size(), 0);
 			
 			int i=0;
-			for(IPlayer player: players.keySet())
+			for(final String playerName: players.keySet())
 			{
-				final String playerName = player.getName();
 				SEPCommonDB playerDB = copies[i];
 				IGameEventExecutor executor = new IGameEventExecutor()
-				{					
+				{
+					@Override
+					public String getCurrentViewPlayerName()
+					{
+						return playerName;
+					}
+					
 					@Override
 					public void onGameEvent(IGameEvent event, Set<String> observers)
 					{
@@ -448,6 +534,17 @@ class GameBoard implements Serializable, IGameBoard
 			}
 			
 			onGameEvent(createUniverseEvent, playerViews.keySet());
+			
+			for(String ownerName : players.keySet())
+			{
+				for(String targetName : players.keySet())
+				{
+					if (targetName.equals(ownerName)) continue;
+					
+					CreateDiplomacy cd = new CreateDiplomacy(ownerName, targetName, getConfig().isAllowedToLandDefault(), getConfig().getForeignPolicyDefault());
+					onGameEvent(cd, new HashSet(Arrays.asList(null, ownerName)));
+				}
+			}
 		}
 		catch(Throwable t)
 		{
@@ -475,6 +572,16 @@ class GameBoard implements Serializable, IGameBoard
 		}
 		
 		return playerViews.get(playerName).getLastTurnEvents();
+	}
+	
+	public List<IGameEvent> getAllEvents(String playerName) throws GameBoardException
+	{
+		if (isGameInCreation())
+		{
+			throw new GameBoardException("Cannot retreive player game log because game is not running.");
+		}
+		
+		return playerViews.get(playerName).exportEvents();
 	}
 	
 	public synchronized boolean hasEndedTurn(String playerName)
@@ -1039,18 +1146,18 @@ class GameBoard implements Serializable, IGameBoard
 		return getGlobalDB().getConfig();
 	}
 
-	private Map<IPlayer, IPlayerConfig> getDBPlayerList()
+	private Map<String, IPlayerConfig> getDBPlayerList()
 	{		
-		Map<IPlayer, IPlayerConfig> result = new TreeMap<IPlayer, IPlayerConfig>(IPlayer.nameComparator);
+		Map<String, IPlayerConfig> result = new TreeMap<String, IPlayerConfig>();
 
 		Set<IPlayer> ps = getGlobalDB().getPlayers();
 		for(IPlayer p : ps)			
 		{
 			IPlayerConfig pc = p.getConfig();
-			result.put(p, pc);
+			result.put(p.getName(), pc);
 		}			
 
-		return new LinkedHashMap<IPlayer, IPlayerConfig>(result);		
+		return new LinkedHashMap<String, IPlayerConfig>(result);		
 	}
 
 	private IPlayer getDBPlayer(String playerLogin)
@@ -1167,6 +1274,7 @@ class GameBoard implements Serializable, IGameBoard
 
 	////////// serialization
 
+	/*
 	private void writeObject(java.io.ObjectOutputStream out) throws IOException
 	{
 		out.defaultWriteObject();
@@ -1181,7 +1289,7 @@ class GameBoard implements Serializable, IGameBoard
 			out.writeObject(view);
 		}
 	}
-
+	
 	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
@@ -1201,6 +1309,8 @@ class GameBoard implements Serializable, IGameBoard
 	{
 
 	}
+	
+	*/
 
 	/*
 	Map<Unit, Double> movingUnitsSpeeds = new HashMap<Unit, Double>();

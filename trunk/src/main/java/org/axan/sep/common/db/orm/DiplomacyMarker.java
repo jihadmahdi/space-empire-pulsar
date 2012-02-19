@@ -1,8 +1,10 @@
 package org.axan.sep.common.db.orm;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 import org.axan.eplib.orm.nosql.DBGraphException;
-import org.axan.sep.common.db.IDiplomacy;
 import org.axan.sep.common.db.IDiplomacyMarker;
+import org.axan.sep.common.db.IDiplomacyMarker.eForeignPolicy;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -11,49 +13,74 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 
-class Diplomacy extends DiplomacyMarker implements IDiplomacy
+public class DiplomacyMarker extends AGraphObject<Relationship> implements IDiplomacyMarker
 {
-	protected static final String PK = "ownerNameVtargetName";
-	protected static final String getPK(String ownerName, String targetName)
+	protected static final String PK = "[turn] ownerNameVtargetName";
+	protected static final String getPK(int turn, String ownerName, String targetName)
 	{
-		return String.format("%sV%s", ownerName, targetName);
+		return String.format("[%d] %sV%s", turn, ownerName, targetName);
 	}
 	
 	/*
-	 * PK: inherited
+	 * PK
 	 */
+	protected final int turn;
+	protected final String ownerName;
+	protected final String targetName;
 	
 	/*
 	 * Off-DB fields.
 	 */
-	
+	protected boolean isAllowedToLand;
+	protected eForeignPolicy foreignPolicy;
 	
 	/*
 	 * DB connection
 	 */
-	protected Index<Relationship> diplomacyIndex;
-	
+	protected Index<Relationship> diplomacyMarkerIndex;
+		
 	/**
 	 * Off-DB constructor.
+	 * @param turn
 	 * @param ownerName
 	 * @param targetName
 	 * @param isAllowedToLand
 	 * @param foreignPolicy
 	 */
-	public Diplomacy(String ownerName, String targetName, boolean isAllowedToLand, eForeignPolicy foreignPolicy)
+	public DiplomacyMarker(int turn, String ownerName, String targetName, boolean isAllowedToLand, eForeignPolicy foreignPolicy)
 	{
-		super(-1, ownerName, targetName, isAllowedToLand, foreignPolicy);
+		super(getPK(turn, ownerName, targetName));
+		this.turn = turn;
+		this.ownerName = ownerName;
+		this.targetName = targetName;
+		this.isAllowedToLand = isAllowedToLand;
+		this.foreignPolicy = foreignPolicy;
 	}
 	
-	public Diplomacy(SEPCommonDB sepDB, String ownerName, String targetName)
+	/**
+	 * On-DB constructor.
+	 * @param sepDB
+	 * @param turn
+	 * @param ownerName
+	 * @param targetName
+	 */
+	public DiplomacyMarker(SEPCommonDB sepDB, int turn, String ownerName, String targetName)
 	{
-		super(sepDB, -1, ownerName, targetName);
+		super(sepDB, getPK(turn, ownerName, targetName));
+		this.turn = turn;
+		this.ownerName = ownerName;
+		this.targetName = targetName;
+		
+		// Null values
+		this.isAllowedToLand = false;
+		this.foreignPolicy = null;
 	}
-	
+
 	/**
 	 * If object is DB connected, check for DB update.
 	 */
 	@Override
+	@OverridingMethodsMustInvokeSuper
 	protected void checkForDBUpdate()
 	{
 		if (!isDBOnline()) return;
@@ -61,13 +88,13 @@ class Diplomacy extends DiplomacyMarker implements IDiplomacy
 		{
 			db = sepDB.getDB();
 			
-			diplomacyIndex = db.index().forRelationships("DiplomacyIndex");
-			IndexHits<Relationship> hits = diplomacyIndex.get(PK, getPK(ownerName, targetName));
+			diplomacyMarkerIndex = db.index().forRelationships("DiplomacyMarkerIndex");
+			IndexHits<Relationship> hits = diplomacyMarkerIndex.get(PK, getPK(turn, ownerName, targetName));
 			
 			properties = hits.hasNext() ? hits.getSingle() : null;			
 		}
 	}
-
+	
 	/**
 	 * Current object must be Off-DB to call create method.
 	 * Create method connect the object to the given DB and create the object node.
@@ -75,6 +102,7 @@ class Diplomacy extends DiplomacyMarker implements IDiplomacy
 	 * @param sepDB
 	 */
 	@Override
+	@OverridingMethodsMustInvokeSuper
 	protected void create(SEPCommonDB sepDB)
 	{
 		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
@@ -85,13 +113,15 @@ class Diplomacy extends DiplomacyMarker implements IDiplomacy
 		{
 			this.sepDB = sepDB;
 			checkForDBUpdate();
-			
-			if (diplomacyIndex.get(PK, getPK(ownerName, targetName)).hasNext())
+		
+			if (diplomacyMarkerIndex.get(PK, getPK(turn, ownerName, targetName)).hasNext())
 			{
 				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, unit["+getPK(ownerName, targetName)+"] already exist.");
+				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, diplomacyMarker["+getPK(turn, ownerName, targetName)+"] already exist.");
 			}			
-
+						
+			diplomacyMarkerIndex.add(properties, PK, getPK(turn, ownerName, targetName));
+			
 			Node nOwner = db.index().forNodes("PlayerIndex").get("name", ownerName).getSingle();
 			if (nOwner == null)
 			{
@@ -122,9 +152,9 @@ class Diplomacy extends DiplomacyMarker implements IDiplomacy
 				throw new DBGraphException("Constraint error: Diplomacy relationship from '"+ownerName+"' to '"+targetName+"' already exists.");
 			}
 			
-			properties = nOwner.createRelationshipTo(nTarget, eRelationTypes.PlayerDiplomacy);
-			Diplomacy.initializeProperties(properties, ownerName, targetName, isAllowedToLand, foreignPolicy);
-			diplomacyIndex.add(properties, PK, getPK(ownerName, targetName));			
+			properties = nOwner.createRelationshipTo(nTarget, eRelationTypes.PlayerDiplomacyMarker);
+			DiplomacyMarker.initializeProperties(properties, turn, ownerName, targetName, isAllowedToLand, foreignPolicy);
+			diplomacyMarkerIndex.add(properties, PK, getPK(turn, ownerName, targetName));			
 			
 			tx.success();			
 		}
@@ -137,12 +167,21 @@ class Diplomacy extends DiplomacyMarker implements IDiplomacy
 	@Override
 	public int getTurn()
 	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		return sepDB.getConfig().getTurn();
+		return turn;
 	}
 	
+	@Override
+	public String getOwnerName()
+	{
+		return ownerName;
+	}
+
+	@Override
+	public String getTargetName()
+	{
+		return targetName;
+	}
+
 	@Override
 	public boolean isAllowedToLand()
 	{
@@ -151,26 +190,7 @@ class Diplomacy extends DiplomacyMarker implements IDiplomacy
 		
 		return (Boolean) properties.getProperty("isAllowedToLand");
 	}
-	
-	@Override
-	public void setAllowedToLand(boolean isAllowedToLand)
-	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		Transaction tx = db.beginTx();
-		
-		try
-		{
-			properties.setProperty("isAllowedToLand", isAllowedToLand);
-			tx.success();
-		}
-		finally
-		{
-			tx.finish();
-		}
-	}
-	
+
 	@Override
 	public eForeignPolicy getForeignPolicy()
 	{
@@ -178,38 +198,11 @@ class Diplomacy extends DiplomacyMarker implements IDiplomacy
 		checkForDBUpdate();
 		
 		return eForeignPolicy.valueOf((String) properties.getProperty("foreignPolicy"));
-	}	
-	
-	@Override
-	public void setForeignPolicy(eForeignPolicy foreignPolicy)
-	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		Transaction tx = db.beginTx();
-		
-		try
-		{
-			properties.setProperty("foreignPolicy", foreignPolicy.toString());
-			tx.success();
-		}
-		finally
-		{
-			tx.finish();
-		}
 	}
-	
-	@Override
-	public IDiplomacyMarker getMarker()
+
+	public static void initializeProperties(Relationship properties, int turn, String ownerName, String targetName, boolean isAllowedToLand, eForeignPolicy foreignPolicy)
 	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		return new DiplomacyMarker(getTurn(), ownerName, targetName, isAllowedToLand(), getForeignPolicy());
-	}
-	
-	public static void initializeProperties(Relationship properties, String ownerName, String targetName, boolean isAllowedToLand, eForeignPolicy foreignPolicy)
-	{
+		properties.setProperty("turn", turn);
 		properties.setProperty("ownerName", ownerName);
 		properties.setProperty("targetName", targetName);
 		properties.setProperty("isAllowedToLand", isAllowedToLand);

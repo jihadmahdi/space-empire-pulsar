@@ -11,11 +11,39 @@ import java.util.Set;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.Protocol.eSpecialUnitType;
 import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.db.IBuilding;
 import org.axan.sep.common.db.IGameConfig;
+import org.axan.sep.common.db.ISpaceCounter;
 
 public class Rules
 {
 	private Rules() {}
+	
+	public static boolean getBuildingCanBeDowngraded(IBuilding building)
+	{
+		switch(building.getType())
+		{
+			case DefenseModule:
+			case ExtractionModule:
+			case StarshipPlant:
+			{
+				return building.getNbSlots() > 0;
+			}
+			case SpaceCounter:
+			{
+				ISpaceCounter spaceCounter = (ISpaceCounter) building;
+				return spaceCounter.getBuiltSpaceRoads().size() <= Math.max(0, spaceCounter.getNbSlots() - 1);				
+			}
+			case GovernmentModule:
+			case PulsarLaunchingPad:
+			{
+				return false;
+			}
+			
+			default:
+				throw new SEPCommonImplementationException(building.getType()+".canBeDowngraded() not implemented.");
+		}
+	}
 	
 	public static boolean getBuildingCanBeUpgraded(eBuildingType buildingType)
 	{

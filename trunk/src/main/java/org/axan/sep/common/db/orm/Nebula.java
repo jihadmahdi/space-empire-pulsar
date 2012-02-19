@@ -25,7 +25,7 @@ class Nebula extends ProductiveCelestialBody implements INebula
 	/*
 	 * DB connection
 	 */
-	protected Index<Node> nebulaIndex;
+	protected transient Index<Node> nebulaIndex;
 
 	/**
 	 * Off-DB constructor
