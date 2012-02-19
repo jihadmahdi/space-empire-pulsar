@@ -8,15 +8,21 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
+import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
@@ -29,18 +35,24 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.html.HTMLDocument;
 
+import org.axan.eplib.utils.Basic;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.client.gui.IUniverseRenderer.IUniverseRendererListener;
+import org.axan.sep.client.gui.lib.GUIUtils;
 import org.axan.sep.common.IGameBoard.GameBoardException;
 import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.Commands;
+import org.axan.sep.common.db.IAntiProbeMissile;
 import org.axan.sep.common.db.IArea;
 import org.axan.sep.common.db.IBuilding;
 import org.axan.sep.common.db.ICelestialBody;
+import org.axan.sep.common.db.IFleet;
 import org.axan.sep.common.db.IProbe;
 import org.axan.sep.common.db.IUnit;
 import org.axan.sep.common.db.ICommand.GameCommandException;
@@ -49,8 +61,10 @@ import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IStarshipPlant;
 import org.axan.sep.common.db.IUnitMarker;
+import org.axan.sep.common.db.orm.Fleet;
 import org.axan.sep.common.db.orm.SEPCommonDB;
 import org.axan.sep.common.db.orm.SEPCommonDB.IAreaChangeListener;
+import org.axan.sep.common.db.orm.SEPCommonDB.ILogListener;
 import org.javabuilders.BuildResult;
 import org.javabuilders.swing.SwingJavaBuilder;
 
@@ -61,7 +75,7 @@ import ca.odell.glazedlists.EventList;
 import ca.odell.glazedlists.GlazedLists;
 import ca.odell.glazedlists.swing.EventListModel;
 
-public class RunningGamePanel extends JPanel implements IModalComponent, IUniverseRendererListener, IAreaChangeListener
+public class RunningGamePanel extends JPanel implements IModalComponent, IUniverseRendererListener, IAreaChangeListener, ILogListener
 {
 	//////////static attributes
 	private static Logger log = Logger.getLogger(SpaceEmpirePulsarGUI.class.getName());
@@ -100,11 +114,16 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 	private JScrollPane actionTab;
 	private StarshipPlantActionPanel starshipPlantActionPanel;
 	private ProbeActionsPanel probeActionsPanel;
+	private AntiProbeMissileActionsPanel antiProbeMissileActionsPanel;
+	private FleetActionPanel fleetActionPanel;
+	private DiplomacyActionPanel diplomacyActionPanel;
+	private JScrollPane logsTab;
+	private JEditorPane logsEditorPane;
 
 	////////// no arguments constructor
 	public RunningGamePanel()
 	{
-		SwingJavaBuilderMyUtils.addType(AUniverseRendererPanel.class, StarshipPlantActionPanel.class, ProbeActionsPanel.class);
+		SwingJavaBuilderMyUtils.addType(AUniverseRendererPanel.class, StarshipPlantActionPanel.class, ProbeActionsPanel.class, AntiProbeMissileActionsPanel.class, FleetActionPanel.class, DiplomacyActionPanel.class);
 		
 		build = SwingJavaBuilder.build(this);
 		
@@ -112,6 +131,9 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 		
 		starshipPlantActionPanel.setRunningGamePanel(this);
 		probeActionsPanel.setRunningGamePanel(this);
+		antiProbeMissileActionsPanel.setRunningGamePanel(this);
+		fleetActionPanel.setRunningGamePanel(this);
+		diplomacyActionPanel.setRunningGamePanel(this);
 		
 		buildingActionsPanel.setLayout(new FlowLayout());
 		
@@ -272,6 +294,49 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 		});		
 	}
 	
+	@Override
+	public void log(final String message)
+	{
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			
+			@Override
+			public void run()
+			{
+				Pattern p = Pattern.compile("\\$(.+)\\$", Pattern.DOTALL);
+				Matcher m = p.matcher(message);
+				
+				StringBuffer sb = new StringBuffer();
+				while(m.find())
+				{
+					String tag = m.group(1);
+					m.appendReplacement(sb, build.getResource(tag));
+				}
+				m.appendTail(sb);
+				
+				String htmlText = "<br align='left'>"+sb.toString()+"</br>";
+				HTMLDocument doc = (HTMLDocument) logsEditorPane.getDocument();
+
+				try
+				{
+					doc.insertBeforeEnd(doc.getDefaultRootElement(), htmlText);
+					
+					int i;
+					for(i=0; i < tabsPanel.getComponentCount(); ++i) if (logsTab.equals(tabsPanel.getComponent(i))) break;
+					tabsPanel.setBackgroundAt(i, Color.red);
+				}
+				catch(BadLocationException e)
+				{
+					e.printStackTrace();
+				}
+				catch(IOException e)
+				{
+					e.printStackTrace();
+				}
+			}
+		});
+	}
+	
 	////////// IModal implementation
 
 	@Override
@@ -403,7 +468,7 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 			updateSelectedUnit(null);
 		}
 	}
-	
+		
 	void updateSelectedUnit(IUnitMarker unit)
 	{
 		// Erase
@@ -430,6 +495,24 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 				{
 					probeActionsPanel.setProbe((IProbe) unit);
 					unitActionsPanel.add(probeActionsPanel);
+					break;
+				}
+				
+				case AntiProbeMissile:
+				{
+					antiProbeMissileActionsPanel.setAntiProbeMissile((IAntiProbeMissile) unit);
+					unitActionsPanel.add(antiProbeMissileActionsPanel);
+					break;
+				}
+				
+				case Fleet:
+				{
+					IFleet fleet = (IFleet) unit;
+					if (!fleet.isAssignedFleet())
+					{
+						fleetActionPanel.setFleet((IFleet) unit);
+						setActionPanel("Fleet moves", fleetActionPanel);
+					}
 					break;
 				}
 			}
@@ -503,6 +586,12 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 		}
 	}	
 	
+	void showDiplomacyActionPanel()
+	{
+		diplomacyActionPanel.refresh();
+		setActionPanel("Diplomacy", diplomacyActionPanel);
+	}
+	
 	void setActionPanel(String title, JPanel actionPanel)
 	{
 		int i;
@@ -510,6 +599,7 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 		tabsPanel.setTitleAt(i, title);
 		actionTab.setViewportView(actionPanel);
 		actionTab.invalidate();
+		tabsPanel.setSelectedIndex(i);
 	}
 	
 	/*
@@ -527,12 +617,14 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 	//TODO: Should override some common interface to everybody's implementing this method
 	void receiveNewTurnGameBoard(List<IGameEvent> newTurnEvents)
 	{		
-		getSepClient().getGameboard().getDB().addAreaChangeListener(this);
+		SEPCommonDB db = getSepClient().getGameboard().getDB();
+		db.addAreaChangeListener(this);
+		db.addLogListener(this);
 		universePanel.receiveNewTurnGameBoard(newTurnEvents);
 		playersListPanel.setEnabled(true);
 		btnEndTurn.setEnabled(true);
 		
-		JOptionPane.showConfirmDialog(null, "Turn n°"+getSepClient().getGameboard().getConfig().getTurn()+" begins !", "New turn", JOptionPane.YES_OPTION, JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(null, "Turn n°"+getSepClient().getGameboard().getConfig().getTurn()+" begins !", "New turn", JOptionPane.INFORMATION_MESSAGE);
 	}
 	
 	void endTurn()
@@ -550,4 +642,25 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 		}
 	}
 		
+	void save()
+	{
+		try
+		{
+			SEPCommonDB db = getSepClient().getGameboard().getDB();
+			StringBuilder saveGameId = new StringBuilder("["+db.getConfig().getTurn()+"] ");
+			boolean comma = false;
+			for(String playerName : getSepClient().getGameboard().getDB().getPlayersNames())
+			{
+				if (comma) saveGameId.append(", ");
+				saveGameId.append(playerName);
+			}
+			getSepClient().saveGame(saveGameId.toString());
+		}
+		catch(Throwable t)
+		{
+			// TODO: better error handling
+			t.printStackTrace();
+			return;
+		}
+	}
 }

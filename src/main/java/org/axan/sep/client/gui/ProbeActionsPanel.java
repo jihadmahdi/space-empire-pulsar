@@ -171,6 +171,20 @@ public class ProbeActionsPanel extends JPanel implements IModalComponent, IAreaS
 		refresh();
 	}
 	
+	@Override
+	public void setEnabled(boolean enabled)
+	{
+		spnDestinationX.setEnabled(enabled);
+		spnDestinationY.setEnabled(enabled);
+		spnDestinationZ.setEnabled(enabled);
+		btnLaunch.setEnabled(enabled);
+		btnSelectDestination.setEnabled(enabled);
+		super.setEnabled(enabled);
+		updateUI();
+		doLayout();
+		repaint();
+	}
+	
 	private void refresh()
 	{
 		IProbe probe = getProbe();
@@ -181,13 +195,36 @@ public class ProbeActionsPanel extends JPanel implements IModalComponent, IAreaS
 			return;
 		}
 		
+		Location destination = probe.getDestination();
+		if (destination != null)
+		{
+			// Note: infinite loop ? (setValue -> refresh -> setValue -> ...)
+			if (!spnDestinationX.getValue().equals(destination.x))
+			{
+				spnDestinationX.setValue(destination.x);
+			}
+			
+			if (!spnDestinationY.getValue().equals(destination.y))
+			{
+				spnDestinationY.setValue(destination.y);
+			}
+			
+			if (!spnDestinationZ.getValue().equals(destination.z))
+			{
+				spnDestinationZ.setValue(destination.z);
+			}
+			
+			setEnabled(false);
+			return;
+		}
+		
 		setEnabled(true);
 		
 		boolean picking = getRunningGamePanel().getUniversePanel().isAreaSelectionListener(this);
 		btnSelectDestination.setEnabled(!picking);
 		btnSelectDestination.setText(build.getResource("probe.action.btn.selectDestination"+(picking ? ".activated":"")));
 		
-		Location destination = new Location((Integer) spnDestinationX.getValue(), (Integer) spnDestinationY.getValue(), (Integer) spnDestinationZ.getValue());
+		destination = new Location((Integer) spnDestinationX.getValue(), (Integer) spnDestinationY.getValue(), (Integer) spnDestinationZ.getValue());
 		
 		final LaunchProbe launchProbe = new LaunchProbe(getSepClient().getLogin(), probe.getName(), destination);
 		try
@@ -223,6 +260,8 @@ public class ProbeActionsPanel extends JPanel implements IModalComponent, IAreaS
 			btnLaunch.setEnabled(false);
 			btnLaunch.setToolTipText("Cannot launch probe: "+e.getMessage());
 		}
+		
+		updateUI();
 	}
 	
 	private void selectDestination()

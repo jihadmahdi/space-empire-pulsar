@@ -139,7 +139,7 @@ public class PlayerConfigDialog extends JDialog implements IModalComponent
 				IPlayerConfig config = getSepClient().getGameboard().getPlayerConfig(getSepClient().getLogin());
 				setPortraitFilename(config.getPortrait());
 				setSymbolFilename(config.getSymbol());
-				setPlayerColor(Basic.stringToColor(config.getColor()));
+				setPlayerColor(config.getColor());
 			}
 			catch(Exception e)
 			{
@@ -165,7 +165,7 @@ public class PlayerConfigDialog extends JDialog implements IModalComponent
 	
 	public void ok()
 	{
-		IPlayerConfig config = SEPCommonDB.makePlayerConfig(Basic.colorToString(getPlayerColor()), getSymbolFilename(), getPortraitFilename());
+		IPlayerConfig config = SEPCommonDB.makePlayerConfig(getPlayerColor(), getSymbolFilename(), getPortraitFilename());
 		try
 		{
 			getSepClient().getGameCreationInterface().updatePlayerConfig(config);
@@ -353,7 +353,7 @@ public class PlayerConfigDialog extends JDialog implements IModalComponent
 		{
 			try
 			{
-				color = Basic.stringToColor(getSepClient().getGameboard().getPlayerConfig(getSepClient().getLogin()).getColor());		
+				color = getSepClient().getGameboard().getPlayerConfig(getSepClient().getLogin()).getColor();		
 			}
 			catch(Exception e)
 			{

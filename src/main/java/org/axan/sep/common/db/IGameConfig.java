@@ -2,6 +2,7 @@ package org.axan.sep.common.db;
 
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Protocol.eUnitType;
+import org.axan.sep.common.db.IDiplomacyMarker.eForeignPolicy;
 
 /**
  * Represent a game creation configuration.
@@ -274,5 +275,14 @@ public interface IGameConfig
 	 */
 	public int[] getVortexLifetime();
 	public void setVortexLifetime(int min, int max);
+	
+	/**
+	 * Default diplomacy
+	 */
+	public boolean isAllowedToLandDefault();
+	public void setAllowedToLandDefault(boolean isAllowedToLand);
+	
+	public eForeignPolicy getForeignPolicyDefault();
+	public void setForeignPolicyDefault(eForeignPolicy foreignPolicy);
 }
 

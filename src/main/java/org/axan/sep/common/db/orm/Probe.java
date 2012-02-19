@@ -1,5 +1,6 @@
 package org.axan.sep.common.db.orm;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -14,8 +15,11 @@ import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.Rules.StarshipTemplate;
 import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.db.Events.AGameEvent;
+import org.axan.sep.common.db.Events.UpdateArea;
 import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
+import org.axan.sep.common.db.IArea;
 import org.axan.sep.common.db.IProbe;
 import org.axan.sep.common.db.IProbeMarker;
 import org.axan.sep.common.db.IUnitMarker;
@@ -110,7 +114,7 @@ public class Probe extends Unit implements IProbe
 				tx.failure();
 				throw new DBGraphException("Constraint error: Cannot find owner Player '"+ownerName+"'");
 			}
-			nOwner.createRelationshipTo(properties, eUnitType.Probe);
+			//nOwner.createRelationshipTo(properties, eUnitType.Probe);
 			
 			super.create(sepDB);
 			
@@ -129,12 +133,16 @@ public class Probe extends Unit implements IProbe
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
+		boolean isDeployed = isDeployed();
+		Location center = getRealLocation().asLocation();
+		float sight = getSight();
+		
 		Transaction tx = sepDB.getDB().beginTx();
 		
 		try
-		{
+		{			
 			probeIndex.remove(properties);
-			properties.getSingleRelationship(eUnitType.Probe, Direction.INCOMING).delete();
+			//properties.getSingleRelationship(eUnitType.Probe, Direction.INCOMING).delete();			
 			
 			super.destroy();
 			
@@ -143,6 +151,15 @@ public class Probe extends Unit implements IProbe
 		finally
 		{
 			tx.finish();
+		}
+		
+		if (isDeployed)
+		{
+			for(Location l : SEPUtils.scanSphere(center, (int) sight))
+			{
+				sepDB.getArea(l);
+				sepDB.fireAreaChangedEvent(l);
+			}
 		}
 	}
 	
@@ -177,18 +194,23 @@ public class Probe extends Unit implements IProbe
 	}
 	
 	@Override
+	@OverridingMethodsMustInvokeSuper
 	public void onArrival(IGameEventExecutor executor)
 	{
-		// Ensure observed area creation
+		super.onArrival(executor);
 		
-		Location center = getRealLocation().asLocation();
-		float sight = getSight();
-		
-		for(Location l : SEPUtils.scanSphere(center, (int) sight))
+		if (AGameEvent.isGlobalView(executor))
 		{
-			sepDB.getArea(l);
-			sepDB.fireAreaChangedEvent(l);
-		}	
+			Location center = getRealLocation().asLocation();
+			float sight = getSight();
+			
+			for(Location l : SEPUtils.scanSphere(center, (int) sight))
+			{
+				IArea area = sepDB.getArea(l);
+				UpdateArea updateArea = new UpdateArea(area);
+				executor.onGameEvent(updateArea, new HashSet<String>(Arrays.asList(ownerName)));
+			}
+		}			
 	}
 	
 	@Override

@@ -116,12 +116,12 @@ public class GameChatPanel extends JPanel implements IModalComponent
 		txtMessage.setText("");
 	}
 	
-	public void receivedMessages(IPlayer sender, String message)
+	public void receivedMessages(String sender, String message)
 	{
 		IPlayerConfig config = null;
 		try
 		{
-			config = getSepClient().getGameboard().getPlayerConfig(sender.getName());
+			config = getSepClient().getGameboard().getPlayerConfig(sender);
 		}
 		catch(GameBoardException e)
 		{
@@ -130,10 +130,10 @@ public class GameChatPanel extends JPanel implements IModalComponent
 
 		if (sender == null || config == null)
 		{
-			throw new IllegalArgumentException(sender==null?"Sender is null":"Unkown config for player '"+sender.getName()+"'");
+			throw new IllegalArgumentException(sender==null?"Sender is null":"Unkown config for player '"+sender+"'");
 		}
 		
-		String htmlText = String.format("<br><font color='#%s'>%s</font> : %s</br>", GUIUtils.getHTMLColor(Basic.stringToColor(config.getColor())), sender.getName(), message);
+		String htmlText = String.format("<br><font color='#%s'>%s</font> : %s</br>", GUIUtils.getHTMLColor(config.getColor()), sender, message);
 		HTMLDocument doc = (HTMLDocument) editorPane.getDocument();
 
 		try

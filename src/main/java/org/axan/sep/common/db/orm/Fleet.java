@@ -2,6 +2,8 @@ package org.axan.sep.common.db.orm;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
@@ -12,6 +14,7 @@ import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.Rules;
 import org.axan.sep.common.Rules.StarshipTemplate;
 import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.db.FleetMove;
 import org.axan.sep.common.db.ICelestialBody;
 import org.axan.sep.common.db.IFleet;
 import org.axan.sep.common.db.IFleetMarker;
@@ -35,6 +38,7 @@ public class Fleet extends Unit implements IFleet
 	 * Off-DB fields.
 	 */
 	private final Map<StarshipTemplate, Integer> starships = new HashMap<StarshipTemplate, Integer>();
+	private final LinkedList<FleetMove> moves = new LinkedList<FleetMove>();
 	
 	/*
 	 * DB connection
@@ -106,7 +110,7 @@ public class Fleet extends Unit implements IFleet
 				tx.failure();
 				throw new DBGraphException("Constraint error: Cannot find owner Player '"+ownerName+"'");
 			}
-			nOwner.createRelationshipTo(properties, eUnitType.Fleet);
+			//nOwner.createRelationshipTo(properties, eUnitType.Fleet);
 			
 			super.create(sepDB);
 			
@@ -130,7 +134,7 @@ public class Fleet extends Unit implements IFleet
 		try
 		{
 			fleetIndex.remove(properties);
-			properties.getSingleRelationship(eUnitType.Fleet, Direction.INCOMING).delete();
+			//properties.getSingleRelationship(eUnitType.Fleet, Direction.INCOMING).delete();
 			
 			super.destroy();
 			
@@ -143,9 +147,21 @@ public class Fleet extends Unit implements IFleet
 	}
 	
 	@Override
+	@OverridingMethodsMustInvokeSuper
 	public void onArrival(IGameEventExecutor executor)
 	{
+		super.onArrival(executor);
+		
 		// TODO: nothing yet
+	}
+	
+	@Override
+	public boolean isAssignedFleet()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		return properties.hasRelationship(eRelationTypes.AssignedFleets, Direction.INCOMING);
 	}
 	
 	@Override
@@ -154,7 +170,111 @@ public class Fleet extends Unit implements IFleet
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		return new FleetMarker(getTurn(), ownerName, name, isStopped(), getRealLocation(), getSpeed(), getStarships());
+		return new FleetMarker(getTurn(), ownerName, name, isStopped(), getRealLocation(), getSpeed(), getStarships(), isAssignedFleet());
+	}
+	
+	@Override
+	public List<FleetMove> getMoves()
+	{
+		if (isDBOnline())
+		{
+			checkForDBUpdate();
+			
+			moves.clear();
+			
+			for(int i=0; properties.hasProperty("move"+i); ++i)
+			{
+				String destinationName = (String) properties.getProperty("move"+i);
+				int delay = (Integer) properties.getProperty("move"+i+"_delay");
+				boolean isAnAttack = (Boolean) properties.getProperty("move"+i+"_isAnAttack");
+				FleetMove move = new FleetMove(destinationName, delay, isAnAttack);
+				moves.add(move);
+			}
+		}
+		
+		return Collections.unmodifiableList(moves);
+	}
+	
+	@Override
+	public void updateMovesPlan(List<FleetMove> newPlan)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = db.beginTx();
+		
+		try
+		{
+			for(int i=0; i < newPlan.size() || properties.hasProperty("move"+i); ++i)
+			{
+				if (i < newPlan.size())
+				{
+					FleetMove move = newPlan.get(i);
+					properties.setProperty("move"+i, move.getDestinationName());
+					properties.setProperty("move"+i+"_delay", move.getDelay());
+					properties.setProperty("move"+i+"_isAnAttack", move.isAnAttack());
+				}
+				else
+				{
+					properties.removeProperty("move"+i);
+					properties.removeProperty("move"+i+"_delay");
+					properties.removeProperty("move"+i+"_isAnAttack");
+				}
+			}
+			
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+	
+	@Override
+	public boolean nextDestination()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		if (!isStopped()) return true;
+		
+		List<FleetMove> moves = new LinkedList<FleetMove>(getMoves());
+		if (moves.isEmpty()) return false;
+		
+		FleetMove move = moves.get(0);
+		if (move.getDelay() > 0)
+		{
+			Transaction tx = db.beginTx();
+			
+			try
+			{
+				properties.setProperty("move0_delay", move.getDelay()-1);
+				tx.success();
+				return false;
+			}
+			finally
+			{
+				tx.finish();
+			}
+		}
+		
+		Transaction tx = db.beginTx();
+		
+		try
+		{
+			ICelestialBody cb = sepDB.getCelestialBody(move.getDestinationName());
+			setDestination(cb.getLocation());
+			
+			moves.remove(move);
+			updateMovesPlan(moves);
+			
+			tx.success();
+			return true;
+		}
+		finally
+		{
+			tx.finish();
+		}
 	}
 	
 	@Override

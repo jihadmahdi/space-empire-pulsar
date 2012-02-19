@@ -9,6 +9,11 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 
+/**
+ * A graph object can be connected or disconnected from the graph DB.
+ * If the object is serialized, it must be serialized while off-DB state (so DB connections fields are null).
+ * @param <T>
+ */
 public abstract class AGraphObject<T extends PropertyContainer> implements Serializable
 {
 	/*
@@ -19,9 +24,9 @@ public abstract class AGraphObject<T extends PropertyContainer> implements Seria
 	/*
 	 * DB connection: DB connection and useful objects (e.g. indexes and nodes).
 	 */
-	protected SEPCommonDB sepDB;
-	protected GraphDatabaseService db;
-	protected T properties;
+	protected transient SEPCommonDB sepDB;
+	protected transient GraphDatabaseService db;
+	protected transient T properties;
 	
 	/**
 	 * Off-DB constructor.

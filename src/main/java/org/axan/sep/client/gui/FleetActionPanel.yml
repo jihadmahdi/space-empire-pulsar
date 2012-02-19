@@ -1,0 +1,23 @@
+JPanel(name=fleetActionPanel):
+  - JTextPane(name=label, editable=false, focusable=false)
+  - JComboBox(name=destinationsList):
+      EventComboBoxModel(name=destinationsModel)
+  - JSpinner(name=spnDelay)
+  - JRadioButton(name=rbGo, text="fleet.action.go")
+  - JRadioButton(name=rbAttack, text="fleet.action.attack")
+  - JButton(name=btnDirect, text="fleet.action.direct", onAction=direct)
+  - JButton(name=btnAdd, text="fleet.action.add", onAction=addMove)
+  - JList(name=movesList):
+      EventListModel(name=movesModel)
+  - JButton(name=btnUp, text="fleet.action.up", onAction=up)
+  - JButton(name=btnRemove, text="fleet.action.remove", onAction=removeMove)
+  - JButton(name=btnDown, text="fleet.action.down", onAction=down)
+  - MigLayout: |
+      [[insets 0]]
+      [pref]                             [pref]      [pref]          [pref]      [pref]
+      label+*
+      "fleet.action.label.destination"+2             movesList+3+4
+      destinationsList+2
+      "fleet.action.label.delay"         spnDelay
+      rbGo                               rbAttack
+      btnDirect                          btnAdd      btnUp           btnRemove   btnDown

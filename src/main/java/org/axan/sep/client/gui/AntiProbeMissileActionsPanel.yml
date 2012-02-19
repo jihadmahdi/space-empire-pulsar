@@ -1,0 +1,13 @@
+JPanel(name=antiProbeMissileActionsPanel):
+  - JTextField(name=txtTargetOwnerName)
+  - JTextField(name=txtTargetName)
+  - JButton(name=btnSelectTarget, text="antiProbeMissile.action.btn.selectTarget", onAction=selectTarget)
+  - JButton(name=btnFire, text="antiProbeMissile.action.btn.fire")
+  - MigLayout: |
+      [[insets 0]]
+      [pref]
+      "antiProbeMissile.action.label.targetOwnerName"
+      txtTargetOwnerName
+      "antiProbeMissile.action.label.targetName"
+      txtTargetName
+      btnSelectTarget, btnFire

@@ -3,6 +3,9 @@ package org.axan.sep.common.db;
 import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -12,17 +15,25 @@ import org.axan.sep.common.Rules.StarshipTemplate;
 import org.axan.sep.common.Rules;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.db.Events.AGameEvent;
+import org.axan.sep.common.db.Events.UpdateDiplomacyMarker;
+import org.axan.sep.common.db.IDiplomacyMarker.eForeignPolicy;
 import org.axan.sep.common.db.orm.SEPCommonDB;
 
 public abstract class Commands
 {
-	public static abstract class ACommand implements ICommand, Serializable
+	public static abstract class ACommand extends AGameEvent implements ICommand, Serializable
 	{
 		protected final String playerName;
 		
 		protected ACommand(String playerName)
 		{
 			this.playerName = playerName;
+		}
+		
+		public String getPlayerName()
+		{
+			return playerName;
 		}
 		
 		protected ICelestialBody checkCelestialBody(SEPCommonDB db, String celestialBodyName) throws GameCommandException
@@ -70,8 +81,200 @@ public abstract class Commands
 				throw new GameCommandException(this, "Invalid location "+location.toString());
 			}
 		}
+		
+		/**
+		 * Fire events to players (excluding player who issued the current command) for who the given area is visible.
+		 */
+		@Override
+		protected void fireEventForObservers(IGameEventExecutor executor, IArea area, Set<String> players, IGameEvent event)
+		{
+			players.remove(playerName);
+			super.fireEventForObservers(executor, area, players, event);
+		}
 	}
 	
+	/**
+	 * Update player diplomacy toward another player. Provided target is not the player himself.
+	 */
+	public static class UpdateDiplomacy extends ACommand implements Serializable
+	{
+		private final String targetName;
+		private final boolean isAllowedToLand;
+		private final eForeignPolicy foreignPolicy;
+		
+		transient private IDiplomacy diplomacy;
+		
+		public UpdateDiplomacy(String playerName, String targetName, boolean isAllowedToLand, eForeignPolicy foreignPolicy)
+		{
+			super(playerName);
+			this.targetName = targetName;
+			this.isAllowedToLand = isAllowedToLand;
+			this.foreignPolicy = foreignPolicy;
+		}
+		
+		@Override
+		public void check(SEPCommonDB db) throws GameCommandException
+		{
+			if (playerName.equals(targetName)) throw new GameCommandException(this, "Player cannot set diplomacy toward himself");
+			IPlayer player = db.getPlayer(playerName);
+			if (player == null) throw new GameCommandException(this, "Unknown player '"+playerName+"'");
+			diplomacy = player.getDiplomacy(targetName);
+			if (diplomacy == null) throw new GameCommandException(this, "Cannot access '"+playerName+"' diplomacy toward '"+targetName+"'");			
+		}
+		
+		public String getTargetName()
+		{
+			return targetName;
+		}
+		
+		@Override
+		public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameCommandException
+		{
+			check(db);
+			
+			diplomacy.setAllowedToLand(isAllowedToLand);
+			diplomacy.setForeignPolicy(foreignPolicy);
+			
+			if (isGlobalView(executor))
+			{
+				// Fire diplomacy update event for players who currently observe owner government.
+				IGovernmentModule governmentalModule = db.getPlayer(playerName).getGovernmentModule();
+				IArea area = db.getArea(db.getCelestialBody(governmentalModule.getProductiveCelestialBodyName()).getLocation());
+				UpdateDiplomacyMarker diplomacyMarkerUpdate = new UpdateDiplomacyMarker(playerName, targetName, isAllowedToLand, foreignPolicy);				
+
+				fireEventForObservers(executor, area, db.getPlayersNames(), diplomacyMarkerUpdate);
+			}
+			
+			db.fireLog(String.format("%s changed diplomacy toward %s : %s, $diplomacy.foreignPolicy.%s$", playerName, targetName, isAllowedToLand ? "allowed to land" : "not allowed to land", foreignPolicy.toString()));
+			db.firePlayerChangeEvent(playerName);			
+		}
+	}
+	
+	/**
+	 * Update given fleet moves plan. Providing moves are valids (no sun area between to points) and fleet belongs to the player.
+	 */
+	public static class UpdateFleetMovesPlan extends ACommand implements Serializable
+	{
+		private final String fleetName;
+		private final List<FleetMove> moves = new LinkedList<FleetMove>();
+		
+		private transient IFleet fleet;
+		
+		public UpdateFleetMovesPlan(String playerName, String fleetName, List<FleetMove> moves)
+		{
+			super(playerName);
+			this.fleetName = fleetName;
+			this.moves.addAll(moves);
+		}
+		
+		public String getFleetName()
+		{
+			return fleetName;
+		}
+		
+		@Override
+		public void check(SEPCommonDB db) throws GameCommandException
+		{
+			fleet = (IFleet) db.getUnit(playerName, fleetName, eUnitType.Fleet);
+			if (fleet == null) throw new GameCommandException(this, "Unknown fleet "+playerName+"@"+fleetName);
+				
+			String departureName = fleet.isStopped() ? fleet.getDepartureName() : fleet.getDestinationName();
+			Location departure = fleet.isStopped() ? fleet.getDeparture() : fleet.getDestination();
+			for(FleetMove move : moves)
+			{
+				ICelestialBody cb = db.getCelestialBody(move.getDestinationName());
+				String destinationName = cb.getName();
+				Location destination = cb.getLocation();
+				
+				if (SEPUtils.isTravelingTheSun(db.getConfig(), departure, destination))
+				{
+					throw new GameCommandException(this, String.format("Incorrect move from %s to %s : there is sun on the way", departureName != null ? departureName : departure.toString(), destinationName != null ? destinationName : destination.toString()));
+				}
+				
+				departureName = destinationName;
+				departure = destination;
+			}
+		}
+		
+		@Override
+		public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameCommandException
+		{
+			check(db);
+			
+			fleet.updateMovesPlan(moves);
+			
+			db.fireLog(String.format("Fleet %s@%s moves plan updated", playerName, fleetName));
+			db.fireAreaChangedEvent(fleet.getRealLocation().asLocation());
+		}
+	}
+	
+	/**
+	 * Fire given anti probe missile to the current location of the given target. Providing the anti probe missile belongs to the player and path is free (no sun area on the way).
+	 */
+	public static class FireAntiProbeMissile extends ACommand implements Serializable
+	{
+		private final String antiProbeMissileName;
+		private final String targetOwnerName;
+		private final String targetName;
+		
+		private transient IAntiProbeMissile antiProbeMissile;
+		private transient IProbeMarker target;
+		private transient Location destination;
+		
+		public FireAntiProbeMissile(String playerName, String antiProbeMissileName, String targetOwnerName, String targetName)
+		{
+			super(playerName);
+			this.antiProbeMissileName = antiProbeMissileName;
+			this.targetOwnerName = targetOwnerName;
+			this.targetName = targetName;
+		}
+		
+		@Override
+		public void check(SEPCommonDB db) throws GameCommandException
+		{
+			antiProbeMissile = (IAntiProbeMissile) db.getUnit(playerName, antiProbeMissileName, eUnitType.AntiProbeMissile);
+			if (antiProbeMissile == null) throw new GameCommandException(this, "Unknown anti probe missile "+playerName+"@"+antiProbeMissileName);
+			if (antiProbeMissile.isFired()) throw new GameCommandException(this, "Anti probe missile already fired");
+			if (!antiProbeMissile.isStopped()) throw new GameCommandException(this, "Implementation error: Anti probe missile is not stopped nor fired");
+			
+			IPlayer targetOwner = db.getPlayer(targetOwnerName);
+			if (targetOwner == null) throw new GameCommandException(this, "Unknown player '"+targetOwnerName+"'");
+			IUnitMarker unitMarker = db.getPlayer(targetOwnerName).getUnitMarker(targetName);
+			if (unitMarker == null) throw new GameCommandException(this, "Unknown target "+targetOwnerName+"@"+targetName);
+			if (!IProbeMarker.class.isInstance(unitMarker)) throw new GameCommandException(this, "Target must be a Probe");
+			
+			target = (IProbeMarker) unitMarker;
+			if (!target.isDeployed()) throw new GameCommandException(this, "Can only target already deployed probes");			
+			
+			destination = target.getRealLocation().asLocation();
+			checkLocation(destination, db.getConfig());
+			
+			if (SEPUtils.isTravelingTheSun(db.getConfig(), antiProbeMissile.getDeparture(), destination))
+			{
+				throw new GameCommandException(this, "Cannot fire antiProbeMissile to "+destination+" because there is sun on the way");
+			}			
+		}
+		
+		public IProbeMarker getTarget()
+		{
+			return target;
+		}
+		
+		@Override
+		public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameCommandException
+		{
+			check(db);
+			antiProbeMissile.setDestination(destination);
+			antiProbeMissile.setTarget(target);
+			
+			db.fireLog(String.format("AntiProbeMissile %s fired to %s@%s (%s)", antiProbeMissile.getName(), target.getOwnerName(), target.getName(), destination));
+			db.fireAreaChangedEvent(antiProbeMissile.getRealLocation().asLocation());
+		}
+	}
+	
+	/**
+	 * Launch given probe to given location, providing the probe belongs to the player and the path is free (no sun area on the way).
+	 */
 	public static class LaunchProbe extends ACommand implements Serializable
 	{
 		private final String probeName;
@@ -107,10 +310,15 @@ public abstract class Commands
 		{
 			check(db);
 			probe.setDestination(destination);
+			db.fireLog(String.format("Probe %s launched to %s", probe.getName(), destination));
 			db.fireAreaChangedEvent(probe.getRealLocation().asLocation());
 		}
 	}
 	
+	/**
+	 * Makes a anti probe missile serie on given productive celestial body, which must belongs to the player.
+	 * Made anti probe missiles are numbered from the last serial number of the given serie (1 if it's a new one).
+	 */
 	public static class MakeAntiProbeMissile extends ACommand implements Serializable
 	{
 		private final String productiveCelestialBodyName;
@@ -180,10 +388,15 @@ public abstract class Commands
 				db.createAntiProbeMissile(db.makeAntiProbeMissile(playerName, serieName, serialNumber, productiveCelestialBodyName));
 			}
 			
+			db.fireLog(String.format("Produced anti probe missile serie %s [%d - %d]", serieName, lastSerialNumber+1, lastSerialNumber+quantity));
 			db.fireAreaChangedEvent(productiveCelestialBody.getLocation());
 		}
 	}
 	
+	/**
+	 * Makes a probe serie on given productive celestial body, which must belongs to the player.
+	 * Made probes are numbered from the last serial number of the given serie (1 if it's a new one).
+	 */
 	public static class MakeProbes extends ACommand implements Serializable
 	{
 		private final String productiveCelestialBodyName;
@@ -253,10 +466,14 @@ public abstract class Commands
 				db.createProbe(db.makeProbe(playerName, serieName, serialNumber, productiveCelestialBodyName));
 			}
 			
+			db.fireLog(String.format("Produced probe serie %s [%d - %d]", serieName, lastSerialNumber+1, lastSerialNumber+quantity));
 			db.fireAreaChangedEvent(productiveCelestialBody.getLocation());
 		}
 	}
 	
+	/**
+	 * Assign starships from the given productive celestial body to the named fleet, providing quantity is sufficient and productive celestial body belongs to the player.
+	 */
 	public static class AssignStarships extends ACommand implements Serializable
 	{
 		private final String productiveCelestialBodyName;
@@ -341,6 +558,8 @@ public abstract class Commands
 			}
 			
 			assignedFleet.removeStarships(newcomers);
+			
+			db.fireLog(String.format("Starships assigned to %s", destinationFleet.getName()));
 			db.fireAreaChangedEvent(destinationFleet.getRealLocation().asLocation());
 		}
 	}
@@ -358,6 +577,7 @@ public abstract class Commands
 		private transient IStarshipPlant starshipPlant;
 		private transient int carbonCost;
 		private transient int populationCost;
+		private transient int totalQuantity;
 		private transient Map<StarshipTemplate, Integer> newcomers;
 		
 		public MakeStarships(String playerName, String productiveCelestialBodyName, Map<String, Integer> starships)
@@ -378,6 +598,7 @@ public abstract class Commands
 			
 			carbonCost = 0;
 			populationCost = 0;
+			totalQuantity = 0;
 			
 			newcomers = new HashMap<StarshipTemplate, Integer>();
 			boolean empty = true;
@@ -394,7 +615,9 @@ public abstract class Commands
 					populationCost += template.getPopulationPrice() * quantity;
 					newcomers.put(template, quantity);
 					if (empty) empty = false;
-				}				
+				}
+				
+				totalQuantity += quantity;
 			}
 			
 			if (empty) throw new GameCommandException(this, "No starship selected");
@@ -424,6 +647,73 @@ public abstract class Commands
 			IFleet assignedFleet = db.getCreateAssignedFleet(productiveCelestialBodyName, playerName);
 			assignedFleet.addStarships(newcomers);
 			
+			db.fireLog(String.format("Made %d new starships on %s", totalQuantity, productiveCelestialBodyName));
+			db.fireAreaChangedEvent(productiveCelestialBody.getLocation());
+		}
+	}
+	
+	/**
+	 * Demolish/downgrade slot of the given building type on given productive celestial body which must be owned by given player.
+	 */
+	public static class Demolish extends ACommand implements Serializable
+	{
+		private final String productiveCelestialBodyName;
+		private final eBuildingType buildingType;
+		
+		private transient IProductiveCelestialBody productiveCelestialBody;
+		private transient IPlanet planet;
+		private transient IBuilding existingBuilding;
+		private transient int turn;
+		
+		public Demolish(String playerName, String productiveCelestialBodyName, eBuildingType buildingType)
+		{
+			super(playerName);
+			this.productiveCelestialBodyName = productiveCelestialBodyName;
+			this.buildingType = buildingType;
+		}
+		
+		@Override
+		public void check(SEPCommonDB db) throws GameCommandException
+		{
+			productiveCelestialBody = checkProductiveCelestialBody(db, productiveCelestialBodyName);
+			
+			checkOwnership(playerName, productiveCelestialBody.getOwner(), playerName+" does not own '"+productiveCelestialBodyName+"'");
+			
+			turn = db.getConfig().getTurn();
+			existingBuilding = productiveCelestialBody.getBuilding(buildingType);
+			
+			
+			if (existingBuilding == null || existingBuilding.getNbSlots() == 0) throw new GameCommandException(this, "Cannot find '"+buildingType+"' on '"+productiveCelestialBodyName);
+			if (eBuildingType.GovernmentModule == existingBuilding.getType())
+			{
+				throw new GameCommandException(this, "Cannot demolish '"+buildingType+"'. Try to embark government on governmental starship.");
+			}
+			if (existingBuilding.getBuiltDate() >= turn) throw new GameCommandException(this, "Cannot demolish '"+existingBuilding.getType()+"' because it was build on current turn.");						
+			
+			if (existingBuilding != null && !Rules.getBuildingCanBeDowngraded(existingBuilding))
+			{
+				throw new GameCommandException(this, buildingType+" cannot be downgraded.");
+			}			
+			
+			planet = (IPlanet.class.isInstance(productiveCelestialBody)) ? (IPlanet) productiveCelestialBody : null;
+		}
+		
+		@Override
+		public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameCommandException
+		{
+			check(db);			
+			
+			if (existingBuilding.getNbSlots() == 1)
+			{
+				existingBuilding.demolish();
+				db.fireLog(String.format("%s demolished on %s", buildingType, productiveCelestialBodyName));
+			}
+			else
+			{
+				existingBuilding.downgrade();
+				db.fireLog(String.format("%s downgraded on %s", buildingType, productiveCelestialBodyName));
+			}
+						
 			db.fireAreaChangedEvent(productiveCelestialBody.getLocation());
 		}
 	}
@@ -510,6 +800,7 @@ public abstract class Commands
 				existingBuilding.upgrade();
 			}
 			
+			db.fireLog(String.format("%s built on %s", buildingType, productiveCelestialBodyName));
 			db.fireAreaChangedEvent(productiveCelestialBody.getLocation());
 		}
 	}

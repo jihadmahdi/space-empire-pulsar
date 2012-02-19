@@ -1,5 +1,8 @@
 package org.axan.sep.common.db.orm;
 
+import java.io.IOException;
+import java.io.Serializable;
+
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.RealLocation;
@@ -9,7 +12,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 
-public class ProbeMarker extends UnitMarker implements IProbeMarker
+public class ProbeMarker extends UnitMarker implements IProbeMarker, Serializable
 {
 	/*
 	 * PK: inherited
@@ -18,7 +21,7 @@ public class ProbeMarker extends UnitMarker implements IProbeMarker
 	/*
 	 * Off-DB fields.
 	 */
-	private final boolean isDeployed;
+	private boolean isDeployed;
 	
 	/*
 	 * DB connection
@@ -120,10 +123,13 @@ public class ProbeMarker extends UnitMarker implements IProbeMarker
 	@Override
 	public boolean isDeployed()
 	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
+		if (isDBOnline())
+		{		
+			checkForDBUpdate();		
+			return (Boolean) properties.getProperty("isDeployed");
+		}
 		
-		return (Boolean) properties.getProperty("isDeployed");
+		return isDeployed;
 	}
 	
 	@Override
@@ -138,12 +144,23 @@ public class ProbeMarker extends UnitMarker implements IProbeMarker
 		return sb.toString();
 	}
 	
+	private void writeObject(java.io.ObjectOutputStream out) throws IOException
+	{
+		isDeployed = isDeployed();
+		out.defaultWriteObject();
+	}
+	
+	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
+	{
+		in.defaultReadObject();
+	}
+	
 	public static void initializeProperties(Node properties, int turn, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed, boolean isDeployed)
 	{
 		properties.setProperty("turn", turn);
 		properties.setProperty("ownerName", ownerName);
 		properties.setProperty("name", name);
-		properties.setProperty("type", eUnitType.AntiProbeMissile.toString());
+		properties.setProperty("type", eUnitType.Probe.toString());
 		properties.setProperty("isStopped", isStopped);		
 		properties.setProperty("realLocation", realLocation.toString());
 		properties.setProperty("speed", speed);

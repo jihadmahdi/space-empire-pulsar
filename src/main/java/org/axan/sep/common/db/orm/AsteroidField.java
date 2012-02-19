@@ -25,7 +25,7 @@ class AsteroidField extends ProductiveCelestialBody implements IAsteroidField
 	/*
 	 * DB connection
 	 */
-	protected Index<Node> asteroidFieldIndex;
+	protected transient Index<Node> asteroidFieldIndex;
 	
 	/**
 	 * Off-DB constructor

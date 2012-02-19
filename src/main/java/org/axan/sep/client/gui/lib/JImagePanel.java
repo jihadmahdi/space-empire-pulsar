@@ -351,7 +351,7 @@ public class JImagePanel extends JPanel
 		catch(IOException e)
 		{
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//e.printStackTrace();
 			throw new RuntimeException("Erreur chargement image '" + imageUrl + "'");
 		}
 	}

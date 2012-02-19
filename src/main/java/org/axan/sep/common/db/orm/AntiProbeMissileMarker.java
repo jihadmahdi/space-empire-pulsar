@@ -1,5 +1,8 @@
 package org.axan.sep.common.db.orm;
 
+import java.io.IOException;
+import java.io.Serializable;
+
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
@@ -15,7 +18,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 
-public class AntiProbeMissileMarker extends UnitMarker implements IAntiProbeMissileMarker
+public class AntiProbeMissileMarker extends UnitMarker implements IAntiProbeMissileMarker, Serializable
 {
 	/*
 	 * PK: inherited
@@ -24,7 +27,7 @@ public class AntiProbeMissileMarker extends UnitMarker implements IAntiProbeMiss
 	/*
 	 * Off-DB fields.
 	 */
-	private final boolean isFired;
+	private boolean isFired;
 	
 	/*
 	 * DB connection
@@ -126,10 +129,15 @@ public class AntiProbeMissileMarker extends UnitMarker implements IAntiProbeMiss
 	@Override
 	public boolean isFired()
 	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		return (Boolean) properties.getProperty("isFired");
+		if (isDBOnline())
+		{
+			checkForDBUpdate();		
+			return (Boolean) properties.getProperty("isFired");
+		}
+		else
+		{
+			return isFired;
+		}
 	}
 	
 	@Override
@@ -142,6 +150,17 @@ public class AntiProbeMissileMarker extends UnitMarker implements IAntiProbeMiss
 
 		sb.append("Status : "+(isFired() ? "fired" : "not fired"));
 		return sb.toString();
+	}
+	
+	private void writeObject(java.io.ObjectOutputStream out) throws IOException
+	{
+		isFired = isFired();
+		out.defaultWriteObject();
+	}
+	
+	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
+	{
+		in.defaultReadObject();
 	}
 	
 	public static void initializeProperties(Node properties, int turn, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed, boolean isFired)

@@ -8,8 +8,12 @@ import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
 import org.axan.sep.common.db.orm.base.IBaseUnit;
 import org.axan.sep.common.db.orm.base.BaseUnit;
+import org.axan.sep.common.db.Events.EncounterLogPublication;
+import org.axan.sep.common.db.Events.UpdateArea;
 import org.axan.sep.common.db.IArea;
 import org.axan.sep.common.db.ICelestialBody;
+import org.axan.sep.common.db.Events.AGameEvent;
+import org.axan.sep.common.db.IGameEvent.IGameEventExecutor;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IUnit;
 import org.axan.sep.common.db.IUnitMarker;
@@ -20,6 +24,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.axan.sep.common.db.IGameConfig;
+
+import java.io.IOException;
+import java.io.NotSerializableException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -161,19 +170,21 @@ abstract class Unit extends UnitMarker implements IUnit
 			unitIndex.remove(properties);
 			properties.getSingleRelationship(eRelationTypes.PlayerUnit, Direction.INCOMING).delete();
 			properties.getSingleRelationship(eRelationTypes.UnitDeparture, Direction.OUTGOING).delete();
+			properties.getSingleRelationship(eRelationTypes.UnitMarkerRealLocation, Direction.OUTGOING).delete();
 			
 			Relationship destination = properties.getSingleRelationship(eRelationTypes.UnitDestination, Direction.OUTGOING);
 			if (destination != null) destination.delete();
 			
 			for(Relationship encounterLog : properties.getRelationships(eRelationTypes.UnitEncounterLog, Direction.OUTGOING))
 			{
-				Node nEncounterLog = encounterLog.getEndNode();
-				Relationship publication = nEncounterLog.getSingleRelationship(eRelationTypes.PlayerEncounterLog, Direction.INCOMING);
+				Node nUnitMarker = encounterLog.getEndNode();
+				
+				Relationship publication = nUnitMarker.getSingleRelationship(eRelationTypes.PlayerEncounterLog, Direction.INCOMING);
 				
 				if (publication == null)
 				{
 					encounterLog.delete();
-					nEncounterLog.delete();
+					// We choose not to delete UnitMarker (should be on GlobalDB only anyway)
 				}
 			}
 			
@@ -263,13 +274,14 @@ abstract class Unit extends UnitMarker implements IUnit
 		try
 		{
 			properties.setProperty("travelingProgress", travelingProgress);
+			updateRealLocation();
 			tx.success();
 		}
 		finally
 		{
 			tx.finish();
 		}
-	}
+	}	
 	
 	@Override
 	public String getInitialDepartureName()
@@ -280,6 +292,20 @@ abstract class Unit extends UnitMarker implements IUnit
 		checkForDBUpdate();
 		
 		return (String) properties.getProperty("initialDepartureName");
+	}
+	
+	@Override
+	public String getDepartureName()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Node nArea = properties.getSingleRelationship(eRelationTypes.UnitDeparture, Direction.OUTGOING).getEndNode();
+		Relationship r = nArea.getSingleRelationship(eRelationTypes.CelestialBody, Direction.OUTGOING);
+		
+		if (r == null) return null;
+		
+		return (String) r.getEndNode().getProperty("name");
 	}
 	
 	@Override
@@ -317,8 +343,8 @@ abstract class Unit extends UnitMarker implements IUnit
 		sepDB.getArea(departure);
 		
 		Relationship oldDeparture = properties.getSingleRelationship(eRelationTypes.UnitDeparture, Direction.OUTGOING);
-		if (oldDeparture != null) oldDeparture.delete();		
-		
+		if (oldDeparture != null) oldDeparture.delete();
+				
 		IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get("location", departure.toString());
 		if (!hits.hasNext())
 		{
@@ -327,8 +353,44 @@ abstract class Unit extends UnitMarker implements IUnit
 		
 		Node nArea = hits.getSingle();
 		
-		properties.createRelationshipTo(nArea, eRelationTypes.UnitDeparture);
+		properties.createRelationshipTo(nArea, eRelationTypes.UnitDeparture);		
 		properties.setProperty("departure", departure.toString());
+		
+		updateRealLocation();
+	}
+	
+	private void updateRealLocation()
+	{
+		Relationship oldRealLocation = properties.getSingleRelationship(eRelationTypes.UnitMarkerRealLocation, Direction.OUTGOING);
+		if (oldRealLocation != null) oldRealLocation.delete();
+	
+		Location realLocation = getRealLocation().asLocation();
+		sepDB.getArea(realLocation);
+		IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get("location", realLocation.toString());
+		if (!hits.hasNext())
+		{
+			throw new DBGraphException("Contraint error: Cannot find Area[location='"+realLocation.toString()+"']. Area must be created first.");
+		}
+		
+		Node nArea = hits.getSingle();		
+		properties.createRelationshipTo(nArea, eRelationTypes.UnitMarkerRealLocation);
+	}
+	
+	@Override
+	public String getDestinationName()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Relationship r = properties.getSingleRelationship(eRelationTypes.UnitDestination, Direction.OUTGOING);
+		
+		if (r == null) return null;
+		
+		Node nArea = r.getEndNode();
+		r = nArea.getSingleRelationship(eRelationTypes.CelestialBody, Direction.OUTGOING);
+		
+		if (r == null) return null;
+		return (String) r.getEndNode().getProperty("name");
 	}
 	
 	@Override
@@ -341,6 +403,7 @@ abstract class Unit extends UnitMarker implements IUnit
 		
 		if (r == null) return null;
 		
+		SEPCommonDB.assertProperty(r.getEndNode(), "location");
 		return Location.valueOf((String) r.getEndNode().getProperty("location"));
 	}
 	
@@ -377,7 +440,7 @@ abstract class Unit extends UnitMarker implements IUnit
 				properties.createRelationshipTo(nArea, eRelationTypes.UnitDestination);							
 			}
 			
-			properties.setProperty("travelingProgress", 0.0D);
+			setTravelingProgress(0.0D);
 			tx.success();
 		}
 		finally
@@ -396,7 +459,7 @@ abstract class Unit extends UnitMarker implements IUnit
 	}
 	
 	@Override
-	public void logEncounter(IUnit encounteredUnit, double step)
+	public void logEncounter(IUnitMarker unitMarker)
 	{
 		assertOnlineStatus(true);
 		checkForDBUpdate();
@@ -405,21 +468,55 @@ abstract class Unit extends UnitMarker implements IUnit
 		
 		try
 		{		
-			// NOTE: We do not delete previous marker versions.		
-			IUnitMarker unitMarker = encounteredUnit.getMarker(step);
-					
+			// NOTE: We do not delete previous marker versions.
+			unitMarker = sepDB.createUnitMarker(unitMarker);
+			
 			EncounterLog encounterLog = new EncounterLog(getOwnerName(), getName(), unitMarker.getOwnerName(), unitMarker.getName(), unitMarker.getTurn());
 			encounterLog.create(sepDB);
-			
-			Node nEncounterLog = db.index().forNodes("EncounterLogIndex").get(EncounterLog.PK, EncounterLog.getPK(unitMarker.getTurn(), getOwnerName(), getName(), unitMarker.getOwnerName(), unitMarker.getName())).getSingle();
-			
-			properties.createRelationshipTo(nEncounterLog, eRelationTypes.UnitEncounterLog);
 			
 			tx.success();
 		}
 		finally
 		{
 			tx.finish();
+		}
+	}
+	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public void onArrival(IGameEventExecutor executor)
+	{
+		if (AGameEvent.isGlobalView(executor))
+		{
+			assertOnlineStatus(true);
+			checkForDBUpdate();
+			
+			Transaction tx = db.beginTx();
+			
+			try
+			{
+				for(Relationship r : properties.getRelationships(eRelationTypes.UnitEncounterLog, Direction.OUTGOING))
+				{
+					if (r.hasProperty("published")) continue;
+					
+					EncounterLog encounterLog = new EncounterLog(sepDB, ownerName, name, (String) r.getProperty("encounterOwnerName"), (String) r.getProperty("encounterName"), (Integer) r.getProperty("turn")); 
+					IUnitMarker encounterUnitMarker = encounterLog.getEncounter();
+					
+					EncounterLogPublication encounterLogPublication = new EncounterLogPublication(ownerName, name, encounterUnitMarker);
+					executor.onGameEvent(encounterLogPublication, new HashSet<String>(Arrays.asList(ownerName)));
+					
+					r.setProperty("published", true);
+				}
+				
+				tx.success();
+			}
+			finally
+			{
+				tx.finish();
+			}
+			
+			UpdateArea updateArea = new UpdateArea(sepDB.getArea(getDeparture()));
+			executor.onGameEvent(updateArea, new HashSet<String>(Arrays.asList(ownerName)));
 		}
 	}
 	
@@ -452,5 +549,15 @@ abstract class Unit extends UnitMarker implements IUnit
 		}
 		
 		return sb.toString();
+	}
+	
+	/**
+	 * We assume Unit class and subclasses are not serializable even if AGraphObjet implements Serializable interface.
+	 * @param out
+	 * @throws IOException
+	 */
+	private void writeObject(java.io.ObjectOutputStream out) throws IOException
+	{
+		throw new NotSerializableException();
 	}
 }

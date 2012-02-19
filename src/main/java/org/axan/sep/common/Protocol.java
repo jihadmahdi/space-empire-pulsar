@@ -15,7 +15,6 @@ import org.axan.sep.common.db.ICommand;
 import org.axan.sep.common.db.ICommand.GameCommandException;
 import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.db.IGameEvent;
-import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
 import org.neo4j.graphdb.RelationshipType;
 
@@ -28,17 +27,17 @@ public interface Protocol
 	/**
 	 * Celestial body types.
 	 */
-	public static enum eCelestialBodyType implements RelationshipType {Vortex, Planet, AsteroidField, Nebula};
+	public static enum eCelestialBodyType/* implements RelationshipType*/ {Vortex, Planet, AsteroidField, Nebula};
 	
 	/**
 	 * Building types.
 	 */
-	public static enum eBuildingType implements RelationshipType {PulsarLaunchingPad, SpaceCounter, GovernmentModule, DefenseModule, StarshipPlant, ExtractionModule};
+	public static enum eBuildingType/* implements RelationshipType*/ {PulsarLaunchingPad, SpaceCounter, GovernmentModule, DefenseModule, StarshipPlant, ExtractionModule};
 	
 	/**
 	 * Unit types.
 	 */
-	public static enum eUnitType implements RelationshipType {PulsarMissile, Probe, AntiProbeMissile, Fleet, CarbonCarrier, SpaceRoadDeliverer};
+	public static enum eUnitType/* implements RelationshipType*/ {PulsarMissile, Probe, AntiProbeMissile, Fleet, CarbonCarrier, SpaceRoadDeliverer};
 	
 	/**
 	 * Special unit types.
@@ -71,7 +70,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		Map<IPlayer, IPlayerConfig> getPlayerList() throws RpcException, StateMachineNotExpectedEventException;
+		Map<String, IPlayerConfig> getPlayerList() throws RpcException, StateMachineNotExpectedEventException;
 		
 		/**
 		 * Return the current game config.
@@ -496,7 +495,7 @@ public interface Protocol
 		 * @throws RpcException On connection error.
 		 * @throws StateMachineNotExpectedEventException If server is not in GameCreation state.
 		 */
-		Map<IPlayer, Boolean> getPlayerStateList() throws RpcException, StateMachineNotExpectedEventException;
+		Map<String, Boolean> getPlayerStateList() throws RpcException, StateMachineNotExpectedEventException;
 
 		/**
 		 * Send a message to the PausedGame Chat.
@@ -518,7 +517,7 @@ public interface Protocol
 		 * @param playerList New player list.
 		 * @throws RpcException On connection error.
 		 */
-		void refreshPlayerList(Map<IPlayer, IPlayerConfig> playerList) throws RpcException;
+		void refreshPlayerList(Map<String, IPlayerConfig> playerList) throws RpcException;
 
 		/**
 		 * Server notify the client to refresh the game config. Client is expected to display it in GameCreation panel.
@@ -533,7 +532,7 @@ public interface Protocol
 		 * @param msg Message.
 		 * @throws RpcException On connection error.
 		 */
-		void receiveGameCreationMessage(IPlayer fromPlayer, String msg) throws RpcException;
+		void receiveGameCreationMessage(String fromPlayer, String msg) throws RpcException;
 
 		/**
 		 * Server broadcast running game message from another player.
@@ -541,7 +540,7 @@ public interface Protocol
 		 * @param msg Message.
 		 * @throws RpcException On connection error.
 		 */
-		void receiveRunningGameMessage(IPlayer fromPlayer, String msg) throws RpcException;
+		void receiveRunningGameMessage(String fromPlayer, String msg) throws RpcException;
 		
 		/**
 		 * Server broadcast paused game message from another player.
@@ -549,7 +548,7 @@ public interface Protocol
 		 * @param msg Message.
 		 * @throws RpcException On connection error.
 		 */
-		void receivePausedGameMessage(IPlayer fromPlayer, String msg) throws RpcException;
+		void receivePausedGameMessage(String fromPlayer, String msg) throws RpcException;
 		
 		/**
 		 * Server broadcast new turn events.

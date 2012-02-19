@@ -10,6 +10,7 @@ import org.axan.sep.common.db.orm.base.BaseBuilding;
 import org.axan.sep.common.db.IBuilding;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
@@ -134,6 +135,38 @@ abstract class Building extends AGraphObject<Node> implements IBuilding
 	}
 	
 	@Override
+	@OverridingMethodsMustInvokeSuper
+	public void demolish()
+	{
+		delete();
+	}
+	
+	@OverridingMethodsMustInvokeSuper
+	public void delete()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			buildingIndex.remove(properties);
+			
+			Relationship r = properties.getSingleRelationship(eRelationTypes.Buildings, Direction.INCOMING);
+			if (r != null) r.delete();
+			
+			properties.delete();
+			
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+	
+	@Override
 	public String getProductiveCelestialBodyName()
 	{
 		return productiveCelestialBodyName;
@@ -194,5 +227,50 @@ abstract class Building extends AGraphObject<Node> implements IBuilding
 			tx.finish();
 		}
 	}
+	
+	@Override
+	public void downgrade()
+	{
+		assertOnlineStatus(true);
+		
+		if (!Rules.getBuildingCanBeDowngraded(this)) throw new RuntimeException("Cannot downgrade '"+getType()+"'");
+		
+		Transaction tx = db.beginTx();
+		
+		try
+		{
+			// TODO: Check for productive celestial body free slots condition ?
+			
+			properties.setProperty("nbSlots", getNbSlots()-1);
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
 
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public void update(IBuilding buildingUpdate)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		if (getType() != buildingUpdate.getType()) throw new RuntimeException("Illegal building update, inconsistent type.");
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			properties.setProperty("builtDate", buildingUpdate.getBuiltDate());
+			properties.setProperty("nbSlots", buildingUpdate.getNbSlots());
+			
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
 }

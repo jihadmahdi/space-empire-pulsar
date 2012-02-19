@@ -1,5 +1,6 @@
 package org.axan.sep.common.db.orm;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,6 +27,7 @@ public class FleetMarker extends UnitMarker implements IFleetMarker
 	 * Off-DB fields.
 	 */
 	private final Map<StarshipTemplate, Integer> starships = new HashMap<StarshipTemplate, Integer>();
+	private boolean isAssignedFleet;
 	
 	/*
 	 * DB connection
@@ -37,10 +39,11 @@ public class FleetMarker extends UnitMarker implements IFleetMarker
 	 * @param ownerName
 	 * @param name
 	 */
-	public FleetMarker(int turn, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed, Map<StarshipTemplate, Integer> starships)
+	public FleetMarker(int turn, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed, Map<StarshipTemplate, Integer> starships, boolean isAssignedFleet)
 	{
 		super(turn, ownerName, name, isStopped, realLocation, speed);
 		this.starships.putAll(starships);
+		this.isAssignedFleet = isAssignedFleet;
 	}
 	
 	/**
@@ -54,6 +57,7 @@ public class FleetMarker extends UnitMarker implements IFleetMarker
 		super(sepDB, turn, ownerName, name);
 		
 		// Null values
+		this.isAssignedFleet = false;
 	}
 	
 	@Override
@@ -90,7 +94,7 @@ public class FleetMarker extends UnitMarker implements IFleetMarker
 			}			
 			
 			properties = sepDB.getDB().createNode();
-			FleetMarker.initializeProperties(properties, turn, ownerName, name, isStopped, realLocation, speed, starships);
+			FleetMarker.initializeProperties(properties, turn, ownerName, name, isStopped, realLocation, speed, starships, isAssignedFleet);
 			fleetMarkerIndex.add(properties, PK, getPK(turn, ownerName, name));
 			
 			Node nOwner = db.index().forNodes("PlayerIndex").get("name", ownerName).getSingle();
@@ -135,6 +139,18 @@ public class FleetMarker extends UnitMarker implements IFleetMarker
 	}
 	
 	@Override
+	public boolean isAssignedFleet()
+	{
+		if (isDBOnline())
+		{
+			checkForDBUpdate();			
+			return (Boolean) properties.getProperty("isAssignedFleet");
+		}
+		
+		return isAssignedFleet;
+	}
+	
+	@Override
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder(super.toString());		
@@ -155,7 +171,19 @@ public class FleetMarker extends UnitMarker implements IFleetMarker
 		return sb.toString();
 	}
 	
-	public static void initializeProperties(Node properties, int turn, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed, Map<StarshipTemplate, Integer> starships)
+	private void writeObject(java.io.ObjectOutputStream out) throws IOException
+	{
+		getStarships();
+		isAssignedFleet = isAssignedFleet();
+		out.defaultWriteObject();
+	}
+	
+	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
+	{
+		in.defaultReadObject();
+	}
+	
+	public static void initializeProperties(Node properties, int turn, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed, Map<StarshipTemplate, Integer> starships, boolean isAssignedFleet)
 	{
 		properties.setProperty("turn", turn);
 		properties.setProperty("ownerName", ownerName);
@@ -165,5 +193,6 @@ public class FleetMarker extends UnitMarker implements IFleetMarker
 		properties.setProperty("realLocation", realLocation.toString());
 		properties.setProperty("speed", speed);
 		Fleet.initializeStarships(properties, starships);
+		properties.setProperty("isAssignedFleet", isAssignedFleet);
 	}
 }

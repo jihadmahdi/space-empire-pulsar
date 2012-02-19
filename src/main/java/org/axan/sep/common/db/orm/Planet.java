@@ -7,11 +7,15 @@ import org.axan.sep.common.db.orm.ProductiveCelestialBody;
 import org.axan.sep.common.db.orm.base.IBasePlanet;
 import org.axan.sep.common.db.orm.base.BasePlanet;
 import org.axan.sep.common.db.IBuilding;
+import org.axan.sep.common.db.ICelestialBody;
 import org.axan.sep.common.db.IPlanet;
+import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.axan.sep.common.db.IGameConfig;
+
+import java.io.IOException;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -22,14 +26,14 @@ class Planet extends ProductiveCelestialBody implements IPlanet
 	/*
 	 * Off-DB: off db fields.
 	 */
-	private final int populationPerTurn;
-	private final int maxPopulation;
-	private final int currentPopulation;
+	private int populationPerTurn;
+	private int maxPopulation;
+	private int currentPopulation;
 	
 	/*
 	 * DB connection
 	 */
-	protected Index<Node> planetIndex;
+	protected transient Index<Node> planetIndex;
 
 	/**
 	 * Off-DB constructor.
@@ -191,6 +195,42 @@ class Planet extends ProductiveCelestialBody implements IPlanet
 		{
 			tx.finish();
 		}
+	}
+	
+	@Override
+	public void update(ICelestialBody celestialBodyUpdate)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{
+			super.update(celestialBodyUpdate);
+			
+			if (!IPlanet.class.isInstance(celestialBodyUpdate)) throw new RuntimeException("Illegal planet update, not a planet instance.");
+			
+			IPlanet planetUpdate = (IPlanet) celestialBodyUpdate;
+			
+			properties.setProperty("populationPerTurn", planetUpdate.getPopulationPerTurn());
+			properties.setProperty("maxPopulation", planetUpdate.getMaxPopulation());
+			properties.setProperty("currentPopulation", planetUpdate.getCurrentPopulation());
+			
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+	
+	private void writeObject(java.io.ObjectOutputStream out) throws IOException
+	{		
+		this.populationPerTurn = getPopulationPerTurn();
+		this.maxPopulation = getMaxPopulation();
+		this.currentPopulation = getCurrentPopulation();
+		out.defaultWriteObject();
 	}
 	
 	@Override

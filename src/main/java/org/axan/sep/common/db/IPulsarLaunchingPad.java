@@ -8,5 +8,7 @@ import java.util.HashMap;
 
 public interface IPulsarLaunchingPad extends IBuilding
 {
+	/** Number of pulsar already fired (consumed slots). */
+	int getNbFired();
 	// public Integer getFiredDate();
 }

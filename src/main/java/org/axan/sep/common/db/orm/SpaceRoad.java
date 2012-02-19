@@ -1,5 +1,7 @@
 package org.axan.sep.common.db.orm;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.db.ISpaceRoad;
@@ -114,6 +116,40 @@ public class SpaceRoad extends AGraphObject<Relationship> implements ISpaceRoad
 		{
 			tx.finish();
 		}
+	}
+	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public void destroy()
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		Transaction tx = sepDB.getDB().beginTx();
+		
+		try
+		{			
+			spaceRoadIndex.remove(properties);
+			properties.delete();
+			
+			tx.success();
+		}
+		finally
+		{
+			tx.finish();
+		}
+	}
+	
+	@Override
+	public String getSourceName()
+	{
+		return sourceName;
+	}
+	
+	@Override
+	public String getDestinationName()
+	{
+		return destinationName;
 	}
 	
 	@Override

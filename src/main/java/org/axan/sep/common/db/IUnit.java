@@ -26,6 +26,11 @@ public interface IUnit extends IUnitMarker
 	void setTravelingProgress(double travelingProgress);
 	
 	/**
+	 * Return departure celestial body name if any (null if none).
+	 */
+	String getDepartureName();
+	
+	/**
 	 * Return departure location (cannot be null).
 	 * If the unit is not traveling, then the departure is the current location.
 	 */
@@ -50,6 +55,11 @@ public interface IUnit extends IUnitMarker
 	String getInitialDepartureName();
 	
 	/**
+	 * Return destination celestial body name or null if no destination or destination has no celestial body (e.g. probe destination area).
+	 */
+	String getDestinationName();
+	
+	/**
 	 * Return destination location, or null if none.
 	 */
 	Location getDestination();
@@ -69,10 +79,9 @@ public interface IUnit extends IUnitMarker
 	/**
 	 * Log unit encounter in this unit log.
 	 * Logs are published when unit stops safely.
-	 * @param encounteredUnit
-	 * @param step
+	 * @param encounteredUnitMarker
 	 */
-	void logEncounter(IUnit encounteredUnit, double step);
+	void logEncounter(IUnitMarker encounteredUnitMarker);
 	
 	/**
 	 * Get a marker of the current unit.

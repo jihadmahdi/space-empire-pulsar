@@ -1,5 +1,6 @@
 package org.axan.sep.common.db.orm;
 
+import java.awt.Color;
 import java.beans.DesignMode;
 import java.io.Externalizable;
 import java.io.File;
@@ -50,6 +51,7 @@ import org.axan.sep.common.Rules;
 import org.axan.sep.common.Rules.StarshipTemplate;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.IAntiProbeMissile;
+import org.axan.sep.common.db.IAntiProbeMissileMarker;
 import org.axan.sep.common.db.IArea;
 import org.axan.sep.common.db.IAsteroidField;
 import org.axan.sep.common.db.IBuilding;
@@ -57,6 +59,7 @@ import org.axan.sep.common.db.ICelestialBody;
 import org.axan.sep.common.db.IDefenseModule;
 import org.axan.sep.common.db.IExtractionModule;
 import org.axan.sep.common.db.IFleet;
+import org.axan.sep.common.db.IFleetMarker;
 import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.db.IGovernmentModule;
 import org.axan.sep.common.db.INebula;
@@ -64,6 +67,7 @@ import org.axan.sep.common.db.IPlanet;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IPlayerConfig;
 import org.axan.sep.common.db.IProbe;
+import org.axan.sep.common.db.IProbeMarker;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IPulsarLaunchingPad;
 import org.axan.sep.common.db.ISpaceCounter;
@@ -85,15 +89,26 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
+import scala.actors.threadpool.helpers.WaitQueue.WaitNode;
 import scala.util.control.Exception.Finally;
 
 public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 {
 	private static final long serialVersionUID = 1L;
 
+	public static interface ILogListener
+	{
+		void log(String message);
+	}
+	
 	public static interface IAreaChangeListener
 	{
 		void onAreaChanged(Location location);
+	}
+	
+	public static interface IPlayerChangeListener
+	{
+		void onPlayerChanged(String playerName);
 	}
 	
 	public static enum eRelationTypes implements RelationshipType
@@ -134,8 +149,17 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		 */
 		UnitDestination,
 		
+		/** Relation from UnitMarker or Unit node to Area node. */
+		UnitMarkerRealLocation,
+		
 		/** Relation from ProductiveCelestialBody node to Building nodes. */
 		Buildings,
+		
+		/**
+		 * Relation from Player node to GovernmentModule node or Fleet node (which include GovernmentalStarship).
+		 * One relation per player.
+		 */		
+		PlayerGovernment,
 		
 		/** Relation from Player node to its PlayerConfig node. */
 		PlayerConfig,
@@ -156,13 +180,19 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		SpaceRoad,
 		
 		/** Relation from AntiProbeMissile node to Probe node (target) */
-		AntiProbeMissileTarget,
+		//AntiProbeMissileTarget, NOT USED
 		
-		/** Relation from Unit node to EncounterLog nodes */
+		/** Relation from Unit node to UnitMarker nodes */
 		UnitEncounterLog,
 		
 		/** Relation from Player node to EncounterLog nodes */
-		PlayerEncounterLog
+		PlayerEncounterLog,
+		
+		/** Diplomacy from Player node to Player nodes (each player is connected to every players except itself, strictly once), from diplomacy owner to diplomacy target. */
+		PlayerDiplomacy,
+		
+		/** Diplomacy marker from Player nodes to Player nodes (only one marker per turn per owner/target pair). */
+		PlayerDiplomacyMarker
 	}
 
 	private static class GameConfigInvocationHandler implements InvocationHandler
@@ -219,6 +249,8 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 			else
 			{
 				checkForUpdate();
+				
+				Class<?> returnType = method.getReturnType();
 
 				// Special case: setTurn
 				if (method.getName().equals("setTurn"))
@@ -257,20 +289,8 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 						synchronized(sepDB)
 						{
 							//sepDB.nextVersion = Basic.clone(sepDB);
-							sepDB.nextVersion = SEPCommonDB.clone(sepDB, 1)[0];
-							sepDB.nextVersion.previousVersion = sepDB;
-
-							// Increment next version turn.
-							Transaction tx = sepDB.nextVersion.getConfigDB().beginTx();
-							try
-							{
-								sepDB.nextVersion.getConfigDB().getReferenceNode().getSingleRelationship(eRelationTypes.GameConfig, Direction.OUTGOING).getEndNode().setProperty("Turn", value);
-								tx.success();
-							}
-							finally
-							{
-								tx.finish();
-							}
+							sepDB.nextVersion = SEPCommonDB.clone(sepDB, 1, value)[0];
+							sepDB.nextVersion.previousVersion = sepDB;							
 						}
 
 						return null;
@@ -339,7 +359,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 				/*
 				 * Getters must do not return void and have only Enum<?> arguments.
 				 */
-				else if (!void.class.equals(method.getReturnType()))
+				else if (!void.class.equals(returnType))
 				{
 					// Getter
 					String key = method.getName();
@@ -364,6 +384,23 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 						}
 
 					Object result = (gameConfigNode.hasProperty(key)) ? gameConfigNode.getProperty(key) : null;
+					
+					if (returnType.isArray() && returnType.getComponentType().isEnum())
+					{
+						Object arr = Array.newInstance(returnType.getComponentType(), Array.getLength(result));
+						for(int i = 0; i < Array.getLength(result); ++i)
+						{
+							Array.set(arr, i, Enum.valueOf(returnType.getComponentType().asSubclass(Enum.class), (String) Array.get(result, i)));
+						}
+						
+						return arr;
+					}
+					
+					if (returnType.isEnum())
+					{
+						return Enum.valueOf(returnType.asSubclass(Enum.class), (String) result);
+					}
+					
 					return result;
 				}
 				else
@@ -384,6 +421,11 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 				}
 				else
 				{
+					if (value.getClass().isEnum())
+					{
+						value = value.toString();
+					}
+					
 					gameConfigNode.setProperty(key, value);
 				}
 				tx.success();
@@ -427,6 +469,8 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	private transient IGameConfig config;
 
 	private transient GraphDatabaseService db;
+	private transient int cacheVersion;
+	
 	private transient Index<Node> playerIndex;
 	private transient Index<Node> areaIndex;
 	private transient Index<Node> celestialBodyIndex;
@@ -446,16 +490,20 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	private transient Node sun;
 	
 	private transient Set<IAreaChangeListener> areaChangeListeners;
+	private transient Set<ILogListener> logListeners;
+	private transient Set<IPlayerChangeListener> playerChangeListeners;
 
 	private SEPCommonDB previousVersion = null;
 	private SEPCommonDB nextVersion = null;
 	
 	private transient GenericHolder<Boolean> initFlag;
+	private transient int gameTurn;
 	
 	// lazy clone ctor
-	private SEPCommonDB(GenericHolder<Boolean> initFlag)
+	private SEPCommonDB(GenericHolder<Boolean> initFlag, int gameTurn)
 	{
 		this.initFlag = initFlag;
+		this.gameTurn = gameTurn;
 	}
 	
 	public SEPCommonDB(GraphDatabaseService db, IGameConfig config) throws IOException, GameConfigCopierException, InterruptedException
@@ -463,7 +511,66 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		init(db);
 		GameConfigCopier.copy(IGameConfig.class, config, this.config);
 	}
+	
+	public boolean needToRefreshCache(int cacheVersion)
+	{
+		return this.cacheVersion != getCacheVersion();
+	}
+	
+	public int getCacheVersion()
+	{
+		waitForInit();
+		return cacheVersion;
+	}
+	
+	private int incCacheVersion()
+	{
+		waitForInit();
+		return ++cacheVersion;
+	}
 
+	public void addLogListener(ILogListener listener)
+	{
+		waitForInit();
+		logListeners.add(listener);
+	}
+	
+	public void removeLogListener(ILogListener listener)
+	{
+		waitForInit();
+		logListeners.remove(listener);
+	}
+	
+	public void fireLog(String message)
+	{
+		for(ILogListener listener : logListeners)
+		{
+			listener.log(message);
+		}
+	}
+	
+	public void addPlayerChangeListener(IPlayerChangeListener listener)
+	{
+		waitForInit();
+		playerChangeListeners.add(listener);
+	}
+	
+	public void removePlayerChangeListener(IPlayerChangeListener listener)
+	{
+		waitForInit();
+		playerChangeListeners.remove(listener);
+	}
+	
+	public void firePlayerChangeEvent(String playerName)
+	{
+		incCacheVersion();
+		
+		for(IPlayerChangeListener listener : playerChangeListeners)
+		{
+			listener.onPlayerChanged(playerName);
+		}
+	}
+	
 	public void addAreaChangeListener(IAreaChangeListener listener)
 	{
 		waitForInit();
@@ -478,6 +585,8 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	
 	public void fireAreaChangedEvent(Location location)
 	{
+		incCacheVersion();
+		
 		for(IAreaChangeListener listener : areaChangeListeners)
 		{
 			listener.onAreaChanged(location);
@@ -490,9 +599,9 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		return this.config;
 	}
 
-	public synchronized GraphDatabaseService getConfigDB()
+	private synchronized GraphDatabaseService getConfigDB()
 	{
-		waitForInit();
+		//waitForInit();
 		return db;
 	}
 
@@ -563,7 +672,18 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		{
 			db = db.previous();
 		}
-		Iterator<Node> it = db.playerIndex.get("name", playerName).getSingle().traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eCelestialBodyType.Planet, Direction.OUTGOING).iterator();
+		Iterator<Node> it = db.playerIndex.get("name", playerName).getSingle().traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, new ReturnableEvaluator()
+		{			
+			@Override
+			public boolean isReturnableNode(TraversalPosition currentPos)
+			{
+				if (currentPos.isStartNode()) return false;
+				Node node = currentPos.currentNode();
+				if (!node.hasProperty("type")) return false;
+				if (!((String) node.getProperty("type")).equals(eCelestialBodyType.Planet.toString())) return false;
+				return true;
+			}
+		}, eRelationTypes.PlayerCelestialBodies, Direction.OUTGOING).iterator();
 		if (!it.hasNext())
 		{
 			return null;
@@ -619,7 +739,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		return createPlayer(player.getName(), player.getConfig().getColor(), player.getConfig().getSymbol(), player.getConfig().getPortrait());
 	}
 
-	public IPlayer createPlayer(String name, String configColor, String configSymbol, String configPortrait)
+	public IPlayer createPlayer(String name, Color configColor, String configSymbol, String configPortrait)
 	{
 		waitForInit();
 		Player result = new Player(name, new PlayerConfig(configColor, configSymbol, configPortrait));
@@ -632,7 +752,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		return new Player(name, config);
 	}
 
-	static public IPlayerConfig makePlayerConfig(String color, String symbol, String portrait)
+	static public IPlayerConfig makePlayerConfig(Color color, String symbol, String portrait)
 	{
 		return new PlayerConfig(color, symbol, portrait);
 	}
@@ -659,7 +779,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	*/
 	
 	/**
-	 * Return given location area. The area might not exist in DB.
+	 * Return given location area. If area does not exist in DB, it is created.
 	 * @param location
 	 * @return
 	 */
@@ -813,7 +933,10 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		IndexHits<Node> hit = celestialBodyIndex.get("name", name);
 		if (!hit.hasNext()) return null;
 		
-		eCelestialBodyType type = eCelestialBodyType.valueOf((String) hit.getSingle().getProperty("type"));
+		Node n = hit.getSingle();
+		
+		SEPCommonDB.assertProperty(n, "type");
+		eCelestialBodyType type = eCelestialBodyType.valueOf((String) n.getProperty("type"));
 
 		switch (type)
 		{
@@ -830,6 +953,17 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 				throw new RuntimeException("Unknown CelestialBody subtype '" + type + "'.");
 			}
 		}
+	}
+	
+	public Set<String> getCelestialBodiesNames()
+	{
+		waitForInit();
+		Set<String> result = new HashSet<String>();
+		for(Node n : celestialBodyIndex.query("name", "*"))
+		{
+			result.add((String) n.getProperty("name"));
+		}
+		return result;
 	}
 
 	public IDefenseModule createDefenseModule(IDefenseModule defenseModule)
@@ -916,7 +1050,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		switch (buildingType)
 		{
 			case DefenseModule:
-				return createBuilding(new DefenseModule(productiveCelestialBodyName, builtDate, 1));
+				return createDefenseModule(new DefenseModule(productiveCelestialBodyName, builtDate, 1));
 			case ExtractionModule:
 				return createExtractionModule(new ExtractionModule(productiveCelestialBodyName, builtDate, 1));
 			case GovernmentModule:
@@ -934,6 +1068,11 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		}
 	}
 	
+	/*
+	 * Create building base from given building.
+	 * @param building
+	 * @return
+	 /
 	public IBuilding createBuilding(IBuilding building)
 	{
 		waitForInit();
@@ -956,6 +1095,14 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 				throw new RuntimeException("Unknown Building type '" + building.getType() + "'.");
 			}
 		}
+	}
+	*/
+	
+	public void deleteBuilding(String productiveCelestialBodyName, eBuildingType type)
+	{
+		waitForInit();
+		IBuilding building = getBuilding(productiveCelestialBodyName, type);
+		
 	}
 
 	/**
@@ -1131,12 +1278,13 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 			return null;
 		}
 		
-		Node n = hit.next();		
+		Node n = hit.next(); 		
 		if (type != null && (!n.hasProperty("type") || !type.toString().equals((String) n.getProperty("type"))))
 		{
 			return null;
 		}
 		
+		SEPCommonDB.assertProperty(n, "type");
 		if (type == null) type = eUnitType.valueOf((String) n.getProperty("type"));
 				
 		switch (type)
@@ -1205,6 +1353,42 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 				throw new RuntimeException("Unknown Unit type '" + type + "'.");
 			}
 		}
+	}
+	
+	public <T extends IUnitMarker> T createUnitMarker(IUnitMarker unitMarker)
+	{
+		waitForInit();		
+				
+		UnitMarker result;
+		
+		switch (unitMarker.getType())
+		{
+			case Fleet:
+			{
+				IFleetMarker fleetMarker = (IFleetMarker) unitMarker;
+				result = new FleetMarker(fleetMarker.getTurn(), fleetMarker.getOwnerName(), fleetMarker.getName(), fleetMarker.isStopped(), fleetMarker.getRealLocation(), fleetMarker.getSpeed(), fleetMarker.getStarships(), fleetMarker.isAssignedFleet());
+				break;
+			}
+			case Probe:
+			{
+				IProbeMarker probeMarker = (IProbeMarker) unitMarker;
+				result = new ProbeMarker(probeMarker.getTurn(), probeMarker.getOwnerName(), probeMarker.getSerieName(), probeMarker.getSerialNumber(), probeMarker.isStopped(), probeMarker.getRealLocation(), probeMarker.getSpeed(), probeMarker.isDeployed());
+				break;
+			}
+			case AntiProbeMissile:
+			{
+				IAntiProbeMissileMarker antiProbeMissileMarker = (IAntiProbeMissileMarker) unitMarker;
+				result = new AntiProbeMissileMarker(antiProbeMissileMarker.getTurn(), antiProbeMissileMarker.getOwnerName(), antiProbeMissileMarker.getSerieName(), antiProbeMissileMarker.getSerialNumber(), antiProbeMissileMarker.isStopped(), antiProbeMissileMarker.getRealLocation(), antiProbeMissileMarker.getSpeed(), antiProbeMissileMarker.isFired());
+				break;
+			}
+			default:
+			{
+				throw new RuntimeException("Unknown Unit type '" + unitMarker.getType() + "'.");
+			}
+		}
+		
+		result.create(this);
+		return (T) result;
 	}
 	
 	public static <T extends IUnit> T makeUnit(T unit)
@@ -1421,26 +1605,48 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		}
 	}	
 
-	public static SEPCommonDB[] clone(SEPCommonDB source, int nbCopies)
+	public static SEPCommonDB[] clone(final SEPCommonDB source, int nbCopies, final int copyGameTurn)
 	{
 		SEPCommonDB[] copies = new SEPCommonDB[nbCopies];
 		
 		try
-		{			
+		{
+			final GenericHolder<Boolean> written = new GenericHolder<Boolean>(false);
 			final File tmpFile = File.createTempFile("cloneBuf", ".tmp");
 			
-			FileOutputStream fos = new FileOutputStream(tmpFile);
-			ObjectOutputStream oos = new ObjectOutputStream(fos);
-			
-			//oos.writeObject(source);
-			source.writeExternal(oos);
-			
-			oos.close();
-			fos.close();
+			new Thread(new Runnable()
+			{			
+				@Override
+				public void run()
+				{
+					try
+					{
+						FileOutputStream fos = new FileOutputStream(tmpFile);
+						ObjectOutputStream oos = new ObjectOutputStream(fos);
+						
+						source.writeExternal(oos);
+						
+						oos.close();
+						fos.close();
+					}
+					catch(Exception e)
+					{
+						throw new RuntimeException(e);
+					}
+					finally
+					{
+						synchronized(written)
+						{
+							written.set(true);
+							written.notifyAll();
+						}						
+					}
+				}
+			}).start();			
 			
 			for(int i=0; i < nbCopies; ++i)
 			{
-				final SEPCommonDB copy = new SEPCommonDB(new GenericHolder<Boolean>(false));
+				final SEPCommonDB copy = new SEPCommonDB(new GenericHolder<Boolean>(false), copyGameTurn);
 				
 				new Thread(new Runnable()
 				{
@@ -1448,6 +1654,18 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 					@Override
 					public void run()
 					{
+						synchronized(written)
+						{
+							while(!written.get())
+							{
+								try
+								{
+									written.wait();
+								}
+								catch(InterruptedException ie) {}
+							}
+						}
+						
 						try
 						{
 							FileInputStream fis = new FileInputStream(tmpFile);
@@ -1484,7 +1702,24 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		{
 			synchronized(initFlag)
 			{
-				doInit(db);
+				doInit(db);				
+				
+				if (config == null)
+				{
+					config = (IGameConfig) Proxy.newProxyInstance(IGameConfig.class.getClassLoader(), new Class<?>[] {IGameConfig.class}, new GameConfigInvocationHandler(this));
+				}
+				
+				// Set game turn.
+				Transaction tx = db.beginTx();
+				try
+				{
+					db.getReferenceNode().getSingleRelationship(eRelationTypes.GameConfig, Direction.OUTGOING).getEndNode().setProperty("Turn", gameTurn);
+					tx.success();
+				}
+				finally
+				{
+					tx.finish();
+				}
 				
 				initFlag.set(true);
 				initFlag.notify();
@@ -1495,7 +1730,6 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 			doInit(db);
 		}
 		
-		// Already refresh itself if SEPCommonDB#db change.
 		if (config == null)
 		{
 			config = (IGameConfig) Proxy.newProxyInstance(IGameConfig.class.getClassLoader(), new Class<?>[] {IGameConfig.class}, new GameConfigInvocationHandler(this));
@@ -1504,13 +1738,21 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	
 	private void doInit(final GraphDatabaseService db)
 	{
-		this.areaChangeListeners = new HashSet<SEPCommonDB.IAreaChangeListener>();
+		this.areaChangeListeners = new HashSet<IAreaChangeListener>();
+		this.logListeners = new HashSet<ILogListener>();
+		this.playerChangeListeners = new HashSet<IPlayerChangeListener>();
+		this.cacheVersion = 0;
+		
 		SEPCommonDB pDB = previous();
 		
 		if (pDB != null)
 		{
 			this.areaChangeListeners.addAll(pDB.areaChangeListeners);
+			this.logListeners.addAll(pDB.logListeners);
+			this.playerChangeListeners.addAll(pDB.playerChangeListeners);
 			pDB.areaChangeListeners.clear();
+			pDB.logListeners.clear();
+			pDB.playerChangeListeners.clear();
 		}
 		
 		this.db = db;
@@ -1585,15 +1827,16 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		writeExternal(out);
 	}
 	
-	private synchronized void writeExternal(java.io.ObjectOutput out) throws IOException
+	private void writeExternal(java.io.ObjectOutput out) throws IOException
 	{	
+		this.initFlag = new GenericHolder<Boolean>(false);
 		EmbeddedGraphDatabase edb = (EmbeddedGraphDatabase) db;
 		//File backupDirectory = File.createTempFile("dbCopy", "");		
 		File zipFile = File.createTempFile("dbCopy", ".zip");
 
 		//TODO: Use org.neo4j.backup.OnlineBackup abilities (enterprise version required)
 
-		File dbDirectory = new File(edb.getStoreDir());
+		File dbDirectory = new File(edb.getStoreDir());		
 		edb.shutdown();
 		Compression.zipDirectory(dbDirectory, zipFile);
 
@@ -1652,5 +1895,17 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	private void readObjectNoData() throws ObjectStreamException
 	{
 
+	}
+
+	public static void assertProperty(Node node, String property)
+	{
+		if (!node.hasProperty(property))
+		{
+			System.err.println("Node property assertion failed, cannot find "+property+" property :");
+			for(String key : node.getPropertyKeys())
+			{
+				System.err.println(key+" == "+node.getProperty(key));
+			}
+		}
 	}
 }

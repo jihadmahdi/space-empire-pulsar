@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -104,7 +105,7 @@ public class SEPServer implements IServer, IDBFactory
 		 * @see common.Protocol.ServerCommon#getPlayerList()
 		 */
 		@Override
-		public Map<IPlayer, IPlayerConfig> getPlayerList()
+		public Map<String, IPlayerConfig> getPlayerList()
 		{
 			try
 			{
@@ -162,32 +163,23 @@ public class SEPServer implements IServer, IDBFactory
 				@Override
 				public void run()
 				{
-					try
+					sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
 					{
-						final IPlayer p = sepServer.getGameInCreation().getPlayer(user.getLogin());
-						
-						sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
-						{
 
-							@Override
-							public void doIt(ServerPlayer player)
+						@Override
+						public void doIt(ServerPlayer player)
+						{
+							try
 							{
-								try
-								{
-									player.getClientInterface().receiveGameCreationMessage(p, msg);
-								}
-								catch(RpcException e)
-								{
-									log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
-									player.abort(e);
-								}
+								player.getClientInterface().receiveGameCreationMessage(user.getLogin(), msg);
 							}
-						});
-					}
-					catch(GameBoardException e)
-					{
-						log.log(Level.SEVERE, "GameBoardException", e);
-					}					
+							catch(RpcException e)
+							{
+								log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
+								player.abort(e);
+							}
+						}
+					});
 				}
 			});
 		}
@@ -306,33 +298,24 @@ public class SEPServer implements IServer, IDBFactory
 				@Override
 				public void run()
 				{
-					// TODO : Filter running game message according to pulsar effect.
-					try
+					// TODO : Filter running game message according to pulsar effect.					
+					sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
 					{
-						final IPlayer p = sepServer.getRunningGame().getPlayer(user.getLogin());
-						
-						sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
-						{
-	
-							@Override
-							public void doIt(ServerPlayer player)
-							{								
-								try
-								{
-									player.getClientInterface().receiveRunningGameMessage(p, msg);
-								}
-								catch(RpcException e)
-								{
-									log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
-									player.abort(e);
-								}							
+
+						@Override
+						public void doIt(ServerPlayer player)
+						{								
+							try
+							{
+								player.getClientInterface().receiveRunningGameMessage(user.getLogin(), msg);
 							}
-						});
-					}
-					catch(GameBoardException e)
-					{
-						log.log(Level.SEVERE, "GameBoardException", e);
-					}
+							catch(RpcException e)
+							{
+								log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
+								player.abort(e);
+							}							
+						}
+					});
 				}
 			});
 		}
@@ -648,7 +631,7 @@ public class SEPServer implements IServer, IDBFactory
 		}
 
 		@Override
-		public Map<IPlayer, Boolean> getPlayerStateList() throws RpcException, StateMachineNotExpectedEventException
+		public Map<String, Boolean> getPlayerStateList() throws RpcException, StateMachineNotExpectedEventException
 		{
 			return sepServer.getPlayerStateList();
 		}
@@ -662,32 +645,23 @@ public class SEPServer implements IServer, IDBFactory
 				@Override
 				public void run()
 				{
-					try
+					sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
 					{
-						final IPlayer p = sepServer.getRunningGame().getPlayer(user.getLogin());
-						
-						sepServer.doForEachConnectedPlayer(new DoItToOnePlayer()
-						{
-	
-							@Override
-							public void doIt(ServerPlayer player)
-							{								
-								try
-								{
-									player.getClientInterface().receivePausedGameMessage(p, msg);
-								}
-								catch(RpcException e)
-								{
-									log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
-									player.abort(e);
-								}							
+
+						@Override
+						public void doIt(ServerPlayer player)
+						{								
+							try
+							{
+								player.getClientInterface().receivePausedGameMessage(user.getLogin(), msg);
 							}
-						});
-					}
-					catch(GameBoardException e)
-					{
-						log.log(Level.SEVERE, "GameBoardException", e);
-					}
+							catch(RpcException e)
+							{
+								log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
+								player.abort(e);
+							}							
+						}
+					});
 				}
 			});
 		}
@@ -773,9 +747,9 @@ public class SEPServer implements IServer, IDBFactory
 		}
 	}	
 
-	private Map<IPlayer, Boolean> getPlayerStateList()
+	private Map<String, Boolean> getPlayerStateList()
 	{
-		Map<IPlayer, Boolean> result = new HashMap<IPlayer, Boolean>();
+		Map<String, Boolean> result = new HashMap<String, Boolean>();
 
 		synchronized(players)
 		{
@@ -785,17 +759,7 @@ public class SEPServer implements IServer, IDBFactory
 				
 				if (player != null)
 				{
-					try
-					{
-						result.put(getGameInCreation().getPlayer(name), player.isConnected());
-					}
-					catch(GameBoardException e)
-					{
-						if (player.isConnected())
-						{
-							log.log(Level.SEVERE, "Connected player "+name+" is unknown.", e);
-						}
-					}
+					result.put(name, player.isConnected());
 				}
 			}
 		}
@@ -829,6 +793,40 @@ public class SEPServer implements IServer, IDBFactory
 			});
 		}
 	}		
+	
+	private synchronized void resumeGame()
+	{
+		threadPool.execute(new Runnable()
+		{			
+			@Override
+			public void run()
+			{
+				synchronized(players)
+				{
+					doForEachConnectedPlayer(new DoItToOnePlayer()
+					{				
+						@Override
+						public void doIt(ServerPlayer player)
+						{
+							try
+							{
+								player.getClientInterface().receiveNewTurnGameBoard(getRunningGame().getAllEvents(player.getName()));
+							}
+							catch(RpcException e)
+							{
+								log.log(Level.WARNING, "RpcException(" + player.getName() + ") : " + e.getMessage());
+							}
+							catch(GameBoardException e)
+							{
+								log.log(Level.SEVERE, "Player game board error.", e);
+								terminate();
+							}
+						}
+					});
+				}
+			}
+		});
+	}
 	
 	private synchronized void runGame() throws GameBoardException
 	{
@@ -1072,6 +1070,15 @@ public class SEPServer implements IServer, IDBFactory
 		public void gameResumed()
 		{
 			log.log(Level.INFO, "gameResumed");
+			server.threadPool.execute(new Runnable()
+			{
+
+				@Override
+				public void run()
+				{
+					server.resumeGame();
+				}
+			});
 		}
 
 		@Override
@@ -1091,7 +1098,7 @@ public class SEPServer implements IServer, IDBFactory
 		{
 			synchronized(server)
 			{
-				server.game = GameBoard.load(ois);
+				server.game = GameBoard.load(server, ois);
 			}
 		}
 
@@ -1152,7 +1159,7 @@ public class SEPServer implements IServer, IDBFactory
 	{		
 		try
 		{
-			final Map<IPlayer, IPlayerConfig> playerList = getGameInCreation().getPlayerList();
+			final Map<String, IPlayerConfig> playerList = getGameInCreation().getPlayerList();
 			
 			doForEachConnectedPlayer(new DoItToOnePlayer()
 			{
@@ -1196,6 +1203,16 @@ public class SEPServer implements IServer, IDBFactory
 				}
 			}
 		}
+	}
+	
+	/**
+	 * For testing purpose only
+	 * @return
+	 * @throws GameBoardException
+	 */
+	public Set<String> getPlayerList() throws GameBoardException
+	{
+		return getGameInCreation().getPlayerList().keySet();
 	}
 
 }

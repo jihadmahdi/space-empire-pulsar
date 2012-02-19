@@ -8,6 +8,7 @@ import java.awt.Font;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -46,11 +47,11 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 	
 	////////// bean fields		
 	private SEPClient sepClient;
-	private final EventList<IPlayer> players = GlazedLists.threadSafeList(new BasicEventList<IPlayer>());
+	private final EventList<String> players = GlazedLists.threadSafeList(new BasicEventList<String>());
 	private boolean configurationEnabled = true;
 	
 	////////// ui controls
-	private EventListModel<IPlayer> playersListModel = new EventListModel<IPlayer>(players);
+	private EventListModel<String> playersListModel = new EventListModel<String>(players);
 	private JList playersList;
 	private PlayerConfigDialog playerConfigDialog;
 	
@@ -102,7 +103,7 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 					return new JLabel("loading...");
 				}												
 				
-				IPlayer player = (IPlayer) value;
+				String playerName = (String) value;
 				
 				if (playersListUpdated)
 				{
@@ -110,24 +111,24 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 					playersListUpdated = false;
 				}
 				
-				if (refreshed.containsKey(player.getName()) && refreshed.get(player.getName()) == true && cachedPanels.containsKey(player.getName()) && cachedPanels.get(player.getName()) != null)
+				if (refreshed.containsKey(playerName) && refreshed.get(playerName) == true && cachedPanels.containsKey(playerName) && cachedPanels.get(playerName) != null)
 				{
-					return cachedPanels.get(player.getName());
+					return cachedPanels.get(playerName);
 				}								
 				
 				IPlayerConfig config = null;
 				try
 				{
-					config = getSepClient().getGameboard().getPlayerConfig(player.getName());
+					config = getSepClient().getGameboard().getPlayerConfig(playerName);
 				}
 				catch(Throwable t)
 				{
-					log.log(Level.SEVERE, "Cannot retreive player '"+player.getName()+"' config", t);
+					log.log(Level.SEVERE, "Cannot retreive player '"+playerName+"' config", t);
 				}
 
-				if (player == null || config == null)
+				if (playerName == null || config == null)
 				{
-					return new JLabel(player==null?"'Unknown player'":"'"+player.getName()+"'");
+					return new JLabel(playerName==null?"'Unknown player'":"'"+playerName+"'");
 				}
 				
 				JPanel playerPanel = new JPanel(new BorderLayout(0, 0));
@@ -141,7 +142,7 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 				}
 				else try
 				{
-					portraitUrl = new URL(String.format("%s/%s", getSepClient().getUserDirectoryURL(player.getName()).toExternalForm(), config.getPortrait()));					
+					portraitUrl = new URL(String.format("%s/%s", getSepClient().getUserDirectoryURL(playerName).toExternalForm(), config.getPortrait()));					
 				}
 				catch(Exception e)
 				{
@@ -161,8 +162,8 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 				portrait.setMinimumSize(portrait.getPreferredSize());
 				playerPanel.add(portrait, BorderLayout.WEST);				
 				
-				JLabel name = new JLabel(player.getName(), SwingConstants.CENTER);
-				playerPanel.setBackground(Basic.stringToColor(config.getColor()));
+				JLabel name = new JLabel(playerName, SwingConstants.CENTER);
+				playerPanel.setBackground(config.getColor());
 				if (cellHasFocus)
 				{
 					name.setFont(name.getFont().deriveFont(Font.BOLD));
@@ -181,7 +182,7 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 				}
 				else try
 				{
-					symbolUrl = new URL(String.format("%s/%s", getSepClient().getUserDirectoryURL(player.getName()).toExternalForm(), config.getSymbol()));					
+					symbolUrl = new URL(String.format("%s/%s", getSepClient().getUserDirectoryURL(playerName).toExternalForm(), config.getSymbol()));					
 				}
 				catch(Exception e)
 				{
@@ -201,8 +202,8 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 				symbol.setMinimumSize(new Dimension(50, 50));
 				playerPanel.add(symbol, BorderLayout.EAST);								
 				
-				cachedPanels.put(player.getName(), playerPanel);
-				refreshed.put(player.getName(), true);
+				cachedPanels.put(playerName, playerPanel);
+				refreshed.put(playerName, true);
 				
 				return playerPanel;
 			}
@@ -253,10 +254,10 @@ public class PlayersListPanel extends JPanel implements IModalComponent
 		
 	////////// ui events
 	
-	public synchronized void refreshPlayers(Set<? extends IPlayer> players)
+	public synchronized void refreshPlayers(Map<String, IPlayerConfig> players)
 	{
 		this.players.clear();
-		this.players.addAll(players);
+		this.players.addAll(players.keySet());
 		this.playersListUpdated = true;
 	}
 		
