@@ -16,6 +16,10 @@ import org.axan.sep.common.Rules;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.db.Events.AGameEvent;
+import org.axan.sep.common.db.Events.LogMessage;
+import org.axan.sep.common.db.Events.UnitDismantled;
+import org.axan.sep.common.db.Events.UnitMade;
+import org.axan.sep.common.db.Events.UnitMoveUpdate;
 import org.axan.sep.common.db.Events.UpdateDiplomacyMarker;
 import org.axan.sep.common.db.IDiplomacyMarker.eForeignPolicy;
 import org.axan.sep.common.db.orm.SEPCommonDB;
@@ -141,7 +145,6 @@ public abstract class Commands
 				IGovernmentModule governmentalModule = db.getPlayer(playerName).getGovernmentModule();
 				IArea area = db.getArea(db.getCelestialBody(governmentalModule.getProductiveCelestialBodyName()).getLocation());
 				UpdateDiplomacyMarker diplomacyMarkerUpdate = new UpdateDiplomacyMarker(playerName, targetName, isAllowedToLand, foreignPolicy);				
-
 				fireEventForObservers(executor, area, db.getPlayersNames(), diplomacyMarkerUpdate);
 			}
 			
@@ -267,6 +270,15 @@ public abstract class Commands
 			antiProbeMissile.setDestination(destination);
 			antiProbeMissile.setTarget(target);
 			
+			if (isGlobalView(executor))
+			{
+				IAntiProbeMissileMarker unitMarker = antiProbeMissile.getMarker(0);
+				String markerMessage = String.format("AntiProbeMissile %s@%s fired", antiProbeMissile.getOwnerName(), antiProbeMissile.getName());
+				IArea area = db.getArea(antiProbeMissile.getRealLocation().asLocation());
+				UnitMoveUpdate umu = new UnitMoveUpdate(unitMarker, markerMessage, null, area);
+				fireEventForObservers(executor, area, db.getPlayersNames(), umu);
+			}
+			
 			db.fireLog(String.format("AntiProbeMissile %s fired to %s@%s (%s)", antiProbeMissile.getName(), target.getOwnerName(), target.getName(), destination));
 			db.fireAreaChangedEvent(antiProbeMissile.getRealLocation().asLocation());
 		}
@@ -310,6 +322,16 @@ public abstract class Commands
 		{
 			check(db);
 			probe.setDestination(destination);
+			
+			if (isGlobalView(executor))
+			{
+				IProbeMarker unitMarker = probe.getMarker(0);
+				String markerMessage = String.format("Probe %s@%s launched", probe.getOwnerName(), probe.getName());
+				IArea area = db.getArea(probe.getRealLocation().asLocation());
+				UnitMoveUpdate umu = new UnitMoveUpdate(unitMarker, markerMessage, null, area);
+				fireEventForObservers(executor, area, db.getPlayersNames(), umu);
+			}
+			
 			db.fireLog(String.format("Probe %s launched to %s", probe.getName(), destination));
 			db.fireAreaChangedEvent(probe.getRealLocation().asLocation());
 		}
@@ -385,8 +407,15 @@ public abstract class Commands
 			for(int i = 0; i < quantity; ++i)
 			{
 				int serialNumber = lastSerialNumber+i+1;
-				db.createAntiProbeMissile(db.makeAntiProbeMissile(playerName, serieName, serialNumber, productiveCelestialBodyName));
-			}
+				IAntiProbeMissile antiProbeMissile = db.createAntiProbeMissile(db.makeAntiProbeMissile(playerName, serieName, serialNumber, productiveCelestialBodyName));
+				
+				if (isGlobalView(executor))
+				{
+					IArea area = db.getArea(productiveCelestialBody.getLocation());
+					UnitMade unitMade = new UnitMade(antiProbeMissile.getMarker(0), area);
+					fireEventForObservers(executor, area, db.getPlayersNames(), unitMade);
+				}
+			}			
 			
 			db.fireLog(String.format("Produced anti probe missile serie %s [%d - %d]", serieName, lastSerialNumber+1, lastSerialNumber+quantity));
 			db.fireAreaChangedEvent(productiveCelestialBody.getLocation());
@@ -463,10 +492,70 @@ public abstract class Commands
 			for(int i = 0; i < quantity; ++i)
 			{
 				int serialNumber = lastSerialNumber+i+1;
-				db.createProbe(db.makeProbe(playerName, serieName, serialNumber, productiveCelestialBodyName));
+				IProbe probe = db.createProbe(db.makeProbe(playerName, serieName, serialNumber, productiveCelestialBodyName));
+				
+				if (isGlobalView(executor))
+				{
+					IArea area = db.getArea(productiveCelestialBody.getLocation());
+					UnitMade unitMade = new UnitMade(probe.getMarker(0), area);
+					fireEventForObservers(executor, area, db.getPlayersNames(), unitMade);
+				}
 			}
 			
 			db.fireLog(String.format("Produced probe serie %s [%d - %d]", serieName, lastSerialNumber+1, lastSerialNumber+quantity));
+			db.fireAreaChangedEvent(productiveCelestialBody.getLocation());
+		}
+	}
+	
+	/**
+	 * Dismantle given fleet. i.e. the given fleet merge the current location player's unassigned fleet.
+	 * TODO: DismantleFleet should cancel previous AssignStarships command for same fleet same turn.
+	 */
+	public static class DismantleFleet extends ACommand implements Serializable
+	{
+		private final String productiveCelestialBodyName;
+		private final String fleetName;
+		
+		private transient IProductiveCelestialBody productiveCelestialBody;
+		private transient IFleet dismantledFleet;
+		
+		public DismantleFleet(String playerName, String productiveCelestialBodyName, String fleetName)
+		{
+			super(playerName);
+			this.productiveCelestialBodyName = productiveCelestialBodyName;
+			this.fleetName = fleetName;			
+		}
+		
+		@Override
+		public void check(SEPCommonDB db) throws GameCommandException
+		{
+			productiveCelestialBody = checkProductiveCelestialBody(db, productiveCelestialBodyName);
+			dismantledFleet = db.getFleet(playerName, fleetName);
+			if (dismantledFleet == null) throw new GameCommandException(this, "Unknown fleet "+playerName+"@"+fleetName);
+			if (!dismantledFleet.isStopped()) throw new GameCommandException(this, "Fleet is not stopped");
+			if (!productiveCelestialBodyName.equals(dismantledFleet.getDepartureName())) throw new GameCommandException(this, "Unexpected fleet location");						
+		}
+		
+		@Override
+		public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameCommandException
+		{
+			check(db);
+			
+			IFleet assignedFleet = db.getCreateAssignedFleet(productiveCelestialBodyName, playerName);
+			Map<StarshipTemplate, Integer> starships = dismantledFleet.getStarships();
+			
+			assignedFleet.addStarships(starships);
+			IFleetMarker dismantledFleetMarker = dismantledFleet.getMarker(0);
+			dismantledFleet.destroy();
+			
+			if (isGlobalView(executor))
+			{
+				IArea area = db.getArea(productiveCelestialBody.getLocation());
+				UnitDismantled unitDismantled = new UnitDismantled(dismantledFleetMarker, area);
+				fireEventForObservers(executor, area, db.getPlayersNames(), unitDismantled);
+			}
+			
+			db.fireLog(String.format("Fleet %s dismantled on %s", fleetName, productiveCelestialBodyName));
 			db.fireAreaChangedEvent(productiveCelestialBody.getLocation());
 		}
 	}
@@ -497,13 +586,14 @@ public abstract class Commands
 		public void check(SEPCommonDB db) throws GameCommandException
 		{
 			productiveCelestialBody = checkProductiveCelestialBody(db, productiveCelestialBodyName);
-			checkOwnership(playerName, productiveCelestialBody.getOwner(), playerName+" does not own "+productiveCelestialBodyName);
+			//checkOwnership(playerName, productiveCelestialBody.getOwner(), playerName+" does not own "+productiveCelestialBodyName);
 			
 			assignedFleet = productiveCelestialBody.getAssignedFleet(playerName);
 			if (assignedFleet == null) throw new GameCommandException(this, "No starships available on "+productiveCelestialBodyName);
 			Map<StarshipTemplate, Integer> assignedStarships = assignedFleet.getStarships();
 			
 			newcomers = new HashMap<StarshipTemplate, Integer>();
+			boolean empty = true;
 			for(String templateName : starships.keySet())
 			{
 				StarshipTemplate template = Rules.getStarshipTemplate(templateName);
@@ -514,9 +604,14 @@ public abstract class Commands
 				int availableQuantity = (assignedStarships.containsKey(template) ? assignedStarships.get(template) : 0);
 				if (quantity > availableQuantity) throw new GameCommandException(this, "Not enough starships ("+templateName+")");
 				
-				if (quantity > 0) newcomers.put(template, quantity);
+				if (quantity > 0)
+				{
+					newcomers.put(template, quantity);
+					empty = false;
+				}
 			}
 			
+			if (empty) throw new GameCommandException(this, "No newcomer");
 			if (fleetName == null || fleetName.isEmpty()) throw new GameCommandException(this, "Incorrect fleet name");			
 			
 			destinationFleet = db.getFleet(playerName, fleetName);
@@ -558,6 +653,13 @@ public abstract class Commands
 			}
 			
 			assignedFleet.removeStarships(newcomers);
+			
+			if (isGlobalView(executor))
+			{
+				IArea area = db.getArea(productiveCelestialBody.getLocation());
+				UnitMade unitMade = new UnitMade(assignedFleet.getMarker(0), area, newcomers);
+				fireEventForObservers(executor, area, db.getPlayersNames(), unitMade);
+			}
 			
 			db.fireLog(String.format("Starships assigned to %s", destinationFleet.getName()));
 			db.fireAreaChangedEvent(destinationFleet.getRealLocation().asLocation());
@@ -647,6 +749,13 @@ public abstract class Commands
 			IFleet assignedFleet = db.getCreateAssignedFleet(productiveCelestialBodyName, playerName);
 			assignedFleet.addStarships(newcomers);
 			
+			if (isGlobalView(executor))
+			{
+				IArea area = db.getArea(productiveCelestialBody.getLocation());
+				UnitMade unitMade = new UnitMade(assignedFleet.getMarker(0), area, newcomers);
+				fireEventForObservers(executor, area, db.getPlayersNames(), unitMade);
+			}
+			
 			db.fireLog(String.format("Made %d new starships on %s", totalQuantity, productiveCelestialBodyName));
 			db.fireAreaChangedEvent(productiveCelestialBody.getLocation());
 		}
@@ -703,17 +812,27 @@ public abstract class Commands
 		{
 			check(db);			
 			
+			final String message;
+			
 			if (existingBuilding.getNbSlots() == 1)
 			{
 				existingBuilding.demolish();
-				db.fireLog(String.format("%s demolished on %s", buildingType, productiveCelestialBodyName));
+				message = String.format("%s demolished on %s", buildingType, productiveCelestialBodyName);
+				
 			}
 			else
 			{
 				existingBuilding.downgrade();
-				db.fireLog(String.format("%s downgraded on %s", buildingType, productiveCelestialBodyName));
+				message = String.format("%s downgraded on %s", buildingType, productiveCelestialBodyName);
 			}
-						
+			
+			if (isGlobalView(executor))
+			{
+				IArea area = db.getArea(productiveCelestialBody.getLocation());
+				fireEventForObservers(executor, area, db.getPlayersNames(), new LogMessage(message, area));
+			}
+				
+			db.fireLog(message);
 			db.fireAreaChangedEvent(productiveCelestialBody.getLocation());
 		}
 	}
@@ -800,7 +919,15 @@ public abstract class Commands
 				existingBuilding.upgrade();
 			}
 			
-			db.fireLog(String.format("%s built on %s", buildingType, productiveCelestialBodyName));
+			String message = String.format("%s built on %s", buildingType, productiveCelestialBodyName);
+			
+			if (isGlobalView(executor))
+			{
+				IArea area = db.getArea(productiveCelestialBody.getLocation());
+				fireEventForObservers(executor, area, db.getPlayersNames(), new LogMessage(message, area));
+			}
+			
+			db.fireLog(message);
 			db.fireAreaChangedEvent(productiveCelestialBody.getLocation());
 		}
 	}

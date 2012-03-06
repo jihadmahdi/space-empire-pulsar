@@ -421,25 +421,26 @@ class GameBoard implements IGameBoard
 						continue;
 					}
 	
+					locationOk = true;
 					for(Location l: playersPlanetLocations)
 					{
 						// Cannot be another player planet location
 						if (SEPUtils.getDistance(planetLocation, l) < 1)
 						{
-							continue;
+							locationOk = false;
+							break;
 						}
 	
 						// Must be in direct line from all other player starting planets
 						if (SEPUtils.isTravelingTheSun(getConfig(), planetLocation, l))
 						{
-							continue;
+							locationOk = false;
+							break;
 						}
-					}
-	
-					playersPlanetLocations.add(planetLocation);
-					locationOk = true;
-				} while (!locationOk);				
-	
+					}											
+				} while (!locationOk);
+				
+				playersPlanetLocations.add(planetLocation);
 				IPlanet planet = createPlayerStartingPlanet(generateCelestialBodyName(), planetLocation, playerName);
 				celestialBodies.put(planetLocation, planet);
 				ownershipRelations.put(planet, playerName);
@@ -621,7 +622,7 @@ class GameBoard implements IGameBoard
 	}
 
 	public void resolveNextTurn() throws GameBoardException
-	{		
+	{
 		try
 		{
 			UnitsMoves unitsMoves = new UnitsMoves();

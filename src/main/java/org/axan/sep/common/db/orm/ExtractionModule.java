@@ -76,14 +76,14 @@ class ExtractionModule extends Building implements IExtractionModule
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 			
-			if (extractionModuleIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type)).hasNext())
+			if (extractionModuleIndex.get(PK, getPK(productiveCelestialBodyName, type)).hasNext())
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, extractionModule[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
 			properties = sepDB.getDB().createNode();
 			ExtractionModule.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
-			extractionModuleIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			extractionModuleIndex.add(properties, PK, getPK(productiveCelestialBodyName, type));
 			
 			super.create(sepDB);
 			

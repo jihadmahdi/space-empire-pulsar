@@ -123,12 +123,12 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 		
 		try
 		{
-			if (productiveCelestialBodyIndex.get("name", name.toString()).hasNext())
+			if (productiveCelestialBodyIndex.get(PK, getPK(name)).hasNext())
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, productiveCelestialBody[name='"+name+"'] already exist.");
 			}
-			productiveCelestialBodyIndex.add(properties, "name", name);
+			productiveCelestialBodyIndex.add(properties, PK, getPK(name));
 			
 			updateOwnership();
 			
@@ -171,7 +171,7 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 					ownership = null;
 				}
 				
-				Node nOwner = db.index().forNodes("PlayerIndex").get("name", ownerName).getSingle();
+				Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
 				nOwner.createRelationshipTo(properties, eRelationTypes.PlayerCelestialBodies);			
 				//nOwner.createRelationshipTo(properties, type);
 			}
@@ -314,7 +314,7 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 		checkForDBUpdate();
 		
 		int result=0;
-		for(Node n : buildingIndex.query("productiveCelestialBodyName;class", String.format("%s;*", name)))
+		for(Node n : buildingIndex.query(Building.PK, Building.queryAnyBuildingTypePK(name)))
 		{
 			result += (Integer) n.getProperty("nbSlots");
 		}
@@ -337,7 +337,7 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 			checkForDBUpdate();
 			
 			Set<IBuilding> result = new HashSet<IBuilding>();
-			for(Node n : buildingIndex.query("productiveCelestialBodyName;class", String.format("%s;*", name)))
+			for(Node n : buildingIndex.query(Building.PK, Building.queryAnyBuildingTypePK(name)))
 			{
 				result.add(sepDB.getBuilding(name, eBuildingType.valueOf((String) n.getProperty("type"))));
 			}
@@ -395,7 +395,7 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 				String fleetName = String.format("%s assigned fleet", getName());
 				sepDB.createFleet(sepDB.makeFleet(playerName, fleetName, name, new HashMap<StarshipTemplate, Integer>()));
 				
-				nFleet = db.index().forNodes("FleetIndex").get("ownerName@name", String.format("%s@%s", playerName, fleetName)).getSingle();
+				nFleet = db.index().forNodes("FleetIndex").get(Unit.PK, Unit.getPK(playerName, fleetName)).getSingle();
 				
 				if (nFleet == null)
 				{

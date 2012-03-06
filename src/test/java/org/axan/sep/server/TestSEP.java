@@ -11,6 +11,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.FormatFlagsConversionMismatchException;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,9 +26,14 @@ import org.axan.eplib.gameserver.common.IServerUser.ServerPrivilegeException;
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.client.SEPClient.IUserInterface;
 import org.axan.sep.common.db.Commands.Build;
+import org.axan.sep.common.db.Commands.Demolish;
 import org.axan.sep.common.db.Commands.MakeStarships;
 import org.axan.sep.common.db.Commands.AssignStarships;
+import org.axan.sep.common.db.Commands.DismantleFleet;
+import org.axan.sep.common.db.Commands.UpdateDiplomacy;
+import org.axan.sep.common.db.Commands.UpdateFleetMovesPlan;
 import org.axan.sep.common.db.ICommand.GameCommandException;
+import org.axan.sep.common.db.IDiplomacyMarker.eForeignPolicy;
 import org.axan.sep.common.GameConfig;
 import org.axan.sep.common.GameConfigCopier;
 import org.axan.sep.common.Rules;
@@ -39,7 +45,9 @@ import org.axan.sep.common.Protocol.ServerRunningGame;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.Rules.StarshipTemplate;
+import org.axan.sep.common.db.FleetMove;
 import org.axan.sep.common.db.ICommand;
+import org.axan.sep.common.db.IFleet;
 import org.axan.sep.common.db.IGameConfig;
 import org.axan.sep.common.db.IGameEvent;
 import org.axan.sep.common.db.IPlayerConfig;
@@ -413,13 +421,16 @@ public class TestSEP
 		client1.connect();
 
 		// client.isConnected()
-		for(long start = System.currentTimeMillis(); !client1.isConnected() && System.currentTimeMillis() - start < TIMEOUT_CLIENT_CONNECTION;)
-			;
+		long start = System.currentTimeMillis();
+		while(!client1.isConnected() && System.currentTimeMillis() - start < TIMEOUT_CLIENT_CONNECTION)
+		{
+			try {Thread.sleep(100);} catch(InterruptedException ie) {fail("ie");}
+		}
 		assertTrue("Expected to be connected", client1.isConnected());
 
+		//try {Thread.sleep(5000);} catch(InterruptedException ie) {fail("ie");}
 		tester.checkNextTrace(eTest.Clients, SEPClient.class, "connect", "Client 'client1' connected");
-		tester.checkNextTrace(eTest.Clients, TestSEP.TestClientUserInterface.class, "refreshPlayerList", "client1.refreshPlayerList([client1])");
-		tester.checkNextTrace(eTest.Clients, TestSEP.TestClientUserInterface.class, "displayGameCreationPanel", "client1.displayGameCreationPanel");
+		tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "refreshPlayerList", new String[] {"client1.refreshPlayerList([client1])"}, TestSEP.TestClientUserInterface.class, "displayGameCreationPanel", new String[] {"client1.displayGameCreationPanel"});
 
 		assertTrue("Unexpected remaining log", tester.flush());
 		System.out.println("Step: Client1 getting gameCreation interface");
@@ -448,8 +459,11 @@ public class TestSEP
 		System.out.println("Step: Client2 connection");
 		
 		client2.connect();
-		for(long start = System.currentTimeMillis(); !client2.isConnected() && System.currentTimeMillis() - start < TIMEOUT_CLIENT_CONNECTION;)
-			;
+		start = System.currentTimeMillis();
+		while(!client2.isConnected() && System.currentTimeMillis() - start < TIMEOUT_CLIENT_CONNECTION)
+		{
+			try {Thread.sleep(100);} catch(InterruptedException ie) {}
+		}
 		assertTrue("Expected to be connected", client2.isConnected());
 
 		tester.checkNextTrace(eTest.Clients, SEPClient.class, "connect", "Client 'client2' connected");
@@ -539,8 +553,11 @@ public class TestSEP
 		assertFalse("No connection expected", client3.isConnected());
 
 		client3.connect();
-		for(long start = System.currentTimeMillis(); !client3.isConnected() && System.currentTimeMillis() - start < TIMEOUT_CLIENT_CONNECTION;)
-			;
+		start = System.currentTimeMillis();
+		while(!client3.isConnected() && System.currentTimeMillis() - start < TIMEOUT_CLIENT_CONNECTION)
+		{
+			try {Thread.sleep(100);} catch(InterruptedException ie) {}
+		}
 		assertTrue("Expected to be connected", client3.isConnected());
 
 		tester.checkNextTrace(eTest.Clients, SEPClient.class, "connect", "Client 'client3' connected");
@@ -593,7 +610,7 @@ public class TestSEP
 		tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "onGameRan", new String[] { "client1.onGameRan", "client2.onGameRan", "client3.onGameRan" });		
 		tester.checkNextTrace(eTest.Server, SEPServer.SEPGameServerListener.class, "gameRan", "gameRan");						
 		
-		//tester.checkAllUnorderedTraces(eTest.Server, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
+		tester.checkAllUnorderedTraces(eTest.Server, SEPServer.class, "announceNewTurn", "Announce turn "+turn);
 		tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "refreshGameConfig", new String[] { "client1.refreshGameConfig(1)", "client2.refreshGameConfig(1)", "client3.refreshGameConfig(1)" });
 		tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard(1)", "client2.receiveNewTurnGameBoard(1)", "client3.receiveNewTurnGameBoard(1)" });
 		
@@ -652,7 +669,7 @@ public class TestSEP
 			client1AITest.getClient().endTurn();
 			client2AITest.getClient().endTurn();
 			client3AITest.getClient().endTurn();
-			turn = 1;
+			++turn; // 2
 
 			waitForNextTurn(120*1000, turn, client1AITest, client2AITest, client3AITest);
 		}
@@ -665,9 +682,8 @@ public class TestSEP
 
 		assertEquals("Unexpected result", turn, client1AITest.getTurn());
 		
-		tester.checkNextTrace(eTest.Server, SEPServer.class, "checkForNextTurn", "Resolving new turn");
+		tester.checkNextTrace(eTest.Server, SEPServer.class, "announceNewTurn", "Announce turn "+turn);
 		tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
-		tester.checkAllUnorderedTraces(eTest.Server, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
 
 		client1AITest.checkBuilding(startingPlanet1, eBuildingType.StarshipPlant, 1);
 		client2AITest.checkBuilding(startingPlanet2, eBuildingType.StarshipPlant, 1);
@@ -678,15 +694,14 @@ public class TestSEP
 		assertTrue("Unexpected remaining log", tester.flush());
 		System.out.println("Step: T1, make starships, form fleets, change diplomacies, move fleets");
 		String t1Fleets = "fleet1";
+		int fleet1DepartureDate = turn;
+		int fleet2DepartureDate = turn+1;
 
-		Map<String, PlayerPolicies> client1diplomacy = new HashMap<String, PlayerPolicies>();
-		Map<String, PlayerPolicies> client2diplomacy = new HashMap<String, PlayerPolicies>();
-		Map<String, PlayerPolicies> client3diplomacy = new HashMap<String, PlayerPolicies>();
-
+		final StarshipTemplate[] starshipTemplates = Rules.getStarshipTemplates().toArray(new StarshipTemplate[Rules.getStarshipTemplates().size()]);
+		
 		try
 		{
-			Map<String, Integer> starshipsToMake = new HashMap<String, Integer>();			
-			StarshipTemplate[] starshipTemplates = Rules.getStarshipTemplates().toArray(new StarshipTemplate[Rules.getStarshipTemplates().size()]);
+			Map<String, Integer> starshipsToMake = new HashMap<String, Integer>();
 
 			starshipsToMake.put(starshipTemplates[0].getName(), 10);
 
@@ -712,48 +727,68 @@ public class TestSEP
 			starshipsToMake.put(starshipTemplates[3].getName(), 4);
 			client2AITest.getGameBoard().onLocalCommand(new AssignStarships(client2.getLogin(), startingPlanet2, starshipsToMake, t1Fleets));
 
-			client3AITest.getGameBoard().onLocalCommand(new Demolish(startingPlanet3, ExtractionModule.class));
-			client3AITest.getGameBoard().onLocalCommand(new Build(startingPlanet3, StarshipPlant.class));
+			client3AITest.getGameBoard().onLocalCommand(new Demolish(client3.getLogin(), startingPlanet3, eBuildingType.ExtractionModule));
+			client3AITest.getGameBoard().onLocalCommand(new Build(client3.getLogin(), startingPlanet3, eBuildingType.StarshipPlant));
 
+			/*
 			PlayerPolicies client31policies = new PlayerPolicies(client1.getLogin(), true, eForeignPolicy.HOSTILE);
 			PlayerPolicies client32policies = new PlayerPolicies(client2.getLogin(), true, eForeignPolicy.HOSTILE);
 			client3diplomacy.put(client1.getLogin(), client31policies);
 			client3diplomacy.put(client2.getLogin(), client32policies);
 			client3AITest.getGameBoard().onLocalCommand(new ChangeDiplomacy(client3diplomacy));
+			*/
+			client3AITest.getGameBoard().onLocalCommand(new UpdateDiplomacy(client3.getLogin(), client1.getLogin(), true, eForeignPolicy.HOSTILE));
+			client3AITest.getGameBoard().onLocalCommand(new UpdateDiplomacy(client3.getLogin(), client2.getLogin(), true, eForeignPolicy.HOSTILE));			
 
+			/*
 			PlayerPolicies client33policies = new PlayerPolicies(client3.getLogin(), true, eForeignPolicy.HOSTILE);
 			client3diplomacy.put(client3.getLogin(), client33policies);
 			erronedCommand = new ChangeDiplomacy(client3diplomacy);
 			checkErronedCommand(erronedCommand, client3AITest.getGameBoard(), isClientTest);
+			*/
+			checkErronedCommand(new UpdateDiplomacy(client3.getLogin(), client3.getLogin(), true, eForeignPolicy.HOSTILE), client3AITest);
 
+			/*
 			PlayerPolicies client12policies = new PlayerPolicies(client2.getLogin(), false, eForeignPolicy.HOSTILE_IF_OWNER);
 			PlayerPolicies client13policies = new PlayerPolicies(client3.getLogin(), false, eForeignPolicy.HOSTILE_IF_OWNER);
 			client1diplomacy.put(client2.getLogin(), client12policies);
 			client1diplomacy.put(client3.getLogin(), client13policies);
 			client1AITest.getGameBoard().onLocalCommand(new ChangeDiplomacy(client1diplomacy));
+			*/			
+			client1AITest.getGameBoard().onLocalCommand(new UpdateDiplomacy(client1.getLogin(), client2.getLogin(), false, eForeignPolicy.HOSTILE_IF_OWNER));
+			client1AITest.getGameBoard().onLocalCommand(new UpdateDiplomacy(client1.getLogin(), client3.getLogin(), false, eForeignPolicy.HOSTILE_IF_OWNER));
 
+			/*
 			PlayerPolicies client21policies = new PlayerPolicies(client1.getLogin(), false, eForeignPolicy.NEUTRAL);
 			PlayerPolicies client23policies = new PlayerPolicies(client3.getLogin(), false, eForeignPolicy.HOSTILE);
 			client2diplomacy.put(client1.getLogin(), client21policies);
 			client2diplomacy.put(client3.getLogin(), client23policies);
 			client2AITest.getGameBoard().onLocalCommand(new ChangeDiplomacy(client2diplomacy));
-
+			*/
+			client2AITest.getGameBoard().onLocalCommand(new UpdateDiplomacy(client2.getLogin(), client1.getLogin(), false, eForeignPolicy.NEUTRAL));
+			client2AITest.getGameBoard().onLocalCommand(new UpdateDiplomacy(client2.getLogin(), client3.getLogin(), false, eForeignPolicy.HOSTILE));
+			
+			/*
 			Move client1move = new Move(startingPlanet3, 0, false);
 			Move client2move = new Move(startingPlanet3, 1, false);
 			Stack<Move> checkpoints = new Stack<Move>();
 			checkpoints.add(client1move);
 			client1AITest.getGameBoard().onLocalCommand(new MoveFleet(t1Fleets, checkpoints));
+			*/
+			List<FleetMove> checkpoints = new LinkedList<FleetMove>();
+			checkpoints.add(new FleetMove(startingPlanet3, 0, false));
+			client1AITest.getGameBoard().onLocalCommand(new UpdateFleetMovesPlan(client1.getLogin(), t1Fleets, checkpoints));
 
 			checkpoints.clear();
-			checkpoints.add(client2move);
-			client2AITest.getGameBoard().onLocalCommand(new MoveFleet(t1Fleets, checkpoints));
+			checkpoints.add(new FleetMove(startingPlanet3, 1, false));
+			client2AITest.getGameBoard().onLocalCommand(new UpdateFleetMovesPlan(client2.getLogin(), t1Fleets, checkpoints));
 
-			client1AITest.getGameBoard().endTurn();
-			client2AITest.getGameBoard().endTurn();
-			client3AITest.getGameBoard().endTurn();
-			turn = 2;
+			client1.endTurn();
+			client2.endTurn();			
+			client3.endTurn();
+			++turn; // 3
 
-			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
+			waitForNextTurn(120*1000, turn, client1AITest, client2AITest, client3AITest);
 		}
 		catch(Throwable t)
 		{
@@ -764,50 +799,52 @@ public class TestSEP
 
 		assertEquals("Unexpected result", turn, client1AITest.getTurn());
 
-		tester.checkNextTrace(serverOut, SEPServer.class, "checkForNextTurn", "Resolving new turn");
-		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
-		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
+		tester.checkNextTrace(eTest.Server, SEPServer.class, "announceNewTurn", "Announce turn "+turn);
+		tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
 
-		client1AITest.checkBuilding(startingPlanet1, StarshipPlant.class, 1);
-		client2AITest.checkBuilding(startingPlanet2, StarshipPlant.class, 1);
-		client3AITest.checkBuilding(startingPlanet3, ExtractionModule.class, 0);
-		client3AITest.checkBuilding(startingPlanet3, StarshipPlant.class, 1);
+		client1AITest.checkBuilding(startingPlanet1, eBuildingType.StarshipPlant, 1);
+		client2AITest.checkBuilding(startingPlanet2, eBuildingType.StarshipPlant, 1);
+		client3AITest.checkBuilding(startingPlanet3, eBuildingType.ExtractionModule, 0);
+		client3AITest.checkBuilding(startingPlanet3, eBuildingType.StarshipPlant, 1);
 
-		client1AITest.checkFleetMove(t1Fleets, 5, startingPlanet1, startingPlanet3, 1, isClientTest);		
+		client1AITest.checkFleetMove(t1Fleets, 5, startingPlanet1, startingPlanet3, fleet1DepartureDate, isClientTest);		
 		client1AITest.checkFleetNotMoved(t1Fleets + "bis", 3, isClientTest);
 		client2AITest.checkFleetNotMoved(t1Fleets, 4, isClientTest);
 
-		client1AITest.checkDiplomacy(client1diplomacy);
-		client2AITest.checkDiplomacy(client2diplomacy);
-		client3diplomacy.remove(client3.getLogin());
-		client3AITest.checkDiplomacy(client3diplomacy);
-
+		
+		client1AITest.checkDiplomacy(client2.getLogin(), false, eForeignPolicy.HOSTILE_IF_OWNER);
+		client1AITest.checkDiplomacy(client3.getLogin(), false, eForeignPolicy.HOSTILE_IF_OWNER);
+		
+		client2AITest.checkDiplomacy(client1.getLogin(), false, eForeignPolicy.NEUTRAL);
+		client2AITest.checkDiplomacy(client3.getLogin(), false, eForeignPolicy.HOSTILE);
+		
+		client3AITest.checkDiplomacy(client1.getLogin(), true, eForeignPolicy.HOSTILE);
+		client3AITest.checkDiplomacy(client2.getLogin(), true, eForeignPolicy.HOSTILE);
+				
 		// T2, client1 dismantle formed fleet on starting planet, client3 build starships and form a fleet. 
 
 		assertTrue("Unexpected remaining log", tester.flush());
+		
 		System.out.println("Step: dismantle/build/form fleets");
 		
 		String t2Fleets = "fleet2";
 
 		try
 		{
-			client1AITest.getGameBoard().onLocalCommand(new DismantleFleet(t1Fleets + "bis"));
+			client1AITest.getGameBoard().onLocalCommand(new DismantleFleet(client1.getLogin(), startingPlanet1, t1Fleets+"bis"));
 
-			Map<StarshipTemplate, Integer> starshipsToMake = new HashMap<StarshipTemplate, Integer>();
-			StarshipTemplate[] starshipTemplates = SEPUtils.starshipTypes.toArray(new StarshipTemplate[SEPUtils.starshipTypes.size()]);
+			Map<String, Integer> starshipsToMake = new HashMap<String, Integer>();
+			starshipsToMake.put(starshipTemplates[6].getName(), 5);			
+			client3AITest.getGameBoard().onLocalCommand(new MakeStarships(client3.getLogin(), startingPlanet3, starshipsToMake));
 
-			starshipsToMake.put(starshipTemplates[6], 5);
-			client3AITest.getGameBoard().onLocalCommand(new MakeStarships(startingPlanet3, starshipsToMake));
+			client3AITest.getGameBoard().onLocalCommand(new AssignStarships(client3.getLogin(), startingPlanet3, starshipsToMake, t2Fleets));
 
-			starshipsToMake.put(starshipTemplates[6], 5);
-			client3AITest.getGameBoard().onLocalCommand(new FormFleet(startingPlanet3, t2Fleets, starshipsToMake, null));
+			client1.endTurn();
+			client2.endTurn();
+			client3.endTurn();
+			++turn; // 4
 
-			client1AITest.getGameBoard().endTurn();
-			client2AITest.getGameBoard().endTurn();
-			client3AITest.getGameBoard().endTurn();
-			turn = 3;
-
-			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
+			waitForNextTurn(120*1000, turn, client1AITest, client2AITest, client3AITest);
 		}
 		catch(Throwable t)
 		{
@@ -818,16 +855,15 @@ public class TestSEP
 
 		assertEquals("Unexpected result", turn, client1AITest.getTurn());
 
-		tester.checkNextTrace(serverOut, SEPServer.class, "checkForNextTurn", "Resolving new turn");
-		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
-		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
+		tester.checkNextTrace(eTest.Server, SEPServer.class, "announceNewTurn", "Announce turn "+turn);
+		tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
+		
+		client1AITest.checkBuilding(startingPlanet1, eBuildingType.StarshipPlant, 1);
+		client2AITest.checkBuilding(startingPlanet2, eBuildingType.StarshipPlant, 1);
+		client3AITest.checkBuilding(startingPlanet3, eBuildingType.ExtractionModule, 0);
+		client3AITest.checkBuilding(startingPlanet3, eBuildingType.StarshipPlant, 1);
 
-		client1AITest.checkBuilding(startingPlanet1, StarshipPlant.class, 1);
-		client2AITest.checkBuilding(startingPlanet2, StarshipPlant.class, 1);
-		client3AITest.checkBuilding(startingPlanet3, ExtractionModule.class, 0);
-		client3AITest.checkBuilding(startingPlanet3, StarshipPlant.class, 1);
-
-		client1AITest.checkFleetMove(t1Fleets, 5, startingPlanet1, startingPlanet3, 1, true);		
+		client1AITest.checkFleetMove(t1Fleets, 5, startingPlanet1, startingPlanet3, fleet1DepartureDate, true);		
 		
 		expectedExceptionThrown = false;
 		try
@@ -841,11 +877,11 @@ public class TestSEP
 		}
 		assertTrue("Expected exception not thrown", expectedExceptionThrown);
 
-		client2AITest.checkFleetMove(t1Fleets, 4, startingPlanet2, startingPlanet3, 2, true);
+		client2AITest.checkFleetMove(t1Fleets, 4, startingPlanet2, startingPlanet3, fleet2DepartureDate, true);
 		client3AITest.checkFleetNotMoved(t2Fleets, 5, isClientTest);
 
 		assertTrue("Unexpected remaining log", tester.flush());
-
+		
 		// T3..n loop untill client1 and client2 fleets arrive to client3 starting planet. 
 
 		assertTrue("Unexpected remaining log", tester.flush());
@@ -857,12 +893,12 @@ public class TestSEP
 		{
 			try
 			{
-				client1AITest.getGameBoard().endTurn();
-				client2AITest.getGameBoard().endTurn();
-				client3AITest.getGameBoard().endTurn();
+				client1.endTurn();
+				client2.endTurn();
+				client3.endTurn();
 				++turn;
 				
-				waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
+				waitForNextTurn(120 * 1000, turn, client1AITest, client2AITest, client3AITest);
 			}
 			catch(Throwable t)
 			{
@@ -872,13 +908,12 @@ public class TestSEP
 			}
 
 			assertEquals("Unexpected result", turn, client1AITest.getTurn());
-
-			tester.checkNextTrace(serverOut, SEPServer.class, "checkForNextTurn", "Resolving new turn");
-			tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard(" + turn + ")", "client2.receiveNewTurnGameBoard(" + turn + ")", "client3.receiveNewTurnGameBoard(" + turn + ")" });
-			tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
-
-			boolean fleet1moved = client1AITest.checkFleetMove(t1Fleets, 5, startingPlanet1, startingPlanet3, 1, true) > 0;
-			boolean fleet2moved = client2AITest.checkFleetMove(t1Fleets, 4, startingPlanet2, startingPlanet3, 2, true) > 0;
+			
+			tester.checkNextTrace(eTest.Server, SEPServer.class, "announceNewTurn", "Announce turn "+turn);
+			tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
+			
+			boolean fleet1moved = client1AITest.checkFleetMove(t1Fleets, 5, startingPlanet1, startingPlanet3, fleet1DepartureDate, true) > 0;
+			boolean fleet2moved = client2AITest.checkFleetMove(t1Fleets, 4, startingPlanet2, startingPlanet3, fleet2DepartureDate, true) > 0;
 			client3AITest.checkFleetNotMoved(t2Fleets, 5, true);
 
 			if (!fleet1moved && !fleet2moved)
@@ -889,12 +924,11 @@ public class TestSEP
 			assertTrue("Unexpected remaining log", tester.flush());			
 			
 		} while(!arrived);
-		
+				
 		client1AITest.checkFleetLocation(t1Fleets, 5, startingPlanet3);
 		client2AITest.checkFleetLocation(t1Fleets, 4, startingPlanet3);
 		client3AITest.checkFleetLocation(t2Fleets, 5, startingPlanet3);
-		
-		
+				
 		assertTrue("Unexpected remaining log", tester.flush());
 		System.out.println("Step: save game");
 		
@@ -914,12 +948,12 @@ public class TestSEP
 
 		try
 		{
-			client1AITest.getGameBoard().endTurn();
-			client2AITest.getGameBoard().endTurn();
-			client3AITest.getGameBoard().endTurn();
+			client1.endTurn();
+			client2.endTurn();
+			client3.endTurn();
 			++turn;
 			
-			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
+			waitForNextTurn(120 * 1000, turn, client1AITest, client2AITest, client3AITest);
 		}
 		catch(Throwable t)
 		{
@@ -930,10 +964,9 @@ public class TestSEP
 
 		assertEquals("Unexpected result", turn, client1AITest.getTurn());
 
-		tester.checkNextTrace(serverOut, SEPServer.class, "checkForNextTurn", "Resolving new turn");
-		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
-		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
-
+		tester.checkNextTrace(eTest.Server, SEPServer.class, "announceNewTurn", "Announce turn "+turn);
+		tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
+		
 		assertTrue("Unexpected remaining log", tester.flush());
 		System.out.println("Step: looping load game & battle test");
 		
@@ -949,7 +982,7 @@ public class TestSEP
 				client1.loadGame(saveName);
 				--turn;
 				
-				waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
+				waitForNextTurn(120 * 1000, turn, client1AITest, client2AITest, client3AITest);
 			}
 			catch(Throwable t)
 			{
@@ -960,28 +993,27 @@ public class TestSEP
 			
 			assertEquals("Unexpected result", turn, client1AITest.getTurn());
 	
-			tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gamePaused", "gamePaused");
-			tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gameResumed", "gameResumed");
-			tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)");
+			tester.checkNextTrace(eTest.Server, SEPServer.SEPGameServerListener.class, "gamePaused", "gamePaused");
+			tester.checkNextTrace(eTest.Server, SEPServer.SEPGameServerListener.class, "gameResumed", "gameResumed");
 	
-			tester.checkAllUnorderedTraces(clientOut, TestClientUserInterface.class, "onGamePaused", "client1.onGamePaused", "client2.onGamePaused", "client3.onGamePaused");
-			tester.checkAllUnorderedTraces(clientOut, TestClientUserInterface.class, "onGameResumed", "client1.onGameResumed", "client2.onGameResumed", "client3.onGameResumed");		
+			tester.checkAllUnorderedTraces(eTest.Clients, TestClientUserInterface.class, "onGamePaused", "client1.onGamePaused", "client2.onGamePaused", "client3.onGamePaused");
+			tester.checkAllUnorderedTraces(eTest.Clients, TestClientUserInterface.class, "onGameResumed", "client1.onGameResumed", "client2.onGameResumed", "client3.onGameResumed");		
 	
 			assertTrue("Unexpected remaining log", tester.flush());
 			
 			try
 			{
-				Stack<Move> checkpoints = new Stack<Move>();
-				checkpoints.add(new Move(startingPlanet3, 0, true));
-				client2AITest.getGameBoard().onLocalCommand(new MoveFleet(t1Fleets, checkpoints));
+				List<FleetMove> moves = new LinkedList<FleetMove>();
+				moves.add(new FleetMove(startingPlanet3, 0, true));
+				client2AITest.getGameBoard().onLocalCommand(new UpdateFleetMovesPlan(client2.getLogin(), t1Fleets, moves));				
 				
-				client1AITest.getGameBoard().endTurn();
-				client2AITest.getGameBoard().endTurn();
-				client3AITest.getGameBoard().endTurn();
+				client1.endTurn();
+				client2.endTurn();
+				client3.endTurn();
 				++turn;
 				
 				startTime = System.currentTimeMillis();
-				waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);
+				waitForNextTurn(120*1000, turn, client1AITest, client2AITest, client3AITest);
 				sumTime += System.currentTimeMillis() - startTime;
 			}
 			catch(Throwable t)
@@ -993,18 +1025,17 @@ public class TestSEP
 	
 			assertEquals("Unexpected result", turn, client1AITest.getTurn());
 			
-			tester.checkNextTrace(serverOut, SEPServer.class, "checkForNextTurn", "Resolving new turn");
-			tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
-			tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
+			tester.checkNextTrace(eTest.Server, SEPServer.class, "checkForNextTurn", "Resolving new turn");
+			tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
 			
-			Fleet f;
+			IFleet f;
 			
 			if (client1AITest.isCelestialBodyOwner(startingPlanet3))
 			{
 				System.out.println("Run "+totalRuns+", winner: "+client1.getLogin());
 				++client1Win;
 				f = client1AITest.checkFleetLocation(t1Fleets, startingPlanet3);
-				assertTrue("Unexpected result ("+f.getTotalQt()+")", f.getTotalQt() <= 5);
+				assertTrue("Unexpected result ("+f.getStarshipsCount()+")", f.getStarshipsCount() <= 5);
 				
 				client3AITest.checkFleetDestroyed(t2Fleets);
 				client3AITest.checkInvisibleLocation(startingPlanet3);
@@ -1014,7 +1045,7 @@ public class TestSEP
 				System.out.println("Run "+totalRuns+", winner: "+client2.getLogin());
 				++client2Win;
 				f = client2AITest.checkFleetLocation(t1Fleets, startingPlanet3);
-				assertTrue("Unexpected result ("+f.getTotalQt()+")", f.getTotalQt() <= 4);
+				assertTrue("Unexpected result ("+f.getStarshipsCount()+")", f.getStarshipsCount() <= 4);
 				
 				client1AITest.checkFleetDestroyed(t1Fleets);
 				client1AITest.checkInvisibleLocation(startingPlanet3);
@@ -1026,7 +1057,7 @@ public class TestSEP
 				System.out.println("Run "+totalRuns+", winner: "+client3.getLogin());
 				++client3Win;
 				f = client3AITest.checkFleetLocation(t2Fleets, startingPlanet3);
-				assertTrue("Unexpected result ("+f.getTotalQt()+")", f.getTotalQt() <= 5);
+				assertTrue("Unexpected result ("+f.getStarshipsCount()+")", f.getStarshipsCount() <= 5);
 				
 				client1AITest.checkFleetDestroyed(t1Fleets);
 				client1AITest.checkInvisibleLocation(startingPlanet3);
@@ -1041,6 +1072,7 @@ public class TestSEP
 		
 		assertEquals("Unexpected result", totalRuns, client1Win);
 		
+		/*
 		// DefenseModule test
 		assertTrue("Unexpected remaining log", tester.flush());
 		System.out.println("Step: load game / max defenseModule battle test");
@@ -1060,12 +1092,11 @@ public class TestSEP
 		
 		assertEquals("Unexpected result", turn, client1AITest.getTurn());
 
-		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gamePaused", "gamePaused");
-		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gameResumed", "gameResumed");
-		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)");
-
-		tester.checkAllUnorderedTraces(clientOut, TestClientUserInterface.class, "onGamePaused", "client1.onGamePaused", "client2.onGamePaused", "client3.onGamePaused");
-		tester.checkAllUnorderedTraces(clientOut, TestClientUserInterface.class, "onGameResumed", "client1.onGameResumed", "client2.onGameResumed", "client3.onGameResumed");		
+		tester.checkNextTrace(eTest.Server, SEPServer.SEPGameServerListener.class, "gamePaused", "gamePaused");
+		tester.checkNextTrace(eTest.Server, SEPServer.SEPGameServerListener.class, "gameResumed", "gameResumed");
+		
+		tester.checkAllUnorderedTraces(eTest.Clients, TestClientUserInterface.class, "onGamePaused", "client1.onGamePaused", "client2.onGamePaused", "client3.onGamePaused");
+		tester.checkAllUnorderedTraces(eTest.Clients, TestClientUserInterface.class, "onGameResumed", "client1.onGameResumed", "client2.onGameResumed", "client3.onGameResumed");		
 
 		assertTrue("Unexpected remaining log", tester.flush());
 
@@ -1084,9 +1115,9 @@ public class TestSEP
 				++nbDefenseModule;
 				client3AITest.getGameBoard().onLocalCommand(new Build(startingPlanet3, DefenseModule.class));				
 				
-				client1AITest.getGameBoard().endTurn();
-				client2AITest.getGameBoard().endTurn();
-				client3AITest.getGameBoard().endTurn();
+				client1.endTurn();
+				client2.endTurn();
+				client3.endTurn();
 				++turn;
 				
 				waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);			
@@ -1100,9 +1131,8 @@ public class TestSEP
 	
 			assertEquals("Unexpected result", turn, client1AITest.getTurn());
 			
-			tester.checkNextTrace(serverOut, SEPServer.class, "checkForNextTurn", "Resolving new turn");
-			tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
-			tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
+			tester.checkNextTrace(eTest.Server, SEPServer.class, "checkForNextTurn", "Resolving new turn");
+			tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
 			
 			client1AITest.checkBuilding(startingPlanet3, DefenseModule.class, nbDefenseModule);
 			
@@ -1116,9 +1146,9 @@ public class TestSEP
 			checkpoints.add(new Move(startingPlanet3, 0, true));
 			client2AITest.getGameBoard().onLocalCommand(new MoveFleet(t1Fleets, checkpoints));
 			
-			client1AITest.getGameBoard().endTurn();
-			client2AITest.getGameBoard().endTurn();
-			client3AITest.getGameBoard().endTurn();
+			client1.endTurn();
+			client2.endTurn();
+			client3.endTurn();
 			++turn;
 			
 			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);			
@@ -1132,9 +1162,8 @@ public class TestSEP
 
 		assertEquals("Unexpected result", turn, client1AITest.getTurn());
 		
-		tester.checkNextTrace(serverOut, SEPServer.class, "checkForNextTurn", "Resolving new turn");
-		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
-		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
+		tester.checkNextTrace(eTest.Server, SEPServer.class, "checkForNextTurn", "Resolving new turn");
+		tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
 		
 		if (client1AITest.isCelestialBodyOwner(startingPlanet3) || client2AITest.isCelestialBodyOwner(startingPlanet3))
 		{
@@ -1162,12 +1191,11 @@ public class TestSEP
 		
 		assertEquals("Unexpected result", turn, client1AITest.getTurn());
 
-		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gamePaused", "gamePaused");
-		tester.checkNextTrace(serverOut, SEPServer.SEPGameServerListener.class, "gameResumed", "gameResumed");
-		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)");
-
-		tester.checkAllUnorderedTraces(clientOut, TestClientUserInterface.class, "onGamePaused", "client1.onGamePaused", "client2.onGamePaused", "client3.onGamePaused");
-		tester.checkAllUnorderedTraces(clientOut, TestClientUserInterface.class, "onGameResumed", "client1.onGameResumed", "client2.onGameResumed", "client3.onGameResumed");		
+		tester.checkNextTrace(eTest.Server, SEPServer.SEPGameServerListener.class, "gamePaused", "gamePaused");
+		tester.checkNextTrace(eTest.Server, SEPServer.SEPGameServerListener.class, "gameResumed", "gameResumed");
+		
+		tester.checkAllUnorderedTraces(eTest.Clients, TestClientUserInterface.class, "onGamePaused", "client1.onGamePaused", "client2.onGamePaused", "client3.onGamePaused");
+		tester.checkAllUnorderedTraces(eTest.Clients, TestClientUserInterface.class, "onGameResumed", "client1.onGameResumed", "client2.onGameResumed", "client3.onGameResumed");		
 
 		assertTrue("Unexpected remaining log", tester.flush());
 
@@ -1180,9 +1208,9 @@ public class TestSEP
 			++nbDefenseModule;
 			client3AITest.getGameBoard().onLocalCommand(new Build(startingPlanet3, DefenseModule.class));				
 			
-			client1AITest.getGameBoard().endTurn();
-			client2AITest.getGameBoard().endTurn();
-			client3AITest.getGameBoard().endTurn();
+			client1.endTurn();
+			client2.endTurn();
+			client3.endTurn();
 			++turn;
 			
 			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);			
@@ -1196,9 +1224,8 @@ public class TestSEP
 
 		assertEquals("Unexpected result", turn, client1AITest.getTurn());
 		
-		tester.checkNextTrace(serverOut, SEPServer.class, "checkForNextTurn", "Resolving new turn");
-		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
-		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
+		tester.checkNextTrace(eTest.Server, SEPServer.class, "checkForNextTurn", "Resolving new turn");
+		tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
 		
 		assertEquals("Unexpected numbers of built ("+nbDefenseModule+").", 1, nbDefenseModule);
 		client1AITest.checkBuilding(startingPlanet3, DefenseModule.class, nbDefenseModule);
@@ -1209,9 +1236,9 @@ public class TestSEP
 			checkpoints.add(new Move(startingPlanet3, 0, true));
 			client2AITest.getGameBoard().onLocalCommand(new MoveFleet(t1Fleets, checkpoints));
 			
-			client1AITest.getGameBoard().endTurn();
-			client2AITest.getGameBoard().endTurn();
-			client3AITest.getGameBoard().endTurn();
+			client1.endTurn();
+			client2.endTurn();
+			client3.endTurn();
 			++turn;
 			
 			waitForNextTurn(turn, client1AITest, client2AITest, client3AITest);			
@@ -1225,9 +1252,8 @@ public class TestSEP
 
 		assertEquals("Unexpected result", turn, client1AITest.getTurn());
 		
-		tester.checkNextTrace(serverOut, SEPServer.class, "checkForNextTurn", "Resolving new turn");
-		tester.checkAllUnorderedTraces(clientOut, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
-		tester.checkAllUnorderedTraces(serverOut, GameBoard.class, "getPlayerGameBoard", new String[] { "getGameBoard(client1)", "getGameBoard(client2)", "getGameBoard(client3)" });
+		tester.checkNextTrace(eTest.Server, SEPServer.class, "checkForNextTurn", "Resolving new turn");
+		tester.checkAllUnorderedTraces(eTest.Clients, TestSEP.TestClientUserInterface.class, "receiveNewTurnGameBoard", new String[] { "client1.receiveNewTurnGameBoard("+turn+")", "client2.receiveNewTurnGameBoard("+turn+")", "client3.receiveNewTurnGameBoard("+turn+")" });
 		
 		if (client3AITest.isCelestialBodyOwner(startingPlanet3))
 		{

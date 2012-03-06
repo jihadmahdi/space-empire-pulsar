@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.Rules;
@@ -39,9 +41,9 @@ public class FleetMarker extends UnitMarker implements IFleetMarker
 	 * @param ownerName
 	 * @param name
 	 */
-	public FleetMarker(int turn, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed, Map<StarshipTemplate, Integer> starships, boolean isAssignedFleet)
+	public FleetMarker(int turn, double step, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed, Map<StarshipTemplate, Integer> starships, boolean isAssignedFleet)
 	{
-		super(turn, ownerName, name, isStopped, realLocation, speed);
+		super(turn, step, ownerName, name, isStopped, realLocation, speed);
 		this.starships.putAll(starships);
 		this.isAssignedFleet = isAssignedFleet;
 	}
@@ -52,9 +54,9 @@ public class FleetMarker extends UnitMarker implements IFleetMarker
 	 * @param ownerName
 	 * @param name
 	 */
-	public FleetMarker(SEPCommonDB sepDB, int turn, String ownerName, String name)
+	public FleetMarker(SEPCommonDB sepDB, int turn, double step, String ownerName, String name)
 	{
-		super(sepDB, turn, ownerName, name);
+		super(sepDB, turn, step, ownerName, name);
 		
 		// Null values
 		this.isAssignedFleet = false;
@@ -87,17 +89,17 @@ public class FleetMarker extends UnitMarker implements IFleetMarker
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 			
-			if (fleetMarkerIndex.get(PK, getPK(turn, ownerName, name)).hasNext())
+			if (fleetMarkerIndex.get(PK, getPK(turn, step, ownerName, name)).hasNext())
 			{
 				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, fleetMarker["+getPK(turn, ownerName, name)+"] already exist.");
+				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, fleetMarker["+getPK(turn, step, ownerName, name)+"] already exist.");
 			}			
 			
 			properties = sepDB.getDB().createNode();
-			FleetMarker.initializeProperties(properties, turn, ownerName, name, isStopped, realLocation, speed, starships, isAssignedFleet);
-			fleetMarkerIndex.add(properties, PK, getPK(turn, ownerName, name));
+			FleetMarker.initializeProperties(properties, turn, step, ownerName, name, isStopped, realLocation, speed, starships, isAssignedFleet);
+			fleetMarkerIndex.add(properties, PK, getPK(turn, step, ownerName, name));
 			
-			Node nOwner = db.index().forNodes("PlayerIndex").get("name", ownerName).getSingle();
+			Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
 			if (nOwner == null)
 			{
 				tx.failure();
@@ -139,6 +141,18 @@ public class FleetMarker extends UnitMarker implements IFleetMarker
 	}
 	
 	@Override
+	public int getStarshipsCount()
+	{		
+		int qt = 0;
+		for(int tqt : getStarships().values())
+		{
+			qt += tqt;
+		}
+		
+		return qt;
+	}
+	
+	@Override
 	public boolean isAssignedFleet()
 	{
 		if (isDBOnline())
@@ -171,6 +185,26 @@ public class FleetMarker extends UnitMarker implements IFleetMarker
 		return sb.toString();
 	}
 	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public boolean equals(Object obj)
+	{
+		if (this == obj) return true;
+		if (!super.equals(obj)) return false;
+		if (!FleetMarker.class.isInstance(obj)) return false;
+		FleetMarker fm = (FleetMarker) obj;
+		if (!getStarships().equals(fm.getStarships())) return false;
+		if (isAssignedFleet() != fm.isAssignedFleet()) return false;
+		return true;
+	}
+	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public int hashCode()
+	{
+		return super.hashCode() + getStarships().hashCode() + (isAssignedFleet()?1:0);
+	}
+	
 	private void writeObject(java.io.ObjectOutputStream out) throws IOException
 	{
 		getStarships();
@@ -183,9 +217,10 @@ public class FleetMarker extends UnitMarker implements IFleetMarker
 		in.defaultReadObject();
 	}
 	
-	public static void initializeProperties(Node properties, int turn, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed, Map<StarshipTemplate, Integer> starships, boolean isAssignedFleet)
+	public static void initializeProperties(Node properties, int turn, double step, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed, Map<StarshipTemplate, Integer> starships, boolean isAssignedFleet)
 	{
 		properties.setProperty("turn", turn);
+		properties.setProperty("step", step);
 		properties.setProperty("ownerName", ownerName);
 		properties.setProperty("name", name);
 		properties.setProperty("type", eUnitType.Fleet.toString());

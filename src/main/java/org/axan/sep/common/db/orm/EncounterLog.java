@@ -18,9 +18,9 @@ import org.neo4j.graphdb.index.IndexHits;
 public class EncounterLog extends AGraphObject<Relationship> implements IEncounterLog
 {
 	static final String PK = "[turn] observerOwnerName@observerName observation of encounterOwnerName@encounterName";
-	static final String getPK(int turn, String observerOwnerName, String observerName, String encounterOwnerName, String encounterName)
+	static final String getPK(int turn, double step, String observerOwnerName, String observerName, String encounterOwnerName, String encounterName)
 	{
-		return String.format("[%d] %s@%s observation of %s@%s", turn, observerOwnerName, observerName, encounterOwnerName, encounterName);
+		return String.format("[%d.%.2f] %s@%s observation of %s@%s", turn, step, observerOwnerName, observerName, encounterOwnerName, encounterName);
 	}
 	
 	/*
@@ -31,16 +31,18 @@ public class EncounterLog extends AGraphObject<Relationship> implements IEncount
 	protected final String encounterOwnerName;
 	protected final String encounterName;
 	protected final int turn;
+	protected final double step;
 	
 	/*
 	 * DB connection
 	 */
 	protected Index<Relationship> encounterLogIndex;
 	
-	EncounterLog(String observerOwnerName, String observerName, String encounterOwnerName, String encounterName, int turn)
+	EncounterLog(String observerOwnerName, String observerName, String encounterOwnerName, String encounterName, int turn, double step)
 	{
-		super(getPK(turn, observerOwnerName, observerName, encounterOwnerName, encounterName));
+		super(getPK(turn, step, observerOwnerName, observerName, encounterOwnerName, encounterName));
 		this.turn = turn;
+		this.step = step;
 		this.observerOwnerName = observerOwnerName;
 		this.observerName = observerName;
 		this.encounterOwnerName = encounterOwnerName;
@@ -53,10 +55,11 @@ public class EncounterLog extends AGraphObject<Relationship> implements IEncount
 	 * @param observer
 	 * @param encounter
 	 */
-	EncounterLog(SEPCommonDB sepDB, String observerOwnerName, String observerName, String encounterOwnerName, String encounterName, int turn)
+	EncounterLog(SEPCommonDB sepDB, String observerOwnerName, String observerName, String encounterOwnerName, String encounterName, int turn, double step)
 	{
-		super(sepDB, getPK(turn, observerOwnerName, observerName, encounterOwnerName, encounterName));
+		super(sepDB, getPK(turn, step, observerOwnerName, observerName, encounterOwnerName, encounterName));
 		this.turn = turn;
+		this.step = step;
 		this.observerOwnerName = observerOwnerName;
 		this.observerName = observerName;
 		this.encounterOwnerName = encounterOwnerName;
@@ -76,7 +79,7 @@ public class EncounterLog extends AGraphObject<Relationship> implements IEncount
 			db = sepDB.getDB();
 			
 			encounterLogIndex = db.index().forRelationships("EncounterLogIndex");
-			IndexHits<Relationship> hits = encounterLogIndex.get(PK, getPK(turn, observerOwnerName, observerName, encounterOwnerName, encounterName));
+			IndexHits<Relationship> hits = encounterLogIndex.get(PK, getPK(turn, step, observerOwnerName, observerName, encounterOwnerName, encounterName));
 						
 			properties = hits.hasNext() ? hits.getSingle() : null;			
 		}
@@ -100,10 +103,10 @@ public class EncounterLog extends AGraphObject<Relationship> implements IEncount
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 			
-			if (encounterLogIndex.get(PK, getPK(turn, observerOwnerName, observerName, encounterOwnerName, encounterName)).hasNext())
+			if (encounterLogIndex.get(PK, getPK(turn, step, observerOwnerName, observerName, encounterOwnerName, encounterName)).hasNext())
 			{
 				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed fields  '"+PK+"' must be unique, encounterLog["+getPK(turn, observerOwnerName, observerName, encounterOwnerName, encounterName)+"] already exist.");
+				throw new DBGraphException("Constraint error: Indexed fields  '"+PK+"' must be unique, encounterLog["+getPK(turn, step, observerOwnerName, observerName, encounterOwnerName, encounterName)+"] already exist.");
 			}			
 
 			Node nObserver = db.index().forNodes("UnitIndex").get(Unit.PK, Unit.getPK(observerOwnerName, observerName)).getSingle();
@@ -113,16 +116,16 @@ public class EncounterLog extends AGraphObject<Relationship> implements IEncount
 				throw new DBGraphException("Constraint error: Cannot find observer Unit '"+Unit.getPK(observerOwnerName, observerName)+"'");
 			}
 			
-			Node nEncounter = db.index().forNodes("UnitMarkerIndex").get(UnitMarker.PK, UnitMarker.getPK(turn, encounterOwnerName, encounterName)).getSingle();
+			Node nEncounter = db.index().forNodes("UnitMarkerIndex").get(UnitMarker.PK, UnitMarker.getPK(turn, step, encounterOwnerName, encounterName)).getSingle();
 			if (nEncounter == null)
 			{
 				tx.failure();
-				throw new DBGraphException("Constraint error: Cannot find encounter UnitMarker '"+UnitMarker.getPK(turn, encounterOwnerName, encounterName)+"'");
+				throw new DBGraphException("Constraint error: Cannot find encounter UnitMarker '"+UnitMarker.getPK(turn, step, encounterOwnerName, encounterName)+"'");
 			}
 			
 			properties = nObserver.createRelationshipTo(nEncounter, eRelationTypes.UnitEncounterLog);
-			EncounterLog.initializeProperties(properties, turn, observerOwnerName, observerName, encounterOwnerName, encounterName);			
-			encounterLogIndex.add(properties, PK, getPK(turn, observerOwnerName, observerName, encounterOwnerName, encounterName));
+			EncounterLog.initializeProperties(properties, turn, step, observerOwnerName, observerName, encounterOwnerName, encounterName);			
+			encounterLogIndex.add(properties, PK, getPK(turn, step, observerOwnerName, observerName, encounterOwnerName, encounterName));
 						
 			tx.success();			
 		}
@@ -138,12 +141,13 @@ public class EncounterLog extends AGraphObject<Relationship> implements IEncount
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		return sepDB.getUnitMarker(turn, encounterOwnerName, encounterName, null);
+		return sepDB.getUnitMarker(turn, step, encounterOwnerName, encounterName, null);
 	}
 	
-	public static void initializeProperties(Relationship properties, int turn, String observerOwnerName, String observerName, String encounterOwnerName, String encounterName)
+	public static void initializeProperties(Relationship properties, int turn, double step, String observerOwnerName, String observerName, String encounterOwnerName, String encounterName)
 	{
 		properties.setProperty("turn", turn);
+		properties.setProperty("step", step);
 		properties.setProperty("observerOwnerName", observerOwnerName);
 		properties.setProperty("observerName", observerName);
 		properties.setProperty("encounterOwnerName", encounterOwnerName);

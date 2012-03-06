@@ -40,6 +40,11 @@ import java.util.Set;
 
 class Player extends AGraphObject<Node> implements IPlayer, Serializable
 {
+	public static final String PK = "name";
+	public static final String getPK(String name)
+	{
+		return name;
+	}
 	/*
 	 * PK: first pk field.
 	 */
@@ -89,7 +94,7 @@ class Player extends AGraphObject<Node> implements IPlayer, Serializable
 			
 			playersFactory = db.getReferenceNode().getSingleRelationship(eRelationTypes.Players, Direction.OUTGOING).getEndNode();
 			playerIndex = db.index().forNodes("PlayerIndex");
-			IndexHits<Node> hits = playerIndex.get("name", name);
+			IndexHits<Node> hits = playerIndex.get(Player.PK, Player.getPK(name));
 			properties = hits.hasNext() ? hits.getSingle() : null;			
 		}
 	}
@@ -111,7 +116,7 @@ class Player extends AGraphObject<Node> implements IPlayer, Serializable
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 			
-			if (playerIndex.get("name", name.toString()).hasNext())
+			if (playerIndex.get(Player.PK, Player.getPK(name)).hasNext())
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, player[name='"+name+"'] already exist.");
@@ -119,7 +124,7 @@ class Player extends AGraphObject<Node> implements IPlayer, Serializable
 			
 			properties = sepDB.getDB().createNode();
 			Player.initializeProperties(properties, name);
-			playerIndex.add(properties, "name", name);
+			playerIndex.add(properties, PK, getPK(name));
 			playersFactory.createRelationshipTo(properties, eRelationTypes.Players);
 			Node nConfig = sepDB.getDB().createNode();
 			PlayerConfig.initializeNode(nConfig, config.getColor(), config.getSymbol(), config.getPortrait());
@@ -255,7 +260,7 @@ class Player extends AGraphObject<Node> implements IPlayer, Serializable
 			
 			if (n.hasProperty("turn")) // UnitMarker
 			{
-				unitMarker = sepDB.getUnitMarker((Integer) n.getProperty("turn"), getName(), name, null);
+				unitMarker = sepDB.getUnitMarker((Integer) n.getProperty("turn"), (Double) n.getProperty("step"), getName(), name, null);
 			}
 			
 			IUnit unit = sepDB.getUnit(getName(), name, null);
@@ -290,21 +295,21 @@ class Player extends AGraphObject<Node> implements IPlayer, Serializable
 		for(Node n : properties.traverse(Order.BREADTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eRelationTypes.PlayerUnitMarker, Direction.OUTGOING, eRelationTypes.PlayerUnit, Direction.OUTGOING))
 		{
 			if (type != null && !type.toString().equals((String) n.getProperty("type"))) continue;
-		
-			String name = (String) n.getProperty("name");
 			
 			IUnitMarker unitMarker = null;
 			
 			if (n.hasProperty("turn")) // UnitMarker
 			{
-				unitMarker = sepDB.getUnitMarker((Integer) n.getProperty("turn"), getName(), name, type);
+				unitMarker = sepDB.getUnitMarker((Integer) n.getProperty("turn"), (Double) n.getProperty("step"), getName(), (String) n.getProperty("name"), type);
 			}
 			
-			IUnit unit = sepDB.getUnit(getName(), name, type);
+			IUnit unit = sepDB.getUnit(getName(), (String) n.getProperty("name"), type);
 			
-			String pk = Unit.getPK(getName(), name);
-						
 			if (unit != null && (unitMarker == null || unit.getTurn() >= unitMarker.getTurn())) unitMarker = unit;
+			
+			String pk = Unit.getPK(getName(), unitMarker.getName());
+									
+			
 			
 			if (!result.containsKey(pk) || (result.get(pk).getTurn() < unitMarker.getTurn())) result.put(pk, unitMarker);
 		}

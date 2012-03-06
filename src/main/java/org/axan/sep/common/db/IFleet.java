@@ -36,4 +36,7 @@ public interface IFleet extends IFleetMarker, IUnit
 	 * @return true if fleet is on the run ({@link #isStopped()} == false) after method call, even if no change are made.
 	 */
 	boolean nextDestination();
+	
+	@Override
+	public IFleetMarker getMarker(double step);
 }

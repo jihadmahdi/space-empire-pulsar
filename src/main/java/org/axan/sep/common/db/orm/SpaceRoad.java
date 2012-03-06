@@ -15,6 +15,11 @@ import org.neo4j.graphdb.index.IndexHits;
 
 public class SpaceRoad extends AGraphObject<Relationship> implements ISpaceRoad
 {
+	public static final String PK = "source->destination";
+	public static final String getPK(String sourceName, String destinationName)
+	{
+		return String.format("%s->%s", sourceName, destinationName);
+	}
 
 	/*
 	 * PK
@@ -63,7 +68,7 @@ public class SpaceRoad extends AGraphObject<Relationship> implements ISpaceRoad
 			db = sepDB.getDB();
 			
 			spaceRoadIndex = db.index().forRelationships("SpaceRoadIndex");
-			IndexHits<Relationship> hits = spaceRoadIndex.get("source->destination", String.format("%s->%s", sourceName, destinationName));
+			IndexHits<Relationship> hits = spaceRoadIndex.get(PK, getPK(sourceName, destinationName));
 			properties = hits.hasNext() ? hits.getSingle() : null;
 		}
 	}
@@ -85,21 +90,21 @@ public class SpaceRoad extends AGraphObject<Relationship> implements ISpaceRoad
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 			
-			if (spaceRoadIndex.get("source->destination", String.format("%s->%s", sourceName, destinationName)).hasNext())
+			if (spaceRoadIndex.get(PK, getPK(sourceName, destinationName)).hasNext())
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'source->destination' must be unique, spaceRoad[source->destination='"+sourceName+"->"+destinationName+"'] already exist.");
 			}
 			
 			Index<Node> buildingIndex = sepDB.getDB().index().forNodes("BuildingIndex");			
-			Node nSource = buildingIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", sourceName, eBuildingType.SpaceCounter)).getSingle();
+			Node nSource = buildingIndex.get(Building.PK, Building.getPK(sourceName, eBuildingType.SpaceCounter)).getSingle();
 			if (nSource == null)
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: No space counter found on celestial body named '"+sourceName+"' found.");
 			}
 			
-			Node nDestination = buildingIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", destinationName, eBuildingType.SpaceCounter)).getSingle();
+			Node nDestination = buildingIndex.get(Building.PK, Building.getPK(destinationName, eBuildingType.SpaceCounter)).getSingle();
 			if (nDestination == null)
 			{
 				tx.failure();
@@ -108,7 +113,7 @@ public class SpaceRoad extends AGraphObject<Relationship> implements ISpaceRoad
 
 			properties = nSource.createRelationshipTo(nDestination, eRelationTypes.SpaceRoad);
 			SpaceRoad.initializeProperties(properties, sourceName, destinationName);
-			spaceRoadIndex.add(properties, "source->destination", String.format("%s->%s", sourceName, destinationName));			
+			spaceRoadIndex.add(properties, PK, getPK(sourceName, destinationName));			
 			
 			tx.success();			
 		}

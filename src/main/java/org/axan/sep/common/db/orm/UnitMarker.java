@@ -11,6 +11,7 @@ import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.ICelestialBody;
 import org.axan.sep.common.db.IProductiveCelestialBody;
+import org.axan.sep.common.db.IUnit;
 import org.axan.sep.common.db.IUnitMarker;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
 import org.neo4j.graphdb.Direction;
@@ -22,10 +23,10 @@ import org.neo4j.graphdb.index.IndexHits;
 
 abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker, Serializable
 {
-	protected static final String PK = "[turn] ownerName@name";
-	protected static final String getPK(int turn, String ownerName, String name)
+	protected static final String PK = "[turn.step] ownerName@name";
+	protected static final String getPK(int turn, double step, String ownerName, String name)
 	{
-		return String.format("[%d] %s@%s", turn, ownerName, name);
+		return String.format("[%d.%.2f] %s@%s", turn, step, ownerName, name);
 	}
 	/*
 	protected static final String queryAnyTurnPK(String ownerName, String name)
@@ -38,6 +39,7 @@ abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker, Ser
 	 * PK
 	 */
 	protected final int turn;
+	protected final double step;
 	protected final String ownerName;
 	protected final String name;
 	
@@ -59,10 +61,11 @@ abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker, Ser
 	 * @param ownerName
 	 * @param name
 	 */
-	public UnitMarker(int turn, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed)
+	public UnitMarker(int turn, double step, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed)
 	{
-		super(getPK(turn, ownerName, name));
+		super(getPK(turn, step, ownerName, name));
 		this.turn = turn;
+		this.step = step;
 		this.ownerName = ownerName;
 		this.name = name;
 		this.type = eUnitType.valueOf(getClass().getSimpleName().endsWith("Marker") ? getClass().getSimpleName().substring(0, getClass().getSimpleName().length() - 6) : getClass().getSimpleName());
@@ -78,10 +81,11 @@ abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker, Ser
 	 * @param ownerName
 	 * @param name
 	 */
-	public UnitMarker(SEPCommonDB sepDB, int turn, String ownerName, String name)
+	public UnitMarker(SEPCommonDB sepDB, int turn, double step, String ownerName, String name)
 	{
-		super(sepDB, getPK(turn, ownerName, name));
+		super(sepDB, getPK(turn, step, ownerName, name));
 		this.turn = turn;
+		this.step = step;
 		this.ownerName = ownerName;
 		this.name = name;
 		this.type = eUnitType.valueOf(getClass().getSimpleName().endsWith("Marker") ? getClass().getSimpleName().substring(0, getClass().getSimpleName().length() - 6) : getClass().getSimpleName());
@@ -105,7 +109,7 @@ abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker, Ser
 			db = sepDB.getDB();
 			
 			unitMarkerIndex = db.index().forNodes("UnitMarkerIndex");
-			IndexHits<Node> hits = unitMarkerIndex.get(PK, getPK(turn, ownerName, name));
+			IndexHits<Node> hits = unitMarkerIndex.get(PK, getPK(turn, step, ownerName, name));
 			
 			properties = hits.hasNext() ? hits.getSingle() : null;
 			if (properties != null && !properties.getProperty("type").equals(type.toString()))
@@ -129,15 +133,15 @@ abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker, Ser
 		
 		try
 		{
-			if (unitMarkerIndex.get(PK, getPK(turn, ownerName, name)).hasNext())
+			if (unitMarkerIndex.get(PK, getPK(turn, step, ownerName, name)).hasNext())
 			{
 				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, unitMarker["+getPK(turn, ownerName, name)+"] already exist.");
+				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, unitMarker["+getPK(turn, step, ownerName, name)+"] already exist.");
 			}			
 						
-			unitMarkerIndex.add(properties, PK, getPK(turn, ownerName, name));
+			unitMarkerIndex.add(properties, PK, getPK(turn, step, ownerName, name));
 			
-			Node nOwner = db.index().forNodes("PlayerIndex").get("name", ownerName).getSingle();
+			Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
 			if (nOwner == null)
 			{
 				tx.failure();
@@ -147,7 +151,7 @@ abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker, Ser
 			
 			// Ensure area creation ?						
 			sepDB.getArea(realLocation.asLocation());
-			IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get("location", realLocation.asLocation().toString());
+			IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get(Area.PK, Area.getPK(realLocation.asLocation()));
 			if (!hits.hasNext())
 			{
 				throw new DBGraphException("Contraint error: Cannot find Area[location='"+realLocation.asLocation().toString()+"']. Area must be created first.");
@@ -168,6 +172,12 @@ abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker, Ser
 	public int getTurn()
 	{
 		return turn;
+	}
+	
+	@Override
+	public double getStep()
+	{
+		return step;
 	}
 	
 	@Override
@@ -247,6 +257,28 @@ abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker, Ser
 		sb.append(String.format("Observed on turn %d\n[%s] %s (%s)\n", getTurn(), getOwnerName(), getName(), isStopped() ? "stopped" : "moving"));
 		
 		return sb.toString();
+	}
+	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public boolean equals(Object obj)
+	{
+		if (this == obj) return true;
+		if (obj == null || !UnitMarker.class.isInstance(obj)) return false;
+		UnitMarker um = (UnitMarker) obj;		
+		if (!getPK(getTurn(), getStep(), getOwnerName(), getName()).equals(getPK(um.getTurn(), um.getStep(), um.getOwnerName(), um.getName()))) return false;
+		if (!getType().equals(um.getType())) return false;
+		if (isStopped() != um.isStopped()) return false;
+		if (!getRealLocation().equals(um.getRealLocation())) return false;
+		if (getSpeed() != um.getSpeed()) return false;
+		return true;
+	}
+	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public int hashCode()
+	{
+		return getPK(getTurn(), getStep(), getOwnerName(), getName()).hashCode() + getType().ordinal() + (isStopped()?1:0) + getRealLocation().hashCode() + (int) getSpeed();
 	}
 	
 	private void writeObject(java.io.ObjectOutputStream out) throws IOException

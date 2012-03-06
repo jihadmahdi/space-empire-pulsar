@@ -12,8 +12,18 @@ import java.util.Stack;
 
 import org.axan.sep.client.SEPClient;
 import org.axan.sep.common.PlayerGameBoard;
+import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.Protocol.eBuildingType;
+import org.axan.sep.common.Protocol.eUnitType;
+import org.axan.sep.common.SEPUtils.Location;
+import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.IBuilding;
+import org.axan.sep.common.db.ICelestialBody;
+import org.axan.sep.common.db.IDiplomacy;
+import org.axan.sep.common.db.IFleet;
+import org.axan.sep.common.db.IDiplomacyMarker.eForeignPolicy;
+import org.axan.sep.common.db.IProductiveCelestialBody;
+import org.axan.sep.common.db.orm.DiplomacyMarker;
 import org.axan.sep.common.db.orm.SEPCommonDB;
 
 import com.almworks.sqlite4java.SQLiteException;
@@ -84,203 +94,153 @@ public class ClientAI
 			fail(buildSlotsCount+" building slots count expected but "+building.getNbSlots()+" found.");
 			return;
 		}
-	}		
+	}
 	
-	/*
 	public void checkFleetNotMoved(String fleetName, int expectedQt, boolean checkPreviousGameBoard)
 	{
 		checkFleetMove(fleetName, expectedQt, null, null, -1, checkPreviousGameBoard);
 	}
+	
 	public double checkFleetMove(String fleetName, int expectedQt, String sourceCelestialBody, String destinationCelestialBody, int departureDate, boolean checkPreviousGameBoard)
 	{
-		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
+		SEPCommonDB sepDB = getDB();
+		if (sepDB.hasPrevious()) sepDB = sepDB.previous();		
 		
 		double expectedMoved = 0;
 		
-		try
+		IFleet f = sepDB.getFleet(playerName, fleetName);			
+		assertNotNull("Cannot find fleet '"+playerName+"@"+fleetName+"' : Unknown unit '"+playerName+"@"+fleetName+"'", f);
+		
+		if (f.getStarshipsCount() != expectedQt) fail("Unexpected starships quantity.");
+		
+		expectedMoved = (departureDate < 0 || sourceCelestialBody == null || destinationCelestialBody == null) ? 0 : shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getTurn()-1);
+		
+		if (!checkPreviousGameBoard) return expectedMoved;
+		
+		IFleet pf = sepDB.hasPrevious() ? sepDB.previous().getFleet(playerName, fleetName) : null;
+		
+		if ((pf == null && (f.isStopped() != (expectedMoved == 0))) || (pf != null && (pf.getRealLocation().equals(f.getRealLocation()) == (expectedMoved > 0))))
 		{
-			Fleet f = currentLocalGame.getGameBoard().getUnit(playerName, fleetName, Fleet.class);
-			assertNotNull("Cannot find fleet '"+playerName+"@"+fleetName+"' : Unknown unit '"+playerName+"@"+fleetName+"'", f);
+			//shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getDate()-1);
+			System.err.println("checkFleetMove('"+fleetName+"', "+expectedQt+", '"+sourceCelestialBody+"', '"+destinationCelestialBody+"', "+departureDate+") ERROR");
+			System.err.println("Fleet: "+f.toString());
 			
-			if (f.getTotalQt() != expectedQt) fail("Unexpected starships quantity.");
-			
-			expectedMoved = (departureDate < 0 || sourceCelestialBody == null || destinationCelestialBody == null) ? 0 : shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getDate()-1);
-			
-			if (!checkPreviousGameBoard) return expectedMoved;
-			
-			if (!previousGameBoards.isEmpty())
+			if (pf == null)
 			{
-				try
-				{
-					Fleet pf = previousGameBoards.lastElement().getUnit(playerName, fleetName, Fleet.class);
-					assertNotNull("Cannot find fleet on previous game board '"+playerName+"@"+fleetName+"'", pf);
-					if (pf.getCurrentLocation().equals(f.getCurrentLocation()) == (expectedMoved > 0))
-					{
-						//shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getDate()-1);
-						System.err.println("checkFleetMove('"+fleetName+"', "+expectedQt+", '"+sourceCelestialBody+"', '"+destinationCelestialBody+"', "+departureDate+") ERROR");
-						System.err.println("Fleet: "+f.toString());
-						System.err.println("\tpreviousSourceLocation: "+pf.getSourceLocation());
-						System.err.println("\tpreviousCurrentLocation: "+pf.getCurrentLocation());
-						System.err.println("\tpreviousDestinationLocation: "+pf.getDestinationLocation());
-						
-						System.err.println("\tsourceLocation: "+f.getSourceLocation());
-						System.err.println("\tcurrentLocation: "+f.getCurrentLocation());
-						System.err.println("\tdestinationLocation: "+f.getDestinationLocation());
-						
-						System.err.println("ExpectedMoved : "+expectedMoved);
-						
-						fail("Unexpected fleet move state ("+(expectedMoved<=0)+").");
-					}
-				}
-				catch(PlayerGameBoardQueryException e)
-				{
-					if ((f.getDestinationLocation() == null || f.getSourceLocation().equals(f.getCurrentLocation())) == (expectedMoved>1))
-					{
-						//shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getDate()-1);
-						System.err.println("checkFleetMove('"+fleetName+"', "+expectedQt+", '"+sourceCelestialBody+"', '"+destinationCelestialBody+"', "+departureDate+") ERROR");
-						System.err.println("Fleet: "+f.toString());
-						System.err.println("\tsourceLocation: "+f.getSourceLocation());
-						System.err.println("\tcurrentLocation: "+f.getCurrentLocation());
-						System.err.println("\tdestinationLocation: "+f.getDestinationLocation());
-						
-						System.err.println("ExpectedMoved : "+expectedMoved);
-						
-						fail("Unexpected fleet move state ("+(expectedMoved<=0)+").");					
-					}
-				}
+				System.err.println("\tPrevious fleet == null");
 			}
-			else if (expectedMoved>0) fail("Fleet has just been created and not moved yet.");
-		}
-		catch(PlayerGameBoardQueryException e)
-		{
-			fail("Cannot find fleet '"+playerName+"@"+fleetName+"' : "+e.getMessage());
+			else
+			{
+				System.err.println("\t-1 Departure: "+pf.getDeparture());
+				System.err.println("\t-1 RealLocation: "+pf.getRealLocation());
+				System.err.println("\t-1 Destination: "+pf.getDestination());
+			}			
+			
+			int i = 0;
+			while(sepDB != null && f != null)
+			{
+				f = sepDB.getFleet(playerName, fleetName);
+				if (f == null) break;
+				
+				System.err.println("\t"+i+" Departure: "+f.getDeparture());
+				System.err.println("\t"+i+" RealLocation: "+f.getRealLocation());
+				System.err.println("\t"+i+" Destination: "+f.getDestination());
+				
+				sepDB = sepDB.next();
+				++i;
+			}
+			
+			System.err.println("ExpectedMoved : "+expectedMoved);
+			
+			expectedMoved = shouldMove(sourceCelestialBody, destinationCelestialBody, departureDate, f.getSpeed(), getTurn()-1);
+			
+			fail("Unexpected fleet move state ("+(expectedMoved<=0)+").");
 		}
 		
 		return expectedMoved;
 	}
-
-	public void checkDiplomacy(Map<String, PlayerPolicies> diplomacy)
-	{
-		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
-		
-		Diplomacy expectedDiplomacy = new Diplomacy(true, currentLocalGame.getGameBoard().getDate(), playerName, diplomacy);
-		assertEquals(expectedDiplomacy, currentLocalGame.getGameBoard().getPlayersPolicies().get(playerName));
-	}
 	
 	public double shouldMove(String sourceCelestialBody, String destinationCelestialBody, int departureDate, double speed, int date)
 	{
-		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
+		SEPCommonDB sepDB = getDB();
 		
-		try
-		{
-			RealLocation source = currentLocalGame.getGameBoard().getCelestialBodyLocation(sourceCelestialBody);
-			RealLocation destination = currentLocalGame.getGameBoard().getCelestialBodyLocation(destinationCelestialBody);			
-			double distance = SEPUtils.getDistance(source, destination);
-			double totalTime = distance / speed;
-			
-			// return ((date - departureDate) < totalTime); // No, because when delta is very low the unit may be already count in destination area.
-			
-			double progress = (date - departureDate) / totalTime;
-			
-			boolean shouldMove = !SEPUtils.getMobileLocation(source, destination, progress, true).asLocation().equals(destination.asLocation());						
-			
-			return shouldMove ? totalTime : 0;			
-		}
-		catch(PlayerGameBoardQueryException e)
-		{
-			e.printStackTrace();
-			fail(e.getMessage());
-			return 0;
-		}
-	}
-
-	public boolean testFleetLocation(String fleetName, String expectedLocationName) throws PlayerGameBoardQueryException
-	{
-		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
+		RealLocation departure = sepDB.getCelestialBody(sourceCelestialBody).getLocation().asRealLocation();
+		RealLocation destination = sepDB.getCelestialBody(destinationCelestialBody).getLocation().asRealLocation();
+		double distance = SEPUtils.getDistance(departure, destination);
+		double totalTime = distance / speed;
 		
-		Fleet f = currentLocalGame.getGameBoard().getUnit(playerName, fleetName, Fleet.class);
-		
-		RealLocation fleetLoc = currentLocalGame.getGameBoard().getUnitLocation(playerName, fleetName);
-		RealLocation expectedLoc = currentLocalGame.getGameBoard().getCelestialBodyLocation(expectedLocationName);
-		
-		if (expectedLoc == null) fail("Cannot locate celestial body '"+expectedLocationName+"'");
-		return (expectedLoc.equals(fleetLoc));
+		// return ((date - departureDate) < totalTime); // No, because when delta is very low the unit may be already count in destination area.		
+		double progress = (date - departureDate) / totalTime;
+		boolean shouldMove = !SEPUtils.getMobileLocation(departure, destination, progress, true).asLocation().equals(destination);		
+		return shouldMove ? totalTime : 0;
 	}
 	
-	public Fleet checkFleetLocation(String fleetName, int expectedQt, String expectedLocationName)
+	public void checkDiplomacy(String targetName, boolean isAllowedToLand, eForeignPolicy foreignPolicy)
 	{
-		Fleet f = checkFleetLocation(fleetName, expectedLocationName);
-		if (f.getTotalQt() != expectedQt) fail("Unexpected starships quantity.");
+		SEPCommonDB sepDB = getDB();
+		
+		IDiplomacy d = sepDB.getPlayer(playerName).getDiplomacy(targetName);
+		
+		assertNotNull("Diplomacy is null", d);
+		assertEquals(isAllowedToLand, d.isAllowedToLand());
+		assertEquals(foreignPolicy, d.getForeignPolicy());
+	}
+	
+	/*
+	public boolean testFleetLocation(String fleetName, String expectedLocationName) throws PlayerGameBoardQueryException
+	{
+		SEPCommonDB sepDB = getDB();
+		
+		IFleet f = sepDB.getFleet(playerName, fleetName);
+		
+		RealLocation fleetLoc = f.getRealLocation();
+		Location expectedLoc = sepDB.getCelestialBody(expectedLocationName).getLocation();
+		
+		return expectedLoc.equals(fleetLoc.asLocation());		
+	}
+	*/
+	
+	public IFleet checkFleetLocation(String fleetName, int expectedQt, String expectedLocationName)
+	{
+		IFleet f = checkFleetLocation(fleetName, expectedLocationName);
+		if (f.getStarshipsCount() != expectedQt) fail("Unexpected starships quantity.");
 		return f;
 	}
 	
-	public Fleet checkFleetLocation(String fleetName, String expectedLocationName)
+	public IFleet checkFleetLocation(String fleetName, String expectedLocationName)
 	{
-		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
+		SEPCommonDB sepDB = getDB();
 		
-		try
-		{
-			Fleet f = currentLocalGame.getGameBoard().getUnit(playerName, fleetName, Fleet.class);			
-			
-			RealLocation fleetLoc = currentLocalGame.getGameBoard().getUnitLocation(playerName, fleetName);
-			RealLocation expectedLoc = currentLocalGame.getGameBoard().getCelestialBodyLocation(expectedLocationName);
-			
-			if (fleetLoc == null) fail("Cannot locate fleet : '"+playerName+"@"+fleetName+"'");
-			if (expectedLoc == null) fail("Cannot locate celestial body '"+expectedLocationName+"'");
-			
-			assertEquals("Unexpected fleet location", expectedLoc, fleetLoc);
-			
-			return f;
-		}
-		catch(PlayerGameBoardQueryException e)
-		{
-			fail("Cannot find fleet '"+playerName+"@"+fleetName+"' : "+e.getMessage());
-			return null;
-		}
+		IFleet f = sepDB.getFleet(playerName, fleetName);
+		
+		if (f == null) fail("Cannot find fleet : '"+playerName+"@"+fleetName+"'");
+		RealLocation fleetLoc = f.getRealLocation();
+		Location expectedLoc = sepDB.getCelestialBody(expectedLocationName).getLocation();
+		
+		assertEquals("Unexpected fleet location", expectedLoc, fleetLoc.asLocation());
+		
+		return f;
 	}
 	
 	public boolean isCelestialBodyOwner(String celestialBodyName)
 	{
-		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
-		
-		try
-		{
-			ProductiveCelestialBody productiveCelestialBody = currentLocalGame.getGameBoard().getCelestialBody(celestialBodyName, ProductiveCelestialBody.class);			
-			return productiveCelestialBody.isVisible() && playerName.equals(productiveCelestialBody.getOwnerName());
-		}
-		catch(PlayerGameBoardQueryException e)
-		{
-			fail("Cannot locate productive celestial body '"+celestialBodyName+"'");
-			return false;
-		}
+		SEPCommonDB sepDB = getDB();
+		IProductiveCelestialBody productiveCelestialBody = (IProductiveCelestialBody) sepDB.getCelestialBody(celestialBodyName);
+		return sepDB.getArea(productiveCelestialBody.getLocation()).isVisible(playerName) && playerName.equals(productiveCelestialBody.getOwner());
 	}
 	
 	public void checkFleetDestroyed(String fleetName)
 	{
-		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
+		SEPCommonDB sepDB = getDB();
 		
-		Fleet currentFleet = null;
-		try
-		{
-			currentFleet = currentLocalGame.getGameBoard().getUnit(playerName, fleetName, Fleet.class);
-			if (currentFleet != null) fail("Fleet is not destroyed : "+currentFleet);
-		}
-		catch(PlayerGameBoardQueryException e)
-		{
-			assertEquals(e.getMessage(), "Unknown unit '"+playerName+"@"+fleetName+"'", e.getMessage());
-		}
+		IFleet currentFleet = sepDB.getFleet(playerName, fleetName);
+		if (currentFleet != null) fail("Fleet is not destroyed : "+currentFleet);
 		
-		for(PlayerGameBoard previousGameBoard : previousGameBoards)
+		while(sepDB.hasPrevious())
 		{
-			try
-			{
-				currentFleet = previousGameBoard.getUnit(playerName, fleetName, Fleet.class);
-				if (currentFleet != null) return;
-			}
-			catch (PlayerGameBoardQueryException e)
-			{				
-				// nothing, this might be normal. A previous unit might has the same name.
-			}
+			sepDB = sepDB.previous();
+			currentFleet = sepDB.getFleet(playerName, fleetName);
+			if (currentFleet != null) return;
 		}
 		
 		fail("Fleet '"+fleetName+"' has never existed.");
@@ -288,16 +248,8 @@ public class ClientAI
 	
 	public void checkInvisibleLocation(String celestialBodyName)
 	{
-		if (currentLocalGame == null) fail("Test code error: Gameboard not refreshed yet.");
+		SEPCommonDB sepDB = getDB();
 		
-		try
-		{
-			assertFalse("Unexpected result", currentLocalGame.getGameBoard().getCelestialBody(celestialBodyName).isVisible());
-		}
-		catch(PlayerGameBoardQueryException e)
-		{
-			fail("Cannot locate productive celestial body '"+celestialBodyName+"'");
-		}
+		assertFalse("Unexpected result", sepDB.getArea(sepDB.getCelestialBody(celestialBodyName).getLocation()).isVisible(playerName));
 	}
-	*/
 }

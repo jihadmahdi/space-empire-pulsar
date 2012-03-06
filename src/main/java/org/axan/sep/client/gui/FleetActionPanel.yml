@@ -1,5 +1,7 @@
 JPanel(name=fleetActionPanel):
   - JTextPane(name=label, editable=false, focusable=false)
+  - JPanel(name=generalActionsPanel):
+      - JButton(name=btnDismantle, text="fleet.action.dismantle")
   - JComboBox(name=destinationsList):
       EventComboBoxModel(name=destinationsModel)
   - JSpinner(name=spnDelay)
@@ -16,6 +18,7 @@ JPanel(name=fleetActionPanel):
       [[insets 0]]
       [pref]                             [pref]      [pref]          [pref]      [pref]
       label+*
+      generalActionsPanel+*
       "fleet.action.label.destination"+2             movesList+3+4
       destinationsList+2
       "fleet.action.label.delay"         spnDelay

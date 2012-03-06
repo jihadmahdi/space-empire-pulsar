@@ -3,10 +3,14 @@ package org.axan.sep.common.db.orm;
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.db.orm.Building;
+import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
 import org.axan.sep.common.db.orm.base.IBaseGovernmentModule;
 import org.axan.sep.common.db.orm.base.BaseGovernmentModule;
 import org.axan.sep.common.db.IGovernmentModule;
+import org.axan.sep.common.db.IProductiveCelestialBody;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.axan.sep.common.db.IGameConfig;
@@ -76,14 +80,37 @@ class GovernmentModule extends Building implements IGovernmentModule
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 			
-			if (governmentModuleIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type)).hasNext())
+			if (governmentModuleIndex.get(PK, getPK(productiveCelestialBodyName, type)).hasNext())
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, governmentModule[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
 			properties = sepDB.getDB().createNode();
 			GovernmentModule.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
-			governmentModuleIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			governmentModuleIndex.add(properties, PK, getPK(productiveCelestialBodyName, type));
+			
+			Node nProductiveCelestialBody = productiveCelestialBodyIndex.get(CelestialBody.PK, CelestialBody.getPK(productiveCelestialBodyName)).getSingle();
+			if (nProductiveCelestialBody == null)
+			{
+				tx.failure();
+				throw new DBGraphException("Constraint error: Cannot find productive celestial body.");
+			}
+			
+			Relationship r = nProductiveCelestialBody.getSingleRelationship(eRelationTypes.PlayerCelestialBodies, Direction.INCOMING);			
+			Node nOwner = r == null ? null : r.getStartNode();
+			if (nOwner == null)
+			{
+				tx.failure();
+				throw new DBGraphException("Constraint error: Cannot find productive celestial body owner.");
+			}
+			
+			r = nOwner.getSingleRelationship(eRelationTypes.PlayerGovernment, Direction.OUTGOING);
+			if (r != null)
+			{
+				throw new DBGraphException("Cannot redefine PlayerGovernment because relationship already exist.");
+			}
+			
+			nOwner.createRelationshipTo(properties, eRelationTypes.PlayerGovernment);
 			
 			super.create(sepDB);
 			

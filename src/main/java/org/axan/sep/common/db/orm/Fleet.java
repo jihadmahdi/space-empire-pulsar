@@ -104,7 +104,7 @@ public class Fleet extends Unit implements IFleet
 			Fleet.initializeProperties(properties, ownerName, name, initialDepartureName, departure, starships);
 			fleetIndex.add(properties, PK, getPK(ownerName, name));
 			
-			Node nOwner = db.index().forNodes("PlayerIndex").get("name", ownerName).getSingle();
+			Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
 			if (nOwner == null)
 			{
 				tx.failure();
@@ -170,7 +170,7 @@ public class Fleet extends Unit implements IFleet
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		return new FleetMarker(getTurn(), ownerName, name, isStopped(), getRealLocation(), getSpeed(), getStarships(), isAssignedFleet());
+		return new FleetMarker(getTurn(), step, ownerName, name, isStopped(), getRealLocation(), getSpeed(), getStarships(), isAssignedFleet());
 	}
 	
 	@Override
@@ -298,6 +298,18 @@ public class Fleet extends Unit implements IFleet
 		}
 		
 		return Collections.unmodifiableMap(starships);
+	}
+	
+	@Override
+	public int getStarshipsCount()
+	{		
+		int qt = 0;
+		for(int tqt : getStarships().values())
+		{
+			qt += tqt;
+		}
+		
+		return qt;
 	}
 	
 	@Override

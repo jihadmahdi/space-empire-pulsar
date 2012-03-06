@@ -3,9 +3,12 @@ package org.axan.sep.common.db.orm;
 import java.io.IOException;
 import java.io.Serializable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.RealLocation;
+import org.axan.sep.common.db.IAntiProbeMissileMarker;
 import org.axan.sep.common.db.IProbeMarker;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -33,9 +36,9 @@ public class ProbeMarker extends UnitMarker implements IProbeMarker, Serializabl
 	 * @param ownerName
 	 * @param name
 	 */
-	public ProbeMarker(int turn, String ownerName, String serieName, int serialNumber, boolean isStopped, RealLocation realLocation, float speed, boolean isDeployed)
+	public ProbeMarker(int turn, double step, String ownerName, String serieName, int serialNumber, boolean isStopped, RealLocation realLocation, float speed, boolean isDeployed)
 	{
-		super(turn, ownerName, String.format("%s-%d", serieName, serialNumber), isStopped, realLocation, speed);
+		super(turn, step, ownerName, String.format("%s-%d", serieName, serialNumber), isStopped, realLocation, speed);
 		this.isDeployed = isDeployed;
 	}
 	
@@ -45,9 +48,9 @@ public class ProbeMarker extends UnitMarker implements IProbeMarker, Serializabl
 	 * @param ownerName
 	 * @param name
 	 */
-	public ProbeMarker(SEPCommonDB sepDB, int turn, String ownerName, String name)
+	public ProbeMarker(SEPCommonDB sepDB, int turn, double step, String ownerName, String name)
 	{
-		super(sepDB, turn, ownerName, name);
+		super(sepDB, turn, step, ownerName, name);
 		
 		// Null values
 		this.isDeployed = false;
@@ -80,17 +83,17 @@ public class ProbeMarker extends UnitMarker implements IProbeMarker, Serializabl
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 			
-			if (probeMarkerIndex.get(PK, getPK(turn, ownerName, name)).hasNext())
+			if (probeMarkerIndex.get(PK, getPK(turn, step, ownerName, name)).hasNext())
 			{
 				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, probeMarker["+getPK(turn, ownerName, name)+"] already exist.");
+				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, probeMarker["+getPK(turn, step, ownerName, name)+"] already exist.");
 			}			
 			
 			properties = sepDB.getDB().createNode();
-			ProbeMarker.initializeProperties(properties, turn, ownerName, name, isStopped, realLocation, speed, isDeployed);
-			probeMarkerIndex.add(properties, PK, getPK(turn, ownerName, name));
+			ProbeMarker.initializeProperties(properties, turn, step, ownerName, name, isStopped, realLocation, speed, isDeployed);
+			probeMarkerIndex.add(properties, PK, getPK(turn, step, ownerName, name));
 			
-			Node nOwner = db.index().forNodes("PlayerIndex").get("name", ownerName).getSingle();
+			Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
 			if (nOwner == null)
 			{
 				tx.failure();
@@ -144,6 +147,27 @@ public class ProbeMarker extends UnitMarker implements IProbeMarker, Serializabl
 		return sb.toString();
 	}
 	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public boolean equals(Object obj)
+	{
+		if (this == obj) return true;
+		if (!super.equals(obj)) return false;
+		if (ProbeMarker.class.isInstance(obj)) return false;
+		ProbeMarker pm = (ProbeMarker) obj;
+		if (!getSerieName().equals(pm.getSerieName())) return false;
+		if (getSerialNumber() != pm.getSerialNumber()) return false;
+		if (isDeployed() != pm.isDeployed()) return false;
+		return true;
+	}
+	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public int hashCode()
+	{
+		return super.hashCode() + getSerieName().hashCode() + getSerialNumber() + (isDeployed()?1:0);
+	}
+	
 	private void writeObject(java.io.ObjectOutputStream out) throws IOException
 	{
 		isDeployed = isDeployed();
@@ -155,9 +179,10 @@ public class ProbeMarker extends UnitMarker implements IProbeMarker, Serializabl
 		in.defaultReadObject();
 	}
 	
-	public static void initializeProperties(Node properties, int turn, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed, boolean isDeployed)
+	public static void initializeProperties(Node properties, int turn, double step, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed, boolean isDeployed)
 	{
 		properties.setProperty("turn", turn);
+		properties.setProperty("step", step);
 		properties.setProperty("ownerName", ownerName);
 		properties.setProperty("name", name);
 		properties.setProperty("type", eUnitType.Probe.toString());

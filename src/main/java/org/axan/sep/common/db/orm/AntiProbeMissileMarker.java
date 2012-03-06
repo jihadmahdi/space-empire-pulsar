@@ -3,6 +3,8 @@ package org.axan.sep.common.db.orm;
 import java.io.IOException;
 import java.io.Serializable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
@@ -39,9 +41,9 @@ public class AntiProbeMissileMarker extends UnitMarker implements IAntiProbeMiss
 	 * @param ownerName
 	 * @param name
 	 */
-	public AntiProbeMissileMarker(int turn, String ownerName, String serieName, int serialNumber, boolean isStopped, RealLocation realLocation, float speed, boolean isFired)
+	public AntiProbeMissileMarker(int turn, double step, String ownerName, String serieName, int serialNumber, boolean isStopped, RealLocation realLocation, float speed, boolean isFired)
 	{
-		super(turn, ownerName, String.format("%s-%d", serieName, serialNumber), isStopped, realLocation, speed);
+		super(turn, step, ownerName, String.format("%s-%d", serieName, serialNumber), isStopped, realLocation, speed);
 		this.isFired = isFired;
 	}
 	
@@ -51,9 +53,9 @@ public class AntiProbeMissileMarker extends UnitMarker implements IAntiProbeMiss
 	 * @param ownerName
 	 * @param name
 	 */
-	public AntiProbeMissileMarker(SEPCommonDB sepDB, int turn, String ownerName, String name)
+	public AntiProbeMissileMarker(SEPCommonDB sepDB, int turn, double step, String ownerName, String name)
 	{
-		super(sepDB, turn, ownerName, name);
+		super(sepDB, turn, step, ownerName, name);
 		
 		// Null values
 		this.isFired = false;
@@ -86,17 +88,17 @@ public class AntiProbeMissileMarker extends UnitMarker implements IAntiProbeMiss
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 			
-			if (antiProbeMissileMarkerIndex.get(PK, getPK(turn, ownerName, name)).hasNext())
+			if (antiProbeMissileMarkerIndex.get(PK, getPK(turn, step, ownerName, name)).hasNext())
 			{
 				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, antiProbeMissileMarker["+getPK(turn, ownerName, name)+"] already exist.");
+				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, antiProbeMissileMarker["+getPK(turn, step, ownerName, name)+"] already exist.");
 			}			
 			
 			properties = sepDB.getDB().createNode();
-			AntiProbeMissileMarker.initializeProperties(properties, turn, ownerName, name, isStopped, realLocation, speed, isFired);
-			antiProbeMissileMarkerIndex.add(properties, PK, getPK(turn, ownerName, name));
+			AntiProbeMissileMarker.initializeProperties(properties, turn, step, ownerName, name, isStopped, realLocation, speed, isFired);
+			antiProbeMissileMarkerIndex.add(properties, PK, getPK(turn, step, ownerName, name));
 			
-			Node nOwner = db.index().forNodes("PlayerIndex").get("name", ownerName).getSingle();
+			Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
 			if (nOwner == null)
 			{
 				tx.failure();
@@ -152,6 +154,27 @@ public class AntiProbeMissileMarker extends UnitMarker implements IAntiProbeMiss
 		return sb.toString();
 	}
 	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public boolean equals(Object obj)
+	{
+		if (this == obj) return true;
+		if (!super.equals(obj)) return false;		
+		if (AntiProbeMissileMarker.class.isInstance(obj)) return false;
+		AntiProbeMissileMarker apmm = (AntiProbeMissileMarker) obj;
+		if (!getSerieName().equals(apmm.getSerieName())) return false;
+		if (getSerialNumber() != apmm.getSerialNumber()) return false;
+		if (isFired() != apmm.isFired()) return false;
+		return true;
+	}
+	
+	@Override
+	@OverridingMethodsMustInvokeSuper
+	public int hashCode()
+	{
+		return super.hashCode() + getSerieName().hashCode() + getSerialNumber() + (isFired()?1:0);
+	}
+	
 	private void writeObject(java.io.ObjectOutputStream out) throws IOException
 	{
 		isFired = isFired();
@@ -163,9 +186,10 @@ public class AntiProbeMissileMarker extends UnitMarker implements IAntiProbeMiss
 		in.defaultReadObject();
 	}
 	
-	public static void initializeProperties(Node properties, int turn, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed, boolean isFired)
+	public static void initializeProperties(Node properties, int turn, double step, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed, boolean isFired)
 	{
 		properties.setProperty("turn", turn);
+		properties.setProperty("step", step);
 		properties.setProperty("ownerName", ownerName);
 		properties.setProperty("name", name);
 		properties.setProperty("type", eUnitType.AntiProbeMissile.toString());

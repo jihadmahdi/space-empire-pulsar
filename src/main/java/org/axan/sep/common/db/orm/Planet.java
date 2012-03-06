@@ -96,14 +96,14 @@ class Planet extends ProductiveCelestialBody implements IPlanet
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 			
-			if (planetIndex.get("name", name.toString()).hasNext())
+			if (planetIndex.get(PK, getPK(name)).hasNext())
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, planet[name='"+name+"'] already exist.");
 			}
 			properties = sepDB.getDB().createNode();
 			Planet.initializeProperties(properties, name, initialCarbonStock, maxSlots, carbonStock, currentCarbon, populationPerTurn, maxPopulation, currentPopulation);
-			planetIndex.add(properties, "name", name);
+			planetIndex.add(properties, PK, getPK(name));
 			
 			super.create(sepDB);
 			

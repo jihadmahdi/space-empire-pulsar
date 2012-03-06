@@ -77,14 +77,14 @@ class Nebula extends ProductiveCelestialBody implements INebula
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 		
-			if (nebulaIndex.get("name", name.toString()).hasNext())
+			if (nebulaIndex.get(PK, getPK(name)).hasNext())
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, nebula[name='"+name+"'] already exist.");
 			}
 			properties = sepDB.getDB().createNode();
 			Nebula.initializeProperties(properties, name, initialCarbonStock, maxSlots, carbonStock, currentCarbon);
-			nebulaIndex.add(properties, "name", name);
+			nebulaIndex.add(properties, PK, getPK(name));
 			
 			super.create(sepDB);
 			

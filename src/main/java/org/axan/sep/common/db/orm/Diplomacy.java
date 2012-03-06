@@ -92,14 +92,14 @@ class Diplomacy extends DiplomacyMarker implements IDiplomacy
 				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, unit["+getPK(ownerName, targetName)+"] already exist.");
 			}			
 
-			Node nOwner = db.index().forNodes("PlayerIndex").get("name", ownerName).getSingle();
+			Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
 			if (nOwner == null)
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Cannot find owner Player '"+ownerName+"'");
 			}
 			
-			Node nTarget = db.index().forNodes("PlayerIndex").get("name", targetName).getSingle();
+			Node nTarget = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(targetName)).getSingle();
 			if (nTarget == null)
 			{
 				tx.failure();

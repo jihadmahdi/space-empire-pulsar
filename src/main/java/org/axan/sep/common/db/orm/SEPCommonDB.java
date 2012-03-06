@@ -385,6 +385,11 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 					Object result = (gameConfigNode.hasProperty(key)) ? gameConfigNode.getProperty(key) : null;
 					
+					if (result == null && returnType.isPrimitive())
+					{
+						result = gameConfigNode.getProperty(key);
+					}
+					
 					if (returnType.isArray() && returnType.getComponentType().isEnum())
 					{
 						Object arr = Array.newInstance(returnType.getComponentType(), Array.getLength(result));
@@ -399,7 +404,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 					if (returnType.isEnum())
 					{
 						return Enum.valueOf(returnType.asSubclass(Enum.class), (String) result);
-					}
+					}					
 					
 					return result;
 				}
@@ -599,10 +604,14 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		return this.config;
 	}
 
-	private synchronized GraphDatabaseService getConfigDB()
+	private GraphDatabaseService getConfigDB()
 	{
 		//waitForInit();
-		return db;
+		if (initFlag == null) return db;
+		synchronized(initFlag)
+		{
+			return db;
+		}
 	}
 
 	public synchronized GraphDatabaseService getDB()
@@ -672,7 +681,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		{
 			db = db.previous();
 		}
-		Iterator<Node> it = db.playerIndex.get("name", playerName).getSingle().traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, new ReturnableEvaluator()
+		Iterator<Node> it = db.playerIndex.get(Player.PK, Player.getPK(playerName)).getSingle().traverse(Order.DEPTH_FIRST, StopEvaluator.END_OF_GRAPH, new ReturnableEvaluator()
 		{			
 			@Override
 			public boolean isReturnableNode(TraversalPosition currentPos)
@@ -919,7 +928,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	{
 		waitForInit();
 		Set<IProductiveCelestialBody> result = new HashSet<IProductiveCelestialBody>();
-		for(Node n : productiveCelestialBodyIndex.query("name", "*"))
+		for(Node n : productiveCelestialBodyIndex.query(CelestialBody.PK, CelestialBody.queryAll()))
 		{
 			result.add((IProductiveCelestialBody) getCelestialBody((String) n.getProperty("name")));
 		}
@@ -930,7 +939,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	public ICelestialBody getCelestialBody(String name)
 	{
 		waitForInit();
-		IndexHits<Node> hit = celestialBodyIndex.get("name", name);
+		IndexHits<Node> hit = celestialBodyIndex.get(CelestialBody.PK, CelestialBody.getPK(name));
 		if (!hit.hasNext()) return null;
 		
 		Node n = hit.getSingle();
@@ -959,7 +968,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	{
 		waitForInit();
 		Set<String> result = new HashSet<String>();
-		for(Node n : celestialBodyIndex.query("name", "*"))
+		for(Node n : celestialBodyIndex.query(CelestialBody.PK, CelestialBody.queryAll()))
 		{
 			result.add((String) n.getProperty("name"));
 		}
@@ -1114,7 +1123,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	public IBuilding getBuilding(String productiveCelestialBodyName, eBuildingType type)
 	{
 		waitForInit();
-		if (!buildingIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type.toString())).hasNext())
+		if (!buildingIndex.get(Building.PK, Building.getPK(productiveCelestialBodyName, type)).hasNext())
 		{
 			return null;
 		}
@@ -1323,10 +1332,10 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	 * @param type
 	 * @return
 	 */
-	public IUnitMarker getUnitMarker(int turn, String ownerName, String name, eUnitType type)
+	public IUnitMarker getUnitMarker(int turn, double step, String ownerName, String name, eUnitType type)
 	{
 		waitForInit();
-		IndexHits<Node> hit = unitMarkerIndex.get(UnitMarker.PK, UnitMarker.getPK(turn, ownerName, name));
+		IndexHits<Node> hit = unitMarkerIndex.get(UnitMarker.PK, UnitMarker.getPK(turn, step, ownerName, name));
 		if (!hit.hasNext())
 		{
 			return null;
@@ -1343,11 +1352,11 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		switch (type)
 		{
 			case Fleet:
-				return new FleetMarker(this, turn, ownerName, name);
+				return new FleetMarker(this, turn, step, ownerName, name);
 			case Probe:
-				return new ProbeMarker(this, turn, ownerName, name);
+				return new ProbeMarker(this, turn, step, ownerName, name);
 			case AntiProbeMissile:
-				return new AntiProbeMissileMarker(this, turn, ownerName, name);
+				return new AntiProbeMissileMarker(this, turn, step, ownerName, name);
 			default:
 			{
 				throw new RuntimeException("Unknown Unit type '" + type + "'.");
@@ -1355,10 +1364,36 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		}
 	}
 	
+	/**
+	 * Create given unitMarker in current DB if not exists.
+	 * If the marker already exists, assert it is strictly the same.
+	 * Warning: If unitMarker is a IUnit instance, be aware that step 0 marker is used.
+	 * To use another step you must explicitly call {@link IUnit#getMarker(double)}.
+	 * @param unitMarker
+	 * @return the UnitMarker object connected to current DB.
+	 */
 	public <T extends IUnitMarker> T createUnitMarker(IUnitMarker unitMarker)
 	{
+		if (IUnit.class.isInstance(unitMarker)) throw new IllegalArgumentException("unitMarker must not implement IUnit, use IUnit.getMarker(step) to get a pure IUnitMarker object.");
+		
 		waitForInit();		
-				
+		
+		String name = unitMarker.getName();
+		if (name.contains("assigned"))
+		{
+			name = name;
+		}
+		IUnitMarker existingMarker = getUnitMarker(unitMarker.getTurn(), unitMarker.getStep(), unitMarker.getOwnerName(), unitMarker.getName(), unitMarker.getType());
+		if (existingMarker != null)
+		{
+			if (!existingMarker.equals(unitMarker))
+			{
+				throw new DBGraphException("Unit marker already exist and is not equal");
+			}
+			
+			return (T) existingMarker;
+		}
+		
 		UnitMarker result;
 		
 		switch (unitMarker.getType())
@@ -1366,19 +1401,19 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 			case Fleet:
 			{
 				IFleetMarker fleetMarker = (IFleetMarker) unitMarker;
-				result = new FleetMarker(fleetMarker.getTurn(), fleetMarker.getOwnerName(), fleetMarker.getName(), fleetMarker.isStopped(), fleetMarker.getRealLocation(), fleetMarker.getSpeed(), fleetMarker.getStarships(), fleetMarker.isAssignedFleet());
+				result = new FleetMarker(fleetMarker.getTurn(), fleetMarker.getStep(), fleetMarker.getOwnerName(), fleetMarker.getName(), fleetMarker.isStopped(), fleetMarker.getRealLocation(), fleetMarker.getSpeed(), fleetMarker.getStarships(), fleetMarker.isAssignedFleet());
 				break;
 			}
 			case Probe:
 			{
 				IProbeMarker probeMarker = (IProbeMarker) unitMarker;
-				result = new ProbeMarker(probeMarker.getTurn(), probeMarker.getOwnerName(), probeMarker.getSerieName(), probeMarker.getSerialNumber(), probeMarker.isStopped(), probeMarker.getRealLocation(), probeMarker.getSpeed(), probeMarker.isDeployed());
+				result = new ProbeMarker(probeMarker.getTurn(), probeMarker.getStep(), probeMarker.getOwnerName(), probeMarker.getSerieName(), probeMarker.getSerialNumber(), probeMarker.isStopped(), probeMarker.getRealLocation(), probeMarker.getSpeed(), probeMarker.isDeployed());
 				break;
 			}
 			case AntiProbeMissile:
 			{
 				IAntiProbeMissileMarker antiProbeMissileMarker = (IAntiProbeMissileMarker) unitMarker;
-				result = new AntiProbeMissileMarker(antiProbeMissileMarker.getTurn(), antiProbeMissileMarker.getOwnerName(), antiProbeMissileMarker.getSerieName(), antiProbeMissileMarker.getSerialNumber(), antiProbeMissileMarker.isStopped(), antiProbeMissileMarker.getRealLocation(), antiProbeMissileMarker.getSpeed(), antiProbeMissileMarker.isFired());
+				result = new AntiProbeMissileMarker(antiProbeMissileMarker.getTurn(), antiProbeMissileMarker.getStep(), antiProbeMissileMarker.getOwnerName(), antiProbeMissileMarker.getSerieName(), antiProbeMissileMarker.getSerialNumber(), antiProbeMissileMarker.isStopped(), antiProbeMissileMarker.getRealLocation(), antiProbeMissileMarker.getSpeed(), antiProbeMissileMarker.isFired());
 				break;
 			}
 			default:

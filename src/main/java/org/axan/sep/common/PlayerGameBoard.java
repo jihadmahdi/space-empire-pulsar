@@ -149,7 +149,9 @@ public class PlayerGameBoard implements IGameBoard
 			
 			try
 			{
-				view = new PlayerGameboardView(client.getLogin(), new SEPCommonDB(dbFactory.createDB(), getConfig()), new IGameEventExecutor()
+				final IGameConfig config = getConfig();
+				
+				view = new PlayerGameboardView(client.getLogin(), new SEPCommonDB(dbFactory.createDB(), config), new IGameEventExecutor()
 				{
 					@Override
 					public String getCurrentViewPlayerName()
@@ -172,7 +174,7 @@ public class PlayerGameBoard implements IGameBoard
 					@Override
 					public void run()
 					{
-						IGameConfig config = PlayerGameBoard.this.getConfig();
+						//IGameConfig config = PlayerGameBoard.this.getConfig();
 						SEPCommonDB sepDB = PlayerGameBoard.this.getDB();
 						
 						for(Location l : SEPUtils.scanSphere(Rules.getSunLocation(config), config.getSunRadius()))

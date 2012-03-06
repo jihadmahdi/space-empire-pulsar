@@ -34,7 +34,7 @@ import java.util.HashMap;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
-abstract class Unit extends UnitMarker implements IUnit
+abstract class Unit extends AGraphObject<Node> implements IUnit
 {	
 	protected static final String PK = "ownerName@name";
 	protected static final String getPK(String ownerName, String name)
@@ -43,19 +43,23 @@ abstract class Unit extends UnitMarker implements IUnit
 	}
 	
 	/*
-	 * PK: inherited
+	 * PK
 	 */
+	protected final String ownerName;
+	protected final String name;
 	
 	/*
 	 * Off-DB fields.
-	 */	
+	 */
+	protected final eUnitType type;
+	
 	/** 
 	 * Celestial body to spawn the unit to.
 	 * It determines the initial value of departure.
 	 * Celestial body must already exist.
 	 */
 	protected final String initialDepartureName;
-	protected Location departure;	
+	protected Location departure;
 	
 	/*
 	 * DB connection
@@ -69,7 +73,10 @@ abstract class Unit extends UnitMarker implements IUnit
 	 */
 	public Unit(String ownerName, String name, String productiveCelestialBodyName)
 	{
-		super(-1, ownerName, name, true, null, 0F);
+		super(getPK(ownerName, name));
+		this.ownerName = ownerName;
+		this.name = name;
+		this.type = eUnitType.valueOf(getClass().getSimpleName());
 		this.initialDepartureName = productiveCelestialBodyName;
 	}
 	
@@ -81,7 +88,10 @@ abstract class Unit extends UnitMarker implements IUnit
 	 */
 	public Unit(SEPCommonDB sepDB, String ownerName, String name)
 	{
-		super(sepDB, -1, ownerName, name);
+		super(sepDB, getPK(ownerName, name));
+		this.ownerName = ownerName;
+		this.name = name;
+		this.type = eUnitType.valueOf(getClass().getSimpleName());
 		
 		// Null values
 		this.initialDepartureName = null;
@@ -137,7 +147,7 @@ abstract class Unit extends UnitMarker implements IUnit
 						
 			unitIndex.add(properties, PK, getPK(ownerName, name));
 			
-			Node nOwner = db.index().forNodes("PlayerIndex").get("name", ownerName).getSingle();
+			Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
 			if (nOwner == null)
 			{
 				tx.failure();
@@ -205,6 +215,30 @@ abstract class Unit extends UnitMarker implements IUnit
 		checkForDBUpdate();
 		
 		return sepDB.getConfig().getTurn();
+	}
+	
+	@Override
+	public double getStep()
+	{
+		return 0;
+	}
+	
+	@Override
+	public String getOwnerName()
+	{
+		return ownerName;
+	}
+
+	@Override
+	public String getName()
+	{
+		return name;
+	}
+	
+	@Override
+	public eUnitType getType()
+	{
+		return type;
 	}
 	
 	@Override
@@ -345,7 +379,7 @@ abstract class Unit extends UnitMarker implements IUnit
 		Relationship oldDeparture = properties.getSingleRelationship(eRelationTypes.UnitDeparture, Direction.OUTGOING);
 		if (oldDeparture != null) oldDeparture.delete();
 				
-		IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get("location", departure.toString());
+		IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get(Area.PK, Area.getPK(departure));
 		if (!hits.hasNext())
 		{
 			throw new DBGraphException("Constraint error: Cannot find Area[location='"+departure.toString()+"']. Area must be created before Unit.");				
@@ -366,7 +400,7 @@ abstract class Unit extends UnitMarker implements IUnit
 	
 		Location realLocation = getRealLocation().asLocation();
 		sepDB.getArea(realLocation);
-		IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get("location", realLocation.toString());
+		IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get(Area.PK, Area.getPK(realLocation));
 		if (!hits.hasNext())
 		{
 			throw new DBGraphException("Contraint error: Cannot find Area[location='"+realLocation.toString()+"']. Area must be created first.");
@@ -435,7 +469,7 @@ abstract class Unit extends UnitMarker implements IUnit
 				}
 				
 				sepDB.getArea(destination);
-				Node nArea = db.index().forNodes("AreaIndex").get("location", destination.toString()).getSingle();
+				Node nArea = db.index().forNodes("AreaIndex").get(Area.PK, Area.getPK(destination)).getSingle();
 				
 				properties.createRelationshipTo(nArea, eRelationTypes.UnitDestination);							
 			}
@@ -468,10 +502,9 @@ abstract class Unit extends UnitMarker implements IUnit
 		
 		try
 		{		
-			// NOTE: We do not delete previous marker versions.
 			unitMarker = sepDB.createUnitMarker(unitMarker);
 			
-			EncounterLog encounterLog = new EncounterLog(getOwnerName(), getName(), unitMarker.getOwnerName(), unitMarker.getName(), unitMarker.getTurn());
+			EncounterLog encounterLog = new EncounterLog(getOwnerName(), getName(), unitMarker.getOwnerName(), unitMarker.getName(), unitMarker.getTurn(), unitMarker.getStep());
 			encounterLog.create(sepDB);
 			
 			tx.success();
@@ -499,7 +532,7 @@ abstract class Unit extends UnitMarker implements IUnit
 				{
 					if (r.hasProperty("published")) continue;
 					
-					EncounterLog encounterLog = new EncounterLog(sepDB, ownerName, name, (String) r.getProperty("encounterOwnerName"), (String) r.getProperty("encounterName"), (Integer) r.getProperty("turn")); 
+					EncounterLog encounterLog = new EncounterLog(sepDB, ownerName, name, (String) r.getProperty("encounterOwnerName"), (String) r.getProperty("encounterName"), (Integer) r.getProperty("turn"), (Double) r.getProperty("step")); 
 					IUnitMarker encounterUnitMarker = encounterLog.getEncounter();
 					
 					EncounterLogPublication encounterLogPublication = new EncounterLogPublication(ownerName, name, encounterUnitMarker);
