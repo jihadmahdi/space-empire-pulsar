@@ -26,7 +26,7 @@ public interface IArea
 	ICelestialBody getCelestialBody();
 	
 	/** Return units in this area (stopped here, or currently travelling here). */
-	Set<? extends IUnit> getUnits(eUnitType type);
+	<T extends IUnit> Set<T> getUnits(eUnitType type);
 	
 	/** Return units markers (including units) in this area. */
 	<T extends IUnitMarker> Set<T> getUnitsMarkers(eUnitType type);

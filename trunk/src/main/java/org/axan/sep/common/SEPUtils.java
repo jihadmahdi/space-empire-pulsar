@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
@@ -47,7 +48,9 @@ public abstract class SEPUtils
 			if (!RealLocation.class.isInstance(obj)) return false;
 			
 			RealLocation loc = RealLocation.class.cast(obj);
-			return x == loc.x && y == loc.y && z == loc.z;			
+			// Double comparison is not reliable as values expected to be equal sometimes evaluate not equal because of a ridiculous delta.
+			// return x == loc.x && y == loc.y && z == loc.z;
+			return getDistance(this, loc) < 0.01;					
 		}
 		
 		@Override
@@ -59,7 +62,7 @@ public abstract class SEPUtils
 		@Override
 		public String toString()
 		{
-			return String.format("[%.2f;%.2f;%.2f]", x, y, z);
+			return String.format(Locale.UK, "[%.2f;%.2f;%.2f]", x, y, z);
 		}
 		
 		public Location asLocation()
@@ -150,9 +153,14 @@ public abstract class SEPUtils
 		return Math.sqrt(Math.pow(a.x-b.x, 2) + Math.pow(a.y-b.y, 2) + Math.pow(a.z-b.z, 2));
 	}
 	
+	public static double getProgressStep(RealLocation departure, RealLocation destination, float speed, double step)
+	{
+		return (step * speed / getDistance(departure, destination));
+	}
+	
 	public static RealLocation getMobileLocation(RealLocation departure, RealLocation destination, float speed, double progress, double step, boolean stopOnB)
 	{
-		return getMobileLocation(departure, destination, progress + (step / getDistance(departure, destination)) * speed, stopOnB);
+		return getMobileLocation(departure, destination, progress + getProgressStep(departure, destination, speed, step), stopOnB);
 	}
 	
 	public static RealLocation getMobileLocation(RealLocation departure, RealLocation destination, double progress, boolean stopOnB)

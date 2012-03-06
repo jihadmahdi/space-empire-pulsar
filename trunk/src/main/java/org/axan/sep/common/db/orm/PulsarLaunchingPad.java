@@ -78,14 +78,14 @@ class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 			
-			if (pulsarLaunchingPadIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type)).hasNext())
+			if (pulsarLaunchingPadIndex.get(PK, getPK(productiveCelestialBodyName, type)).hasNext())
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, pulsarLaunchingPad[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
 			properties = sepDB.getDB().createNode();
 			PulsarLaunchingPad.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
-			pulsarLaunchingPadIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			pulsarLaunchingPadIndex.add(properties, PK, getPK(productiveCelestialBodyName, type));
 			
 			super.create(sepDB);
 			

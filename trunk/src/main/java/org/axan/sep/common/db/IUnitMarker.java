@@ -11,6 +11,12 @@ public interface IUnitMarker
 	int getTurn();
 	
 	/**
+	 * Marker step.
+	 * This is the in-turn macro-time date.
+	 */
+	double getStep();
+	
+	/**
 	 * Unit owner name (PK)
 	 */
 	String getOwnerName();

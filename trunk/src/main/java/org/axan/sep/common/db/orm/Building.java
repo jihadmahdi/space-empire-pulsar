@@ -22,6 +22,20 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 abstract class Building extends AGraphObject<Node> implements IBuilding
 {
+	
+	
+	
+	public static final String PK = "productiveCelestialBodyName;type";
+	public static final String getPK(String productiveCelestialBodyName, eBuildingType type)
+	{
+		return String.format("%s;%s", productiveCelestialBodyName, type);
+	}
+	
+	public static final String queryAnyBuildingTypePK(String productiveCelestialBodyName)
+	{
+		return String.format("%s;*", productiveCelestialBodyName);
+	}
+	
 	/*
 	 * PK: first pk field (composed pk).
 	 */
@@ -85,7 +99,7 @@ abstract class Building extends AGraphObject<Node> implements IBuilding
 			db = sepDB.getDB();
 			
 			buildingIndex = db.index().forNodes("BuildingIndex");
-			IndexHits<Node> hits = buildingIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			IndexHits<Node> hits = buildingIndex.get(PK, getPK(productiveCelestialBodyName, type));
 			properties = hits.hasNext() ? hits.getSingle() : null;
 			if (properties != null && !properties.getProperty("type").equals(type.toString()))
 			{
@@ -109,14 +123,14 @@ abstract class Building extends AGraphObject<Node> implements IBuilding
 		
 		try
 		{
-			if (buildingIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type)).hasNext())
+			if (buildingIndex.get(PK, getPK(productiveCelestialBodyName, type)).hasNext())
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, building[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
-			buildingIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			buildingIndex.add(properties, PK, getPK(productiveCelestialBodyName, type));
 			
-			IndexHits<Node> hits = productiveCelestialBodyIndex.get("name", productiveCelestialBodyName);
+			IndexHits<Node> hits = productiveCelestialBodyIndex.get(CelestialBody.PK, CelestialBody.getPK(productiveCelestialBodyName));
 			if (!hits.hasNext())
 			{
 				tx.failure();

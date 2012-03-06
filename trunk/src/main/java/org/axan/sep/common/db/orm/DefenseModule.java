@@ -78,14 +78,14 @@ class DefenseModule extends Building implements IDefenseModule
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 						
-			if (defenseModuleIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type)).hasNext())
+			if (defenseModuleIndex.get(PK, getPK(productiveCelestialBodyName, type)).hasNext())
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, defenseModule[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
 			properties = sepDB.getDB().createNode();
 			DefenseModule.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
-			defenseModuleIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			defenseModuleIndex.add(properties, PK, getPK(productiveCelestialBodyName, type));
 			
 			super.create(sepDB);
 			

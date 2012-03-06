@@ -77,14 +77,14 @@ class AsteroidField extends ProductiveCelestialBody implements IAsteroidField
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 			
-			if (asteroidFieldIndex.get("name", name.toString()).hasNext())
+			if (asteroidFieldIndex.get(PK, getPK(name)).hasNext())
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, asteroidField[name='"+name+"'] already exist.");
 			}
 			properties = sepDB.getDB().createNode();
 			AsteroidField.initializeProperties(properties, name, initialCarbonStock, maxSlots, carbonStock, currentCarbon);
-			asteroidFieldIndex.add(properties, "name", name);
+			asteroidFieldIndex.add(properties, PK, getPK(name));
 			
 			super.create(sepDB);
 			

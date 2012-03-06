@@ -104,7 +104,7 @@ public class AntiProbeMissile extends Unit implements IAntiProbeMissile
 			AntiProbeMissile.initializeProperties(properties, ownerName, name, initialDepartureName, departure);
 			antiProbeMissileIndex.add(properties, PK, getPK(ownerName, name));
 			
-			Node nOwner = db.index().forNodes("PlayerIndex").get("name", ownerName).getSingle();
+			Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
 			if (nOwner == null)
 			{
 				tx.failure();
@@ -180,7 +180,7 @@ public class AntiProbeMissile extends Unit implements IAntiProbeMissile
 			if (IProbe.class.isInstance(target))
 			{
 				Probe probe = (Probe) target;
-				ProbeMarker marker = (ProbeMarker) sepDB.getUnitMarker(target.getTurn(), target.getOwnerName(), target.getName(), eUnitType.Probe);
+				ProbeMarker marker = (ProbeMarker) sepDB.getUnitMarker(target.getTurn(), target.getStep(), target.getOwnerName(), target.getName(), eUnitType.Probe);
 				
 				if (marker == null)
 				{
@@ -190,6 +190,7 @@ public class AntiProbeMissile extends Unit implements IAntiProbeMissile
 			}
 			
 			properties.setProperty("targetTurn", target.getTurn());
+			properties.setProperty("targetStep", target.getStep());
 			properties.setProperty("targetOwnerName", target.getOwnerName());
 			properties.setProperty("targetName", target.getName());
 			tx.success();
@@ -208,12 +209,14 @@ public class AntiProbeMissile extends Unit implements IAntiProbeMissile
 		
 		if (!properties.hasProperty("targetTurn")) return null;
 		int targetTurn = (Integer) properties.getProperty("targetTurn");
+		if (!properties.hasProperty("targetStep")) return null;
+		double targetStep = (Double) properties.getProperty("targetStep");
 		if (!properties.hasProperty("targetOwnerName")) return null;
 		String targetOwnerName = (String) properties.getProperty("targetOwnerName");
 		if (!properties.hasProperty("targetName")) return null;
 		String targetName = (String) properties.getProperty("targetName");
 		
-		return (IProbeMarker) sepDB.getUnitMarker(targetTurn, targetOwnerName, targetName, eUnitType.Probe);		
+		return (IProbeMarker) sepDB.getUnitMarker(targetTurn, targetStep, targetOwnerName, targetName, eUnitType.Probe);		
 	}
 	
 	@Override
@@ -235,7 +238,7 @@ public class AntiProbeMissile extends Unit implements IAntiProbeMissile
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		return new AntiProbeMissileMarker(getTurn(), ownerName, getSerieName(), getSerialNumber(), isStopped(), getRealLocation(step), getSpeed(), isFired());
+		return new AntiProbeMissileMarker(getTurn(), step, ownerName, getSerieName(), getSerialNumber(), isStopped(), getRealLocation(step), getSpeed(), isFired());
 	}
 	
 	@Override

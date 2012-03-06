@@ -13,6 +13,11 @@ public interface IFleetMarker extends IUnitMarker
 	Map<StarshipTemplate, Integer> getStarships();
 	
 	/**
+	 * Return the current starship quantity.
+	 */
+	int getStarshipsCount();
+	
+	/**
 	 * Return true if fleet is a celestial body default assigned fleet (not named by the player).
 	 * Such a fleet cannot be moved before a proper fleet is formed (with a name given by player).
 	 * @return

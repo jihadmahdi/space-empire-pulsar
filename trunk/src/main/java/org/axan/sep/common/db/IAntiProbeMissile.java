@@ -13,4 +13,7 @@ public interface IAntiProbeMissile extends IAntiProbeMissileMarker, IUnit
 	 * @param target
 	 */
 	void setTarget(IProbeMarker target);
+	
+	@Override
+	public IAntiProbeMissileMarker getMarker(double step);
 }

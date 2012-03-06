@@ -37,16 +37,19 @@ import javax.swing.event.DocumentListener;
 import net.miginfocom.swing.MigLayout;
 
 import org.axan.sep.client.SEPClient;
+import org.axan.sep.common.PlayerGameBoard;
 import org.axan.sep.common.Rules;
 import org.axan.sep.common.IGameBoard.GameBoardException;
 import org.axan.sep.common.Rules.StarshipTemplate;
 import org.axan.sep.common.db.Commands.UpdateFleetMovesPlan;
+import org.axan.sep.common.db.Commands;
 import org.axan.sep.common.db.FleetMove;
 import org.axan.sep.common.db.IFleet;
 import org.axan.sep.common.db.IPlayer;
 import org.axan.sep.common.db.IProductiveCelestialBody;
 import org.axan.sep.common.db.IStarshipPlant;
 import org.axan.sep.common.db.Commands.AssignStarships;
+import org.axan.sep.common.db.Commands.DismantleFleet;
 import org.axan.sep.common.db.Commands.MakeAntiProbeMissile;
 import org.axan.sep.common.db.Commands.MakeProbes;
 import org.axan.sep.common.db.Commands.MakeStarships;
@@ -92,6 +95,7 @@ public class FleetActionPanel extends JPanel implements IModalComponent
 	private JButton btnUp;
 	private JButton btnRemove;
 	private JButton btnDown;
+	private JButton btnDismantle;
 
 	////////// no arguments constructor	
 	public FleetActionPanel()
@@ -199,7 +203,39 @@ public class FleetActionPanel extends JPanel implements IModalComponent
 		}
 		setEnabled(true);
 		
+		PlayerGameBoard gb = getSepClient().getGameboard();
+		
 		label.setText(fleet.toString());
+		
+		final DismantleFleet dismantleFleet = new DismantleFleet(getSepClient().getLogin(), fleet.getDepartureName(), fleet.getName());
+		try
+		{
+			dismantleFleet.check(gb.getDB());
+			btnDismantle.addActionListener(new ActionListener()
+			{
+				
+				@Override
+				public void actionPerformed(ActionEvent e)
+				{
+					try
+					{
+						getSepClient().getGameboard().onLocalCommand(dismantleFleet);
+						setFleet(null);
+					}
+					catch(GameBoardException ex)
+					{
+						log.log(Level.SEVERE, "Error on DismantleFleet command", ex);
+						return;
+					}
+				}
+			});			
+		}
+		catch(GameCommandException e)
+		{
+			btnDismantle.setEnabled(false);
+			btnDismantle.setToolTipText("Cannot dismantle fleet: "+e.getMessage());
+		}
+		
 		destinations.addAll(getSepClient().getGameboard().getDB().getCelestialBodiesNames());
 		
 		spnDelay.setValue(0);

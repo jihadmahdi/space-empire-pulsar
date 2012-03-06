@@ -24,6 +24,17 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 abstract class CelestialBody extends AGraphObject<Node> implements ICelestialBody
 {
+	public static final String PK = "name";
+	public static final String getPK(String name)
+	{
+		return name;
+	}
+	
+	public static final String queryAll()
+	{
+		return "*";
+	}
+	
 	/*
 	 * PK: first pk field.
 	 */
@@ -82,7 +93,7 @@ abstract class CelestialBody extends AGraphObject<Node> implements ICelestialBod
 			db = sepDB.getDB();
 			
 			celestialBodyIndex = db.index().forNodes("CelestialBodyIndex");
-			IndexHits<Node> hits = celestialBodyIndex.get("name", name);
+			IndexHits<Node> hits = celestialBodyIndex.get(PK, getPK(name));
 			properties = hits.hasNext() ? hits.getSingle() : null;			
 			if (properties != null && !properties.getProperty("type").equals(type.toString()))
 			{
@@ -105,17 +116,17 @@ abstract class CelestialBody extends AGraphObject<Node> implements ICelestialBod
 		
 		try
 		{
-			if (celestialBodyIndex.get("name", name).hasNext())
+			if (celestialBodyIndex.get(PK, getPK(name)).hasNext())
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, celestialBody[name='"+name+"'] already exist.");
 			}
-			celestialBodyIndex.add(properties, "name", name);
+			celestialBodyIndex.add(properties, PK, getPK(name));
 			
 			// Force area creation if not exists.
 			sepDB.getArea(location);
 			
-			IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get("location", location.toString());
+			IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get(Area.PK, Area.getPK(location));
 			if (!hits.hasNext())
 			{
 				tx.failure();

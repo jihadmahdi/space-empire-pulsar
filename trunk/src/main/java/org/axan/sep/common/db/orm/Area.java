@@ -41,6 +41,12 @@ import org.neo4j.graphdb.index.IndexHits;
 
 class Area extends AGraphObject<Node> implements IArea, Serializable
 {
+	public static final String PK = "location";
+	public static final String getPK(Location location)
+	{
+		return location.toString();
+	}
+	
 	/*
 	 * PK: first pk field.
 	 */
@@ -104,7 +110,7 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 			areaIndex = db.index().forNodes("AreaIndex");
 			areasFactory = db.getReferenceNode().getSingleRelationship(eRelationTypes.Areas, Direction.OUTGOING).getEndNode();
 			sun = db.getReferenceNode().getSingleRelationship(eRelationTypes.Sun, Direction.OUTGOING).getEndNode();
-			IndexHits<Node> hits = areaIndex.get("location", location.toString());
+			IndexHits<Node> hits = areaIndex.get(PK, getPK(location));
 			properties = hits.hasNext() ? hits.getSingle() : null;			
 		}
 	}
@@ -126,7 +132,7 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 			
-			if (areaIndex.get("location", location.toString()).hasNext())
+			if (areaIndex.get(PK, getPK(location)).hasNext())
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'location' must be unique, area[location='"+location+"'] already exist.");
@@ -138,7 +144,7 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 			{
 				sun.createRelationshipTo(properties, eRelationTypes.Sun);
 			}
-			areaIndex.add(properties, "location", location.toString());
+			areaIndex.add(properties, PK, getPK(location));
 						
 			tx.success();			
 		}
@@ -229,10 +235,12 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 			for(IUnitMarker unitMarkerUpdate : areaUpdate.getUnitsMarkers(null))
 			{
 				if (unitMarkerUpdate.getTurn() != sepDB.getConfig().getTurn()) throw new RuntimeException("Illegal unit marker update, can only update up to date markers");
-				IUnitMarker unitMarker = sepDB.getUnitMarker(unitMarkerUpdate.getTurn(), unitMarkerUpdate.getOwnerName(), unitMarkerUpdate.getName(), unitMarkerUpdate.getType());
+				/*
+				IUnitMarker unitMarker = sepDB.getUnitMarker(unitMarkerUpdate.getTurn(), unitMarkerUpdate.getStep(), unitMarkerUpdate.getOwnerName(), unitMarkerUpdate.getName(), unitMarkerUpdate.getType());
 				if (unitMarker != null) throw new DBGraphException("Illegal unit marker update, up to date marker already exists.");
-				
-				unitMarker = sepDB.createUnitMarker(unitMarkerUpdate);			
+				*/
+				if (IUnit.class.isInstance(unitMarkerUpdate)) unitMarkerUpdate = ((IUnit) unitMarkerUpdate).getMarker(0);
+				sepDB.createUnitMarker(unitMarkerUpdate);			
 			}
 			
 			tx.success();
@@ -298,7 +306,8 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 		if (assignedFleet != null) return true;
 		
 		// If player has stopped fleet in this area
-		for(IFleet fleet : (Set<IFleet>) area.getUnits(eUnitType.Fleet))
+		Set<IFleet> fleets = area.getUnits(eUnitType.Fleet);
+		for(IFleet fleet : fleets)
 		{
 			if (playerName.equals(fleet.getOwnerName())) return true;
 		}		
@@ -317,9 +326,9 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 	}
 	
 	@Override
-	public Set<? extends IUnit> getUnits(eUnitType type)
+	public <T extends IUnit> Set<T> getUnits(eUnitType type)
 	{
-		return getUnits(type, false);
+		return getUnits(type, false, new HashMap<String, T>());
 	}
 	
 	@Override
@@ -327,7 +336,7 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 	{
 		if (isDBOnline())
 		{
-			return getUnits(type, true);
+			return getUnits(type, true, new HashMap<String, T>());
 		}
 		else
 		{
@@ -343,11 +352,74 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 			}
 			return result;
 		}
+	}	
+	
+	private static transient Map<String, Map<String, IUnitMarker>> previousUnitsMarkers = null;	
+	
+	private <T extends IUnitMarker> Set<T> getUnits(eUnitType type, boolean acceptMarkers, Map<String, T> result)
+	{
+		assertOnlineStatus(true);
+		checkForDBUpdate();
+		
+		for(Node n : properties.traverse(Order.BREADTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eRelationTypes.UnitMarkerRealLocation, Direction.INCOMING))
+		{
+			SEPCommonDB.assertProperty(n, "type");			
+			if (type != null && !type.toString().equals((String) n.getProperty("type"))) continue;
+		
+			boolean isMarker = n.hasProperty("turn");
+			if (!acceptMarkers && isMarker) continue; // Marker
+			
+			IUnitMarker unitMarker = null;
+			if (isMarker)
+			{
+				unitMarker = sepDB.getUnitMarker((Integer) n.getProperty("turn"), (Double) n.getProperty("step"), (String) n.getProperty("ownerName"), (String) n.getProperty("name"), type);
+			}
+			
+			IUnit unit = sepDB.getUnit((String) n.getProperty("ownerName"), (String) n.getProperty("name"), type);
+			
+			if (unit != null && (unitMarker == null || unit.getTurn() >= unitMarker.getTurn())) unitMarker = unit;
+			
+			String pk = Unit.getPK(unitMarker.getOwnerName(), unitMarker.getName());
+			
+			
+			
+			if (!result.containsKey(pk) || (result.get(pk).getTurn() < unitMarker.getTurn())) result.put(pk, (T) unitMarker);						
+		}
+		
+		if (previousUnitsMarkers == null)
+		{
+			previousUnitsMarkers = new HashMap<String, Map<String, IUnitMarker>>();
+		}
+		
+		int hash = sepDB.hashCode();
+		String cacheKey = String.format("%d-%s", hash, getLocation().toString());
+		if (!previousUnitsMarkers.containsKey(cacheKey))
+		{	
+			previousUnitsMarkers.put(cacheKey, new HashMap<String, IUnitMarker>());
+						
+			if (sepDB.hasPrevious())
+			{
+				((Area) sepDB.previous().getArea(getLocation())).getUnits(null, acceptMarkers, previousUnitsMarkers.get(cacheKey));
+			}
+		}
+		
+		for(String pk : previousUnitsMarkers.get(cacheKey).keySet())
+		{
+			IUnitMarker unitMarker = previousUnitsMarkers.get(cacheKey).get(pk);
+			
+			if ((!result.containsKey(pk) || (result.get(pk).getTurn() < unitMarker.getTurn())) && (type == null || type.equals(unitMarker.getType())))
+			{
+				result.put(pk, (T) unitMarker);
+			}			
+		}
+		
+		return new HashSet<T>(result.values());
 	}
 	
+	/*
 	private <T extends IUnitMarker> Set<T> getUnits(eUnitType type, boolean acceptMarkers)
 	{
-		Set<T> result = new HashSet<T>();
+		Map<String, IUnitMarker> result = new HashMap<String, IUnitMarker>();
 		
 		assertOnlineStatus(true);
 		checkForDBUpdate();
@@ -375,6 +447,7 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 		
 		return result;
 	}
+	*/
 
 	private static transient Map<String, Integer> lastObservation = null;
 	public String toString(String playerName)

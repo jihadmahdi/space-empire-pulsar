@@ -92,14 +92,14 @@ class Vortex extends CelestialBody implements IVortex, Serializable
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 			
-			if (vortexIndex.get("name", name.toString()).hasNext())
+			if (vortexIndex.get(PK, getPK(name)).hasNext())
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, vortex[name='"+name+"'] already exist.");
 			}
 			properties = sepDB.getDB().createNode();
 			Vortex.initializeProperties(properties, name, birth, death);
-			vortexIndex.add(properties, "name", name);
+			vortexIndex.add(properties, PK, getPK(name));
 			
 			super.create(sepDB);
 			

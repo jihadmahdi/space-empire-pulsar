@@ -91,14 +91,14 @@ class SpaceCounter extends Building implements ISpaceCounter
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 			
-			if (spaceCounterIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type)).hasNext())
+			if (spaceCounterIndex.get(PK, getPK(productiveCelestialBodyName, type)).hasNext())
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, spaceCounter[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
 			properties = sepDB.getDB().createNode();
 			SpaceCounter.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
-			spaceCounterIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			spaceCounterIndex.add(properties, PK, getPK(productiveCelestialBodyName, type));
 			
 			super.create(sepDB);
 			

@@ -77,14 +77,14 @@ class StarshipPlant extends Building implements IStarshipPlant
 			this.sepDB = sepDB;
 			checkForDBUpdate();
 			
-			if (starshipPlantIndex.get("productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type)).hasNext())
+			if (starshipPlantIndex.get(PK, getPK(productiveCelestialBodyName, type)).hasNext())
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, starshipPlant[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
 			}
 			properties = sepDB.getDB().createNode();
 			StarshipPlant.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
-			starshipPlantIndex.add(properties, "productiveCelestialBodyName;class", String.format("%s;%s", productiveCelestialBodyName, type));
+			starshipPlantIndex.add(properties, PK, getPK(productiveCelestialBodyName, type));
 			
 			super.create(sepDB);
 			

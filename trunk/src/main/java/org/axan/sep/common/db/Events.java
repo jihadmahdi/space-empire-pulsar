@@ -20,6 +20,7 @@ import org.axan.sep.common.PlayerGameboardView;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.Protocol.eUnitType;
+import org.axan.sep.common.Rules.StarshipTemplate;
 import org.axan.sep.common.SEPUtils.Location;
 import org.axan.sep.common.SEPUtils.RealLocation;
 import org.axan.sep.common.db.Commands.FireAntiProbeMissile;
@@ -91,6 +92,54 @@ public abstract class Events
 			{
 				executor.onGameEvent(event, observers);
 			}
+		}
+		
+		/**
+		 * Create unit marker (if unit does not exists) and log given message.
+		 * Tag $location$ in both message parameters is replaced by unit location (celestial body name or location).
+		 * Tag $destination$ in unitMessage parameter is replaced by unit destination (celestial body name or location). 
+		 */
+		protected void logUnitMarker(IUnitMarker unitMarker, SEPCommonDB db, String markerMessage, String unitMessage) throws GameEventException
+		{			
+			IUnit unit = db.getUnit(unitMarker.getOwnerName(), unitMarker.getName(), null);
+			if (unit != null && unitMessage != null)
+			{
+				//if (!unitDepartureName.equals(unit.getDepartureName())) throw new GameEventException(this, "Inconsistent unit departure name");
+				if (!unit.getRealLocation().asLocation().equals(unitMarker.getRealLocation().asLocation())) throw new GameEventException(this, "Inconsistent unit location");
+				if (unitMessage.contains("$destination$"))
+				{
+					String destination = unit.getDestinationName() != null ? unit.getDestinationName() : unit.getDestination().toString();
+					unitMessage.replaceAll("\\$destination\\$", destination);
+				}
+				if (unitMessage.contains("$location$"))
+				{
+					ICelestialBody cb = db.getArea(unit.getRealLocation().asLocation()).getCelestialBody();
+					String location = cb == null ? unit.getRealLocation().asLocation().toString() : cb.getName();
+					unitMessage.replaceAll("\\$location\\$", location);
+				}
+				
+				db.fireLog(unitMessage);
+				db.fireAreaChangedEvent(unit.getRealLocation().asLocation());
+			}
+			else
+			{
+				// TODO: Add unit marker ? To link log message to detailed informations (e.g. fleet composition, unitMarker.toString())
+				db.createUnitMarker(unitMarker);
+				
+				if (markerMessage != null)
+				{
+					if (markerMessage.contains("$location$"))
+					{
+						ICelestialBody cb = db.getArea(unitMarker.getRealLocation().asLocation()).getCelestialBody();
+						String location = cb == null ? unitMarker.getRealLocation().asLocation().toString() : cb.getName();
+						markerMessage.replaceAll("\\$location\\$", location);
+					}
+					
+					db.fireLog(markerMessage);
+				}
+				
+				db.fireAreaChangedEvent(unitMarker.getRealLocation().asLocation());
+			}						
 		}
 	}	
 	
@@ -184,6 +233,43 @@ public abstract class Events
 			area.update(areaUpdate);
 			
 			db.fireAreaChangedEvent(areaUpdate.getLocation());
+		}
+	}
+	
+	/**
+	 * Fire log message, and update areas if any.
+	 */
+	public static class LogMessage extends AGameEvent implements Serializable
+	{
+		private final String message;
+		private final Set<IArea> areasUpdate;
+		
+		public LogMessage(String message, IArea ... areasUpdate)
+		{
+			this.message = message;
+			if (areasUpdate != null && areasUpdate.length > 0)
+			{
+				this.areasUpdate = new HashSet<IArea>(Arrays.asList(areasUpdate));
+			}
+			else
+			{
+				this.areasUpdate = null;
+			}
+		}
+		
+		@Override
+		public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameEventException
+		{
+			if (isGlobalView(executor))
+			{
+				for(IArea area : areasUpdate)
+				{
+					fireEventForObservers(executor, area, db.getPlayersNames(), new UpdateArea(area));
+					db.fireAreaChangedEvent(area.getLocation());
+				}
+			}
+			
+			db.fireLog(message);
 		}
 	}
 	
@@ -380,66 +466,76 @@ public abstract class Events
 	}
 	
 	/**
-	 * Log a unit lift-off event.
+	 * Log a unit move and fire areas update
+	 * Also fire UpdateArea events for given areas.
 	 */
-	public static class UnitLiftOff extends AGameEvent implements Serializable
+	public static class UnitMoveUpdate extends AGameEvent implements Serializable
 	{
 		private final IUnitMarker unitMarker;
-		private final String unitDepartureName;
+		private final String markerMessage;
+		private final String unitMessage;
+		private final Set<IArea> areasUpdate;
 		
-		public UnitLiftOff(IUnitMarker unitMarker, String unitDepartureName)
+		public UnitMoveUpdate(IUnitMarker unitMarker, String markerMessage, String unitMessage, IArea ... areasUpdate)
 		{
 			this.unitMarker = unitMarker;
-			this.unitDepartureName = unitDepartureName;
+			this.markerMessage = markerMessage;
+			this.unitMessage = unitMessage;
+			this.areasUpdate = new HashSet<IArea>(Arrays.asList(areasUpdate));			
 		}
 		
 		@Override
 		public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameEventException
 		{
-			IUnit unit = db.getUnit(unitMarker.getOwnerName(), unitMarker.getName(), null);
-			if (unit != null)
+			if (isGlobalView(executor))
 			{
-				if (!unitDepartureName.equals(unit.getDepartureName())) throw new GameEventException(this, "Inconsistent unit departure name");
-				String destination = unit.getDestinationName() != null ? unit.getDestinationName() : unit.getDestination().toString();
-				db.fireLog(String.format("%s@%s is taking of from %s to %s", unit.getOwnerName(), unit.getName(), unitDepartureName, destination));
+				for(IArea area : areasUpdate)
+				{
+					executor.onGameEvent(new UpdateArea(area), db.getPlayersNames());
+				}
 			}
-			else
-			{
-				// TODO: Add unit marker ? To link log message to detailed informations (e.g. fleet composition, unitMarker.toString())
-				db.createUnitMarker(unitMarker);
-				db.fireLog(String.format("%s@%s is taking of from %s", unitMarker.getOwnerName(), unitMarker.getName(), unitDepartureName));
-			}
+			logUnitMarker(unitMarker, db, markerMessage, unitMessage);
 		}
 	}
 	
 	/**
-	 * Log a unit landing event.
+	 * Log a make unit/starships event.
+	 * Also fire UpdateArea event for given area.
 	 */
-	public static class UnitLanding extends AGameEvent implements Serializable
+	public static class UnitMade extends UnitMoveUpdate implements Serializable
 	{
-		private final IUnitMarker unitMarker;
+		private final Map<StarshipTemplate, Integer> newcomers;
 		
-		public UnitLanding(IUnitMarker unitMarker)
+		private static int getQuantity(Map<StarshipTemplate, Integer> newcomers)
 		{
-			this.unitMarker = unitMarker;
+			int qt = 0;
+			for(StarshipTemplate t : newcomers.keySet()) qt += newcomers.get(t);
+			return qt;
 		}
 		
-		@Override
-		public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameEventException
+		public UnitMade(IUnitMarker unitMarker, IArea area)
 		{
-			IUnit unit = db.getUnit(unitMarker.getOwnerName(), unitMarker.getName(), null);
-			if (unit != null)
-			{
-				if (!unit.getRealLocation().asLocation().equals(unitMarker.getRealLocation().asLocation())) throw new GameEventException(this, "Inconsistent unit location");
-			}
-			else
-			{
-				db.createUnitMarker(unitMarker);
-			}
-			
-			ICelestialBody cb = db.getArea(unitMarker.getRealLocation().asLocation()).getCelestialBody();
-			String destination = cb == null ? unitMarker.getRealLocation().asLocation().toString() : cb.getName();			
-			db.fireLog(String.format("%s@%s arrived on %s", unitMarker.getOwnerName(), unitMarker.getName(), destination));
+			super(unitMarker, String.format("%s@%s made on $location$", unitMarker.getOwnerName(), unitMarker.getName()), null, area);
+			this.newcomers = null;
+		}
+		
+		public UnitMade(IUnitMarker unitMarker, IArea area, Map<StarshipTemplate, Integer> newcomers)
+		{
+			super(unitMarker, String.format("%s@%s joined by %d new starships", unitMarker.getOwnerName(), unitMarker.getName(), getQuantity(newcomers)), null, area);
+			this.newcomers = new HashMap<StarshipTemplate, Integer>();
+			this.newcomers.putAll(newcomers);
+		}
+	}
+	
+	/**
+	 * Log a dismantle unit event.
+	 * Also fire UpdateArea event for given area.
+	 */
+	public static class UnitDismantled extends UnitMoveUpdate implements Serializable
+	{
+		public UnitDismantled(IUnitMarker unitMarker, IArea area)
+		{
+			super(unitMarker, String.format("%s@%s dismantled on $location$", unitMarker.getOwnerName(), unitMarker.getName()), null, area);			
 		}
 	}
 	
@@ -577,7 +673,7 @@ public abstract class Events
 							if (u == v) continue;
 							if (u.getOwnerName().equals(v.getOwnerName())) continue;
 														
-							RealLocation vLoc = SEPUtils.getMobileLocation(v.getDeparture().asRealLocation(), v.getDestination().asRealLocation(), v.getSpeed(), v.getTravelingProgress(), step, true);
+							RealLocation vLoc = v.isStopped() ? v.getRealLocation() : SEPUtils.getMobileLocation(v.getDeparture().asRealLocation(), v.getDestination().asRealLocation(), v.getSpeed(), v.getTravelingProgress(), step, true);
 							double d = SEPUtils.getDistance(uLoc, vLoc);
 							
 							// Traveling unit can only report about other traveling units or deployed probes.
@@ -635,15 +731,20 @@ public abstract class Events
 			for(IUnit u : movingUnits)
 			{
 				Location oldLocation = u.getRealLocation().asLocation();
+				RealLocation departure = u.getDeparture().asRealLocation();
+				RealLocation destination = u.getDestination().asRealLocation();
+				RealLocation newLocation = SEPUtils.getMobileLocation(departure, destination, u.getSpeed(), u.getTravelingProgress(), 1, true);
+				double progress = u.getTravelingProgress() + SEPUtils.getProgressStep(departure, destination, u.getSpeed(), 1);
 				
-				if (isGlobalView(executor) && u.getTravelingProgress() == 0)
+				String markerMessage = null, unitMessage = null;
+				boolean updateAreas = false;
+				
+				if (u.getTravelingProgress() == 0)
 				{
-					// Logging unit lift-off
-					UnitLiftOff ulo = new UnitLiftOff(u.getMarker(0), u.getDepartureName());
-					fireEventForObservers(executor, db.getArea(u.getDeparture()), db.getPlayersNames(), ulo);
+					updateAreas = true;
+					markerMessage = String.format("%s@%s is taking of from %s", u.getOwnerName(), u.getName(), u.getDepartureName());
+					unitMessage = String.format("%s@%s is taking of from %s to $destination$", u.getOwnerName(), u.getName(), u.getDepartureName());
 				}
-				
-				double progress = u.getTravelingProgress() + u.getSpeed() / SEPUtils.getDistance(u.getDeparture(), u.getDestination());
 				
 				if (progress < 1)
 				{
@@ -652,16 +753,23 @@ public abstract class Events
 				}
 				else
 				{
-					IArea area = db.getArea(u.getDestination());
-					ICelestialBody cb = area.getCelestialBody();
-					db.fireLog(String.format("Unit %s arrived to %s", u.getName(), cb == null ? u.getDestination() : cb.getName()));
+					updateAreas = true;
+					markerMessage = String.format("%s@%s arrived to $location$", u.getOwnerName(), u.getName());
+										
 					u.setDeparture(u.getDestination());
 					u.setDestination(null);
 					u.onArrival(executor);					
 				}
 				
+				if (isGlobalView(executor))
+				{
+					// Logging unit lift-off					
+					UnitMoveUpdate umu = new UnitMoveUpdate(u.getMarker(1), markerMessage, unitMessage, db.getArea(oldLocation), db.getArea(newLocation.asLocation()));
+					fireEventForObservers(executor, db.getArea(u.getDeparture()), db.getPlayersNames(), umu);
+				}
+				
 				db.fireAreaChangedEvent(oldLocation);
-				db.fireAreaChangedEvent(u.getRealLocation().asLocation());
+				db.fireAreaChangedEvent(newLocation.asLocation());
 			}
 		}
 	}	

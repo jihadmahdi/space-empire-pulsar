@@ -108,7 +108,7 @@ public class Probe extends Unit implements IProbe
 			Probe.initializeProperties(properties, ownerName, name, initialDepartureName, departure);
 			probeIndex.add(properties, PK, getPK(ownerName, name));
 			
-			Node nOwner = db.index().forNodes("PlayerIndex").get("name", ownerName).getSingle();
+			Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
 			if (nOwner == null)
 			{
 				tx.failure();
@@ -169,7 +169,7 @@ public class Probe extends Unit implements IProbe
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		return new ProbeMarker(getTurn(), ownerName, getSerieName(), getSerialNumber(), isStopped(), getRealLocation(step), getSpeed(), isDeployed());
+		return new ProbeMarker(getTurn(), step, ownerName, getSerieName(), getSerialNumber(), isStopped(), getRealLocation(step), getSpeed(), isDeployed());
 	}
 	
 	@Override
