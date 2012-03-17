@@ -548,13 +548,13 @@ public class TestSQLite
 		
 		for(IVersionedUnit vu : units)
 		{
-			System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getTurn());
+			System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getVersion());
 		}
 		System.out.println("in "+(t2-t1)+"ms");
 		
 		for(IVersionedUnit vu : units2)
 		{
-			System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getTurn());
+			System.out.format("%s - %s (%s) v%d%n", vu.getType(), vu.getName(), vu.getOwner(), vu.getVersion());
 			if (vu.getOwner().matches("p2") && vu.getName().matches("F1"))
 			{
 				fail("Unexpected unit exist.");

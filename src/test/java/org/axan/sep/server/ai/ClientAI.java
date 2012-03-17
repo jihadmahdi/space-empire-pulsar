@@ -65,7 +65,7 @@ public class ClientAI
 	{
 		if (startingPlanet == null)
 		{			
-			startingPlanet = getDB().getStartingPlanet(playerName).getName();
+			startingPlanet = getDB().getStartingPlanetName(playerName);
 		}
 		return startingPlanet;
 	}
@@ -74,7 +74,7 @@ public class ClientAI
 	{
 		SEPCommonDB sepDB = client == null ? null : client.getGameboard() == null ? null : client.getGameboard().getDB();
 		if (sepDB == null) return -1;
-		return sepDB.getConfig().getTurn();
+		return sepDB.getTurn();
 	}
 	
 	public void checkBuilding(String celestialBodyName, eBuildingType buildingType, int buildSlotsCount)

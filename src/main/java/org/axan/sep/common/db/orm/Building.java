@@ -1,5 +1,6 @@
 package org.axan.sep.common.db.orm;
 
+import org.axan.eplib.orm.nosql.AVersionedGraphNode;
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.Rules;
 import org.axan.sep.common.Protocol.eBuildingType;
@@ -20,20 +21,11 @@ import java.util.HashMap;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
-abstract class Building extends AGraphObject<Node> implements IBuilding
+abstract class Building extends AVersionedGraphNode<SEPCommonDB> implements IBuilding
 {
-	
-	
-	
-	public static final String PK = "productiveCelestialBodyName;type";
 	public static final String getPK(String productiveCelestialBodyName, eBuildingType type)
 	{
 		return String.format("%s;%s", productiveCelestialBodyName, type);
-	}
-	
-	public static final String queryAnyBuildingTypePK(String productiveCelestialBodyName)
-	{
-		return String.format("%s;*", productiveCelestialBodyName);
 	}
 	
 	/*
@@ -52,8 +44,6 @@ abstract class Building extends AGraphObject<Node> implements IBuilding
 	 * DB connection
 	 * DB connected and permanent value only. i.e. Indexes and Factories only (no value, no node, no relation).
 	 */
-	protected Index<Node> buildingIndex;
-	protected Index<Node> productiveCelestialBodyIndex;
 	
 	/**
 	 * Off-DB constructor.
@@ -86,59 +76,37 @@ abstract class Building extends AGraphObject<Node> implements IBuilding
 		this.nbSlots = 0;
 	}
 	
-	/**
-	 * If object is DB connected, check for DB update.
-	 */
 	@Override
-	@OverridingMethodsMustInvokeSuper
-	protected void checkForDBUpdate()
+	protected void initializeProperties()
 	{
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			db = sepDB.getDB();
-			
-			buildingIndex = db.index().forNodes("BuildingIndex");
-			IndexHits<Node> hits = buildingIndex.get(PK, getPK(productiveCelestialBodyName, type));
-			properties = hits.hasNext() ? hits.getSingle() : null;
-			if (properties != null && !properties.getProperty("type").equals(type.toString()))
-			{
-				throw new RuntimeException("Node type error: tried to connect '"+type+"' to '"+properties.getProperty("type")+"'");
-			}
-			productiveCelestialBodyIndex = db.index().forNodes("ProductiveCelestialBodyIndex");			
-		}
+		super.initializeProperties();
+		properties.setProperty("productiveCelestialBodyName", productiveCelestialBodyName);
+		properties.setProperty("type", eBuildingType.DefenseModule.toString());
+		properties.setProperty("builtDate", builtDate);
+		properties.setProperty("nbSlots", nbSlots);
 	}
 	
 	/**
-	 * Current object must be Off-DB to call create method.
-	 * Create method connect the object to the given DB and create the object node.
-	 * After this call, object is DB connected.
-	 * @param sepDB
+	 * Register properties (add Node to indexes and create relationships).
+	 * @param properties
 	 */
 	@Override
 	@OverridingMethodsMustInvokeSuper
-	protected void create(SEPCommonDB sepDB)
+	protected void register(Node properties)
 	{
-		Transaction tx = sepDB.getDB().beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
-			if (buildingIndex.get(PK, getPK(productiveCelestialBodyName, type)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, building[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
-			}
-			buildingIndex.add(properties, PK, getPK(productiveCelestialBodyName, type));
+			super.register(properties);
 			
-			IndexHits<Node> hits = productiveCelestialBodyIndex.get(CelestialBody.PK, CelestialBody.getPK(productiveCelestialBodyName));
-			if (!hits.hasNext())
+			Node nProductiveCelestialBody = AVersionedGraphNode.queryVersion(graphDB.getDB().index().forNodes("ProductiveCelestialBodyIndex"), CelestialBody.getPK(productiveCelestialBodyName), graphDB.getVersion());
+			if (nProductiveCelestialBody == null)
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Cannot find ProductiveCelestialBody[name='"+productiveCelestialBodyName+"']. ProductiveCelestialBody must be created before Building.");
-			}
-			
-			Node nProductiveCelestialBody = hits.getSingle();
-			nProductiveCelestialBody.createRelationshipTo(properties, eRelationTypes.Buildings);
+			}			
+			nProductiveCelestialBody.createRelationshipTo(properties, eRelationTypes.Buildings); // checked
 			
 			tx.success();			
 		}
@@ -155,29 +123,10 @@ abstract class Building extends AGraphObject<Node> implements IBuilding
 		delete();
 	}
 	
-	@OverridingMethodsMustInvokeSuper
-	public void delete()
+	@Override
+	protected void delete()
 	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			buildingIndex.remove(properties);
-			
-			Relationship r = properties.getSingleRelationship(eRelationTypes.Buildings, Direction.INCOMING);
-			if (r != null) r.delete();
-			
-			properties.delete();
-			
-			tx.success();
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.delete();
 	}
 	
 	@Override
@@ -227,12 +176,12 @@ abstract class Building extends AGraphObject<Node> implements IBuilding
 		
 		if (!Rules.getBuildingCanBeUpgraded(getType())) throw new RuntimeException("Cannot upgrade '"+getType()+"'");
 		
-		Transaction tx = db.beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
 			// TODO: Check for productive celestial body free slots condition ?
-			
+			prepareUpdate();
 			properties.setProperty("nbSlots", getNbSlots()+1);
 			tx.success();
 		}
@@ -249,12 +198,12 @@ abstract class Building extends AGraphObject<Node> implements IBuilding
 		
 		if (!Rules.getBuildingCanBeDowngraded(this)) throw new RuntimeException("Cannot downgrade '"+getType()+"'");
 		
-		Transaction tx = db.beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
 			// TODO: Check for productive celestial body free slots condition ?
-			
+			prepareUpdate();
 			properties.setProperty("nbSlots", getNbSlots()-1);
 			tx.success();
 		}
@@ -268,15 +217,16 @@ abstract class Building extends AGraphObject<Node> implements IBuilding
 	@OverridingMethodsMustInvokeSuper
 	public void update(IBuilding buildingUpdate)
 	{
-		assertOnlineStatus(true);
+		assertLastVersion();
 		checkForDBUpdate();
 		
 		if (getType() != buildingUpdate.getType()) throw new RuntimeException("Illegal building update, inconsistent type.");
 		
-		Transaction tx = sepDB.getDB().beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
+			prepareUpdate();
 			properties.setProperty("builtDate", buildingUpdate.getBuiltDate());
 			properties.setProperty("nbSlots", buildingUpdate.getNbSlots());
 			

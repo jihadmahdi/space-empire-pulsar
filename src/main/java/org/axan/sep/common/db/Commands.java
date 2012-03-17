@@ -788,7 +788,7 @@ public abstract class Commands
 			
 			checkOwnership(playerName, productiveCelestialBody.getOwner(), playerName+" does not own '"+productiveCelestialBodyName+"'");
 			
-			turn = db.getConfig().getTurn();
+			turn = db.getTurn();
 			existingBuilding = productiveCelestialBody.getBuilding(buildingType);
 			
 			
@@ -866,7 +866,7 @@ public abstract class Commands
 			
 			checkOwnership(playerName, productiveCelestialBody.getOwner(), playerName+" does not own '"+productiveCelestialBodyName+"'");
 			
-			turn = db.getConfig().getTurn();
+			turn = db.getTurn();
 			existingBuilding = null;
 			for(IBuilding building : productiveCelestialBody.getBuildings())
 			{				

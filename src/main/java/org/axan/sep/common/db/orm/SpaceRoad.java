@@ -2,25 +2,21 @@ package org.axan.sep.common.db.orm;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
+import org.axan.eplib.orm.nosql.AVersionedGraphRelationship;
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.db.ISpaceRoad;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 
-public class SpaceRoad extends AGraphObject<Relationship> implements ISpaceRoad
+public class SpaceRoad extends AVersionedGraphRelationship<SEPCommonDB> implements ISpaceRoad
 {
-	public static final String PK = "source->destination";
-	public static final String getPK(String sourceName, String destinationName)
-	{
-		return String.format("%s->%s", sourceName, destinationName);
-	}
-
 	/*
 	 * PK
 	 */
@@ -34,7 +30,6 @@ public class SpaceRoad extends AGraphObject<Relationship> implements ISpaceRoad
 	/*
 	 * DB connection
 	 */
-	private transient Index<Relationship> spaceRoadIndex;
 	
 	/**
 	 * Off-DB constructor.
@@ -44,14 +39,14 @@ public class SpaceRoad extends AGraphObject<Relationship> implements ISpaceRoad
 	 */
 	public SpaceRoad(String sourceName, String destinationName)
 	{
-		super(String.format("%s->%s", sourceName, destinationName));
+		super(eRelationTypes.SpaceRoad, "BuildingIndex", Building.getPK(sourceName, eBuildingType.SpaceCounter), "BuildingIndex", Building.getPK(destinationName, eBuildingType.SpaceCounter));
 		this.sourceName = sourceName;
 		this.destinationName = destinationName;
 	}
 	
 	public SpaceRoad(SEPCommonDB sepDB, String sourceName, String destinationName)
 	{
-		super(sepDB, String.format("%s->%s", sourceName, destinationName));
+		super(sepDB, eRelationTypes.SpaceRoad, "BuildingIndex", Building.getPK(sourceName, eBuildingType.SpaceCounter), "BuildingIndex", Building.getPK(destinationName, eBuildingType.SpaceCounter));
 		this.sourceName = sourceName;
 		this.destinationName = destinationName;
 	}
@@ -60,89 +55,30 @@ public class SpaceRoad extends AGraphObject<Relationship> implements ISpaceRoad
 	 * If object is DB connected, check for DB update.
 	 */
 	@Override
-	protected void checkForDBUpdate()
+	final protected void checkForDBUpdate()
 	{
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			db = sepDB.getDB();
-			
-			spaceRoadIndex = db.index().forRelationships("SpaceRoadIndex");
-			IndexHits<Relationship> hits = spaceRoadIndex.get(PK, getPK(sourceName, destinationName));
-			properties = hits.hasNext() ? hits.getSingle() : null;
-		}
+		super.checkForDBUpdate();
 	}
 
-	/**
-	 * Current object must be Off-DB to call create method.
-	 * Create method connect the object to the given DB and create the object node.
-	 * After this call, object is DB connected.
-	 * @param sepDB
-	 */
 	@Override
-	protected void create(SEPCommonDB sepDB)
+	protected void initializeProperties()
 	{
-		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			this.sepDB = sepDB;
-			checkForDBUpdate();
-			
-			if (spaceRoadIndex.get(PK, getPK(sourceName, destinationName)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'source->destination' must be unique, spaceRoad[source->destination='"+sourceName+"->"+destinationName+"'] already exist.");
-			}
-			
-			Index<Node> buildingIndex = sepDB.getDB().index().forNodes("BuildingIndex");			
-			Node nSource = buildingIndex.get(Building.PK, Building.getPK(sourceName, eBuildingType.SpaceCounter)).getSingle();
-			if (nSource == null)
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: No space counter found on celestial body named '"+sourceName+"' found.");
-			}
-			
-			Node nDestination = buildingIndex.get(Building.PK, Building.getPK(destinationName, eBuildingType.SpaceCounter)).getSingle();
-			if (nDestination == null)
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: No space counter found on celestial body named '"+destinationName+"' found.");
-			}
-
-			properties = nSource.createRelationshipTo(nDestination, eRelationTypes.SpaceRoad);
-			SpaceRoad.initializeProperties(properties, sourceName, destinationName);
-			spaceRoadIndex.add(properties, PK, getPK(sourceName, destinationName));			
-			
-			tx.success();			
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.initializeProperties();
+		properties.setProperty("sourceName", sourceName);
+		properties.setProperty("destinationName", destinationName);
+	}
+	
+	@Override
+	final protected void register(Relationship properties)
+	{
+		super.register(properties);
 	}
 	
 	@Override
 	@OverridingMethodsMustInvokeSuper
 	public void destroy()
 	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{			
-			spaceRoadIndex.remove(properties);
-			properties.delete();
-			
-			tx.success();
-		}
-		finally
-		{
-			tx.finish();
-		}
+		delete();
 	}
 	
 	@Override
@@ -161,12 +97,5 @@ public class SpaceRoad extends AGraphObject<Relationship> implements ISpaceRoad
 	public String toString()
 	{
 		return sourceName+" -> "+destinationName;
-	}
-
-	public static void initializeProperties(Relationship properties, String sourceName, String destinationName)
-	{
-		properties.setProperty("sourceName", sourceName);
-		properties.setProperty("destinationName", destinationName);
 	}	
-	
 }

@@ -205,7 +205,7 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 			zSlider.setMinimum(0);
 			zSlider.setMaximum(config.getDimZ() - 1);			
 			
-			IPlanet startingPlanet = gameboard.getDB().getStartingPlanet(getSepClient().getLogin());
+			IPlanet startingPlanet = gameboard.getDB().getPlanet(gameboard.getDB().getStartingPlanetName(getSepClient().getLogin()));
 			
 			// TODO: Force initial all Z painting
 			
@@ -409,7 +409,7 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 			zGrids.put(z, zGrid);
 		}
 		
-		getCoordLabel(false, 0, z).setText(String.format("T %d", getGameboard().getConfig().getTurn()));
+		getCoordLabel(false, 0, z).setText(String.format("T %d", getGameboard().getDB().getTurn()));
 		
 		return zGrids.get(z);
 	}
@@ -636,7 +636,7 @@ public class SwingUniverseRenderer extends AUniverseRendererPanel
 		Color borderColor = ownedMarker ? Color.blue : ownedUnit ? Color.green : otherMarker ? Color.red.darker() : otherUnit ? Color.red : null; 
 		if (borderColor != null)
 		{
-			int currentTurn = getSepClient().getGameboard().getConfig().getTurn();
+			int currentTurn = getSepClient().getGameboard().getDB().getTurn();
 			for(int i=mostRecent; i < currentTurn; ++i)
 			{
 				borderColor = borderColor.darker();

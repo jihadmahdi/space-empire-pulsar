@@ -1,5 +1,6 @@
 package org.axan.sep.common.db.orm;
 
+import java.sql.PreparedStatement;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -8,6 +9,7 @@ import java.util.Map;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
+import org.axan.eplib.orm.nosql.AVersionedGraphNode;
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.Protocol.eUnitType;
@@ -43,7 +45,6 @@ public class Fleet extends Unit implements IFleet
 	/*
 	 * DB connection
 	 */
-	private transient Index<Node> fleetIndex;
 	
 	/**
 	 * Off-DB constructor.
@@ -70,80 +71,20 @@ public class Fleet extends Unit implements IFleet
 	@Override
 	final protected void checkForDBUpdate()
 	{				
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			super.checkForDBUpdate();
-			fleetIndex = db.index().forNodes("FleetIndex");			
-		}
-	}
-	
-	/**
-	 * Create method final implementation.
-	 * Final implement actually create the db node and initialize it.
-	 */
-	@Override
-	final protected void create(SEPCommonDB sepDB)
-	{
-		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			this.sepDB = sepDB;
-			checkForDBUpdate();
-			
-			if (fleetIndex.get(PK, getPK(ownerName, name)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, fleet["+getPK(ownerName, name)+"] already exist.");
-			}			
-			
-			properties = sepDB.getDB().createNode();
-			Fleet.initializeProperties(properties, ownerName, name, initialDepartureName, departure, starships);
-			fleetIndex.add(properties, PK, getPK(ownerName, name));
-			
-			Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
-			if (nOwner == null)
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Cannot find owner Player '"+ownerName+"'");
-			}
-			//nOwner.createRelationshipTo(properties, eUnitType.Fleet);
-			
-			super.create(sepDB);
-			
-			tx.success();			
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.checkForDBUpdate();
 	}
 	
 	@Override
-	@OverridingMethodsMustInvokeSuper
-	public void destroy()
+	protected void initializeProperties()
 	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			fleetIndex.remove(properties);
-			//properties.getSingleRelationship(eUnitType.Fleet, Direction.INCOMING).delete();
-			
-			super.destroy();
-			
-			tx.success();
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.initializeProperties();
+		initializeStarships(this, starships);
+	}
+	
+	@Override
+	final protected void register(Node properties)
+	{
+		super.register(properties);
 	}
 	
 	@Override
@@ -161,7 +102,7 @@ public class Fleet extends Unit implements IFleet
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		return properties.hasRelationship(eRelationTypes.AssignedFleets, Direction.INCOMING);
+		return hasRelationship(eRelationTypes.AssignedFleets, Direction.INCOMING);
 	}
 	
 	@Override
@@ -201,21 +142,35 @@ public class Fleet extends Unit implements IFleet
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Transaction tx = db.beginTx();
+		assertLastVersion();
+		
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
+			boolean modified = false;
+			
 			for(int i=0; i < newPlan.size() || properties.hasProperty("move"+i); ++i)
 			{
 				if (i < newPlan.size())
 				{
 					FleetMove move = newPlan.get(i);
+					if (!modified)
+					{
+						modified = true;
+						prepareUpdate();
+					}
 					properties.setProperty("move"+i, move.getDestinationName());
 					properties.setProperty("move"+i+"_delay", move.getDelay());
 					properties.setProperty("move"+i+"_isAnAttack", move.isAnAttack());
 				}
 				else
 				{
+					if (!modified)
+					{
+						modified = true;
+						prepareUpdate();
+					}
 					properties.removeProperty("move"+i);
 					properties.removeProperty("move"+i+"_delay");
 					properties.removeProperty("move"+i+"_isAnAttack");
@@ -244,10 +199,11 @@ public class Fleet extends Unit implements IFleet
 		FleetMove move = moves.get(0);
 		if (move.getDelay() > 0)
 		{
-			Transaction tx = db.beginTx();
+			Transaction tx = graphDB.getDB().beginTx();
 			
 			try
 			{
+				prepareUpdate();
 				properties.setProperty("move0_delay", move.getDelay()-1);
 				tx.success();
 				return false;
@@ -258,11 +214,10 @@ public class Fleet extends Unit implements IFleet
 			}
 		}
 		
-		Transaction tx = db.beginTx();
-		
+		Transaction tx = graphDB.getDB().beginTx();		
 		try
 		{
-			ICelestialBody cb = sepDB.getCelestialBody(move.getDestinationName());
+			ICelestialBody cb = graphDB.getCelestialBody(move.getDestinationName());
 			setDestination(cb.getLocation());
 			
 			moves.remove(move);
@@ -318,21 +273,21 @@ public class Fleet extends Unit implements IFleet
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Transaction tx = db.beginTx();
-		
+		Transaction tx = graphDB.getDB().beginTx();		
 		try
 		{						
 			getStarships();
 			
+			boolean modified = false;
 			for(StarshipTemplate template : newcomers.keySet())
 			{
 				int newComersQuantity = newcomers.get(template);
 				if (newComersQuantity < 0) throw new RuntimeException("Newcomers quantity cannot be negative.");
 				int quantity = (starships.containsKey(template) ? starships.get(template) : 0) + newComersQuantity;
-				starships.put(template, quantity);
+				starships.put(template, quantity);				
 			}
 			
-			initializeStarships(properties, starships);
+			initializeStarships(this, starships);
 			tx.success();
 		}
 		finally
@@ -347,7 +302,7 @@ public class Fleet extends Unit implements IFleet
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Transaction tx = db.beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
@@ -362,7 +317,7 @@ public class Fleet extends Unit implements IFleet
 				starships.put(template, quantity);
 			}
 			
-			initializeStarships(properties, starships);			
+			initializeStarships(this, starships);			
 			tx.success();
 		}
 		finally
@@ -391,22 +346,48 @@ public class Fleet extends Unit implements IFleet
 		return sb.toString();
 	}
 	
-	public static void initializeProperties(Node properties, String ownerName, String name, String initialDepartureName, Location departure, Map<StarshipTemplate, Integer> starships)
+	Node getProperties()
 	{
-		properties.setProperty("ownerName", ownerName);
-		properties.setProperty("name", name);
-		properties.setProperty("type", eUnitType.Fleet.toString());
-		properties.setProperty("initialDepartureName", initialDepartureName);
-		properties.setProperty("departure", departure.toString());
-		initializeStarships(properties, starships);
+		return properties;
 	}
 	
-	public static void initializeStarships(Node properties, Map<StarshipTemplate, Integer> starships)
+	@Override
+	protected void prepareUpdate()
 	{
+		super.prepareUpdate();
+	}
+	
+	static void initializeStarships(AVersionedGraphNode versionedNode, Map<StarshipTemplate, Integer> starships)
+	{
+		FleetMarker fleetMarker = FleetMarker.class.isInstance(versionedNode) ? (FleetMarker) versionedNode : null;
+		Fleet fleet = Fleet.class.isInstance(versionedNode) ? (Fleet) versionedNode : null;
+		
+		if (fleetMarker == null && fleet == null)
+		{
+			throw new RuntimeException("versionedNode must be instance of FleetMarker or instance of Fleet.");
+		}
+		
+		Node properties = fleetMarker != null ? fleetMarker.getProperties() : fleet.getProperties();		
+		
 		int quantity = 0;
+		boolean modified = false;
 		for(StarshipTemplate template : Rules.getStarshipTemplates())		
 		{
 			quantity = (starships.containsKey(template)) ? starships.get(template) : 0;
+			
+			String starship = "starships"+template.getName();
+			if (!modified && (!properties.hasProperty(starship) || ((Integer) properties.getProperty(starship)) != quantity))
+			{
+				modified = true;
+				if (fleetMarker != null)
+				{
+					fleetMarker.prepareUpdate();
+				}
+				else
+				{
+					fleet.prepareUpdate();
+				}
+			}
 			properties.setProperty("starships"+template.getName(), quantity);
 		}
 	}

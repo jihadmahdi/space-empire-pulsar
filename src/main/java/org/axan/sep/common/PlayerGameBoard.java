@@ -151,7 +151,7 @@ public class PlayerGameBoard implements IGameBoard
 			{
 				final IGameConfig config = getConfig();
 				
-				view = new PlayerGameboardView(client.getLogin(), new SEPCommonDB(dbFactory.createDB(), config), new IGameEventExecutor()
+				view = new PlayerGameboardView(client.getLogin(), new SEPCommonDB(dbFactory.createDB(), config, 0), new IGameEventExecutor()
 				{
 					@Override
 					public String getCurrentViewPlayerName()

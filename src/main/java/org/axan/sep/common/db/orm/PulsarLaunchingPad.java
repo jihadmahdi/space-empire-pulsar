@@ -28,7 +28,6 @@ class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 	/*
 	 * DB connection
 	 */
-	protected Index<Node> pulsarLaunchingPadIndex;
 	
 	/**
 	 * Off-DB constructor.
@@ -54,69 +53,20 @@ class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 	@Override
 	final protected void checkForDBUpdate()
 	{				
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			super.checkForDBUpdate();			
-			pulsarLaunchingPadIndex = db.index().forNodes("PulsarLaunchingPadIndex");			
-		}
-	}
-	
-	/**
-	 * Create method final implementation.
-	 * Final implement actually create the db node and initialize it.
-	 */
-	@Override
-	final protected void create(SEPCommonDB sepDB)
-	{
-		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			this.sepDB = sepDB;
-			checkForDBUpdate();
-			
-			if (pulsarLaunchingPadIndex.get(PK, getPK(productiveCelestialBodyName, type)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, pulsarLaunchingPad[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
-			}
-			properties = sepDB.getDB().createNode();
-			PulsarLaunchingPad.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
-			pulsarLaunchingPadIndex.add(properties, PK, getPK(productiveCelestialBodyName, type));
-			
-			super.create(sepDB);
-			
-			tx.success();			
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.checkForDBUpdate();
 	}
 	
 	@Override
-	@OverridingMethodsMustInvokeSuper
-	public void delete()
+	final protected void initializeProperties()
 	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			pulsarLaunchingPadIndex.remove(properties);
-			super.delete();
-			
-			tx.success();
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.initializeProperties();
+		properties.setProperty("nbFired", 0);
+	}
+	
+	@Override
+	final protected void register(Node properties)
+	{
+		super.register(properties);
 	}
 	
 	@Override
@@ -149,7 +99,7 @@ class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Transaction tx = sepDB.getDB().beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
@@ -161,6 +111,7 @@ class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 			
 			if (getNbSlots() < pulsarLaunchingPadUpdate.getNbFired()) throw new RuntimeException("Illegal pulsar launching pad update, nbSlots < nbFired.");
 			
+			prepareUpdate();
 			properties.setProperty("nbFired", pulsarLaunchingPadUpdate.getNbFired());
 			tx.success();
 		}
@@ -197,15 +148,6 @@ class PulsarLaunchingPad extends Building implements IPulsarLaunchingPad
 		}			
 
 		return sb.toString();		
-	}
-	
-	public static void initializeProperties(Node properties, String productiveCelestialBodyName, int builtDate, int nbSlots)
-	{
-		properties.setProperty("productiveCelestialBodyName", productiveCelestialBodyName);
-		properties.setProperty("type", eBuildingType.PulsarLaunchingPad.toString());
-		properties.setProperty("builtDate", builtDate);
-		properties.setProperty("nbSlots", nbSlots);
-		properties.setProperty("nbFired", 0);
 	}
 
 }

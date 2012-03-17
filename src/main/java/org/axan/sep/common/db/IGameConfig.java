@@ -248,8 +248,10 @@ public interface IGameConfig
 
 	public void setSunRadius(int sunRadius);
 	
+	/*
 	public int getTurn();
 	public void setTurn(int turn);
+	*/
 	
 	/**
 	 * Unit base speed (per turn).

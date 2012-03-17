@@ -801,6 +801,7 @@ public class GameConfig implements IGameConfig, Serializable
 		this.carbonMinimalFreight = carbonMinimalFreight;
 	}
 
+	/*
 	private int turn = 0;
 	@Override
 	public int getTurn()
@@ -813,6 +814,7 @@ public class GameConfig implements IGameConfig, Serializable
 	{
 		this.turn = turn;
 	}
+	*/
 
 	private Map<eUnitType, Float> unitsSight = new HashMap<eUnitType, Float>();
 	@Override

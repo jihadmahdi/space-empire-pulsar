@@ -28,7 +28,6 @@ class DefenseModule extends Building implements IDefenseModule
 	/*
 	 * DB connection
 	 */
-	protected Index<Node> defenseModuleIndex;
 	
 	/**
 	 * Off-DB constructor.
@@ -54,69 +53,18 @@ class DefenseModule extends Building implements IDefenseModule
 	@Override
 	final protected void checkForDBUpdate()
 	{				
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			super.checkForDBUpdate();			
-			defenseModuleIndex = db.index().forNodes("DefenseModuleIndex");			
-		}
+		super.checkForDBUpdate();
 	}
 	
 	/**
-	 * Create method final implementation.
-	 * Final implement actually create the db node and initialize it.
+	 * Register properties (add Node to indexes and create relationships).
+	 * @param properties
 	 */
 	@Override
-	final protected void create(SEPCommonDB sepDB)
-	{
-		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			this.sepDB = sepDB;
-			checkForDBUpdate();
-						
-			if (defenseModuleIndex.get(PK, getPK(productiveCelestialBodyName, type)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, defenseModule[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
-			}
-			properties = sepDB.getDB().createNode();
-			DefenseModule.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
-			defenseModuleIndex.add(properties, PK, getPK(productiveCelestialBodyName, type));
-			
-			super.create(sepDB);
-			
-			tx.success();			
-		}
-		finally
-		{
-			tx.finish();
-		}
-	}
-	
-	@Override
 	@OverridingMethodsMustInvokeSuper
-	public void delete()
+	final protected void register(Node properties)
 	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			defenseModuleIndex.remove(properties);
-			super.delete();
-			
-			tx.success();
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.register(properties);
 	}
 
 	public static double getTotalBonus(int nbSlots)
@@ -160,13 +108,4 @@ class DefenseModule extends Building implements IDefenseModule
 		
 		return sb.toString();		
 	}
-	
-	public static void initializeProperties(Node properties, String productiveCelestialBodyName, int builtDate, int nbSlots)
-	{
-		properties.setProperty("productiveCelestialBodyName", productiveCelestialBodyName);
-		properties.setProperty("type", eBuildingType.DefenseModule.toString());
-		properties.setProperty("builtDate", builtDate);
-		properties.setProperty("nbSlots", nbSlots);
-	}
-
 }

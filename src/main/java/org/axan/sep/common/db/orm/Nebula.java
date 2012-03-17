@@ -14,6 +14,8 @@ import org.axan.sep.common.db.IGameConfig;
 import java.util.Map;
 import java.util.HashMap;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 class Nebula extends ProductiveCelestialBody implements INebula
 {
 	// PK inherited.
@@ -25,7 +27,6 @@ class Nebula extends ProductiveCelestialBody implements INebula
 	/*
 	 * DB connection
 	 */
-	protected transient Index<Node> nebulaIndex;
 
 	/**
 	 * Off-DB constructor
@@ -53,57 +54,18 @@ class Nebula extends ProductiveCelestialBody implements INebula
 	@Override
 	final protected void checkForDBUpdate()
 	{				
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			super.checkForDBUpdate();			
-			nebulaIndex = db.index().forNodes("NebulaIndex");			
-		}
+		super.checkForDBUpdate();
 	}
 	
 	/**
-	 * Create method final implementation.
-	 * Final implement actually create the db node and initialize it.
+	 * Register properties (add Node to indexes and create relationships).
+	 * @param properties
 	 */
 	@Override
-	final protected void create(SEPCommonDB sepDB)
+	@OverridingMethodsMustInvokeSuper
+	final protected void register(Node properties)
 	{
-		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			this.sepDB = sepDB;
-			checkForDBUpdate();
-		
-			if (nebulaIndex.get(PK, getPK(name)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, nebula[name='"+name+"'] already exist.");
-			}
-			properties = sepDB.getDB().createNode();
-			Nebula.initializeProperties(properties, name, initialCarbonStock, maxSlots, carbonStock, currentCarbon);
-			nebulaIndex.add(properties, PK, getPK(name));
-			
-			super.create(sepDB);
-			
-			tx.success();			
-		}
-		finally
-		{
-			tx.finish();
-		}
-	}
-		
-	public static void initializeProperties(Node properties, String name, int initialCarbonStock, int maxSlots, int carbonStock, int currentCarbon)
-	{
-		properties.setProperty("name", name);
-		properties.setProperty("type", eCelestialBodyType.Nebula.toString());
-		properties.setProperty("initialCarbonStock", initialCarbonStock);
-		properties.setProperty("maxSlots", maxSlots);
-		properties.setProperty("carbonStock", carbonStock);
-		properties.setProperty("currentCarbon", currentCarbon);
+		super.register(properties);
 	}
 
 }

@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.HashMap;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 class Planet extends ProductiveCelestialBody implements IPlanet
 {
 	// PK inherited.
@@ -33,8 +35,7 @@ class Planet extends ProductiveCelestialBody implements IPlanet
 	/*
 	 * DB connection
 	 */
-	protected transient Index<Node> planetIndex;
-
+	
 	/**
 	 * Off-DB constructor.
 	 * @param name
@@ -72,47 +73,27 @@ class Planet extends ProductiveCelestialBody implements IPlanet
 	@Override
 	final protected void checkForDBUpdate()
 	{				
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			super.checkForDBUpdate();			
-			planetIndex = db.index().forNodes("PlanetIndex");			
-		}
+		super.checkForDBUpdate();
+	}
+	
+	@Override
+	protected void initializeProperties()
+	{
+		super.initializeProperties();		
+		properties.setProperty("populationPerTurn", populationPerTurn);
+		properties.setProperty("maxPopulation", maxPopulation);
+		properties.setProperty("currentPopulation", currentPopulation);
 	}
 	
 	/**
-	 * Create method final implementation.
-	 * Final implement actually create the db node and initialize it.
+	 * Register properties (add Node to indexes and create relationships).
+	 * @param properties
 	 */
 	@Override
-	final protected void create(SEPCommonDB sepDB)
+	@OverridingMethodsMustInvokeSuper
+	final protected void register(Node properties)
 	{
-		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			this.sepDB = sepDB;
-			checkForDBUpdate();
-			
-			if (planetIndex.get(PK, getPK(name)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, planet[name='"+name+"'] already exist.");
-			}
-			properties = sepDB.getDB().createNode();
-			Planet.initializeProperties(properties, name, initialCarbonStock, maxSlots, carbonStock, currentCarbon, populationPerTurn, maxPopulation, currentPopulation);
-			planetIndex.add(properties, PK, getPK(name));
-			
-			super.create(sepDB);
-			
-			tx.success();			
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.register(properties);
 	}
 
 	@Override
@@ -162,12 +143,13 @@ class Planet extends ProductiveCelestialBody implements IPlanet
 	{
 		assertOnlineStatus(true);
 		
-		Transaction tx = db.beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
 			checkForDBUpdate();
 			if (getCurrentPopulation() < populationCost) throw new RuntimeException("Cannot pay population cost, not enough population");
+			prepareUpdate();
 			properties.setProperty("currentPopulation", getCurrentPopulation() - populationCost);
 			tx.success();
 		}
@@ -182,12 +164,13 @@ class Planet extends ProductiveCelestialBody implements IPlanet
 	{
 		assertOnlineStatus(true);
 		
-		Transaction tx = db.beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
 			checkForDBUpdate();
 			if ((getMaxPopulation() - getCurrentPopulation()) < generatedPopulation) throw new RuntimeException("Cannot generate off-limit population");
+			prepareUpdate();
 			properties.setProperty("currentPopulation", getCurrentPopulation() + generatedPopulation);
 			tx.success();
 		}
@@ -203,7 +186,7 @@ class Planet extends ProductiveCelestialBody implements IPlanet
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Transaction tx = sepDB.getDB().beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
@@ -213,6 +196,7 @@ class Planet extends ProductiveCelestialBody implements IPlanet
 			
 			IPlanet planetUpdate = (IPlanet) celestialBodyUpdate;
 			
+			prepareUpdate();
 			properties.setProperty("populationPerTurn", planetUpdate.getPopulationPerTurn());
 			properties.setProperty("maxPopulation", planetUpdate.getMaxPopulation());
 			properties.setProperty("currentPopulation", planetUpdate.getCurrentPopulation());
@@ -237,18 +221,5 @@ class Planet extends ProductiveCelestialBody implements IPlanet
 	public String toString()
 	{
 		return super.toString().replace("  Carbon : ", "  Population : "+getCurrentPopulation()+" (+"+getPopulationPerTurn()+" per turn) / "+getMaxPopulation()+"\n  Carbon : ");		
-	}
-
-	public static void initializeProperties(Node properties, String name, int initialCarbonStock, int maxSlots, int carbonStock, int currentCarbon, int populationPerTurn, int maxPopulation, int currentPopulation)
-	{
-		properties.setProperty("name", name);
-		properties.setProperty("type", eCelestialBodyType.Planet.toString());
-		properties.setProperty("initialCarbonStock", initialCarbonStock);
-		properties.setProperty("maxSlots", maxSlots);
-		properties.setProperty("carbonStock", carbonStock);
-		properties.setProperty("currentCarbon", currentCarbon);
-		properties.setProperty("populationPerTurn", populationPerTurn);
-		properties.setProperty("maxPopulation", maxPopulation);
-		properties.setProperty("currentPopulation", currentPopulation);
 	}
 }

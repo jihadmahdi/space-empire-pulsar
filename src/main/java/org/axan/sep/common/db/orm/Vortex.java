@@ -36,7 +36,6 @@ class Vortex extends CelestialBody implements IVortex, Serializable
 	/*
 	 * DB connection
 	 */
-	protected transient Index<Node> vortexIndex;
 	
 	/**
 	 * Off-DB constructor
@@ -68,47 +67,21 @@ class Vortex extends CelestialBody implements IVortex, Serializable
 	@Override
 	final protected void checkForDBUpdate()
 	{				
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			super.checkForDBUpdate();			
-			vortexIndex = db.index().forNodes("VortexIndex");			
-		}
+		super.checkForDBUpdate();
 	}
 	
-	/**
-	 * Create method final implementation.
-	 * Final implement actually create the db node and initialize it.
-	 */
 	@Override
-	final protected void create(SEPCommonDB sepDB)
+	protected void initializeProperties()
 	{
-		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{			
-			this.sepDB = sepDB;
-			checkForDBUpdate();
-			
-			if (vortexIndex.get(PK, getPK(name)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, vortex[name='"+name+"'] already exist.");
-			}
-			properties = sepDB.getDB().createNode();
-			Vortex.initializeProperties(properties, name, birth, death);
-			vortexIndex.add(properties, PK, getPK(name));
-			
-			super.create(sepDB);
-			
-			tx.success();			
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.initializeProperties();
+		properties.setProperty("birth", birth);
+		properties.setProperty("death", death);
+	}
+	
+	@Override
+	final protected void register(Node properties)
+	{
+		super.register(properties);
 	}
 	
 	@Override
@@ -145,7 +118,7 @@ class Vortex extends CelestialBody implements IVortex, Serializable
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Transaction tx = sepDB.getDB().beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
@@ -155,6 +128,7 @@ class Vortex extends CelestialBody implements IVortex, Serializable
 			
 			IVortex vortexUpdate = (IVortex) celestialBodyUpdate;
 			
+			prepareUpdate();
 			properties.setProperty("birth", vortexUpdate.getBirth());
 			properties.setProperty("death", vortexUpdate.getDeath());			
 			
@@ -164,14 +138,6 @@ class Vortex extends CelestialBody implements IVortex, Serializable
 		{
 			tx.finish();
 		}		
-	}
-	
-	public static void initializeProperties(Node properties, String name, int birth, int death)
-	{
-		properties.setProperty("name", name);
-		properties.setProperty("type", eCelestialBodyType.Vortex.toString());
-		properties.setProperty("birth", birth);
-		properties.setProperty("death", death);
 	}
 
 }

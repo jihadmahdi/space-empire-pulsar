@@ -37,7 +37,13 @@ import javax.management.monitor.Monitor;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.axan.eplib.orm.DataBaseORMGenerator;
+import org.axan.eplib.orm.nosql.AGraphNode;
+import org.axan.eplib.orm.nosql.AVersionedGraphNode;
+import org.axan.eplib.orm.nosql.AVersionedGraphObject;
 import org.axan.eplib.orm.nosql.DBGraphException;
+import org.axan.eplib.orm.nosql.IGraphDB;
+import org.axan.eplib.orm.nosql.IRelationshipConfig;
+import org.axan.eplib.orm.nosql.AVersionedGraphObject.eRelationshipsCardinality;
 import org.axan.eplib.utils.Basic;
 import org.axan.eplib.utils.Compression;
 import org.axan.eplib.utils.Basic.GenericHolder;
@@ -92,7 +98,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import scala.actors.threadpool.helpers.WaitQueue.WaitNode;
 import scala.util.control.Exception.Finally;
 
-public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
+public class SEPCommonDB implements IGraphDB, IRelationshipConfig, Serializable, ListIterator<SEPCommonDB>
 {
 	private static final long serialVersionUID = 1L;
 
@@ -194,6 +200,71 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 		/** Diplomacy marker from Player nodes to Player nodes (only one marker per turn per owner/target pair). */
 		PlayerDiplomacyMarker
 	}
+	
+	@Override
+	public final eRelationshipsCardinality getCardinality(RelationshipType type)
+	{
+		return SEPCommonDB.getRelationshipCardinality(type);
+	}
+	
+	/**
+	 * Return given relationship cardinality (per version).
+	 * @param relationshipType
+	 * @return
+	 */
+	static final eRelationshipsCardinality getRelationshipCardinality(RelationshipType type)
+	{		
+		if (eRelationTypes.class.isInstance(type))
+		{
+			switch((eRelationTypes) type)
+			{
+				case GameConfig:
+				case UnitDeparture:
+				case UnitDestination:
+				case UnitMarkerRealLocation:
+				case PlayerGovernment:
+				case PlayerConfig:
+				{
+					return eRelationshipsCardinality.OnlyOne;
+				}
+				
+				case Areas:
+				case Sun:
+				case Players:
+				case Buildings:
+				case PlayerCelestialBodies:
+				case PlayerUnit:
+				case PlayerUnitMarker:
+				case SpaceRoad:
+				case UnitEncounterLog:
+				case PlayerEncounterLog:
+				case PlayerDiplomacy:
+				case PlayerDiplomacyMarker:
+				{
+					return eRelationshipsCardinality.Any;
+				}
+				
+				case CelestialBody:
+				{
+					return eRelationshipsCardinality.NoneOrOne;
+				}
+				
+				case AssignedFleets:
+				{
+					// NOTE: Actually should be NoneOrOne par celestial body PER PLAYER
+					return eRelationshipsCardinality.Any;
+				}
+				
+				default:
+				{
+					throw new RuntimeException("Unclassified eRelationTypes '"+type+"'");
+				}
+			}
+		}
+		
+		return eRelationshipsCardinality.OnlyOne;
+		//throw new RuntimeException("Unknown relationshipType '"+type.name()+"'");		
+	}
 
 	private static class GameConfigInvocationHandler implements InvocationHandler
 	{
@@ -213,7 +284,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 			{
 				db = sepDB.getConfigDB();
 
-				Relationship r = db.getReferenceNode().getSingleRelationship(eRelationTypes.GameConfig, Direction.OUTGOING);
+				Relationship r = db.getReferenceNode().getSingleRelationship(eRelationTypes.GameConfig, Direction.OUTGOING); // checked
 				if (r == null)
 				{
 					Transaction tx = db.beginTx();
@@ -250,62 +321,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 			{
 				checkForUpdate();
 				
-				Class<?> returnType = method.getReturnType();
-
-				// Special case: setTurn
-				if (method.getName().equals("setTurn"))
-				{
-					if (args == null || args.length != 1 || !Integer.class.isInstance(args[0]))
-					{
-						throw new RuntimeException(method.getName() + " invalid call.");
-					}
-
-					int value = (Integer) args[0];
-
-					if (value < 0)
-					{
-						throw new RuntimeException(method.getName() + " invalid call, turn cannot be negative.");
-					}
-
-					if (sepDB.nextVersion != null)
-					{
-						throw new RuntimeException(method.getName() + " invalid call, next version already exists.");
-					}
-
-					if (value > 0)
-					{
-						int currentTurn = sepDB.getConfig().getTurn();
-
-						if (currentTurn == value) // No change
-						{
-							return null;
-						}
-
-						if (value != currentTurn + 1)
-						{
-							throw new RuntimeException(method.getName() + " invalid call, must increment turn by 1 every time you call this method.");
-						}
-
-						synchronized(sepDB)
-						{
-							//sepDB.nextVersion = Basic.clone(sepDB);
-							sepDB.nextVersion = SEPCommonDB.clone(sepDB, 1, value)[0];
-							sepDB.nextVersion.previousVersion = sepDB;							
-						}
-
-						return null;
-					}
-					else
-					// value == 0						
-					{
-						if (sepDB.previousVersion != null)
-						{
-							throw new RuntimeException("Cannot set game turn to 0 because SEPCommonDB already has previous version");
-						}
-
-						// setTurn as classic setter, do not generates next version
-					}
-				}
+				Class<?> returnType = method.getReturnType();				
 
 				/*
 				 * Setters must start with "set", have arguments and return void.
@@ -498,21 +514,30 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	private transient Set<ILogListener> logListeners;
 	private transient Set<IPlayerChangeListener> playerChangeListeners;
 
-	private SEPCommonDB previousVersion = null;
-	private SEPCommonDB nextVersion = null;
+	private final int turn;
+	private SEPCommonDB previousTurn = null;
+	private SEPCommonDB nextTurn = null;
 	
 	private transient GenericHolder<Boolean> initFlag;
-	private transient int gameTurn;
 	
 	// lazy clone ctor
-	private SEPCommonDB(GenericHolder<Boolean> initFlag, int gameTurn)
+	private SEPCommonDB(GenericHolder<Boolean> initFlag, int turn)
 	{
 		this.initFlag = initFlag;
-		this.gameTurn = gameTurn;
+		this.turn = turn;
 	}
 	
-	public SEPCommonDB(GraphDatabaseService db, IGameConfig config) throws IOException, GameConfigCopierException, InterruptedException
+	private SEPCommonDB(SEPCommonDB previous) throws GameConfigCopierException
 	{
+		this.previousTurn = previous;
+		this.turn = previous.getTurn()+1;
+		init(previous.db);
+		GameConfigCopier.copy(IGameConfig.class, previous.getConfig(), this.config);
+	}
+	
+	public SEPCommonDB(GraphDatabaseService db, IGameConfig config, int turn) throws IOException, GameConfigCopierException, InterruptedException
+	{
+		this.turn = turn;
 		init(db);
 		GameConfigCopier.copy(IGameConfig.class, config, this.config);
 	}
@@ -520,6 +545,25 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	public boolean needToRefreshCache(int cacheVersion)
 	{
 		return this.cacheVersion != getCacheVersion();
+	}
+	
+	public int getTurn()
+	{
+		return turn;
+	}
+	
+	/** @see #getTurn() */
+	@Override
+	public int getVersion()
+	{
+		return getTurn();
+	}
+	
+	/** @see #hasNext() */
+	@Override
+	public boolean isLastVersion()
+	{
+		return !hasNext();
 	}
 	
 	public int getCacheVersion()
@@ -623,21 +667,32 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	//////////////// Querying interface
 
 	/**
-	 * Return true if universe already created (actually if at least one Area
-	 * has been created).
+	 * Return true if universe already created (actually test if first player already has a starting planet).
 	 * 
 	 * @return
 	 */
 	public boolean isUniverseCreated()
 	{
 		waitForInit();
-		return areasFactory.hasRelationship(eRelationTypes.Areas, Direction.OUTGOING);
+		Set<String> players = getPlayersNames();
+		if (players.isEmpty()) return false;
+		return getStartingPlanetName(getPlayersNames().iterator().next()) != null;
 	}
 
 	public Set<String> getPlayersNames()
 	{
 		waitForInit();
 		Set<String> playersNames = new HashSet<String>();
+		
+		/*
+		for(Relationship r : AGraphNode.getLastRelationships(playersFactory, playersFactory.getRelationships(eRelationTypes.Players, Direction.OUTGOING)))
+		{
+			Node n = r.getEndNode();
+			playersNames.add((String) n.getProperty("name"));
+		}
+		*/
+
+		// Assume we cannot have 2 different versions of a player
 		for(Node n: playersFactory.traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eRelationTypes.Players, Direction.OUTGOING))
 		{
 			playersNames.add((String) n.getProperty("name"));
@@ -666,38 +721,31 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	}
 
 	/**
-	 * Return a Planet pojo instance of the given player starting planet, but
-	 * connected to current DB.
+	 * Return the name of the given player starting planet.
 	 * 
 	 * @param playerName
 	 * @return
 	 * @throws SQLDataBaseException
 	 */
-	public IPlanet getStartingPlanet(String playerName)
+	public String getStartingPlanetName(String playerName)
 	{
 		waitForInit();
 		SEPCommonDB db = this;
-		while (db.getConfig().getTurn() > 1)
+		while (db.getTurn() > 1)
 		{
 			db = db.previous();
 		}
-		Iterator<Node> it = db.playerIndex.get(Player.PK, Player.getPK(playerName)).getSingle().traverse(Order.DEPTH_FIRST, StopEvaluator.END_OF_GRAPH, new ReturnableEvaluator()
-		{			
-			@Override
-			public boolean isReturnableNode(TraversalPosition currentPos)
-			{
-				if (currentPos.isStartNode()) return false;
-				Node node = currentPos.currentNode();
-				if (!node.hasProperty("type")) return false;
-				if (!((String) node.getProperty("type")).equals(eCelestialBodyType.Planet.toString())) return false;
-				return true;
-			}
-		}, eRelationTypes.PlayerCelestialBodies, Direction.OUTGOING).iterator();
-		if (!it.hasNext())
+		
+		Node nPlayer = AGraphNode.get(db.planetIndex, Player.getPK(playerName));
+		for(Relationship r : AVersionedGraphNode.getLastRelationships(db, nPlayer, db.getTurn(), eRelationTypes.PlayerCelestialBodies, Direction.OUTGOING))
 		{
-			return null;
+			Node n = r.getEndNode();
+			if (!n.hasProperty("type")) continue;
+			if (!((String) n.getProperty("type")).equals(eCelestialBodyType.Planet.toString())) continue;
+			return (String) n.getProperty("name");
 		}
-		return new Planet(this, (String) it.next().getProperty("name"));
+		
+		return null;
 	}
 	
 	/**
@@ -707,13 +755,19 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	public Set<IArea> getAreas()
 	{
 		waitForInit();
-		Set<IArea> result = new HashSet<IArea>();
+		Map<Location, IArea> result = new HashMap<Location, IArea>();
+				
+		// No need to call AVersionedGraphNode.getLastRelationships(properties, relationships) because we only get pk value.
 		for(Node n : areasFactory.traverse(Order.DEPTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eRelationTypes.Areas, Direction.OUTGOING))
 		{
 			Location location = Location.valueOf((String) n.getProperty("location"));
-			result.add(getArea(location));
+			if (!result.containsKey(location))
+			{
+				result.put(location, getArea(location));
+			}
 		}
-		return result;
+		
+		return new HashSet<IArea>(result.values());
 	}
 
 	/*
@@ -928,7 +982,8 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	{
 		waitForInit();
 		Set<IProductiveCelestialBody> result = new HashSet<IProductiveCelestialBody>();
-		for(Node n : productiveCelestialBodyIndex.query(CelestialBody.PK, CelestialBody.queryAll()))
+		
+		for(Node n : AVersionedGraphObject.queryVersions(productiveCelestialBodyIndex, getTurn()))
 		{
 			result.add((IProductiveCelestialBody) getCelestialBody((String) n.getProperty("name")));
 		}
@@ -939,10 +994,8 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	public ICelestialBody getCelestialBody(String name)
 	{
 		waitForInit();
-		IndexHits<Node> hit = celestialBodyIndex.get(CelestialBody.PK, CelestialBody.getPK(name));
-		if (!hit.hasNext()) return null;
-		
-		Node n = hit.getSingle();
+		Node n = AVersionedGraphObject.get(celestialBodyIndex, CelestialBody.getPK(name));
+		if (n == null) return null;
 		
 		SEPCommonDB.assertProperty(n, "type");
 		eCelestialBodyType type = eCelestialBodyType.valueOf((String) n.getProperty("type"));
@@ -968,7 +1021,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	{
 		waitForInit();
 		Set<String> result = new HashSet<String>();
-		for(Node n : celestialBodyIndex.query(CelestialBody.PK, CelestialBody.queryAll()))
+		for(Node n : AVersionedGraphObject.queryVersions(celestialBodyIndex, getTurn()))
 		{
 			result.add((String) n.getProperty("name"));
 		}
@@ -1123,7 +1176,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	public IBuilding getBuilding(String productiveCelestialBodyName, eBuildingType type)
 	{
 		waitForInit();
-		if (!buildingIndex.get(Building.PK, Building.getPK(productiveCelestialBodyName, type)).hasNext())
+		if (AVersionedGraphObject.queryVersion(buildingIndex, Building.getPK(productiveCelestialBodyName, type), getTurn()) == null)
 		{
 			return null;
 		}
@@ -1188,10 +1241,8 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	{
 		waitForInit();
 		List<IProbe> result = new LinkedList<IProbe>();
-		IndexHits<Node> hit = probeIndex.query(Unit.PK, Probe.querySeriePK(ownerName, serieName));
-		if (!hit.hasNext()) return result;
 		
-		for(Node n : hit)
+		for(Node n : AVersionedGraphObject.queryVersions(probeIndex, getTurn()))
 		{
 			result.add(getProbe(ownerName, (String) n.getProperty("name")));
 		}
@@ -1232,10 +1283,8 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	{
 		waitForInit();
 		List<IAntiProbeMissile> result = new LinkedList<IAntiProbeMissile>();
-		IndexHits<Node> hit = antiProbeMissileIndex.query(Unit.PK, AntiProbeMissile.querySeriePK(ownerName, serieName));
-		if (!hit.hasNext()) return result;
 		
-		for(Node n : hit)
+		for(Node n : AVersionedGraphObject.queryVersions(antiProbeMissileIndex, getTurn()))
 		{
 			result.add(getAntiProbeMissile(ownerName, (String) n.getProperty("name")));
 		}
@@ -1281,13 +1330,14 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	public IUnit getUnit(String ownerName, String name, eUnitType type)
 	{
 		waitForInit();
-		IndexHits<Node> hit = unitIndex.get(Unit.PK, Unit.getPK(ownerName, name));
-		if (!hit.hasNext())
+		
+		Node n = AVersionedGraphObject.queryVersion(unitIndex, Unit.getPK(ownerName, name), getTurn());
+	
+		if (n == null)
 		{
 			return null;
 		}
-		
-		Node n = hit.next(); 		
+		 		
 		if (type != null && (!n.hasProperty("type") || !type.toString().equals((String) n.getProperty("type"))))
 		{
 			return null;
@@ -1335,13 +1385,12 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 	public IUnitMarker getUnitMarker(int turn, double step, String ownerName, String name, eUnitType type)
 	{
 		waitForInit();
-		IndexHits<Node> hit = unitMarkerIndex.get(UnitMarker.PK, UnitMarker.getPK(turn, step, ownerName, name));
-		if (!hit.hasNext())
+		Node n = AVersionedGraphObject.queryVersion(unitMarkerIndex, UnitMarker.getPK(turn, step, ownerName, name), getTurn());
+		if (n == null)
 		{
 			return null;
 		}
 		
-		Node n = hit.next();
 		if (type != null && (!n.hasProperty("type") || !type.toString().equals((String) n.getProperty("type"))))
 		{
 			return null;
@@ -1560,44 +1609,58 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 
 	////////// Private Querying methods
 
+	public void nextTurn()
+	{
+		// Special case: setTurn
+		if (nextTurn != null) throw new RuntimeException("Next turn already exists");		
+		try
+		{
+			nextTurn = new SEPCommonDB(this);		
+		}
+		catch(GameConfigCopierException gcce)
+		{
+			throw new RuntimeException(gcce);
+		}
+	}
+	
 	//////////////// ListIterator implementation
 		
 	@Override
 	public boolean hasNext()
 	{
 		//return (initFlag == null || initFlag.get()) ? nextVersion != null : false;
-		return nextVersion != null;
+		return nextTurn != null;
 	}
 
 	@Override
 	public boolean hasPrevious()
 	{
-		return previousVersion != null;
+		return previousTurn != null;
 	}
 
 	@Override
 	public SEPCommonDB next()
 	{
-		return nextVersion;
+		return nextTurn;
 	}
 
 	@Override
 	public SEPCommonDB previous()
 	{
-		return previousVersion;
+		return previousTurn;
 	}
 
 	// Assume that DB are saved for each turn, and no saves are made in between.
 	@Override
 	public int nextIndex()
 	{
-		return getConfig().getTurn() + 1;
+		return getTurn() + 1;
 	}
 
 	@Override
 	public int previousIndex()
 	{
-		return getConfig().getTurn() - 1;
+		return getTurn() - 1;
 	}
 
 	@Override
@@ -1744,17 +1807,19 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 					config = (IGameConfig) Proxy.newProxyInstance(IGameConfig.class.getClassLoader(), new Class<?>[] {IGameConfig.class}, new GameConfigInvocationHandler(this));
 				}
 				
+				/*
 				// Set game turn.
 				Transaction tx = db.beginTx();
 				try
 				{
-					db.getReferenceNode().getSingleRelationship(eRelationTypes.GameConfig, Direction.OUTGOING).getEndNode().setProperty("Turn", gameTurn);
+					db.getReferenceNode().getSingleRelationship(eRelationTypes.GameConfig, Direction.OUTGOING).getEndNode().setProperty("Turn", turn);
 					tx.success();
 				}
 				finally
 				{
 					tx.finish();
 				}
+				*/
 				
 				initFlag.set(true);
 				initFlag.notify();
@@ -1816,7 +1881,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 			probeIndex = db.index().forNodes("ProbeIndex");
 			antiProbeMissileIndex = db.index().forNodes("AntiProbeMissileIndex");
 			unitMarkerIndex = db.index().forNodes("UnitMarkerIndex");
-			Relationship playersFactoryRel = db.getReferenceNode().getSingleRelationship(eRelationTypes.Players, Direction.OUTGOING);
+			Relationship playersFactoryRel = db.getReferenceNode().getSingleRelationship(eRelationTypes.Players, Direction.OUTGOING); // checked
 			if (playersFactoryRel == null)
 			{
 				playersFactory = db.createNode();
@@ -1826,7 +1891,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 			{
 				playersFactory = playersFactoryRel.getEndNode();
 			}
-			Relationship areasFactoryRel = db.getReferenceNode().getSingleRelationship(eRelationTypes.Areas, Direction.OUTGOING);
+			Relationship areasFactoryRel = db.getReferenceNode().getSingleRelationship(eRelationTypes.Areas, Direction.OUTGOING); // checked
 			if (areasFactoryRel == null)
 			{
 				areasFactory = db.createNode();
@@ -1837,7 +1902,7 @@ public class SEPCommonDB implements Serializable, ListIterator<SEPCommonDB>
 				areasFactory = areasFactoryRel.getEndNode();
 			}
 
-			Relationship sunRel = db.getReferenceNode().getSingleRelationship(eRelationTypes.Sun, Direction.OUTGOING);
+			Relationship sunRel = db.getReferenceNode().getSingleRelationship(eRelationTypes.Sun, Direction.OUTGOING); // checked
 			if (sunRel == null)
 			{
 				sun = db.createNode();

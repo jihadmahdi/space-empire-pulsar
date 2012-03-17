@@ -5,6 +5,8 @@ import java.io.Serializable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
+import org.axan.eplib.orm.nosql.AGraphObject;
+import org.axan.eplib.orm.nosql.AVersionedGraphNode;
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.Protocol.eUnitType;
 import org.axan.sep.common.SEPUtils.Location;
@@ -21,19 +23,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 
-abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker, Serializable
+abstract class UnitMarker extends AVersionedGraphNode<SEPCommonDB> implements IUnitMarker, Serializable
 {
-	protected static final String PK = "[turn.step] ownerName@name";
 	protected static final String getPK(int turn, double step, String ownerName, String name)
 	{
-		return String.format("[%d.%.2f] %s@%s", turn, step, ownerName, name);
-	}
-	/*
-	protected static final String queryAnyTurnPK(String ownerName, String name)
-	{
-		return String.format("[*] %s@%s", ownerName, name);
-	}
-	*/
+		return String.format("[%d.%.2f] %s@%s", turn, step, ownerName, name);		
+	}	
 	
 	/*
 	 * PK
@@ -54,7 +49,6 @@ abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker, Ser
 	/*
 	 * DB connection
 	 */
-	protected transient Index<Node> unitMarkerIndex;
 	
 	/**
 	 * Off-DB constructor.
@@ -96,70 +90,47 @@ abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker, Ser
 		this.speed = 0F;
 	}
 	
-	/**
-	 * If object is DB connected, check for DB update.
-	 */
 	@Override
-	@OverridingMethodsMustInvokeSuper
-	protected void checkForDBUpdate()
+	protected void initializeProperties()
 	{
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			db = sepDB.getDB();
-			
-			unitMarkerIndex = db.index().forNodes("UnitMarkerIndex");
-			IndexHits<Node> hits = unitMarkerIndex.get(PK, getPK(turn, step, ownerName, name));
-			
-			properties = hits.hasNext() ? hits.getSingle() : null;
-			if (properties != null && !properties.getProperty("type").equals(type.toString()))
-			{
-				throw new RuntimeException("Node type error: tried to connect '"+type+"' to '"+properties.getProperty("type")+"'");
-			}
-		}
+		super.initializeProperties();
+		
+		properties.setProperty("turn", turn);
+		properties.setProperty("step", step);
+		properties.setProperty("ownerName", ownerName);
+		properties.setProperty("name", name);
+		properties.setProperty("type", type.toString());
+		properties.setProperty("isStopped", isStopped);		
+		properties.setProperty("realLocation", realLocation.toString());
+		properties.setProperty("speed", speed);		
 	}
 	
-	/**
-	 * Current object must be Off-DB to call create method.
-	 * Create method connect the object to the given DB and create the object node.
-	 * After this call, object is DB connected.
-	 * @param sepDB
-	 */
 	@Override
-	@OverridingMethodsMustInvokeSuper
-	protected void create(SEPCommonDB sepDB)
+	protected void register(Node properties)
 	{
-		Transaction tx = sepDB.getDB().beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
-			if (unitMarkerIndex.get(PK, getPK(turn, step, ownerName, name)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, unitMarker["+getPK(turn, step, ownerName, name)+"] already exist.");
-			}			
-						
-			unitMarkerIndex.add(properties, PK, getPK(turn, step, ownerName, name));
+			super.register(properties);
 			
-			Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
+			Node nOwner = AGraphObject.get(graphDB.getDB().index().forNodes("PlayerIndex"), ownerName);
 			if (nOwner == null)
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Cannot find owner Player '"+ownerName+"'");
 			}
-			nOwner.createRelationshipTo(properties, eRelationTypes.PlayerUnitMarker);
+			nOwner.createRelationshipTo(properties, eRelationTypes.PlayerUnitMarker); // checked
 			
-			// Ensure area creation ?						
-			sepDB.getArea(realLocation.asLocation());
-			IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get(Area.PK, Area.getPK(realLocation.asLocation()));
-			if (!hits.hasNext())
+			// Ensure area creation
+			graphDB.getArea(realLocation.asLocation());
+			Node nArea = AVersionedGraphNode.queryVersion(graphDB.getDB().index().forNodes("AreaIndex"), Area.getPK(realLocation.asLocation()), graphDB.getVersion());
+			if (nArea == null)
 			{
 				throw new DBGraphException("Contraint error: Cannot find Area[location='"+realLocation.asLocation().toString()+"']. Area must be created first.");
-			}
-			
-			Node nArea = hits.getSingle();		
-			properties.createRelationshipTo(nArea, eRelationTypes.UnitMarkerRealLocation);
-			
+			}			
+			properties.createRelationshipTo(nArea, eRelationTypes.UnitMarkerRealLocation); // checked
+						
 			tx.success();			
 		}
 		finally
@@ -167,6 +138,8 @@ abstract class UnitMarker extends AGraphObject<Node> implements IUnitMarker, Ser
 			tx.finish();
 		}
 	}
+	
+	// TODO: getTurn returns the marker turn, but sepDB.getTurn() will provide the marker publication date. Add getter ?
 	
 	@Override
 	public int getTurn()

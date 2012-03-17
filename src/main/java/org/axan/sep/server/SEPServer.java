@@ -771,7 +771,7 @@ public class SEPServer implements IServer, IDBFactory
 	{
 		synchronized(players)
 		{
-			log.log(Level.INFO, "Announce turn "+getRunningGame().getConfig().getTurn());
+			log.log(Level.INFO, "Announce turn "+getRunningGame().getTurn());
 			
 			doForEachConnectedPlayer(new DoItToOnePlayer()
 			{				

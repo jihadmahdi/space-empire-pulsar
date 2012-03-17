@@ -579,7 +579,7 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 		
 		buildingActionsPanel.add(btnBuild);
 		
-		if (building != null && IStarshipPlant.class.isInstance(building) && building.getBuiltDate() < gb.getConfig().getTurn())
+		if (building != null && IStarshipPlant.class.isInstance(building) && building.getBuiltDate() < gb.getDB().getTurn())
 		{
 			starshipPlantActionPanel.setStarshipPlant((IStarshipPlant) building);
 			setActionPanel("Starship plant", starshipPlantActionPanel);
@@ -624,7 +624,7 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 		playersListPanel.setEnabled(true);
 		btnEndTurn.setEnabled(true);
 		
-		JOptionPane.showMessageDialog(null, "Turn n°"+getSepClient().getGameboard().getConfig().getTurn()+" begins !", "New turn", JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(null, "Turn n°"+getSepClient().getGameboard().getDB().getTurn()+" begins !", "New turn", JOptionPane.INFORMATION_MESSAGE);
 	}
 	
 	void endTurn()
@@ -647,7 +647,7 @@ public class RunningGamePanel extends JPanel implements IModalComponent, IUniver
 		try
 		{
 			SEPCommonDB db = getSepClient().getGameboard().getDB();
-			StringBuilder saveGameId = new StringBuilder("["+db.getConfig().getTurn()+"] ");
+			StringBuilder saveGameId = new StringBuilder("["+db.getTurn()+"] ");
 			boolean comma = false;
 			for(String playerName : getSepClient().getGameboard().getDB().getPlayersNames())
 			{
