@@ -161,7 +161,7 @@ class GameBoard implements IGameBoard
 		List<IGameEvent> globalGameEvents = (List<IGameEvent>) ois.readObject();		
 		
 		etm.measures("create global DB");
-		SEPCommonDB globalDB = new SEPCommonDB(dbFactory.createDB(), gameConfig);
+		SEPCommonDB globalDB = new SEPCommonDB(dbFactory.createDB(), gameConfig, 0);
 		
 		if (globalGameEvents.isEmpty()) throw new IOException("Global game events list is empty");
 		IGameEvent firstEvent = globalGameEvents.iterator().next();
@@ -360,7 +360,7 @@ class GameBoard implements IGameBoard
 
 		try
 		{
-			SEPCommonDB globalDB = new SEPCommonDB(dbFactory.createDB(), gameConfig);
+			SEPCommonDB globalDB = new SEPCommonDB(dbFactory.createDB(), gameConfig, 0);
 			IGameEventExecutor globalExecutor = new IGameEventExecutor()
 			{	
 				@Override
@@ -551,6 +551,12 @@ class GameBoard implements IGameBoard
 		{
 			throw new GameBoardException(t);
 		}
+	}
+	
+	public int getTurn()
+	{
+		SEPCommonDB db = getGlobalDB();
+		return db == null ? -1 : db.getTurn();
 	}
 	
 	/////////////// Running game

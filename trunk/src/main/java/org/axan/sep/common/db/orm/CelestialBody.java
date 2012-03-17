@@ -1,5 +1,6 @@
 package org.axan.sep.common.db.orm;
 
+import org.axan.eplib.orm.nosql.AVersionedGraphNode;
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
 import org.axan.sep.common.SEPUtils.Location;
@@ -22,17 +23,11 @@ import java.util.HashMap;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
-abstract class CelestialBody extends AGraphObject<Node> implements ICelestialBody
+abstract class CelestialBody extends AVersionedGraphNode<SEPCommonDB> implements ICelestialBody
 {
-	public static final String PK = "name";
 	public static final String getPK(String name)
 	{
 		return name;
-	}
-	
-	public static final String queryAll()
-	{
-		return "*";
 	}
 	
 	/*
@@ -49,7 +44,6 @@ abstract class CelestialBody extends AGraphObject<Node> implements ICelestialBod
 	/*
 	 * DB connection: DB connection and useful objects (e.g. indexes and nodes).
 	 */
-	protected transient Index<Node> celestialBodyIndex;	
 	
 	/**
 	 * Off-DB constructor.
@@ -58,7 +52,7 @@ abstract class CelestialBody extends AGraphObject<Node> implements ICelestialBod
 	 */
 	public CelestialBody(String name, Location location)
 	{
-		super(name);
+		super(getPK(name));
 		this.name = name;
 		this.location = location;
 		this.type = eCelestialBodyType.valueOf(getClass().getSimpleName());
@@ -72,7 +66,7 @@ abstract class CelestialBody extends AGraphObject<Node> implements ICelestialBod
 	 */
 	public CelestialBody(SEPCommonDB sepDB, String name)
 	{
-		super(sepDB, name);
+		super(sepDB, getPK(name));
 		this.name = name;
 		this.type = eCelestialBodyType.valueOf(getClass().getSimpleName());
 		
@@ -80,62 +74,38 @@ abstract class CelestialBody extends AGraphObject<Node> implements ICelestialBod
 		this.location = null;
 	}
 	
-	/**
-	 * If object is DB connected, check for DB update.
-	 */
 	@Override
-	@OverridingMethodsMustInvokeSuper
-	protected void checkForDBUpdate()
+	protected void initializeProperties()
 	{
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			db = sepDB.getDB();
-			
-			celestialBodyIndex = db.index().forNodes("CelestialBodyIndex");
-			IndexHits<Node> hits = celestialBodyIndex.get(PK, getPK(name));
-			properties = hits.hasNext() ? hits.getSingle() : null;			
-			if (properties != null && !properties.getProperty("type").equals(type.toString()))
-			{
-				throw new RuntimeException("Node type error: tried to connect '"+type+"' to '"+properties.getProperty("type")+"'");
-			}
-		}
+		super.initializeProperties();
+		properties.setProperty("name", name);
+		properties.setProperty("type", type.toString());		
 	}
 	
 	/**
-	 * Current object must be Off-DB to call create method.
-	 * Create method connect the object to the given DB and create the object node.
-	 * After this call, object is DB connected.
-	 * @param sepDB
+	 * Register properties (add Node to indexes and create relationships).
+	 * @param properties
 	 */
 	@Override
 	@OverridingMethodsMustInvokeSuper
-	protected void create(SEPCommonDB sepDB)
+	protected void register(Node properties)
 	{
-		Transaction tx = sepDB.getDB().beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
-			if (celestialBodyIndex.get(PK, getPK(name)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, celestialBody[name='"+name+"'] already exist.");
-			}
-			celestialBodyIndex.add(properties, PK, getPK(name));
+			super.register(properties);
 			
 			// Force area creation if not exists.
-			sepDB.getArea(location);
+			graphDB.getArea(location);
 			
-			IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get(Area.PK, Area.getPK(location));
-			if (!hits.hasNext())
+			Node nArea = queryVersion(graphDB.getDB().index().forNodes("AreaIndex"), Area.getPK(location), graphDB.getVersion());
+			if (nArea == null)
 			{
 				tx.failure();
 				throw new DBGraphException("Implementation error: Cannot find Area[location='"+location.toString()+"']. Area must be created before CelestialBody.");				
 			}
-			
-			Node nArea = hits.getSingle();
-			
-			nArea.createRelationshipTo(properties, eRelationTypes.CelestialBody);
+			nArea.createRelationshipTo(properties, eRelationTypes.CelestialBody); // checked
 			
 			tx.success();			
 		}
@@ -167,7 +137,7 @@ abstract class CelestialBody extends AGraphObject<Node> implements ICelestialBod
 		else
 		{
 			checkForDBUpdate();
-			Node nArea = properties.getSingleRelationship(eRelationTypes.CelestialBody, Direction.INCOMING).getStartNode();
+			Node nArea = getLastSingleRelationship(eRelationTypes.CelestialBody, Direction.INCOMING).getStartNode();
 			return Location.valueOf((String) nArea.getProperty("location"));
 		}
 	}
@@ -176,6 +146,9 @@ abstract class CelestialBody extends AGraphObject<Node> implements ICelestialBod
 	@OverridingMethodsMustInvokeSuper
 	public void update(ICelestialBody celestialBodyUpdate)
 	{
+		assertLastVersion();
+		checkForDBUpdate();
+		
 		if (getType() != celestialBodyUpdate.getType()) throw new RuntimeException("Illegal celestial body update, inconsistent type.");
 		if (!getName().equals(celestialBodyUpdate.getName())) throw new RuntimeException("Illegal celestial body update, inconsistent name.");
 		if (!getLocation().equals(celestialBodyUpdate.getLocation())) throw new RuntimeException("Illegal celestial body update, inconsistent location.");

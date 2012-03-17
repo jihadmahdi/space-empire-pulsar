@@ -1,5 +1,6 @@
 package org.axan.sep.common.db.orm;
 
+import org.axan.eplib.orm.nosql.AVersionedGraphNode;
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.SEPCommonImplementationException;
 import org.axan.sep.common.Protocol.eBuildingType;
@@ -41,7 +42,6 @@ class SpaceCounter extends Building implements ISpaceCounter
 	/*
 	 * DB connection
 	 */
-	protected Index<Node> spaceCounterIndex;
 	
 	/**
 	 * Off-DB constructor.
@@ -67,47 +67,19 @@ class SpaceCounter extends Building implements ISpaceCounter
 	@Override
 	final protected void checkForDBUpdate()
 	{				
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			super.checkForDBUpdate();			
-			spaceCounterIndex = db.index().forNodes("SpaceCounterIndex");			
-		}
+		super.checkForDBUpdate();
 	}
 	
-	/**
-	 * Create method final implementation.
-	 * Final implement actually create the db node and initialize it.
-	 */
 	@Override
-	final protected void create(SEPCommonDB sepDB)
+	protected void initializeProperties()
 	{
-		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			this.sepDB = sepDB;
-			checkForDBUpdate();
-			
-			if (spaceCounterIndex.get(PK, getPK(productiveCelestialBodyName, type)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, spaceCounter[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
-			}
-			properties = sepDB.getDB().createNode();
-			SpaceCounter.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
-			spaceCounterIndex.add(properties, PK, getPK(productiveCelestialBodyName, type));
-			
-			super.create(sepDB);
-			
-			tx.success();			
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.initializeProperties();
+	}
+	
+	@Override
+	final protected void register(Node properties)
+	{
+		super.register(properties);
 	}
 	
 	@Override
@@ -117,7 +89,7 @@ class SpaceCounter extends Building implements ISpaceCounter
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Transaction tx = sepDB.getDB().beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
@@ -131,7 +103,6 @@ class SpaceCounter extends Building implements ISpaceCounter
 				lsr.destroy();
 			}
 			
-			spaceCounterIndex.remove(properties);
 			super.delete();
 			
 			tx.success();
@@ -150,7 +121,7 @@ class SpaceCounter extends Building implements ISpaceCounter
 		
 		if (getNbSlots() - getBuiltSpaceRoads().size() < 1) throw new RuntimeException("Illegal buildSpaceRoad call, no more space roads to build.");
 		
-		new SpaceRoad(getProductiveCelestialBodyName(), destinationName).create(sepDB);
+		new SpaceRoad(getProductiveCelestialBodyName(), destinationName).create(graphDB);
 	}
 	
 	@Override
@@ -161,12 +132,12 @@ class SpaceCounter extends Building implements ISpaceCounter
 		
 		Set<ISpaceRoad> result = new LinkedHashSet<ISpaceRoad>();
 		
-		String sourceName = (String) properties.getSingleRelationship(eRelationTypes.Buildings, Direction.INCOMING).getStartNode().getProperty("name");
+		String sourceName = (String) getLastSingleRelationship(eRelationTypes.Buildings, Direction.INCOMING).getStartNode().getProperty("name");
 		
-		for(Relationship r : properties.getRelationships(Direction.OUTGOING, eRelationTypes.SpaceRoad))
+		for(Relationship r : getLastRelationships(Direction.OUTGOING, eRelationTypes.SpaceRoad))
 		{
-			String destinationName = (String) r.getEndNode().getSingleRelationship(eRelationTypes.Buildings, Direction.INCOMING).getStartNode().getProperty("name");					
-			ISpaceRoad spaceRoad = new SpaceRoad(sepDB, sourceName, destinationName);
+			String destinationName = (String) AVersionedGraphNode.getLastSingleRelationship(graphDB, r.getEndNode(), graphDB.getVersion(), eRelationTypes.Buildings, Direction.INCOMING).getStartNode().getProperty("name");					
+			ISpaceRoad spaceRoad = new SpaceRoad(graphDB, sourceName, destinationName);
 			result.add(spaceRoad);
 		}
 		
@@ -181,12 +152,12 @@ class SpaceCounter extends Building implements ISpaceCounter
 		
 		Set<ISpaceRoad> result = new LinkedHashSet<ISpaceRoad>();
 		
-		String destinationName = (String) properties.getSingleRelationship(eRelationTypes.Buildings, Direction.INCOMING).getStartNode().getProperty("name");
-		
-		for(Relationship r : properties.getRelationships(Direction.INCOMING, eRelationTypes.SpaceRoad))
+		String destinationName = (String) getLastSingleRelationship(eRelationTypes.Buildings, Direction.INCOMING).getStartNode().getProperty("name");
+
+		for(Relationship r : getLastRelationships(Direction.INCOMING, eRelationTypes.SpaceRoad))
 		{
-			String sourceName = (String) r.getStartNode().getSingleRelationship(eRelationTypes.Buildings, Direction.INCOMING).getStartNode().getProperty("name");					
-			ISpaceRoad spaceRoad = new SpaceRoad(sepDB, sourceName, destinationName);
+			String sourceName = (String) AVersionedGraphNode.getLastSingleRelationship(graphDB, r.getStartNode(), graphDB.getVersion(), eRelationTypes.Buildings, Direction.INCOMING).getStartNode().getProperty("name");					
+			ISpaceRoad spaceRoad = new SpaceRoad(graphDB, sourceName, destinationName);
 			result.add(spaceRoad);
 		}
 		
@@ -200,7 +171,7 @@ class SpaceCounter extends Building implements ISpaceCounter
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Transaction tx = sepDB.getDB().beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
@@ -240,12 +211,12 @@ class SpaceCounter extends Building implements ISpaceCounter
 			for(ISpaceRoad spaceRoadUpdate : builtSpaceRoadsUpdate)
 			{
 				// Add
-				IProductiveCelestialBody destination = (IProductiveCelestialBody) sepDB.getCelestialBody(spaceRoadUpdate.getDestinationName());
+				IProductiveCelestialBody destination = (IProductiveCelestialBody) graphDB.getCelestialBody(spaceRoadUpdate.getDestinationName());
 				ISpaceCounter destinationSpaceCounter = (ISpaceCounter) destination.getBuilding(eBuildingType.SpaceCounter);
 				if (destinationSpaceCounter == null)
 				{
 					// Create hypothesis space counter, which will be updated on destination observation.
-					destinationSpaceCounter = (ISpaceCounter) sepDB.createBuilding(destination.getName(), sepDB.getConfig().getTurn(), eBuildingType.SpaceCounter);
+					destinationSpaceCounter = (ISpaceCounter) graphDB.createBuilding(destination.getName(), graphDB.getVersion(), eBuildingType.SpaceCounter);
 				}
 				
 				buildSpaceRoad(destination.getName());
@@ -281,12 +252,12 @@ class SpaceCounter extends Building implements ISpaceCounter
 			for(ISpaceRoad spaceRoadUpdate : linkedSpaceRoadsUpdate)
 			{
 				// Add
-				IProductiveCelestialBody source = (IProductiveCelestialBody) sepDB.getCelestialBody(spaceRoadUpdate.getSourceName());
+				IProductiveCelestialBody source = (IProductiveCelestialBody) graphDB.getCelestialBody(spaceRoadUpdate.getSourceName());
 				ISpaceCounter sourceSpaceCounter = (ISpaceCounter) source.getBuilding(eBuildingType.SpaceCounter);
 				if (sourceSpaceCounter == null)
 				{
 					// Create hypothesis space counter, which will be updated on destination observation.
-					sourceSpaceCounter = (ISpaceCounter) sepDB.createBuilding(source.getName(), sepDB.getConfig().getTurn(), eBuildingType.SpaceCounter);
+					sourceSpaceCounter = (ISpaceCounter) graphDB.createBuilding(source.getName(), graphDB.getVersion(), eBuildingType.SpaceCounter);
 				}
 								
 				if (sourceSpaceCounter.getNbSlots() - sourceSpaceCounter.getBuiltSpaceRoads().size() < 1) // To match this condition, only 0 < 1 is expected.
@@ -367,14 +338,6 @@ class SpaceCounter extends Building implements ISpaceCounter
 		*/
 		
 		return sb.toString();
-	}
-
-	public static void initializeProperties(Node properties, String productiveCelestialBodyName, int builtDate, int nbSlots)
-	{
-		properties.setProperty("productiveCelestialBodyName", productiveCelestialBodyName);
-		properties.setProperty("type", eBuildingType.SpaceCounter.toString());
-		properties.setProperty("builtDate", builtDate);
-		properties.setProperty("nbSlots", nbSlots);
 	}
 
 }

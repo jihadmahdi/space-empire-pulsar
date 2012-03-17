@@ -1,5 +1,7 @@
 package org.axan.sep.common.db.orm;
 
+import org.axan.eplib.orm.nosql.AGraphObject;
+import org.axan.eplib.orm.nosql.AVersionedGraphNode;
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.SEPUtils;
 import org.axan.sep.common.Protocol.eUnitType;
@@ -34,9 +36,8 @@ import java.util.HashMap;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
-abstract class Unit extends AGraphObject<Node> implements IUnit
+abstract class Unit extends AVersionedGraphNode<SEPCommonDB> implements IUnit
 {	
-	protected static final String PK = "ownerName@name";
 	protected static final String getPK(String ownerName, String name)
 	{
 		return String.format("%s@%s", ownerName, name);
@@ -64,7 +65,6 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 	/*
 	 * DB connection
 	 */
-	protected Index<Node> unitIndex;
 	
 	/**
 	 * Off-DB constructor.
@@ -103,57 +103,52 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 	@Override
 	protected void checkForDBUpdate()
 	{
+		super.checkForDBUpdate();
+		
 		if (!isDBOnline()) return;
 		if (isDBOutdated())
 		{
-			db = sepDB.getDB();
-			
-			unitIndex = db.index().forNodes("UnitIndex");
-			IndexHits<Node> hits = unitIndex.get(PK, getPK(ownerName, name));
-			
 			if (departure == null && initialDepartureName != null)
 			{
-				ICelestialBody cb = sepDB.getCelestialBody(initialDepartureName);
+				ICelestialBody cb = graphDB.getCelestialBody(initialDepartureName);
 				if (cb == null || !IProductiveCelestialBody.class.isInstance(cb)) throw new RuntimeException("Unit initial location must be a valid productive celestial body, "+initialDepartureName+" "+(cb == null ? "does not exist" : "is not productive")+".");
 				departure = cb.getLocation();
-			}
-			
-			properties = hits.hasNext() ? hits.getSingle() : null;
-			if (properties != null && !properties.getProperty("type").equals(type.toString()))
-			{
-				throw new RuntimeException("Node type error: tried to connect '"+type+"' to '"+properties.getProperty("type")+"'");
 			}			
 		}
 	}
 
+	@Override
+	protected void initializeProperties()
+	{
+		super.initializeProperties();
+		properties.setProperty("ownerName", ownerName);
+		properties.setProperty("name", name);
+		properties.setProperty("type", type.toString());
+		properties.setProperty("initialDepartureName", initialDepartureName);
+		properties.setProperty("departure", departure.toString());
+	}
+	
 	/**
-	 * Current object must be Off-DB to call create method.
-	 * Create method connect the object to the given DB and create the object node.
-	 * After this call, object is DB connected.
-	 * @param sepDB
+	 * Register properties (add Node to indexes and create relationships).
+	 * @param properties
 	 */
 	@Override
-	protected void create(SEPCommonDB sepDB)
+	@OverridingMethodsMustInvokeSuper
+	protected void register(Node properties)
 	{
-		Transaction tx = sepDB.getDB().beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
-			if (unitIndex.get(PK, getPK(ownerName, name)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, unit["+getPK(ownerName, name)+"] already exist.");
-			}			
-						
-			unitIndex.add(properties, PK, getPK(ownerName, name));
+			super.register(properties);
 			
-			Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
+			Node nOwner = AGraphObject.get(graphDB.getDB().index().forNodes("PlayerIndex"), ownerName);
 			if (nOwner == null)
 			{
 				tx.failure();
 				throw new DBGraphException("Constraint error: Cannot find owner Player '"+ownerName+"'");
 			}
-			nOwner.createRelationshipTo(properties, eRelationTypes.PlayerUnit);
+			nOwner.createRelationshipTo(properties, eRelationTypes.PlayerUnit); // checked
 			
 			// Ensure area creation
 			updateDeparture();
@@ -171,12 +166,14 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 	public void destroy()
 	{
 		assertOnlineStatus(true);
-		checkForDBUpdate();
+		checkForDBUpdate();		
 		
-		Transaction tx = sepDB.getDB().beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
+			delete();
+			/*
 			unitIndex.remove(properties);
 			properties.getSingleRelationship(eRelationTypes.PlayerUnit, Direction.INCOMING).delete();
 			properties.getSingleRelationship(eRelationTypes.UnitDeparture, Direction.OUTGOING).delete();
@@ -199,7 +196,7 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 			}
 			
 			properties.delete();
-			
+			*/
 			tx.success();			
 		}
 		finally
@@ -214,7 +211,7 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		return sepDB.getConfig().getTurn();
+		return graphDB.getVersion();
 	}
 	
 	@Override
@@ -247,7 +244,7 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		return !properties.hasRelationship(eRelationTypes.UnitDestination, Direction.OUTGOING);
+		return !hasRelationship(eRelationTypes.UnitDestination, Direction.OUTGOING);
 	}
 	
 	@Override
@@ -285,7 +282,7 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		return sepDB.getConfig().getUnitTypeSpeed(getType());
+		return graphDB.getConfig().getUnitTypeSpeed(getType());
 	}
 	
 	@Override
@@ -303,12 +300,17 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Transaction tx = db.beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
-			properties.setProperty("travelingProgress", travelingProgress);
-			updateRealLocation();
+			if (getTravelingProgress() != travelingProgress)
+			{
+				prepareUpdate();
+				properties.setProperty("travelingProgress", travelingProgress);
+				updateRealLocation();
+			}
+						
 			tx.success();
 		}
 		finally
@@ -334,8 +336,8 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Node nArea = properties.getSingleRelationship(eRelationTypes.UnitDeparture, Direction.OUTGOING).getEndNode();
-		Relationship r = nArea.getSingleRelationship(eRelationTypes.CelestialBody, Direction.OUTGOING);
+		Node nArea = getLastSingleRelationship(eRelationTypes.UnitDeparture, Direction.OUTGOING).getEndNode();
+		Relationship r = AVersionedGraphNode.getLastSingleRelationship(graphDB, nArea, graphDB.getVersion(), eRelationTypes.CelestialBody, Direction.OUTGOING);
 		
 		if (r == null) return null;
 		
@@ -358,7 +360,7 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Transaction tx = db.beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
@@ -373,21 +375,24 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 	}
 	
 	private void updateDeparture()
-	{
-		sepDB.getArea(departure);
+	{		
+		Relationship oldDeparture = getLastSingleRelationship(eRelationTypes.UnitDeparture, Direction.OUTGOING);
+		if (oldDeparture == null || !departure.equals(Location.valueOf((String) oldDeparture.getEndNode().getProperty("location"))))
+		{
+			prepareUpdate();
+			oldDeparture = getLastSingleRelationship(eRelationTypes.UnitDeparture, Direction.OUTGOING);
+		}
 		
-		Relationship oldDeparture = properties.getSingleRelationship(eRelationTypes.UnitDeparture, Direction.OUTGOING);
 		if (oldDeparture != null) oldDeparture.delete();
-				
-		IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get(Area.PK, Area.getPK(departure));
-		if (!hits.hasNext())
+		
+		graphDB.getArea(departure);
+		Node nArea = queryVersion(graphDB.getDB().index().forNodes("AreaIndex"), Area.getPK(departure), graphDB.getVersion());
+		if (nArea == null)
 		{
 			throw new DBGraphException("Constraint error: Cannot find Area[location='"+departure.toString()+"']. Area must be created before Unit.");				
 		}
 		
-		Node nArea = hits.getSingle();
-		
-		properties.createRelationshipTo(nArea, eRelationTypes.UnitDeparture);		
+		properties.createRelationshipTo(nArea, eRelationTypes.UnitDeparture); // checked
 		properties.setProperty("departure", departure.toString());
 		
 		updateRealLocation();
@@ -395,19 +400,24 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 	
 	private void updateRealLocation()
 	{
-		Relationship oldRealLocation = properties.getSingleRelationship(eRelationTypes.UnitMarkerRealLocation, Direction.OUTGOING);
-		if (oldRealLocation != null) oldRealLocation.delete();
-	
+		Relationship oldRealLocation = getLastSingleRelationship(eRelationTypes.UnitMarkerRealLocation, Direction.OUTGOING);
 		Location realLocation = getRealLocation().asLocation();
-		sepDB.getArea(realLocation);
-		IndexHits<Node> hits = sepDB.getDB().index().forNodes("AreaIndex").get(Area.PK, Area.getPK(realLocation));
-		if (!hits.hasNext())
+		
+		if (oldRealLocation == null || !realLocation.equals(Location.valueOf((String) oldRealLocation.getProperty("location"))))
+		{
+			prepareUpdate();
+			oldRealLocation = getLastSingleRelationship(eRelationTypes.UnitMarkerRealLocation, Direction.OUTGOING);
+		}
+		
+		if (oldRealLocation != null) oldRealLocation.delete();	
+		
+		graphDB.getArea(realLocation);
+		Node nArea = queryVersion(graphDB.getDB().index().forNodes("AreaIndex"), Area.getPK(realLocation), graphDB.getVersion());
+		if (nArea == null)
 		{
 			throw new DBGraphException("Contraint error: Cannot find Area[location='"+realLocation.toString()+"']. Area must be created first.");
 		}
-		
-		Node nArea = hits.getSingle();		
-		properties.createRelationshipTo(nArea, eRelationTypes.UnitMarkerRealLocation);
+		properties.createRelationshipTo(nArea, eRelationTypes.UnitMarkerRealLocation); // checked
 	}
 	
 	@Override
@@ -416,12 +426,12 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Relationship r = properties.getSingleRelationship(eRelationTypes.UnitDestination, Direction.OUTGOING);
+		Relationship r = getLastSingleRelationship(eRelationTypes.UnitDestination, Direction.OUTGOING);
 		
 		if (r == null) return null;
 		
 		Node nArea = r.getEndNode();
-		r = nArea.getSingleRelationship(eRelationTypes.CelestialBody, Direction.OUTGOING);
+		r = AVersionedGraphNode.getLastSingleRelationship(graphDB, nArea, graphDB.getVersion(), eRelationTypes.CelestialBody, Direction.OUTGOING);
 		
 		if (r == null) return null;
 		return (String) r.getEndNode().getProperty("name");
@@ -433,7 +443,7 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Relationship r = properties.getSingleRelationship(eRelationTypes.UnitDestination, Direction.OUTGOING);
+		Relationship r = getLastSingleRelationship(eRelationTypes.UnitDestination, Direction.OUTGOING);
 		
 		if (r == null) return null;
 		
@@ -447,11 +457,17 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Transaction tx = db.beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
-			Relationship currentDestination = properties.getSingleRelationship(eRelationTypes.UnitDestination, Direction.OUTGOING);
+			Relationship currentDestination = getLastSingleRelationship(eRelationTypes.UnitDestination, Direction.OUTGOING);
+			
+			if ((currentDestination == null && destination != null) || (destination == null && currentDestination != null) || (!destination.equals(Location.valueOf((String) currentDestination.getEndNode().getProperty("location")))))
+			{
+				prepareUpdate();
+				currentDestination = getLastSingleRelationship(eRelationTypes.UnitDestination, Direction.OUTGOING);
+			}
 			
 			if (destination == null)
 			{
@@ -468,10 +484,9 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 					throw new RuntimeException("Destination already defined");
 				}
 				
-				sepDB.getArea(destination);
-				Node nArea = db.index().forNodes("AreaIndex").get(Area.PK, Area.getPK(destination)).getSingle();
-				
-				properties.createRelationshipTo(nArea, eRelationTypes.UnitDestination);							
+				graphDB.getArea(destination);
+				Node nArea = AVersionedGraphNode.queryVersion(graphDB.getDB().index().forNodes("AreaIndex"), Area.getPK(destination), graphDB.getVersion());				
+				properties.createRelationshipTo(nArea, eRelationTypes.UnitDestination); // checked					
 			}
 			
 			setTravelingProgress(0.0D);
@@ -489,7 +504,7 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		return sepDB.getConfig().getUnitTypeSight(getType());
+		return graphDB.getConfig().getUnitTypeSight(getType());
 	}
 	
 	@Override
@@ -497,15 +512,16 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 	{
 		assertOnlineStatus(true);
 		checkForDBUpdate();
+		assertLastVersion();
 		
-		Transaction tx = db.beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{		
-			unitMarker = sepDB.createUnitMarker(unitMarker);
+			unitMarker = graphDB.createUnitMarker(unitMarker);
 			
 			EncounterLog encounterLog = new EncounterLog(getOwnerName(), getName(), unitMarker.getOwnerName(), unitMarker.getName(), unitMarker.getTurn(), unitMarker.getStep());
-			encounterLog.create(sepDB);
+			encounterLog.create(graphDB);
 			
 			tx.success();
 		}
@@ -523,16 +539,17 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 		{
 			assertOnlineStatus(true);
 			checkForDBUpdate();
+			assertLastVersion();
 			
-			Transaction tx = db.beginTx();
+			Transaction tx = graphDB.getDB().beginTx();
 			
 			try
 			{
-				for(Relationship r : properties.getRelationships(eRelationTypes.UnitEncounterLog, Direction.OUTGOING))
+				for(Relationship r : getLastRelationships(eRelationTypes.UnitEncounterLog, Direction.OUTGOING))
 				{
 					if (r.hasProperty("published")) continue;
 					
-					EncounterLog encounterLog = new EncounterLog(sepDB, ownerName, name, (String) r.getProperty("encounterOwnerName"), (String) r.getProperty("encounterName"), (Integer) r.getProperty("turn"), (Double) r.getProperty("step")); 
+					EncounterLog encounterLog = new EncounterLog(graphDB, ownerName, name, (String) r.getProperty("encounterOwnerName"), (String) r.getProperty("encounterName"), (Integer) r.getProperty("turn"), (Double) r.getProperty("step")); 
 					IUnitMarker encounterUnitMarker = encounterLog.getEncounter();
 					
 					EncounterLogPublication encounterLogPublication = new EncounterLogPublication(ownerName, name, encounterUnitMarker);
@@ -548,7 +565,7 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 				tx.finish();
 			}
 			
-			UpdateArea updateArea = new UpdateArea(sepDB.getArea(getDeparture()));
+			UpdateArea updateArea = new UpdateArea(graphDB.getArea(getDeparture()));
 			executor.onGameEvent(updateArea, new HashSet<String>(Arrays.asList(ownerName)));
 		}
 	}
@@ -569,8 +586,8 @@ abstract class Unit extends AGraphObject<Node> implements IUnit
 		
 		sb.append(String.format("[%s] %s\n", getOwnerName(), getName()));		
 		
-		ICelestialBody dep = sepDB.getArea(getDeparture()).getCelestialBody();
-		ICelestialBody dest = getDestination() == null ? null : sepDB.getArea(getDestination()).getCelestialBody();
+		ICelestialBody dep = graphDB.getArea(getDeparture()).getCelestialBody();
+		ICelestialBody dest = getDestination() == null ? null : graphDB.getArea(getDestination()).getCelestialBody();
 		
 		if (isStopped())
 		{

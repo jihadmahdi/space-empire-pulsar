@@ -152,8 +152,7 @@ public abstract class Events
 		@Override
 		public void process(IGameEventExecutor executor, SEPCommonDB db) throws GameEventException
 		{
-			int newTurn = db.getConfig().getTurn();
-			db.getConfig().setTurn(++newTurn);
+			db.nextTurn();
 		}
 	}
 	
@@ -195,7 +194,7 @@ public abstract class Events
 			if (owner == null) throw new GameEventException(this, "Unknown player '"+ownerName+"'");
 			
 			IDiplomacyMarker diplomacyMarker = owner.getDiplomacyMarker(targetName);
-			if (diplomacyMarker.getTurn() > db.getConfig().getTurn()) throw new GameEventException(this, "No marker should be more recent than current turn.");
+			if (diplomacyMarker.getTurn() > db.getTurn()) throw new GameEventException(this, "No marker should be more recent than current turn.");
 			
 			owner.setDiplomacyMarker(targetName, isAllowedToLand, foreignPolicy);
 			
@@ -350,6 +349,8 @@ public abstract class Events
 				
 				if (skipCondition(db)) return;
 				
+				if (db.getTurn() != 0) throw new GameEventException(this, "Universe creation only expected on turn 0, current game turn: "+db.getTurn());
+				
 				GameConfigCopier.copy(IGameConfig.class, this.config, config);
 				
 				// Generate players
@@ -382,16 +383,14 @@ public abstract class Events
 							// If victory rule "Regimicide" is on, starting planet has a pre-built government module.						
 							if (config.isRegimicide())
 							{
-								IGovernmentModule governmentModule = SEPCommonDB.makeGovernmentModule(planet.getName(), config.getTurn(), 1);
+								IGovernmentModule governmentModule = SEPCommonDB.makeGovernmentModule(planet.getName(), db.getTurn(), 1);
 								governmentModule = db.createGovernmentModule(governmentModule);							
 							}
 						}
 					}
 					
 					db.fireAreaChangedEvent(celestialBody.getLocation());
-				}
-				
-				config.setTurn(0);								
+				}								
 			}
 			catch(Throwable t)
 			{

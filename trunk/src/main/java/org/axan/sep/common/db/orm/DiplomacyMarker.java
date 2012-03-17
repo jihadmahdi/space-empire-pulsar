@@ -1,26 +1,12 @@
 package org.axan.sep.common.db.orm;
 
-import javax.annotation.OverridingMethodsMustInvokeSuper;
-
-import org.axan.eplib.orm.nosql.DBGraphException;
+import org.axan.eplib.orm.nosql.AVersionedGraphRelationship;
 import org.axan.sep.common.db.IDiplomacyMarker;
-import org.axan.sep.common.db.IDiplomacyMarker.eForeignPolicy;
 import org.axan.sep.common.db.orm.SEPCommonDB.eRelationTypes;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.IndexHits;
 
-public class DiplomacyMarker extends AGraphObject<Relationship> implements IDiplomacyMarker
+public class DiplomacyMarker extends AVersionedGraphRelationship<SEPCommonDB> implements IDiplomacyMarker
 {
-	protected static final String PK = "[turn] ownerNameVtargetName";
-	protected static final String getPK(int turn, String ownerName, String targetName)
-	{
-		return String.format("[%d] %sV%s", turn, ownerName, targetName);
-	}
-	
 	/*
 	 * PK
 	 */
@@ -37,7 +23,6 @@ public class DiplomacyMarker extends AGraphObject<Relationship> implements IDipl
 	/*
 	 * DB connection
 	 */
-	protected Index<Relationship> diplomacyMarkerIndex;
 		
 	/**
 	 * Off-DB constructor.
@@ -49,7 +34,7 @@ public class DiplomacyMarker extends AGraphObject<Relationship> implements IDipl
 	 */
 	public DiplomacyMarker(int turn, String ownerName, String targetName, boolean isAllowedToLand, eForeignPolicy foreignPolicy)
 	{
-		super(getPK(turn, ownerName, targetName));
+		super(eRelationTypes.PlayerDiplomacyMarker, "PlayerIndex", Player.getPK(ownerName), "PlayerIndex", Player.getPK(targetName), turn);
 		this.turn = turn;
 		this.ownerName = ownerName;
 		this.targetName = targetName;
@@ -66,7 +51,7 @@ public class DiplomacyMarker extends AGraphObject<Relationship> implements IDipl
 	 */
 	public DiplomacyMarker(SEPCommonDB sepDB, int turn, String ownerName, String targetName)
 	{
-		super(sepDB, getPK(turn, ownerName, targetName));
+		super(sepDB, eRelationTypes.PlayerDiplomacyMarker, "PlayerIndex", Player.getPK(ownerName), "PlayerIndex", Player.getPK(targetName), turn);
 		this.turn = turn;
 		this.ownerName = ownerName;
 		this.targetName = targetName;
@@ -75,93 +60,28 @@ public class DiplomacyMarker extends AGraphObject<Relationship> implements IDipl
 		this.isAllowedToLand = false;
 		this.foreignPolicy = null;
 	}
-
-	/**
-	 * If object is DB connected, check for DB update.
-	 */
+	
 	@Override
-	@OverridingMethodsMustInvokeSuper
-	protected void checkForDBUpdate()
+	final protected void checkForDBUpdate()
 	{
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			db = sepDB.getDB();
-			
-			diplomacyMarkerIndex = db.index().forRelationships("DiplomacyMarkerIndex");
-			IndexHits<Relationship> hits = diplomacyMarkerIndex.get(PK, getPK(turn, ownerName, targetName));
-			
-			properties = hits.hasNext() ? hits.getSingle() : null;			
-		}
+		super.checkForDBUpdate();
 	}
 	
-	/**
-	 * Current object must be Off-DB to call create method.
-	 * Create method connect the object to the given DB and create the object node.
-	 * After this call, object is DB connected.
-	 * @param sepDB
-	 */
 	@Override
-	@OverridingMethodsMustInvokeSuper
-	protected void create(SEPCommonDB sepDB)
+	protected void initializeProperties()
 	{
-		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			this.sepDB = sepDB;
-			checkForDBUpdate();
-		
-			if (diplomacyMarkerIndex.get(PK, getPK(turn, ownerName, targetName)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, diplomacyMarker["+getPK(turn, ownerName, targetName)+"] already exist.");
-			}			
-						
-			diplomacyMarkerIndex.add(properties, PK, getPK(turn, ownerName, targetName));
-			
-			Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
-			if (nOwner == null)
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Cannot find owner Player '"+ownerName+"'");
-			}
-			
-			Node nTarget = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(targetName)).getSingle();
-			if (nTarget == null)
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Cannot find target Player '"+targetName+"'");
-			}
-			
-			Relationship existingDiplomacy=null;
-			for(Relationship r : nOwner.getRelationships(eRelationTypes.PlayerDiplomacy, Direction.OUTGOING))
-			{
-				if (targetName.equals(r.getEndNode().getProperty("name")))
-				{
-					existingDiplomacy = r;
-					break;
-				}
-			}
-			
-			if (existingDiplomacy != null)
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Diplomacy relationship from '"+ownerName+"' to '"+targetName+"' already exists.");
-			}
-			
-			properties = nOwner.createRelationshipTo(nTarget, eRelationTypes.PlayerDiplomacyMarker);
-			DiplomacyMarker.initializeProperties(properties, turn, ownerName, targetName, isAllowedToLand, foreignPolicy);
-			diplomacyMarkerIndex.add(properties, PK, getPK(turn, ownerName, targetName));			
-			
-			tx.success();			
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.initializeProperties();
+		if (turn >= 0) properties.setProperty("turn", turn);
+		properties.setProperty("ownerName", ownerName);
+		properties.setProperty("targetName", targetName);
+		properties.setProperty("isAllowedToLand", isAllowedToLand);
+		properties.setProperty("foreignPolicy", foreignPolicy.toString());
+	}
+	
+	@Override
+	final protected void register(Relationship properties)
+	{
+		super.register(properties);
 	}
 	
 	@Override
@@ -198,14 +118,5 @@ public class DiplomacyMarker extends AGraphObject<Relationship> implements IDipl
 		checkForDBUpdate();
 		
 		return eForeignPolicy.valueOf((String) properties.getProperty("foreignPolicy"));
-	}
-
-	public static void initializeProperties(Relationship properties, int turn, String ownerName, String targetName, boolean isAllowedToLand, eForeignPolicy foreignPolicy)
-	{
-		properties.setProperty("turn", turn);
-		properties.setProperty("ownerName", ownerName);
-		properties.setProperty("targetName", targetName);
-		properties.setProperty("isAllowedToLand", isAllowedToLand);
-		properties.setProperty("foreignPolicy", foreignPolicy.toString());
 	}
 }

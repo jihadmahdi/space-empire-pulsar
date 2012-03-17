@@ -27,7 +27,6 @@ class StarshipPlant extends Building implements IStarshipPlant
 	/*
 	 * DB connection
 	 */
-	protected Index<Node> starshipPlantIndex;
 	
 	/**
 	 * Off-DB constructor.
@@ -53,83 +52,25 @@ class StarshipPlant extends Building implements IStarshipPlant
 	@Override
 	final protected void checkForDBUpdate()
 	{				
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			super.checkForDBUpdate();			
-			starshipPlantIndex = db.index().forNodes("StarshipPlantIndex");			
-		}
+		super.checkForDBUpdate();
 	}
 	
-	/**
-	 * Create method final implementation.
-	 * Final implement actually create the db node and initialize it.
-	 */
 	@Override
-	final protected void create(SEPCommonDB sepDB)
+	final protected void initializeProperties()
 	{
-		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			this.sepDB = sepDB;
-			checkForDBUpdate();
-			
-			if (starshipPlantIndex.get(PK, getPK(productiveCelestialBodyName, type)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, starshipPlant[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
-			}
-			properties = sepDB.getDB().createNode();
-			StarshipPlant.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
-			starshipPlantIndex.add(properties, PK, getPK(productiveCelestialBodyName, type));
-			
-			super.create(sepDB);
-			
-			tx.success();			
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.initializeProperties();		
 	}
-
+	
 	@Override
-	@OverridingMethodsMustInvokeSuper
-	public void delete()
+	final protected void register(Node properties)
 	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			starshipPlantIndex.remove(properties);
-			super.delete();
-			
-			tx.success();
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.register(properties);
 	}
 	
 	@Override
 	public String toString()
 	{
 		return "Starship plant";
-	}
-	
-	public static void initializeProperties(Node properties, String productiveCelestialBodyName, int builtDate, int nbSlots)
-	{
-		properties.setProperty("productiveCelestialBodyName", productiveCelestialBodyName);
-		properties.setProperty("type", eBuildingType.StarshipPlant.toString());
-		properties.setProperty("builtDate", builtDate);
-		properties.setProperty("nbSlots", nbSlots);
 	}
 
 }

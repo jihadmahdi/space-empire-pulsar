@@ -12,6 +12,7 @@ import java.util.Set;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
+import org.axan.eplib.orm.nosql.AVersionedGraphNode;
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.eplib.utils.Basic;
 import org.axan.sep.common.Protocol.eUnitType;
@@ -39,9 +40,8 @@ import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 
-class Area extends AGraphObject<Node> implements IArea, Serializable
+class Area extends AVersionedGraphNode<SEPCommonDB> implements IArea, Serializable
 {
-	public static final String PK = "location";
 	public static final String getPK(Location location)
 	{
 		return location.toString();
@@ -68,9 +68,8 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 	 * DB connection: DB connection and useful objects (e.g. indexes and nodes).
 	 * DB connected and permanent value only. i.e. Indexes and Factories only (no value, no node, no relation).
 	 */
-	private transient Index<Node> areaIndex;
-	private transient Node areasFactory;
 	private transient Node sun;
+	private transient Node areasFactory;
 	
 	/**
 	 * Off-DB constructor.
@@ -79,7 +78,7 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 	 */
 	public Area(Location location)
 	{
-		super(location);
+		super(getPK(location));
 		this.location = location;
 	}
 	
@@ -90,7 +89,7 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 	 */
 	public Area(SEPCommonDB sepDB, Location location)
 	{
-		super(sepDB, location);
+		super(sepDB, getPK(location));
 		this.location = location;		
 	}
 	
@@ -100,59 +99,46 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 	@Override
 	final protected void checkForDBUpdate()
 	{
+		super.checkForDBUpdate();
+		
 		if (!isDBOnline()) return;
 		if (isDBOutdated())
 		{
-			db = sepDB.getDB();
-			
-			Location sunLocation = Rules.getSunLocation(sepDB.getConfig());
-			isSun = (SEPUtils.getDistance(sunLocation, location) <= sepDB.getConfig().getSunRadius());
-			areaIndex = db.index().forNodes("AreaIndex");
-			areasFactory = db.getReferenceNode().getSingleRelationship(eRelationTypes.Areas, Direction.OUTGOING).getEndNode();
-			sun = db.getReferenceNode().getSingleRelationship(eRelationTypes.Sun, Direction.OUTGOING).getEndNode();
-			IndexHits<Node> hits = areaIndex.get(PK, getPK(location));
-			properties = hits.hasNext() ? hits.getSingle() : null;			
-		}
+			Location sunLocation = Rules.getSunLocation(graphDB.getConfig());
+			isSun = (SEPUtils.getDistance(sunLocation, location) <= graphDB.getConfig().getSunRadius());
+			sun = graphDB.getDB().getReferenceNode().getSingleRelationship(eRelationTypes.Sun, Direction.OUTGOING).getEndNode(); // checked
+			areasFactory = graphDB.getDB().getReferenceNode().getSingleRelationship(eRelationTypes.Areas, Direction.OUTGOING).getEndNode(); // checked
+		}		
 	}
 	
 	/**
-	 * Current object must be Off-DB to call create method.
-	 * Create method connect the object to the given DB and create the object node.
-	 * After this call, object is DB connected.
-	 * @param sepDB
+	 * Register properties (add Node to indexes and create relationships).
+	 * @param properties
 	 */
 	@Override
-	final protected void create(SEPCommonDB sepDB)
+	@OverridingMethodsMustInvokeSuper
+	final protected void register(Node properties)
 	{
-		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");		
-		Transaction tx = sepDB.getDB().beginTx();
+		assertOnlineStatus(true);
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
-			this.sepDB = sepDB;
-			checkForDBUpdate();
+			super.register(properties);
 			
-			if (areaIndex.get(PK, getPK(location)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'location' must be unique, area[location='"+location+"'] already exist.");
-			}
-			properties = sepDB.getDB().createNode();
-			Area.initializeProperties(properties, location);			
-			areasFactory.createRelationshipTo(properties, eRelationTypes.Areas);
 			if (isSun)
 			{
-				sun.createRelationshipTo(properties, eRelationTypes.Sun);
-			}
-			areaIndex.add(properties, PK, getPK(location));
-						
-			tx.success();			
+				sun.createRelationshipTo(properties, eRelationTypes.Sun); // checked
+			}			
+			areasFactory.createRelationshipTo(properties, eRelationTypes.Areas); // checked
+			
+			tx.success();
 		}
 		finally
 		{
 			tx.finish();
 		}
-	}	
+	}
 
 	@Override
 	public Location getLocation()
@@ -167,7 +153,7 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 		{
 			checkForDBUpdate();
 			if (properties == null) return false;
-			return properties.hasRelationship(eRelationTypes.Sun, Direction.INCOMING);
+			return hasRelationship(eRelationTypes.Sun, Direction.INCOMING);
 		}
 		else
 		{
@@ -183,10 +169,10 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 			checkForDBUpdate();
 			
 			if (properties == null) return null;
-			Relationship cb = properties.getSingleRelationship(eRelationTypes.CelestialBody, Direction.OUTGOING);
+			Relationship cb = getLastSingleRelationship(eRelationTypes.CelestialBody, Direction.OUTGOING);
 			String celestialBodyName = cb == null ? null : (String) cb.getEndNode().getProperty("name");
 			
-			return celestialBodyName == null ? null : sepDB.getCelestialBody(celestialBodyName);
+			return celestialBodyName == null ? null : graphDB.getCelestialBody(celestialBodyName);
 		}
 		else
 		{
@@ -196,12 +182,12 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 	
 	@Override
 	public void update(IArea areaUpdate)
-	{
-		assertOnlineStatus(true);
+	{		
+		assertLastVersion();
 		checkForDBUpdate();
 		
-		Transaction tx = sepDB.getDB().beginTx();
-		
+		Transaction tx = graphDB.getDB().beginTx();
+
 		try
 		{			
 			/*
@@ -225,8 +211,8 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 			ICelestialBody celestialBodyUpdate = areaUpdate.getCelestialBody();
 			ICelestialBody celestialBody = getCelestialBody();
 			
-			if ((celestialBodyUpdate == null) != (celestialBody == null)) throw new RuntimeException("Illegal area update, inconsistent celestial body state.");		
-	
+			if ((celestialBodyUpdate == null) != (celestialBody == null)) throw new RuntimeException("Illegal area update, inconsistent celestial body state.");			
+			
 			if (celestialBody != null)
 			{
 				celestialBody.update(celestialBodyUpdate);
@@ -234,13 +220,13 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 			
 			for(IUnitMarker unitMarkerUpdate : areaUpdate.getUnitsMarkers(null))
 			{
-				if (unitMarkerUpdate.getTurn() != sepDB.getConfig().getTurn()) throw new RuntimeException("Illegal unit marker update, can only update up to date markers");
+				if (unitMarkerUpdate.getTurn() != graphDB.getVersion()) throw new RuntimeException("Illegal unit marker update, can only update up to date markers");
 				/*
 				IUnitMarker unitMarker = sepDB.getUnitMarker(unitMarkerUpdate.getTurn(), unitMarkerUpdate.getStep(), unitMarkerUpdate.getOwnerName(), unitMarkerUpdate.getName(), unitMarkerUpdate.getType());
 				if (unitMarker != null) throw new DBGraphException("Illegal unit marker update, up to date marker already exists.");
 				*/
 				if (IUnit.class.isInstance(unitMarkerUpdate)) unitMarkerUpdate = ((IUnit) unitMarkerUpdate).getMarker(0);
-				sepDB.createUnitMarker(unitMarkerUpdate);			
+				graphDB.createUnitMarker(unitMarkerUpdate);			
 			}
 			
 			tx.success();
@@ -255,7 +241,7 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 	public boolean isVisible(String playerName)
 	{
 		assertOnlineStatus(true);		
-		return isVisible(sepDB, getLocation(), playerName);
+		return isVisible(graphDB, getLocation(), playerName);
 	}
 	
 	/** Key is SEPCommonDB instance hashcode, value is last cached version. */
@@ -361,8 +347,10 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		for(Node n : properties.traverse(Order.BREADTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eRelationTypes.UnitMarkerRealLocation, Direction.INCOMING))
+		for(Relationship r : getLastRelationships(eRelationTypes.UnitMarkerRealLocation, Direction.INCOMING))
+		//for(Node n : properties.traverse(Order.BREADTH_FIRST, StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE, eRelationTypes.UnitMarkerRealLocation, Direction.INCOMING))
 		{
+			Node n = r.getStartNode();
 			SEPCommonDB.assertProperty(n, "type");			
 			if (type != null && !type.toString().equals((String) n.getProperty("type"))) continue;
 		
@@ -372,16 +360,14 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 			IUnitMarker unitMarker = null;
 			if (isMarker)
 			{
-				unitMarker = sepDB.getUnitMarker((Integer) n.getProperty("turn"), (Double) n.getProperty("step"), (String) n.getProperty("ownerName"), (String) n.getProperty("name"), type);
+				unitMarker = graphDB.getUnitMarker((Integer) n.getProperty("turn"), (Double) n.getProperty("step"), (String) n.getProperty("ownerName"), (String) n.getProperty("name"), type);
 			}
 			
-			IUnit unit = sepDB.getUnit((String) n.getProperty("ownerName"), (String) n.getProperty("name"), type);
+			IUnit unit = graphDB.getUnit((String) n.getProperty("ownerName"), (String) n.getProperty("name"), type);
 			
 			if (unit != null && (unitMarker == null || unit.getTurn() >= unitMarker.getTurn())) unitMarker = unit;
 			
-			String pk = Unit.getPK(unitMarker.getOwnerName(), unitMarker.getName());
-			
-			
+			String pk = Unit.getPK(unitMarker.getOwnerName(), unitMarker.getName());			
 			
 			if (!result.containsKey(pk) || (result.get(pk).getTurn() < unitMarker.getTurn())) result.put(pk, (T) unitMarker);						
 		}
@@ -391,15 +377,15 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 			previousUnitsMarkers = new HashMap<String, Map<String, IUnitMarker>>();
 		}
 		
-		int hash = sepDB.hashCode();
+		int hash = graphDB.hashCode();
 		String cacheKey = String.format("%d-%s", hash, getLocation().toString());
 		if (!previousUnitsMarkers.containsKey(cacheKey))
 		{	
 			previousUnitsMarkers.put(cacheKey, new HashMap<String, IUnitMarker>());
 						
-			if (sepDB.hasPrevious())
+			if (graphDB.hasPrevious())
 			{
-				((Area) sepDB.previous().getArea(getLocation())).getUnits(null, acceptMarkers, previousUnitsMarkers.get(cacheKey));
+				((Area) graphDB.previous().getArea(getLocation())).getUnits(null, acceptMarkers, previousUnitsMarkers.get(cacheKey));
 			}
 		}
 		
@@ -469,18 +455,18 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 		else
 		{
 			// TODO: optimize, cache last observation turn
-			int hash = sepDB.hashCode();
+			int hash = graphDB.hashCode();
 			String cacheKey = String.format("%d-%s", hash, getLocation());
 			if (lastObservation == null) lastObservation = new HashMap<String, Integer>();
 			if (!lastObservation.containsKey(cacheKey))			
 			{
-				SEPCommonDB pDB = this.sepDB;
+				SEPCommonDB pDB = this.graphDB;
 				while(pDB.hasPrevious())
 				{
 					pDB = pDB.previous();
 					if (isVisible(pDB, getLocation(), playerName))
 					{
-						lastObservation.put(cacheKey, pDB.getConfig().getTurn());
+						lastObservation.put(cacheKey, pDB.getTurn());
 						break;
 					}
 				}
@@ -553,8 +539,10 @@ class Area extends AGraphObject<Node> implements IArea, Serializable
 		in.defaultReadObject();
 	}
 
-	public static void initializeProperties(Node properties, Location location)
+	/* Don't need to set pk again, should never user getProperty("location"), but new Area(getProperty("pk")).getLocation()
+	public void initializeProperties()
 	{
+		super.initializeProperties();
 		properties.setProperty("location", location.toString());
-	}
+	}*/
 }

@@ -34,7 +34,6 @@ public class AntiProbeMissileMarker extends UnitMarker implements IAntiProbeMiss
 	/*
 	 * DB connection
 	 */
-	private transient Index<Node> antiProbeMissileMarkerIndex;
 	
 	/**
 	 * Off-DB constructor.
@@ -64,56 +63,25 @@ public class AntiProbeMissileMarker extends UnitMarker implements IAntiProbeMiss
 	@Override
 	final protected void checkForDBUpdate()
 	{				
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			super.checkForDBUpdate();
-			antiProbeMissileMarkerIndex = db.index().forNodes("AntiProbeMissileMarkerIndex");			
-		}
+		super.checkForDBUpdate();		
+	}
+	
+	@Override
+	protected void initializeProperties()
+	{
+		super.initializeProperties();
+		properties.setProperty("isFired", isFired);
 	}
 	
 	/**
-	 * Create method final implementation.
-	 * Final implement actually create the db node and initialize it.
+	 * Register properties (add Node to indexes and create relationships).
+	 * @param properties
 	 */
 	@Override
-	final protected void create(SEPCommonDB sepDB)
+	@OverridingMethodsMustInvokeSuper
+	final protected void register(Node properties)
 	{
-		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			this.sepDB = sepDB;
-			checkForDBUpdate();
-			
-			if (antiProbeMissileMarkerIndex.get(PK, getPK(turn, step, ownerName, name)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, antiProbeMissileMarker["+getPK(turn, step, ownerName, name)+"] already exist.");
-			}			
-			
-			properties = sepDB.getDB().createNode();
-			AntiProbeMissileMarker.initializeProperties(properties, turn, step, ownerName, name, isStopped, realLocation, speed, isFired);
-			antiProbeMissileMarkerIndex.add(properties, PK, getPK(turn, step, ownerName, name));
-			
-			Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
-			if (nOwner == null)
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Cannot find owner Player '"+ownerName+"'");
-			}			
-			nOwner.createRelationshipTo(properties, DynamicRelationshipType.withName(eUnitType.AntiProbeMissile + "Marker"));			
-			
-			super.create(sepDB);
-			
-			tx.success();			
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.register(properties);
 	}
 	
 	@Override
@@ -185,18 +153,4 @@ public class AntiProbeMissileMarker extends UnitMarker implements IAntiProbeMiss
 	{
 		in.defaultReadObject();
 	}
-	
-	public static void initializeProperties(Node properties, int turn, double step, String ownerName, String name, boolean isStopped, RealLocation realLocation, float speed, boolean isFired)
-	{
-		properties.setProperty("turn", turn);
-		properties.setProperty("step", step);
-		properties.setProperty("ownerName", ownerName);
-		properties.setProperty("name", name);
-		properties.setProperty("type", eUnitType.AntiProbeMissile.toString());
-		properties.setProperty("isStopped", isStopped);		
-		properties.setProperty("realLocation", realLocation.toString());
-		properties.setProperty("speed", speed);
-		properties.setProperty("isFired", isFired);
-	}
-
 }

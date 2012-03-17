@@ -63,7 +63,8 @@ import scala.xml.dtd.MakeValidationException;
 
 public class TestSEP
 {
-
+	static private int TESTER_TIMEOUT = 10000;
+	
 	static private BufferedReader			serverOut;
 
 	static private BufferedReader			clientOut;
@@ -96,7 +97,7 @@ public class TestSEP
 	@Before
 	public void setUp() throws Exception
 	{
-		tester = org.axan.eplib.utils.Test.getTester(5000, 1048576, eTest.Server, eTest.Clients);
+		tester = org.axan.eplib.utils.Test.getTester(TESTER_TIMEOUT, 1048576, eTest.Server, eTest.Clients);
 		SEPServer.log = tester.getLogger(eTest.Server);
 		SEPClient.log = tester.getLogger(eTest.Clients);
 	}
@@ -228,7 +229,7 @@ public class TestSEP
 		@Override
 		public void receiveNewTurnGameBoard(List<IGameEvent> newTurnEvents)
 		{			
-			log.log(Level.INFO, getClient().getLogin() + ".receiveNewTurnGameBoard(" + getClient().getGameboard().getConfig().getTurn() + ")");
+			log.log(Level.INFO, getClient().getLogin() + ".receiveNewTurnGameBoard(" + getClient().getGameboard().getDB().getTurn() + ")");
 			//ai.refreshGameBoard(gameBoard);
 		}
 
@@ -329,16 +330,17 @@ public class TestSEP
 		for(int i=0; i < 10; ++i)
 		{
 			System.err.println("i == "+i);
+			
+			test(true);
+			tester.flush();
+			
 			long start = System.currentTimeMillis();
 			while(System.currentTimeMillis() - start < TIMEOUT_NET)
 			{
 				Thread.sleep(1000);
 				System.err.print(".");
 			}
-			System.err.println();
-			
-			tester.flush();
-			test(true);
+			System.err.println();								
 		}
 	}
 	

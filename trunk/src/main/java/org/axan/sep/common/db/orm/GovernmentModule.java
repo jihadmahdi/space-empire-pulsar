@@ -1,5 +1,6 @@
 package org.axan.sep.common.db.orm;
 
+import org.axan.eplib.orm.nosql.AVersionedGraphNode;
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.db.orm.Building;
@@ -30,7 +31,6 @@ class GovernmentModule extends Building implements IGovernmentModule
 	/*
 	 * DB connection
 	 */
-	protected Index<Node> governmentModuleIndex;
 	
 	/**
 	 * Off-DB constructor.
@@ -56,47 +56,26 @@ class GovernmentModule extends Building implements IGovernmentModule
 	@Override
 	final protected void checkForDBUpdate()
 	{				
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			super.checkForDBUpdate();			
-			governmentModuleIndex = db.index().forNodes("GovernmentModuleIndex");			
-		}
+		super.checkForDBUpdate();
 	}
 	
-	/**
-	 * Create method final implementation.
-	 * Final implement actually create the db node and initialize it.
-	 */
 	@Override
-	final protected void create(SEPCommonDB sepDB)
+	final protected void initializeProperties()
 	{
-		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
-		
-		Transaction tx = sepDB.getDB().beginTx();
+		super.initializeProperties();		
+	}
+	
+	@Override
+	final protected void register(Node properties)
+	{
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
-			this.sepDB = sepDB;
-			checkForDBUpdate();
+			super.register(properties);
 			
-			if (governmentModuleIndex.get(PK, getPK(productiveCelestialBodyName, type)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, governmentModule[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
-			}
-			properties = sepDB.getDB().createNode();
-			GovernmentModule.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
-			governmentModuleIndex.add(properties, PK, getPK(productiveCelestialBodyName, type));
-			
-			Node nProductiveCelestialBody = productiveCelestialBodyIndex.get(CelestialBody.PK, CelestialBody.getPK(productiveCelestialBodyName)).getSingle();
-			if (nProductiveCelestialBody == null)
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Cannot find productive celestial body.");
-			}
-			
-			Relationship r = nProductiveCelestialBody.getSingleRelationship(eRelationTypes.PlayerCelestialBodies, Direction.INCOMING);			
+			Node nProductiveCelestialBody = getLastSingleRelationship(eRelationTypes.Buildings, Direction.INCOMING).getStartNode();
+			Relationship r = AVersionedGraphNode.getLastSingleRelationship(graphDB, nProductiveCelestialBody, graphDB.getVersion(), eRelationTypes.PlayerCelestialBodies, Direction.INCOMING);			
 			Node nOwner = r == null ? null : r.getStartNode();
 			if (nOwner == null)
 			{
@@ -104,39 +83,10 @@ class GovernmentModule extends Building implements IGovernmentModule
 				throw new DBGraphException("Constraint error: Cannot find productive celestial body owner.");
 			}
 			
-			r = nOwner.getSingleRelationship(eRelationTypes.PlayerGovernment, Direction.OUTGOING);
-			if (r != null)
-			{
-				throw new DBGraphException("Cannot redefine PlayerGovernment because relationship already exist.");
-			}
-			
-			nOwner.createRelationshipTo(properties, eRelationTypes.PlayerGovernment);
-			
-			super.create(sepDB);
+			Government government = new Government((String) nOwner.getProperty("name"), (String) nProductiveCelestialBody.getProperty("name"));
+			government.create(graphDB);			
 			
 			tx.success();			
-		}
-		finally
-		{
-			tx.finish();
-		}
-	}
-	
-	@Override
-	@OverridingMethodsMustInvokeSuper
-	public void delete()
-	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			governmentModuleIndex.remove(properties);
-			super.delete();
-			
-			tx.success();
 		}
 		finally
 		{
@@ -148,14 +98,6 @@ class GovernmentModule extends Building implements IGovernmentModule
 	public String toString()
 	{
 		return "Government module gives a +50% bonus to population per turn and +50% bonus to carbon resource extraction on the current planet.";			
-	}	
-	
-	public static void initializeProperties(Node properties, String productiveCelestialBodyName, int builtDate, int nbSlots)
-	{
-		properties.setProperty("productiveCelestialBodyName", productiveCelestialBodyName);
-		properties.setProperty("type", eBuildingType.GovernmentModule.toString());
-		properties.setProperty("builtDate", builtDate);
-		properties.setProperty("nbSlots", nbSlots);
 	}
 
 }

@@ -26,7 +26,6 @@ class ExtractionModule extends Building implements IExtractionModule
 	/*
 	 * DB connection
 	 */
-	protected Index<Node> extractionModuleIndex;
 	
 	/**
 	 * Off-DB constructor.
@@ -52,69 +51,19 @@ class ExtractionModule extends Building implements IExtractionModule
 	@Override
 	final protected void checkForDBUpdate()
 	{				
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			super.checkForDBUpdate();			
-			extractionModuleIndex = db.index().forNodes("ExtractionModuleIndex");			
-		}
+		super.checkForDBUpdate();
 	}
 	
-	/**
-	 * Create method final implementation.
-	 * Final implement actually create the db node and initialize it.
-	 */
 	@Override
-	final protected void create(SEPCommonDB sepDB)
+	final protected void initializeProperties()
 	{
-		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			this.sepDB = sepDB;
-			checkForDBUpdate();
-			
-			if (extractionModuleIndex.get(PK, getPK(productiveCelestialBodyName, type)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, extractionModule[productiveCelestialBodyNale='"+productiveCelestialBodyName+"';type='"+type+"'] already exist.");
-			}
-			properties = sepDB.getDB().createNode();
-			ExtractionModule.initializeProperties(properties, productiveCelestialBodyName, builtDate, nbSlots);
-			extractionModuleIndex.add(properties, PK, getPK(productiveCelestialBodyName, type));
-			
-			super.create(sepDB);
-			
-			tx.success();			
-		}
-		finally
-		{
-			tx.finish();
-		}
-	}	
+		super.initializeProperties();		
+	}
 	
 	@Override
-	@OverridingMethodsMustInvokeSuper
-	public void delete()
+	final protected void register(Node properties)
 	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			extractionModuleIndex.remove(properties);
-			super.delete();
-			
-			tx.success();
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.register(properties);
 	}
 	
 	public static int getCarbonProductionPerTurn(int nbSlots)
@@ -164,13 +113,4 @@ class ExtractionModule extends Building implements IExtractionModule
 		
 		return sb.toString();		
 	}
-
-	public static void initializeProperties(Node properties, String productiveCelestialBodyName, int builtDate, int nbSlots)
-	{
-		properties.setProperty("productiveCelestialBodyName", productiveCelestialBodyName);
-		properties.setProperty("type", eBuildingType.ExtractionModule.toString());
-		properties.setProperty("builtDate", builtDate);
-		properties.setProperty("nbSlots", nbSlots);
-	}
-
 }

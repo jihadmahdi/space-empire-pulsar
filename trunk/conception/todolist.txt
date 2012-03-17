@@ -1,0 +1,14 @@
+Codage:
+	* checker tous les appels:
+		V Checker que register() appelle bien super.register()
+		V Node.getRelationships(...)
+		V Node.getSingleRelationship(...)
+		V Node.hasRelationships(...), Node.hasRelationship(...)
+		V AVersionedGraphObject.prepareUpdate()
+			Inclure dans la transaction de la méthode appelante
+			Ne l'appeller que si une Property de l'objet courrant est modifiée (juste avant setProperty(...))
+		V La cascade update() n'entraine prepareUpdate que lorsqu'il y a réelle mise à jour setProperty(...)
+			@Deprecated: Pour l'instant, la cascade update() entraine forcément prepareUpdate(), voir si ces classes doivent vraiment etre versionnées, étudier les Relationship vers des objets non versionnés (versionner les relationship pour ne plus avoir à versionner le Node dont seules les relationships sont variables)
+		V update() doit appeller assertCurrentTurn()
+		V Index<T>.get
+		V Index<T>.query

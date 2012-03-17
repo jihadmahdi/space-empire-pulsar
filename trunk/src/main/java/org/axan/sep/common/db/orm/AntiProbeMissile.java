@@ -44,7 +44,6 @@ public class AntiProbeMissile extends Unit implements IAntiProbeMissile
 	/*
 	 * DB connection
 	 */
-	private transient Index<Node> antiProbeMissileIndex;
 	
 	/**
 	 * Off-DB constructor.
@@ -70,80 +69,24 @@ public class AntiProbeMissile extends Unit implements IAntiProbeMissile
 	@Override
 	final protected void checkForDBUpdate()
 	{				
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			super.checkForDBUpdate();
-			antiProbeMissileIndex = db.index().forNodes("AntiProbeMissileIndex");			
-		}
+		super.checkForDBUpdate();
+	}
+	
+	@Override
+	protected void initializeProperties()
+	{
+		super.initializeProperties();
 	}
 	
 	/**
-	 * Create method final implementation.
-	 * Final implement actually create the db node and initialize it.
+	 * Register properties (add Node to indexes and create relationships).
+	 * @param properties
 	 */
 	@Override
-	final protected void create(SEPCommonDB sepDB)
-	{
-		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			this.sepDB = sepDB;
-			checkForDBUpdate();
-			
-			if (antiProbeMissileIndex.get(PK, getPK(ownerName, name)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field '"+PK+"' must be unique, antiProbeMissile["+getPK(ownerName, name)+"] already exist.");
-			}			
-			
-			properties = sepDB.getDB().createNode();
-			AntiProbeMissile.initializeProperties(properties, ownerName, name, initialDepartureName, departure);
-			antiProbeMissileIndex.add(properties, PK, getPK(ownerName, name));
-			
-			Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
-			if (nOwner == null)
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Cannot find owner Player '"+ownerName+"'");
-			}
-			//nOwner.createRelationshipTo(properties, eUnitType.AntiProbeMissile);
-			
-			super.create(sepDB);
-			
-			tx.success();			
-		}
-		finally
-		{
-			tx.finish();
-		}
-	}
-	
-	@Override
 	@OverridingMethodsMustInvokeSuper
-	public void destroy()
+	final protected void register(Node properties)
 	{
-		assertOnlineStatus(true);
-		checkForDBUpdate();
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			antiProbeMissileIndex.remove(properties);
-			//properties.getSingleRelationship(eUnitType.AntiProbeMissile, Direction.INCOMING).delete();
-			
-			super.destroy();
-			
-			tx.success();
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.register(properties);
 	}
 	
 	@Override
@@ -173,21 +116,31 @@ public class AntiProbeMissile extends Unit implements IAntiProbeMissile
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Transaction tx = db.beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
+			if (properties.hasProperty("targetTurn"))
+			{
+				throw new RuntimeException("AntiProbeMissile target can be defined only once.");
+			}
+			
+			// Old value is null because target cannot be defined twice.
+			prepareUpdate();
+			
 			if (IProbe.class.isInstance(target))
 			{
 				Probe probe = (Probe) target;
-				ProbeMarker marker = (ProbeMarker) sepDB.getUnitMarker(target.getTurn(), target.getStep(), target.getOwnerName(), target.getName(), eUnitType.Probe);
+				ProbeMarker marker = (ProbeMarker) graphDB.getUnitMarker(target.getTurn(), target.getStep(), target.getOwnerName(), target.getName(), eUnitType.Probe);
 				
 				if (marker == null)
 				{
 					marker = (ProbeMarker) probe.getMarker(0);
-					marker.create(sepDB);
-				}				
-			}
+					marker.create(graphDB);
+				}
+				
+				target = marker;
+			}			
 			
 			properties.setProperty("targetTurn", target.getTurn());
 			properties.setProperty("targetStep", target.getStep());
@@ -216,7 +169,7 @@ public class AntiProbeMissile extends Unit implements IAntiProbeMissile
 		if (!properties.hasProperty("targetName")) return null;
 		String targetName = (String) properties.getProperty("targetName");
 		
-		return (IProbeMarker) sepDB.getUnitMarker(targetTurn, targetStep, targetOwnerName, targetName, eUnitType.Probe);		
+		return (IProbeMarker) graphDB.getUnitMarker(targetTurn, targetStep, targetOwnerName, targetName, eUnitType.Probe);		
 	}
 	
 	@Override
@@ -246,15 +199,6 @@ public class AntiProbeMissile extends Unit implements IAntiProbeMissile
 	public void onArrival(IGameEventExecutor executor)
 	{		
 		IProbeMarker target = getTarget(); // Marker version
-		executor.onGameEvent(new AntiProbeMissileExplosion(getRealLocation().asLocation(), getOwnerName(), getName(), target.getOwnerName(), target.getName()), sepDB.getPlayersNames());		
-	}
-	
-	public static void initializeProperties(Node properties, String ownerName, String name, String initialDepartureName, Location departure)
-	{
-		properties.setProperty("ownerName", ownerName);
-		properties.setProperty("name", name);
-		properties.setProperty("type", eUnitType.AntiProbeMissile.toString());
-		properties.setProperty("initialDepartureName", initialDepartureName);
-		properties.setProperty("departure", departure.toString());
+		executor.onGameEvent(new AntiProbeMissileExplosion(getRealLocation().asLocation(), getOwnerName(), getName(), target.getOwnerName(), target.getName()), graphDB.getPlayersNames());		
 	}
 }

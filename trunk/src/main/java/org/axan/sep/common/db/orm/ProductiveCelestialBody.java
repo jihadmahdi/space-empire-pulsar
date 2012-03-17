@@ -1,5 +1,7 @@
 package org.axan.sep.common.db.orm;
 
+import org.axan.eplib.orm.nosql.AGraphObject;
+import org.axan.eplib.orm.nosql.AVersionedGraphNode;
 import org.axan.eplib.orm.nosql.DBGraphException;
 import org.axan.sep.common.Protocol.eBuildingType;
 import org.axan.sep.common.Protocol.eCelestialBodyType;
@@ -66,8 +68,6 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 	/*
 	 * DB connection: DB connection and useful objects (e.g. indexes and nodes).
 	 */
-	protected transient Index<Node> productiveCelestialBodyIndex;
-	protected transient Index<Node> buildingIndex;
 	
 	/**
 	 * Off-DB constructor.
@@ -103,36 +103,29 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 	}
 	
 	@Override
-	@OverridingMethodsMustInvokeSuper
-	protected void checkForDBUpdate()
-	{				
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			super.checkForDBUpdate();			
-			productiveCelestialBodyIndex = db.index().forNodes("ProductiveCelestialBodyIndex");
-			buildingIndex = db.index().forNodes("BuildingIndex");			
-		}
+	protected void initializeProperties()
+	{
+		super.initializeProperties();
+		properties.setProperty("initialCarbonStock", initialCarbonStock);
+		properties.setProperty("maxSlots", maxSlots);
+		properties.setProperty("carbonStock", carbonStock);
+		properties.setProperty("currentCarbon", currentCarbon);
 	}
 	
+	/**
+	 * Register properties (add Node to indexes and create relationships).
+	 * @param properties
+	 */
 	@Override
 	@OverridingMethodsMustInvokeSuper
-	protected void create(SEPCommonDB sepDB)
+	protected void register(Node properties)
 	{
-		Transaction tx = sepDB.getDB().beginTx();		
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
-			if (productiveCelestialBodyIndex.get(PK, getPK(name)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, productiveCelestialBody[name='"+name+"'] already exist.");
-			}
-			productiveCelestialBodyIndex.add(properties, PK, getPK(name));
-			
+			super.register(properties);			
 			updateOwnership();
-			
-			super.create(sepDB);
 			
 			tx.success();			
 		}
@@ -147,40 +140,35 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 	 */
 	private void updateOwnership()
 	{
-		Transaction tx = db.beginTx();
+		Relationship oldOwnership = getLastSingleRelationship(eRelationTypes.PlayerCelestialBodies, Direction.INCOMING);
 		
-		try
+		if (oldOwnership == null && ownerName != null || ownerName == null && oldOwnership != null || ownerName != null && oldOwnership != null && !ownerName.equals((String) oldOwnership.getStartNode().getProperty("name")))
 		{
-			Relationship ownership = properties.getSingleRelationship(eRelationTypes.PlayerCelestialBodies, Direction.INCOMING);
-			
-			if (ownerName == null)
-			{
-				// Delete ownership relation
-				if (ownership != null) ownership.delete();
-				/*
-				ownership = properties.getSingleRelationship(type, Direction.INCOMING);
-				if (ownership != null) ownership.delete();
-				*/			
-			}
-			else if (ownership == null || !ownerName.equals((String) ownership.getStartNode().getProperty("name")))
-			{
-				// Delete previous and Create ownership relation				
-				if (ownership != null)
-				{
-					ownership.delete();
-					ownership = null;
-				}
-				
-				Node nOwner = db.index().forNodes("PlayerIndex").get(Player.PK, Player.getPK(ownerName)).getSingle();
-				nOwner.createRelationshipTo(properties, eRelationTypes.PlayerCelestialBodies);			
-				//nOwner.createRelationshipTo(properties, type);
-			}
-			
-			tx.success();
+			prepareUpdate();
+			oldOwnership = getLastSingleRelationship(eRelationTypes.PlayerCelestialBodies, Direction.INCOMING);
 		}
-		finally
+		
+		if (ownerName == null)
 		{
-			tx.finish();
+			// Delete ownership relation
+			if (oldOwnership != null) oldOwnership.delete();
+			/*
+			ownership = properties.getSingleRelationship(type, Direction.INCOMING);
+			if (ownership != null) ownership.delete();
+			*/			
+		}
+		else if (oldOwnership == null || !ownerName.equals((String) oldOwnership.getStartNode().getProperty("name")))
+		{
+			// Delete previous and Create ownership relation				
+			if (oldOwnership != null)
+			{
+				oldOwnership.delete();
+				oldOwnership = null;
+			}
+			
+			Node nOwner = AGraphObject.get(graphDB.getDB().index().forNodes("PlayerIndex"), Player.getPK(ownerName));
+			nOwner.createRelationshipTo(properties, eRelationTypes.PlayerCelestialBodies); // checked
+			//nOwner.createRelationshipTo(properties, type);
 		}
 	}
 	
@@ -190,7 +178,7 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 		if (isDBOnline())		
 		{
 			checkForDBUpdate();
-			Relationship ownership = properties == null ? null : properties.getSingleRelationship(eRelationTypes.PlayerCelestialBodies, Direction.INCOMING);
+			Relationship ownership = properties == null ? null : getLastSingleRelationship(eRelationTypes.PlayerCelestialBodies, Direction.INCOMING);
 			Node nOwner = ownership == null ? null : ownership.getStartNode();
 			ownerName = nOwner == null ? null : (String) nOwner.getProperty("name");
 		}
@@ -201,13 +189,26 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 	@Override
 	public void setOwner(String ownerName)
 	{
-		this.ownerName = ownerName;
 		if (isDBOnline())
 		{
 			checkForDBUpdate();
-			updateOwnership();			
-			checkForDBUpdate();
+			
+			Transaction tx = graphDB.getDB().beginTx();
+			try
+			{
+				this.ownerName = ownerName;
+				updateOwnership();
+				tx.success();
+			}
+			finally
+			{
+				tx.finish();
+			}
 		}
+		else
+		{
+			this.ownerName = ownerName;
+		}		
 	}
 
 	@Override
@@ -271,12 +272,15 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 	{
 		assertOnlineStatus(true);
 		
-		Transaction tx = db.beginTx();
+		if (carbonCost == 0) return;
+		
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
-		{
+		{			
 			checkForDBUpdate();
 			if (getCurrentCarbon() < carbonCost) throw new RuntimeException("Cannot pay carbon cost, not enough carbon");
+			prepareUpdate();
 			properties.setProperty("currentCarbon", getCurrentCarbon() - carbonCost);
 			tx.success();
 		}
@@ -291,12 +295,13 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 	{
 		assertOnlineStatus(true);
 		
-		Transaction tx = db.beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
 			checkForDBUpdate();
 			if (getCarbonStock() < extractedCarbon) throw new RuntimeException("Cannot extract carbon, not enough stock");
+			prepareUpdate();
 			properties.setProperty("carbonStock", getCarbonStock() - extractedCarbon);
 			properties.setProperty("currentCarbon", getCurrentCarbon() + extractedCarbon);
 			tx.success();
@@ -314,9 +319,10 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 		checkForDBUpdate();
 		
 		int result=0;
-		for(Node n : buildingIndex.query(Building.PK, Building.queryAnyBuildingTypePK(name)))
+		
+		for(Relationship r : getLastRelationships(eRelationTypes.Buildings, Direction.OUTGOING))
 		{
-			result += (Integer) n.getProperty("nbSlots");
+			result += (Integer) r.getEndNode().getProperty("nbSlots");
 		}
 		
 		return result;
@@ -326,7 +332,7 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 	public IBuilding getBuilding(eBuildingType type)
 	{
 		assertOnlineStatus(true);		
-		return sepDB.getBuilding(getName(), type);
+		return graphDB.getBuilding(getName(), type);
 	}
 	
 	@Override
@@ -337,9 +343,10 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 			checkForDBUpdate();
 			
 			Set<IBuilding> result = new HashSet<IBuilding>();
-			for(Node n : buildingIndex.query(Building.PK, Building.queryAnyBuildingTypePK(name)))
+			for(Relationship r : getLastRelationships(eRelationTypes.Buildings, Direction.OUTGOING))			
 			{
-				result.add(sepDB.getBuilding(name, eBuildingType.valueOf((String) n.getProperty("type"))));
+				Node n = r.getEndNode();
+				result.add(graphDB.getBuilding(name, eBuildingType.valueOf((String) n.getProperty("type"))));
 			}
 			return result;
 		}
@@ -367,42 +374,36 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		TraversalDescription td = Traversal.description().breadthFirst().relationships(eRelationTypes.AssignedFleets, Direction.OUTGOING).evaluator(new Evaluator()
+		Node nFleet = null;
+		for(Relationship r : getLastRelationships(eRelationTypes.AssignedFleets, Direction.OUTGOING))
 		{
-			
-			@Override
-			public Evaluation evaluate(Path path)
-			{
-				Relationship rel = path.lastRelationship();
-				if (rel == null) return Evaluation.EXCLUDE_AND_CONTINUE;
-				if (!rel.hasProperty("playerName")) return Evaluation.EXCLUDE_AND_PRUNE;
-				if (!playerName.equals(rel.getProperty("playerName"))) return Evaluation.EXCLUDE_AND_PRUNE;
-				return Evaluation.INCLUDE_AND_PRUNE;
-			}
-		});			
-		
-		Traverser traverser = td.traverse(properties);
-		Node nFleet = traverser.nodes().iterator().hasNext() ? traverser.nodes().iterator().next() : null;
-		
+			if (!r.hasProperty("playerName")) continue;
+			if (!playerName.equals(r.getProperty("playerName"))) continue;
+			nFleet = r.getEndNode();
+			break;
+		}
+				
 		if (nFleet == null)
 		{
 			if (!create) return null;
 			
-			Transaction tx = db.beginTx();
+			assertLastVersion();
+			
+			Transaction tx = graphDB.getDB().beginTx();
 			
 			try
 			{
 				String fleetName = String.format("%s assigned fleet", getName());
-				sepDB.createFleet(sepDB.makeFleet(playerName, fleetName, name, new HashMap<StarshipTemplate, Integer>()));
+				graphDB.createFleet(graphDB.makeFleet(playerName, fleetName, name, new HashMap<StarshipTemplate, Integer>()));
 				
-				nFleet = db.index().forNodes("FleetIndex").get(Unit.PK, Unit.getPK(playerName, fleetName)).getSingle();
+				nFleet = AVersionedGraphNode.queryVersion(graphDB.getDB().index().forNodes("FleetIndex"), Unit.getPK(playerName, fleetName), graphDB.getVersion());
 				
 				if (nFleet == null)
 				{
 					throw new RuntimeException("Implementation error, cannot get just created assigned fleet "+playerName+"@"+fleetName);
 				}
 				
-				Relationship rel = properties.createRelationshipTo(nFleet, eRelationTypes.AssignedFleets);
+				Relationship rel = properties.createRelationshipTo(nFleet, eRelationTypes.AssignedFleets); // checked
 				rel.setProperty("playerName", playerName);
 				
 				tx.success();
@@ -410,14 +411,11 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 			finally
 			{
 				tx.finish();
-			}
-			
-			// Double check
-			nFleet = td.traverse(properties).nodes().iterator().next();
+			}						
 		}
 		
 		String fleetName = (String) nFleet.getProperty("name");
-		return new Fleet(sepDB, playerName, fleetName);
+		return new Fleet(graphDB, playerName, fleetName);
 	}
 	
 	@Override
@@ -426,7 +424,7 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 		assertOnlineStatus(true);
 		checkForDBUpdate();
 		
-		Transaction tx = sepDB.getDB().beginTx();
+		Transaction tx = graphDB.getDB().beginTx();
 		
 		try
 		{
@@ -438,6 +436,8 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 			
 			if (getInitialCarbonStock() != productiveCelestialBodyUpdate.getInitialCarbonStock()) throw new RuntimeException("Illegal productive celestial body update, initial carbon stock value is inconsistent.");
 			if (getMaxSlots() != productiveCelestialBodyUpdate.getMaxSlots()) throw new RuntimeException("Illegal productive celestial body update, max slots value is inconsistent.");
+			
+			prepareUpdate();
 			
 			properties.setProperty("carbonStock", productiveCelestialBodyUpdate.getCarbonStock());
 			properties.setProperty("currentCarbon", productiveCelestialBodyUpdate.getCurrentCarbon());
@@ -472,7 +472,7 @@ abstract class ProductiveCelestialBody extends CelestialBody implements IProduct
 			for(IBuilding buildingUpdate : buildingsUpdate)
 			{
 				// Add building
-				sepDB.createBuilding(getName(), buildingUpdate.getBuiltDate(), buildingUpdate.getType()).update(buildingUpdate);
+				graphDB.createBuilding(getName(), buildingUpdate.getBuiltDate(), buildingUpdate.getType()).update(buildingUpdate);
 			}
 			
 			tx.success();

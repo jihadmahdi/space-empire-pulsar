@@ -14,6 +14,8 @@ import org.axan.sep.common.db.IGameConfig;
 import java.util.Map;
 import java.util.HashMap;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 class AsteroidField extends ProductiveCelestialBody implements IAsteroidField
 {
 	// PK inherited.
@@ -25,7 +27,6 @@ class AsteroidField extends ProductiveCelestialBody implements IAsteroidField
 	/*
 	 * DB connection
 	 */
-	protected transient Index<Node> asteroidFieldIndex;
 	
 	/**
 	 * Off-DB constructor
@@ -53,57 +54,17 @@ class AsteroidField extends ProductiveCelestialBody implements IAsteroidField
 	@Override
 	final protected void checkForDBUpdate()
 	{				
-		if (!isDBOnline()) return;
-		if (isDBOutdated())
-		{
-			super.checkForDBUpdate();			
-			asteroidFieldIndex = db.index().forNodes("AsteroidFieldIndex");			
-		}
+		super.checkForDBUpdate();
 	}
-
+	
 	/**
-	 * Create method final implementation.
-	 * Final implement actually create the db node and initialize it.
+	 * Register properties (add Node to indexes and create relationships).
+	 * @param properties
 	 */
 	@Override
-	final protected void create(SEPCommonDB sepDB)
+	@OverridingMethodsMustInvokeSuper
+	final protected void register(Node properties)
 	{
-		assertOnlineStatus(false, "Illegal state: can only call create(SEPCommonDB) method on Off-DB objects.");
-		
-		Transaction tx = sepDB.getDB().beginTx();
-		
-		try
-		{
-			this.sepDB = sepDB;
-			checkForDBUpdate();
-			
-			if (asteroidFieldIndex.get(PK, getPK(name)).hasNext())
-			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Indexed field 'name' must be unique, asteroidField[name='"+name+"'] already exist.");
-			}
-			properties = sepDB.getDB().createNode();
-			AsteroidField.initializeProperties(properties, name, initialCarbonStock, maxSlots, carbonStock, currentCarbon);
-			asteroidFieldIndex.add(properties, PK, getPK(name));
-			
-			super.create(sepDB);
-			
-			tx.success();			
-		}
-		finally
-		{
-			tx.finish();
-		}
+		super.register(properties);
 	}
-
-	public static void initializeProperties(Node properties, String name, int initialCarbonStock, int maxSlots, int carbonStock, int currentCarbon)
-	{
-		properties.setProperty("name", name);
-		properties.setProperty("type", eCelestialBodyType.AsteroidField.toString());
-		properties.setProperty("initialCarbonStock", initialCarbonStock);
-		properties.setProperty("maxSlots", maxSlots);
-		properties.setProperty("carbonStock", carbonStock);
-		properties.setProperty("currentCarbon", currentCarbon);
-	}
-
 }
