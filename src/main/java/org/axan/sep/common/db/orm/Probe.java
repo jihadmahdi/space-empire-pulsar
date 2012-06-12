@@ -77,7 +77,7 @@ public class Probe extends Unit implements IProbe
 	}
 	
 	@Override
-	protected void initializeProperties()
+	final protected void initializeProperties()
 	{
 		super.initializeProperties();
 	}

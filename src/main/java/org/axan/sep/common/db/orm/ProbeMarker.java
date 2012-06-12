@@ -63,7 +63,7 @@ public class ProbeMarker extends UnitMarker implements IProbeMarker, Serializabl
 	}
 	
 	@Override
-	protected void initializeProperties()
+	final protected void initializeProperties()
 	{
 		super.initializeProperties();
 		properties.setProperty("isDeployed", isDeployed);

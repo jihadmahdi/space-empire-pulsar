@@ -68,7 +68,7 @@ public class FleetMarker extends UnitMarker implements IFleetMarker
 	}
 	
 	@Override
-	protected void initializeProperties()
+	final protected void initializeProperties()
 	{
 		super.initializeProperties();
 		Fleet.initializeStarships(this, starships);

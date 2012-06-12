@@ -92,7 +92,7 @@ class Player extends AGraphNode<SEPCommonDB> implements IPlayer, Serializable
 		super.checkForDBUpdate();
 		
 		if (!isDBOnline()) return;
-		if (isDBOutdated())
+		if (isDBOutdated() || playersFactory == null)
 		{
 			playersFactory = graphDB.getDB().getReferenceNode().getSingleRelationship(eRelationTypes.Players, Direction.OUTGOING).getEndNode(); // checked						
 		}		
@@ -120,7 +120,7 @@ class Player extends AGraphNode<SEPCommonDB> implements IPlayer, Serializable
 		{
 			super.register(properties);
 			
-			playersFactory.createRelationshipTo(properties, eRelationTypes.Players); // checked
+			playersFactory.createRelationshipTo(properties, eRelationTypes.Players); // checked			
 			Node nConfig = graphDB.getDB().createNode();
 			PlayerConfig.initializeNode(nConfig, config.getColor(), config.getSymbol(), config.getPortrait());
 			properties.createRelationshipTo(nConfig, eRelationTypes.PlayerConfig); // checked

@@ -67,7 +67,7 @@ public class AntiProbeMissileMarker extends UnitMarker implements IAntiProbeMiss
 	}
 	
 	@Override
-	protected void initializeProperties()
+	final protected void initializeProperties()
 	{
 		super.initializeProperties();
 		properties.setProperty("isFired", isFired);

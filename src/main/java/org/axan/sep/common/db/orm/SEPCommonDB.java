@@ -224,6 +224,7 @@ public class SEPCommonDB implements IGraphDB, IRelationshipConfig, Serializable,
 				case UnitMarkerRealLocation:
 				case PlayerGovernment:
 				case PlayerConfig:
+				case PlayerDiplomacyMarker:
 				{
 					return eRelationshipsCardinality.OnlyOne;
 				}
@@ -238,8 +239,7 @@ public class SEPCommonDB implements IGraphDB, IRelationshipConfig, Serializable,
 				case SpaceRoad:
 				case UnitEncounterLog:
 				case PlayerEncounterLog:
-				case PlayerDiplomacy:
-				case PlayerDiplomacyMarker:
+				case PlayerDiplomacy:				
 				{
 					return eRelationshipsCardinality.Any;
 				}
@@ -736,7 +736,7 @@ public class SEPCommonDB implements IGraphDB, IRelationshipConfig, Serializable,
 			db = db.previous();
 		}
 		
-		Node nPlayer = AGraphNode.get(db.planetIndex, Player.getPK(playerName));
+		Node nPlayer = AGraphNode.get(db.playerIndex, Player.getPK(playerName));
 		for(Relationship r : AVersionedGraphNode.getLastRelationships(db, nPlayer, db.getTurn(), eRelationTypes.PlayerCelestialBodies, Direction.OUTGOING))
 		{
 			Node n = r.getEndNode();
@@ -853,7 +853,10 @@ public class SEPCommonDB implements IGraphDB, IRelationshipConfig, Serializable,
 		
 		synchronized(Area.class)
 		{
-			if (area.exists()) return area;
+			if (area.exists())
+			{
+				return area;
+			}
 			
 			area = new Area(location);
 			area.create(this);
@@ -994,7 +997,7 @@ public class SEPCommonDB implements IGraphDB, IRelationshipConfig, Serializable,
 	public ICelestialBody getCelestialBody(String name)
 	{
 		waitForInit();
-		Node n = AVersionedGraphObject.get(celestialBodyIndex, CelestialBody.getPK(name));
+		Node n = AVersionedGraphObject.queryVersion(celestialBodyIndex, CelestialBody.getPK(name), getVersion());
 		if (n == null) return null;
 		
 		SEPCommonDB.assertProperty(n, "type");

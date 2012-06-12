@@ -61,7 +61,7 @@ public class SpaceRoad extends AVersionedGraphRelationship<SEPCommonDB> implemen
 	}
 
 	@Override
-	protected void initializeProperties()
+	final protected void initializeProperties()
 	{
 		super.initializeProperties();
 		properties.setProperty("sourceName", sourceName);

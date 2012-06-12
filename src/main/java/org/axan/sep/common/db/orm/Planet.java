@@ -77,7 +77,7 @@ class Planet extends ProductiveCelestialBody implements IPlanet
 	}
 	
 	@Override
-	protected void initializeProperties()
+	final protected void initializeProperties()
 	{
 		super.initializeProperties();		
 		properties.setProperty("populationPerTurn", populationPerTurn);

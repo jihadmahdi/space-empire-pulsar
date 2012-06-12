@@ -67,7 +67,7 @@ public class EncounterLog extends AVersionedGraphRelationship<SEPCommonDB> imple
 	}
 	
 	@Override
-	protected void initializeProperties()
+	final protected void initializeProperties()
 	{
 		super.initializeProperties();		
 		properties.setProperty("turn", turn);

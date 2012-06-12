@@ -102,13 +102,20 @@ class Area extends AVersionedGraphNode<SEPCommonDB> implements IArea, Serializab
 		super.checkForDBUpdate();
 		
 		if (!isDBOnline()) return;
-		if (isDBOutdated())
+		if (isDBOutdated() || sun == null || areasFactory == null)
 		{
 			Location sunLocation = Rules.getSunLocation(graphDB.getConfig());
 			isSun = (SEPUtils.getDistance(sunLocation, location) <= graphDB.getConfig().getSunRadius());
 			sun = graphDB.getDB().getReferenceNode().getSingleRelationship(eRelationTypes.Sun, Direction.OUTGOING).getEndNode(); // checked
 			areasFactory = graphDB.getDB().getReferenceNode().getSingleRelationship(eRelationTypes.Areas, Direction.OUTGOING).getEndNode(); // checked
 		}		
+	}
+	
+	@Override
+	final protected void initializeProperties()
+	{
+		super.initializeProperties();
+		properties.setProperty("location", location.toString());
 	}
 	
 	/**
@@ -126,11 +133,15 @@ class Area extends AVersionedGraphNode<SEPCommonDB> implements IArea, Serializab
 		{
 			super.register(properties);
 			
-			if (isSun)
+			if (isSun && getLastSingleRelationship(eRelationTypes.Sun, Direction.INCOMING) == null)
 			{
 				sun.createRelationshipTo(properties, eRelationTypes.Sun); // checked
-			}			
-			areasFactory.createRelationshipTo(properties, eRelationTypes.Areas); // checked
+			}
+			
+			if (getLastSingleRelationship(eRelationTypes.Areas, Direction.INCOMING) == null)
+			{
+				areasFactory.createRelationshipTo(properties, eRelationTypes.Areas); // checked
+			}
 			
 			tx.success();
 		}

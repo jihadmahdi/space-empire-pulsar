@@ -57,6 +57,12 @@ class Nebula extends ProductiveCelestialBody implements INebula
 		super.checkForDBUpdate();
 	}
 	
+	@Override
+	final protected void initializeProperties()
+	{
+		super.initializeProperties();
+	}
+	
 	/**
 	 * Register properties (add Node to indexes and create relationships).
 	 * @param properties

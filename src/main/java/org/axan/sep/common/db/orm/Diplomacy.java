@@ -44,12 +44,6 @@ class Diplomacy extends DiplomacyMarker implements IDiplomacy
 	}
 	
 	@Override
-	protected void initializeProperties()
-	{
-		super.initializeProperties();		
-	}
-	
-	@Override
 	public int getTurn()
 	{
 		assertOnlineStatus(true);

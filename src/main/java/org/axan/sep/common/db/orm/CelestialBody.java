@@ -12,6 +12,7 @@ import org.axan.sep.common.db.ICelestialBody;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
@@ -75,6 +76,20 @@ abstract class CelestialBody extends AVersionedGraphNode<SEPCommonDB> implements
 	}
 	
 	@Override
+	protected void checkForDBUpdate()
+	{		
+		super.checkForDBUpdate();
+		
+		if (!isDBOnline()) return;
+		if (isDBOutdated() || location == null)
+		{			
+			Relationship r = properties == null ? null : getLastSingleRelationship(eRelationTypes.CelestialBody, Direction.INCOMING);
+			Node nArea = (r == null) ? null : r.getStartNode();
+			location = nArea == null ? location : Location.valueOf((String) nArea.getProperty("location"));
+		}
+	}
+	
+	@Override
 	protected void initializeProperties()
 	{
 		super.initializeProperties();
@@ -96,16 +111,19 @@ abstract class CelestialBody extends AVersionedGraphNode<SEPCommonDB> implements
 		{
 			super.register(properties);
 			
-			// Force area creation if not exists.
-			graphDB.getArea(location);
-			
-			Node nArea = queryVersion(graphDB.getDB().index().forNodes("AreaIndex"), Area.getPK(location), graphDB.getVersion());
-			if (nArea == null)
+			if (getLastSingleRelationship(eRelationTypes.CelestialBody, Direction.INCOMING) == null)
 			{
-				tx.failure();
-				throw new DBGraphException("Implementation error: Cannot find Area[location='"+location.toString()+"']. Area must be created before CelestialBody.");				
+				// Force area creation if not exists, getLocation() also force this.location attribute update.
+				graphDB.getArea(getLocation());
+				
+				Node nArea = queryVersion(graphDB.getDB().index().forNodes("AreaIndex"), Area.getPK(location), graphDB.getVersion());
+				if (nArea == null)
+				{
+					tx.failure();
+					throw new DBGraphException("Implementation error: Cannot find Area[location='"+location.toString()+"']. Area must be created before CelestialBody.");				
+				}
+				nArea.createRelationshipTo(properties, eRelationTypes.CelestialBody); // checked
 			}
-			nArea.createRelationshipTo(properties, eRelationTypes.CelestialBody); // checked
 			
 			tx.success();			
 		}
@@ -130,16 +148,8 @@ abstract class CelestialBody extends AVersionedGraphNode<SEPCommonDB> implements
 	@Override
 	public Location getLocation()
 	{
-		if (!isDBOnline())
-		{
-			return location;
-		}
-		else
-		{
-			checkForDBUpdate();
-			Node nArea = getLastSingleRelationship(eRelationTypes.CelestialBody, Direction.INCOMING).getStartNode();
-			return Location.valueOf((String) nArea.getProperty("location"));
-		}
+		checkForDBUpdate();
+		return location;		
 	}
 	
 	@Override

@@ -114,22 +114,28 @@ abstract class UnitMarker extends AVersionedGraphNode<SEPCommonDB> implements IU
 		{
 			super.register(properties);
 			
-			Node nOwner = AGraphObject.get(graphDB.getDB().index().forNodes("PlayerIndex"), ownerName);
-			if (nOwner == null)
+			if (getLastSingleRelationship(eRelationTypes.PlayerUnitMarker, Direction.INCOMING) == null)
 			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Cannot find owner Player '"+ownerName+"'");
+				Node nOwner = AGraphObject.get(graphDB.getDB().index().forNodes("PlayerIndex"), ownerName);
+				if (nOwner == null)
+				{
+					tx.failure();
+					throw new DBGraphException("Constraint error: Cannot find owner Player '"+ownerName+"'");
+				}
+				nOwner.createRelationshipTo(properties, eRelationTypes.PlayerUnitMarker); // checked
 			}
-			nOwner.createRelationshipTo(properties, eRelationTypes.PlayerUnitMarker); // checked
 			
-			// Ensure area creation
-			graphDB.getArea(realLocation.asLocation());
-			Node nArea = AVersionedGraphNode.queryVersion(graphDB.getDB().index().forNodes("AreaIndex"), Area.getPK(realLocation.asLocation()), graphDB.getVersion());
-			if (nArea == null)
+			if (getLastSingleRelationship(eRelationTypes.UnitMarkerRealLocation, Direction.OUTGOING) == null)
 			{
-				throw new DBGraphException("Contraint error: Cannot find Area[location='"+realLocation.asLocation().toString()+"']. Area must be created first.");
-			}			
-			properties.createRelationshipTo(nArea, eRelationTypes.UnitMarkerRealLocation); // checked
+				// Ensure area creation
+				graphDB.getArea(realLocation.asLocation());
+				Node nArea = AVersionedGraphNode.queryVersion(graphDB.getDB().index().forNodes("AreaIndex"), Area.getPK(realLocation.asLocation()), graphDB.getVersion());
+				if (nArea == null)
+				{
+					throw new DBGraphException("Contraint error: Cannot find Area[location='"+realLocation.asLocation().toString()+"']. Area must be created first.");
+				}			
+				properties.createRelationshipTo(nArea, eRelationTypes.UnitMarkerRealLocation); // checked
+			}
 						
 			tx.success();			
 		}

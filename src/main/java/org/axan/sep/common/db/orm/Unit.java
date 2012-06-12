@@ -106,14 +106,11 @@ abstract class Unit extends AVersionedGraphNode<SEPCommonDB> implements IUnit
 		super.checkForDBUpdate();
 		
 		if (!isDBOnline()) return;
-		if (isDBOutdated())
+		if (departure == null && initialDepartureName != null)
 		{
-			if (departure == null && initialDepartureName != null)
-			{
-				ICelestialBody cb = graphDB.getCelestialBody(initialDepartureName);
-				if (cb == null || !IProductiveCelestialBody.class.isInstance(cb)) throw new RuntimeException("Unit initial location must be a valid productive celestial body, "+initialDepartureName+" "+(cb == null ? "does not exist" : "is not productive")+".");
-				departure = cb.getLocation();
-			}			
+			ICelestialBody cb = graphDB.getCelestialBody(initialDepartureName);
+			if (cb == null || !IProductiveCelestialBody.class.isInstance(cb)) throw new RuntimeException("Unit initial location must be a valid productive celestial body, "+initialDepartureName+" "+(cb == null ? "does not exist" : "is not productive")+".");
+			departure = cb.getLocation();				
 		}
 	}
 
@@ -142,14 +139,17 @@ abstract class Unit extends AVersionedGraphNode<SEPCommonDB> implements IUnit
 		{
 			super.register(properties);
 			
-			Node nOwner = AGraphObject.get(graphDB.getDB().index().forNodes("PlayerIndex"), ownerName);
-			if (nOwner == null)
+			if (getLastSingleRelationship(eRelationTypes.PlayerUnit, Direction.INCOMING) == null)
 			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Cannot find owner Player '"+ownerName+"'");
+				Node nOwner = AGraphObject.get(graphDB.getDB().index().forNodes("PlayerIndex"), ownerName);
+				if (nOwner == null)
+				{
+					tx.failure();
+					throw new DBGraphException("Constraint error: Cannot find owner Player '"+ownerName+"'");
+				}
+				nOwner.createRelationshipTo(properties, eRelationTypes.PlayerUnit); // checked
 			}
-			nOwner.createRelationshipTo(properties, eRelationTypes.PlayerUnit); // checked
-			
+				
 			// Ensure area creation
 			updateDeparture();
 			
