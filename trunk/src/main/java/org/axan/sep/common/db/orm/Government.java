@@ -47,7 +47,7 @@ public class Government extends AVersionedGraphRelationship<SEPCommonDB>
 	}
 	
 	@Override
-	protected void initializeProperties()
+	final protected void initializeProperties()
 	{
 		super.initializeProperties();
 		properties.setProperty("ownerName", ownerName);

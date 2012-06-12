@@ -81,7 +81,7 @@ abstract class Building extends AVersionedGraphNode<SEPCommonDB> implements IBui
 	{
 		super.initializeProperties();
 		properties.setProperty("productiveCelestialBodyName", productiveCelestialBodyName);
-		properties.setProperty("type", eBuildingType.DefenseModule.toString());
+		properties.setProperty("type", type.toString());
 		properties.setProperty("builtDate", builtDate);
 		properties.setProperty("nbSlots", nbSlots);
 	}
@@ -100,13 +100,16 @@ abstract class Building extends AVersionedGraphNode<SEPCommonDB> implements IBui
 		{
 			super.register(properties);
 			
-			Node nProductiveCelestialBody = AVersionedGraphNode.queryVersion(graphDB.getDB().index().forNodes("ProductiveCelestialBodyIndex"), CelestialBody.getPK(productiveCelestialBodyName), graphDB.getVersion());
-			if (nProductiveCelestialBody == null)
+			if (getLastSingleRelationship(eRelationTypes.Buildings, Direction.INCOMING) == null)
 			{
-				tx.failure();
-				throw new DBGraphException("Constraint error: Cannot find ProductiveCelestialBody[name='"+productiveCelestialBodyName+"']. ProductiveCelestialBody must be created before Building.");
-			}			
-			nProductiveCelestialBody.createRelationshipTo(properties, eRelationTypes.Buildings); // checked
+				Node nProductiveCelestialBody = AVersionedGraphNode.queryVersion(graphDB.getDB().index().forNodes("ProductiveCelestialBodyIndex"), CelestialBody.getPK(productiveCelestialBodyName), graphDB.getVersion());
+				if (nProductiveCelestialBody == null)
+				{
+					tx.failure();
+					throw new DBGraphException("Constraint error: Cannot find ProductiveCelestialBody[name='"+productiveCelestialBodyName+"']. ProductiveCelestialBody must be created before Building.");
+				}			
+				nProductiveCelestialBody.createRelationshipTo(properties, eRelationTypes.Buildings); // checked
+			}
 			
 			tx.success();			
 		}

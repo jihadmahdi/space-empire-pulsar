@@ -75,7 +75,7 @@ public class Fleet extends Unit implements IFleet
 	}
 	
 	@Override
-	protected void initializeProperties()
+	final protected void initializeProperties()
 	{
 		super.initializeProperties();
 		initializeStarships(this, starships);

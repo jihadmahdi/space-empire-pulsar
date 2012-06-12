@@ -71,7 +71,7 @@ class Vortex extends CelestialBody implements IVortex, Serializable
 	}
 	
 	@Override
-	protected void initializeProperties()
+	final protected void initializeProperties()
 	{
 		super.initializeProperties();
 		properties.setProperty("birth", birth);

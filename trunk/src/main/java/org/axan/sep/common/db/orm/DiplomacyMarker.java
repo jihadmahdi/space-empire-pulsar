@@ -68,7 +68,7 @@ public class DiplomacyMarker extends AVersionedGraphRelationship<SEPCommonDB> im
 	}
 	
 	@Override
-	protected void initializeProperties()
+	final protected void initializeProperties()
 	{
 		super.initializeProperties();
 		if (turn >= 0) properties.setProperty("turn", turn);
