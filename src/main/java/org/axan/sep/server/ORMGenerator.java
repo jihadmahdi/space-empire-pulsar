@@ -49,6 +49,7 @@ class ORMGenerator
 		try
 		{					
 			String baseDir = "/media/data/code/Java_Workspace/Space-Empire-Pulsar/src/main/java/";
+			//String baseDir = "D:/code/java/workspace/Space-Empire-Pulsar/src/main/java/";
 			String interfacePackageName = IGameConfig.class.getPackage().getName();
 			String dbPackageName = IDBGraph.class.getPackage().getName();
 			final String ormPackageName = dbPackageName+".orm";
@@ -67,7 +68,7 @@ class ORMGenerator
 			
 			// YAML generator
 			URL yamlFileURL = Reflect.getResource(dbPackageName, "SEPDBGraph.yaml");
-			File yamlFile = new File(yamlFileURL.getFile());			
+			File yamlFile = new File(yamlFileURL.toURI());			
 			YamlORMGenerator gen = new YamlORMGenerator(yamlFile);
 			gen.generate(getGraphClassGeneratorListener(ormPackageName), ormPackageName, interfacePackageName, "DBGraph", interfaceOutputDirectory, outputDirectory);
 			
