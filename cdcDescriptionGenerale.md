@@ -1,0 +1,4 @@
+# Description générale #
+Space Empire Pulsar est un jeu de stratégie tour par tour, multijoueur, dont les règles inspirées de http://en.wikipedia.org/wiki/Konquest|Konquest sont largement étendues.
+L'univers n'est donc plus un damier 2D mais un espace 3D dont la taille est paramètrable en début de partie.
+Space Empire Pulsar ajoute plusieurs types de [cdcDescriptionCorpsCelestes|corps célestes] (planètes, astéroïdes, nébuleuses, vortex), 2 types de [cdcDescriptionConstructions|ressources] (population et carbone), plusieurs types et classes de [cdcDescriptionFlottes|vaisseaux] (chasseurs, destroyers, artilleries, sondes, ...), la création de [cdcReglesGouvHeros|héros] ainsi que le principe de [cdcReglesGouvHeros|gouvernement] permettant de nouveaux [cdcReglesDebutPartie|type de parties].
